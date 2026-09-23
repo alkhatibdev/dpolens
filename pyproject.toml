@@ -16,6 +16,7 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.9",
     "testcontainers[postgres]>=4.9",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [tool.ruff]

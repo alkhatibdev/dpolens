@@ -1,0 +1,20 @@
+slug: testlaw
+name: Test Data Protection Law
+jurisdiction: Example Republic
+version: "2026.1"
+effective_date: 2026-01-01
+trust_tier: community
+source_url: https://example.invalid/testlaw
+license: Public domain, official documents are excluded from copyright.
+authoritative_language: en
+translations: []
+
+documents:
+  - slug: testlaw
+    title: Test Data Protection Law
+    normative: true
+    expected_clauses: 2
+  - slug: testlaw-recitals
+    title: Test Data Protection Law recitals
+    normative: false
+    expected_clauses: 1
