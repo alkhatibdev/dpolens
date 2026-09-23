@@ -1,0 +1,60 @@
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+dpolens = { workspace = true }
+dpolens-mcp = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "dpolens",
+    "dpolens-mcp",
+    "import-linter>=2.1",
+    "mypy>=1.14",
+    "pre-commit>=4.0",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+    "testcontainers[postgres]>=4.9",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["packages/dpolens/src", "packages/dpolens-mcp/src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "SIM",  # simplify
+    "RUF",
+]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["packages/dpolens/src", "packages/dpolens-mcp/src", "tests"]
+strict = false
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# Strict where the guarantees live, relaxed elsewhere.
+[[tool.mypy.overrides]]
+module = ["dpolens.engine.*", "dpolens.api.*"]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers --cov=dpolens --cov=dpolens_mcp --cov-report=term-missing"
+markers = [
+    "integration: needs a real Postgres via testcontainers (Docker required)",
+]
+
+[tool.coverage.report]
+# Reported, never gated: the gates that mean something are the retrieval evals
+# and the tests that assert the product's guarantees.
+show_missing = true

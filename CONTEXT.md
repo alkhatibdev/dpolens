@@ -212,8 +212,8 @@ request is a review comment, not a failed build.
 ## Flagged ambiguities
 
 - "Context" is not a word this project uses on its own. Say breadcrumb, subtree,
-  cross-reference or **context recipe** (the versioned rule in ADR-0021 for building the
-  string that gets embedded), so that nothing is confused with an assistant's context
+  cross-reference or **context recipe** (the versioned rule for building the string that
+  gets embedded), so that nothing is confused with an assistant's context
   window or with this file.
 - The MCP tool `search_policies` and the prompts `/policy-check` and `/policy-tour` search
   laws as well as organisation policies. The names are kept on purpose, because they may

@@ -1,0 +1,42 @@
+[importlinter]
+root_packages =
+    dpolens
+    dpolens_mcp
+include_external_packages = True
+
+[importlinter:contract:mcp-is-a-client]
+name = dpolens-mcp never imports dpolens
+type = forbidden
+source_modules =
+    dpolens_mcp
+forbidden_modules =
+    dpolens
+rationale =
+    Every surface reaches the system through the HTTP API, which is what lets a
+    surface be written in any language.
+
+[importlinter:contract:api-never-touches-the-orm]
+name = The API layer never imports the ORM
+type = forbidden
+source_modules =
+    dpolens.api
+forbidden_modules =
+    sqlalchemy
+    alembic
+rationale =
+    Route handlers authenticate, call one engine function and return. Anything
+    building a query has leaked upward.
+
+[importlinter:contract:api-sits-above-the-engine]
+name = The API sits above the engine
+type = layers
+layers =
+    dpolens.api
+    dpolens.engine
+
+[importlinter:contract:cli-sits-above-the-engine]
+name = The CLI sits above the engine
+type = layers
+layers =
+    dpolens.cli
+    dpolens.engine
