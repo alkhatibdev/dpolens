@@ -1,0 +1,8 @@
+---
+key: gdpr:art-98
+lang: en
+label: Article 98
+title: Review of other Union legal acts on data protection
+---
+
+The Commission shall, if appropriate, submit legislative proposals with a view to amending other Union legal acts on the protection of personal data, in order to ensure uniform and consistent protection of natural persons with regard to processing. This shall in particular concern the rules relating to the protection of natural persons with regard to processing by Union institutions, bodies, offices and agencies and on the free movement of such data.

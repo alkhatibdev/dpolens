@@ -1,0 +1,30 @@
+slug: gdpr
+name: General Data Protection Regulation
+jurisdiction: European Union
+version: "2026.1"
+effective_date: 2018-05-25
+trust_tier: community
+source_url: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+license: >-
+  Reuse is permitted under Commission Decision 2011/833/EU on the reuse of
+  Commission documents, provided the source is acknowledged. Only the text
+  published in the Official Journal of the European Union is authentic.
+
+# EU law is equally authentic in all 24 official languages. The English text is
+# an authentic text, not a translation, which is what this field records.
+authoritative_language: en
+translations: []
+
+documents:
+  - slug: gdpr
+    title: General Data Protection Regulation
+    normative: true
+    expected_clauses: 99
+    source_url: https://publications.europa.eu/resource/celex/02016R0679-20160504
+    source_sha256: 28524c5589d9c80dee357fe96498302b4fefb29b3cc9ada7dcad52c967e3f15c
+  - slug: gdpr-recitals
+    title: General Data Protection Regulation, recitals
+    normative: false
+    expected_clauses: 173
+    source_url: https://publications.europa.eu/resource/celex/32016R0679
+    source_sha256: fce6e6ea8724e66a1c4f98c584cafdc9dfbae26aa83c44b43423b8c7f6aa0295

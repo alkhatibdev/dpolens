@@ -34,6 +34,13 @@ select = [
     "SIM",  # simplify
     "RUF",
 ]
+ignore = [
+    # Law text is full of typographic quotes and dashes, and it is stored
+    # verbatim: a citation has to quote what the source prints.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
 
 [tool.mypy]
 python_version = "3.14"
