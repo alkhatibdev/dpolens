@@ -6,12 +6,16 @@ title: Mutual assistance
 cross_references:
 - key: gdpr:art-55:para-1
   text: Article 55(1)
+  from: gdpr:art-61:para-8
 - key: gdpr:art-66:para-1
   text: Article 66(1)
+  from: gdpr:art-61:para-8
 - key: gdpr:art-66:para-2
   text: Article 66(2)
+  from: gdpr:art-61:para-8
 - key: gdpr:art-93:para-2
   text: Article 93(2)
+  from: gdpr:art-61:para-9
 ---
 
 ## 1. {#para-1}

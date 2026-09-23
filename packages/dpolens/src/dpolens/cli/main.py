@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from dpolens import __version__
-from dpolens.cli import pack
+from dpolens.cli import clause, pack
 
 app = typer.Typer(
     name="dpolens",
@@ -15,6 +15,7 @@ app = typer.Typer(
 
 
 app.add_typer(pack.app)
+app.add_typer(clause.app)
 
 
 @app.callback()

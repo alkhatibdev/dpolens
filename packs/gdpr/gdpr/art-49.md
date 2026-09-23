@@ -6,6 +6,7 @@ title: Derogations for specific situations
 cross_references:
 - key: gdpr:art-45:para-3
   text: Article 45(3)
+  from: gdpr:art-49:para-1
 ---
 
 ## 1. {#para-1}

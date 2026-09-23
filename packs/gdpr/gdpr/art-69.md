@@ -6,6 +6,7 @@ title: Independence
 cross_references:
 - key: gdpr:art-70:para-1
   text: Article 70(1)
+  from: gdpr:art-69:para-2
 ---
 
 ## 1. {#para-1}

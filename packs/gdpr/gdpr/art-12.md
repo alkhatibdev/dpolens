@@ -7,6 +7,7 @@ title: Transparent information, communication and modalities for the exercise of
 cross_references:
 - key: gdpr:art-11:para-2
   text: Article 11(2)
+  from: gdpr:art-12:para-2
 ---
 
 ## 1. {#para-1}

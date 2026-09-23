@@ -6,8 +6,13 @@ title: Transfers on the basis of an adequacy decision
 cross_references:
 - key: gdpr:art-93:para-2
   text: Article 93(2)
+  from: gdpr:art-45:para-3
+- key: gdpr:art-93:para-2
+  text: Article 93(2)
+  from: gdpr:art-45:para-5
 - key: gdpr:art-93:para-3
   text: Article 93(3)
+  from: gdpr:art-45:para-5:sub-2
 ---
 
 ## 1. {#para-1}

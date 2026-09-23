@@ -6,8 +6,22 @@ title: Exercise of the delegation
 cross_references:
 - key: gdpr:art-12:para-8
   text: Article 12(8)
+  from: gdpr:art-92:para-2
 - key: gdpr:art-43:para-8
   text: Article 43(8)
+  from: gdpr:art-92:para-2
+- key: gdpr:art-12:para-8
+  text: Article 12(8)
+  from: gdpr:art-92:para-3
+- key: gdpr:art-43:para-8
+  text: Article 43(8)
+  from: gdpr:art-92:para-3
+- key: gdpr:art-12:para-8
+  text: Article 12(8)
+  from: gdpr:art-92:para-5
+- key: gdpr:art-43:para-8
+  text: Article 43(8)
+  from: gdpr:art-92:para-5
 ---
 
 ## 1. {#para-1}

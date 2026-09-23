@@ -6,28 +6,40 @@ title: Tasks
 cross_references:
 - key: gdpr:art-28:para-8
   text: Article 28(8)
-- key: gdpr:art-35:para-4
-  text: Article 35(4)
-- key: gdpr:art-36:para-2
-  text: Article 36(2)
-- key: gdpr:art-40:para-1
-  text: Article 40(1)
-- key: gdpr:art-40:para-5
-  text: Article 40(5)
-- key: gdpr:art-42:para-1
-  text: Article 42(1)
-- key: gdpr:art-42:para-5
-  text: Article 42(5)
-- key: gdpr:art-42:para-7
-  text: Article 42(7)
+  from: gdpr:art-57:para-1:pt-j
 - key: gdpr:art-46:para-2
   text: Article 46(2)
+  from: gdpr:art-57:para-1:pt-j
 - key: gdpr:art-46:para-2:pt-d
   text: point (d) of Article 46(2)
+  from: gdpr:art-57:para-1:pt-j
+- key: gdpr:art-35:para-4
+  text: Article 35(4)
+  from: gdpr:art-57:para-1:pt-k
+- key: gdpr:art-36:para-2
+  text: Article 36(2)
+  from: gdpr:art-57:para-1:pt-l
+- key: gdpr:art-40:para-1
+  text: Article 40(1)
+  from: gdpr:art-57:para-1:pt-m
+- key: gdpr:art-40:para-5
+  text: Article 40(5)
+  from: gdpr:art-57:para-1:pt-m
+- key: gdpr:art-42:para-1
+  text: Article 42(1)
+  from: gdpr:art-57:para-1:pt-n
+- key: gdpr:art-42:para-5
+  text: Article 42(5)
+  from: gdpr:art-57:para-1:pt-n
+- key: gdpr:art-42:para-7
+  text: Article 42(7)
+  from: gdpr:art-57:para-1:pt-o
 - key: gdpr:art-46:para-3
   text: Article 46(3)
+  from: gdpr:art-57:para-1:pt-r
 - key: gdpr:art-58:para-2
   text: Article 58(2)
+  from: gdpr:art-57:para-1:pt-u
 ---
 
 ## 1. {#para-1}

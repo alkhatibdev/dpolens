@@ -4,28 +4,42 @@ lang: en
 label: Article 58
 title: Powers
 cross_references:
-- key: gdpr:art-17:para-2
-  text: Article 17(2)
-- key: gdpr:art-28:para-8
-  text: Article 28(8)
-- key: gdpr:art-36:para-5
-  text: Article 36(5)
-- key: gdpr:art-40:para-5
-  text: Article 40(5)
-- key: gdpr:art-42:para-5
-  text: Article 42(5)
 - key: gdpr:art-42:para-7
   text: Article 42(7)
+  from: gdpr:art-58:para-1:pt-c
+- key: gdpr:art-17:para-2
+  text: Article 17(2)
+  from: gdpr:art-58:para-2:pt-g
+- key: gdpr:art-36:para-5
+  text: Article 36(5)
+  from: gdpr:art-58:para-3:pt-c
+- key: gdpr:art-40:para-5
+  text: Article 40(5)
+  from: gdpr:art-58:para-3:pt-d
+- key: gdpr:art-42:para-5
+  text: Article 42(5)
+  from: gdpr:art-58:para-3:pt-f
+- key: gdpr:art-28:para-8
+  text: Article 28(8)
+  from: gdpr:art-58:para-3:pt-g
 - key: gdpr:art-46:para-2
   text: Article 46(2)
+  from: gdpr:art-58:para-3:pt-g
 - key: gdpr:art-46:para-2:pt-d
   text: point (d) of Article 46(2)
+  from: gdpr:art-58:para-3:pt-g
 - key: gdpr:art-46:para-3
   text: Article 46(3)
+  from: gdpr:art-58:para-3:pt-h
 - key: gdpr:art-46:para-3:pt-a
   text: point (a) of Article 46(3)
+  from: gdpr:art-58:para-3:pt-h
+- key: gdpr:art-46:para-3
+  text: Article 46(3)
+  from: gdpr:art-58:para-3:pt-i
 - key: gdpr:art-46:para-3:pt-b
   text: point (b) of Article 46(3)
+  from: gdpr:art-58:para-3:pt-i
 ---
 
 ## 1. {#para-1}

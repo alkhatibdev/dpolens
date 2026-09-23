@@ -5,22 +5,33 @@ label: Article 14
 title: Information to be provided where personal data have not been obtained from the data
   subject
 cross_references:
-- key: gdpr:art-22:para-1
-  text: Article 22(1)
 - key: gdpr:art-49:para-1
   text: Article 49(1)
+  from: gdpr:art-14:para-1:pt-f
 - key: gdpr:art-6:para-1
   text: Article 6(1)
-- key: gdpr:art-6:para-1:pt-a
-  text: point (a) of Article 6(1)
+  from: gdpr:art-14:para-2:pt-b
 - key: gdpr:art-6:para-1:pt-f
   text: point (f) of Article 6(1)
-- key: gdpr:art-89:para-1
-  text: Article 89(1)
+  from: gdpr:art-14:para-2:pt-b
+- key: gdpr:art-6:para-1
+  text: Article 6(1)
+  from: gdpr:art-14:para-2:pt-d
+- key: gdpr:art-6:para-1:pt-a
+  text: point (a) of Article 6(1)
+  from: gdpr:art-14:para-2:pt-d
 - key: gdpr:art-9:para-2
   text: Article 9(2)
+  from: gdpr:art-14:para-2:pt-d
 - key: gdpr:art-9:para-2:pt-a
   text: point (a) of Article 9(2)
+  from: gdpr:art-14:para-2:pt-d
+- key: gdpr:art-22:para-1
+  text: Article 22(1)
+  from: gdpr:art-14:para-2:pt-g
+- key: gdpr:art-89:para-1
+  text: Article 89(1)
+  from: gdpr:art-14:para-5:pt-b
 ---
 
 ## 1. {#para-1}

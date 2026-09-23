@@ -6,6 +6,7 @@ title: Binding corporate rules
 cross_references:
 - key: gdpr:art-93:para-2
   text: Article 93(2)
+  from: gdpr:art-47:para-3
 ---
 
 ## 1. {#para-1}

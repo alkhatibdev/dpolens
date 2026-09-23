@@ -6,6 +6,7 @@ title: Lawfulness of processing
 cross_references:
 - key: gdpr:art-23:para-1
   text: Article 23(1)
+  from: gdpr:art-6:para-4
 ---
 
 ## 1. {#para-1}

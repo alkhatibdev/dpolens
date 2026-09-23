@@ -6,6 +6,7 @@ title: Competence of the lead supervisory authority
 cross_references:
 - key: gdpr:art-60:para-3
   text: Article 60(3)
+  from: gdpr:art-56:para-4
 ---
 
 ## 1. {#para-1}

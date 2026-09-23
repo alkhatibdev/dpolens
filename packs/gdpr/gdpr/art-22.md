@@ -6,8 +6,10 @@ title: Automated individual decision-making, including profiling
 cross_references:
 - key: gdpr:art-9:para-1
   text: Article 9(1)
+  from: gdpr:art-22:para-4
 - key: gdpr:art-9:para-2
   text: Article 9(2)
+  from: gdpr:art-22:para-4
 ---
 
 ## 1. {#para-1}

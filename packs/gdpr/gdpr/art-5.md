@@ -6,6 +6,10 @@ title: Principles relating to processing of personal data
 cross_references:
 - key: gdpr:art-89:para-1
   text: Article 89(1)
+  from: gdpr:art-5:para-1:pt-b
+- key: gdpr:art-89:para-1
+  text: Article 89(1)
+  from: gdpr:art-5:para-1:pt-e
 ---
 
 ## 1. {#para-1}

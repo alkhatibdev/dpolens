@@ -63,5 +63,13 @@ def session(engine: Engine) -> Iterator[Session]:
 
 
 @pytest.fixture
+def clean_tables(engine: Engine) -> Iterator[None]:
+    """Empty the corpus after a test that wrote to it without a session fixture."""
+    yield
+    with engine.begin() as connection:
+        connection.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+
+
+@pytest.fixture
 def testlaw_pack() -> Path:
     return FIXTURE_PACKS / "testlaw"

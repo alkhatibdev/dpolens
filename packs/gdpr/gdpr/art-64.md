@@ -4,28 +4,39 @@ lang: en
 label: Article 64
 title: Opinion of the Board
 cross_references:
-- key: gdpr:art-28:para-8
-  text: Article 28(8)
 - key: gdpr:art-35:para-4
   text: Article 35(4)
+  from: gdpr:art-64:para-1:pt-a
 - key: gdpr:art-40:para-7
   text: Article 40(7)
+  from: gdpr:art-64:para-1:pt-b
 - key: gdpr:art-41:para-3
   text: Article 41(3)
+  from: gdpr:art-64:para-1:pt-c
 - key: gdpr:art-42:para-5
   text: Article 42(5)
+  from: gdpr:art-64:para-1:pt-c
 - key: gdpr:art-43:para-3
   text: Article 43(3)
+  from: gdpr:art-64:para-1:pt-c
+- key: gdpr:art-28:para-8
+  text: Article 28(8)
+  from: gdpr:art-64:para-1:pt-d
 - key: gdpr:art-46:para-2
   text: Article 46(2)
+  from: gdpr:art-64:para-1:pt-d
 - key: gdpr:art-46:para-2:pt-d
   text: point (d) of Article 46(2)
+  from: gdpr:art-64:para-1:pt-d
 - key: gdpr:art-46:para-3
   text: Article 46(3)
+  from: gdpr:art-64:para-1:pt-e
 - key: gdpr:art-46:para-3:pt-a
   text: point (a) of Article 46(3)
+  from: gdpr:art-64:para-1:pt-e
 - key: gdpr:art-65:para-1
   text: Article 65(1)
+  from: gdpr:art-64:para-8
 ---
 
 ## 1. {#para-1}

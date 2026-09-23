@@ -6,6 +6,7 @@ title: Right to restriction of processing
 cross_references:
 - key: gdpr:art-21:para-1
   text: Article 21(1)
+  from: gdpr:art-18:para-1:pt-d
 ---
 
 ## 1. {#para-1}

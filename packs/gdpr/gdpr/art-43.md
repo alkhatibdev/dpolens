@@ -4,16 +4,24 @@ lang: en
 label: Article 43
 title: Certification bodies
 cross_references:
-- key: gdpr:art-42:para-1
-  text: Article 42(1)
-- key: gdpr:art-42:para-5
-  text: Article 42(5)
 - key: gdpr:art-58:para-2
   text: Article 58(2)
+  from: gdpr:art-43:para-1
 - key: gdpr:art-58:para-2:pt-h
   text: point (h) of Article 58(2)
+  from: gdpr:art-43:para-1
+- key: gdpr:art-42:para-5
+  text: Article 42(5)
+  from: gdpr:art-43:para-2:pt-b
+- key: gdpr:art-42:para-5
+  text: Article 42(5)
+  from: gdpr:art-43:para-6
+- key: gdpr:art-42:para-1
+  text: Article 42(1)
+  from: gdpr:art-43:para-8
 - key: gdpr:art-93:para-2
   text: Article 93(2)
+  from: gdpr:art-43:para-9
 ---
 
 ## 1. {#para-1}

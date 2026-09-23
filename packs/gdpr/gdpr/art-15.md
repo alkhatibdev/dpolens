@@ -6,6 +6,7 @@ title: Right of access by the data subject
 cross_references:
 - key: gdpr:art-22:para-1
   text: Article 22(1)
+  from: gdpr:art-15:para-1:pt-h
 ---
 
 ## 1. {#para-1}

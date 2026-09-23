@@ -6,10 +6,13 @@ title: Dispute resolution by the Board
 cross_references:
 - key: gdpr:art-60:para-4
   text: Article 60(4)
-- key: gdpr:art-60:para-7
-  text: Article 60(7)
+  from: gdpr:art-65:para-1:pt-a
 - key: gdpr:art-64:para-1
   text: Article 64(1)
+  from: gdpr:art-65:para-1:pt-c
+- key: gdpr:art-60:para-7
+  text: Article 60(7)
+  from: gdpr:art-65:para-6
 ---
 
 ## 1. {#para-1}

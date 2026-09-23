@@ -15,7 +15,10 @@ import typer
 
 from dpolens.engine.packs.format import Clause
 from dpolens.engine.packs.formex import parse_articles, parse_recitals, text_of
+from dpolens.engine.packs.load import load_pack
 from dpolens.engine.packs.write import check_coverage, link_clauses, write_document
+from dpolens.engine.session import session_scope
+from dpolens.settings import load_settings
 
 app = typer.Typer(name="pack", help="Build, inspect and load law packs.", no_args_is_help=True)
 
@@ -81,3 +84,24 @@ def _report_dangling(clauses: list[Clause], document_slug: str) -> None:
         typer.echo(f"  {key} -> {reference.target_key} ({reference.raw_text})")
     if len(dangling) > 10:
         typer.echo(f"  ... and {len(dangling) - 10} more")
+
+
+@app.command()
+def load(
+    directory: Annotated[Path, typer.Argument(help="Pack directory, for example packs/gdpr")],
+) -> None:
+    """Load a pack into this instance.
+
+    Loading the same pack version twice changes nothing, so running it again
+    after a restart is safe.
+    """
+    with session_scope(load_settings()) as session:
+        result = load_pack(session, directory)
+
+    if result.already_loaded:
+        typer.echo(f"{result.pack_slug} {result.version} is already loaded")
+        return
+    typer.echo(
+        f"Loaded {result.pack_slug} {result.version}: "
+        f"{result.clauses_loaded} clauses across {result.documents_loaded} documents"
+    )

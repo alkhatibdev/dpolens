@@ -6,8 +6,10 @@ title: Urgency procedure
 cross_references:
 - key: gdpr:art-64:para-3
   text: Article 64(3)
+  from: gdpr:art-66:para-4
 - key: gdpr:art-65:para-2
   text: Article 65(2)
+  from: gdpr:art-66:para-4
 ---
 
 ## 1. {#para-1}

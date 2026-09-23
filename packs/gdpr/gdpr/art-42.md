@@ -6,10 +6,13 @@ title: Certification
 cross_references:
 - key: gdpr:art-46:para-2
   text: Article 46(2)
+  from: gdpr:art-42:para-2
 - key: gdpr:art-46:para-2:pt-f
   text: point (f) of Article 46(2)
+  from: gdpr:art-42:para-2
 - key: gdpr:art-58:para-3
   text: Article 58(3)
+  from: gdpr:art-42:para-5
 ---
 
 ## 1. {#para-1}

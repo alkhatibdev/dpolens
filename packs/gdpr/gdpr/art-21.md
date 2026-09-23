@@ -6,8 +6,10 @@ title: Right to object
 cross_references:
 - key: gdpr:art-6:para-1
   text: Article 6(1)
+  from: gdpr:art-21:para-1
 - key: gdpr:art-89:para-1
   text: Article 89(1)
+  from: gdpr:art-21:para-6
 ---
 
 ## 1. {#para-1}

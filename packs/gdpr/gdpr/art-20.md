@@ -6,14 +6,19 @@ title: Right to data portability
 cross_references:
 - key: gdpr:art-6:para-1
   text: Article 6(1)
+  from: gdpr:art-20:para-1:pt-a
 - key: gdpr:art-6:para-1:pt-a
   text: point (a) of Article 6(1)
+  from: gdpr:art-20:para-1:pt-a
 - key: gdpr:art-6:para-1:pt-b
   text: point (b) of Article 6(1)
+  from: gdpr:art-20:para-1:pt-a
 - key: gdpr:art-9:para-2
   text: Article 9(2)
+  from: gdpr:art-20:para-1:pt-a
 - key: gdpr:art-9:para-2:pt-a
   text: point (a) of Article 9(2)
+  from: gdpr:art-20:para-1:pt-a
 ---
 
 ## 1. {#para-1}

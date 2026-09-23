@@ -4,12 +4,21 @@ lang: en
 label: Article 30
 title: Records of processing activities
 cross_references:
-- key: gdpr:art-32:para-1
-  text: Article 32(1)
 - key: gdpr:art-49:para-1
   text: Article 49(1)
+  from: gdpr:art-30:para-1:pt-e
+- key: gdpr:art-32:para-1
+  text: Article 32(1)
+  from: gdpr:art-30:para-1:pt-g
+- key: gdpr:art-49:para-1
+  text: Article 49(1)
+  from: gdpr:art-30:para-2:pt-c
+- key: gdpr:art-32:para-1
+  text: Article 32(1)
+  from: gdpr:art-30:para-2:pt-d
 - key: gdpr:art-9:para-1
   text: Article 9(1)
+  from: gdpr:art-30:para-5
 ---
 
 ## 1. {#para-1}
