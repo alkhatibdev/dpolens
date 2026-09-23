@@ -6,7 +6,10 @@ title: Competence
 cross_references:
 - key: gdpr:art-6:para-1
   text: Article 6(1)
+<<<<<<< HEAD
   from: gdpr:art-55:para-2
+=======
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

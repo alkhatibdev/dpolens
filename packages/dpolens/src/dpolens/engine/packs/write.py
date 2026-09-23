@@ -24,6 +24,7 @@ def render(clause: Clause, links: dict[str, list[references.Reference]]) -> str:
     if not clause.normative:
         front["normative"] = False
 
+<<<<<<< HEAD
     entries: list[dict[str, str]] = []
     for stated_by in clause.walk():
         for reference in links.get(stated_by.key, []):
@@ -33,6 +34,13 @@ def render(clause: Clause, links: dict[str, list[references.Reference]]) -> str:
             entries.append(entry)
     if entries:
         front["cross_references"] = entries
+=======
+    found = links.get(clause.key, [])
+    if found:
+        front["cross_references"] = [
+            {"key": reference.target_key, "text": reference.raw_text} for reference in found
+        ]
+>>>>>>> main
 
     body = [clause.body_text] if clause.body_text else []
     for child in clause.children:
@@ -77,10 +85,14 @@ def link_clauses(
                 references.extract(found.body_text, document_slug, tradition), known
             )
             if resolution.resolved:
+<<<<<<< HEAD
                 # Keyed by the clause whose text states the reference, not by the
                 # file it happens to live in: a point that cites Article 6(1) is
                 # what refers to it, and what a reader of that point needs.
                 links.setdefault(found.key, []).extend(resolution.resolved)
+=======
+                links.setdefault(clause.key, []).extend(resolution.resolved)
+>>>>>>> main
             dangling.extend((found.key, reference) for reference in resolution.unresolved)
 
     for key, stored in links.items():

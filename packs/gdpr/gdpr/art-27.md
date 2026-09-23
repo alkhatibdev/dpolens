@@ -6,10 +6,15 @@ title: Representatives of controllers or processors not established in the Union
 cross_references:
 - key: gdpr:art-3:para-2
   text: Article 3(2)
+<<<<<<< HEAD
   from: gdpr:art-27:para-1
 - key: gdpr:art-9:para-1
   text: Article 9(1)
   from: gdpr:art-27:para-2:pt-a
+=======
+- key: gdpr:art-9:para-1
+  text: Article 9(1)
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

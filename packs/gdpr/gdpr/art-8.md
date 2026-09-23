@@ -6,10 +6,15 @@ title: Conditions applicable to child's consent in relation to information socie
 cross_references:
 - key: gdpr:art-6:para-1
   text: Article 6(1)
+<<<<<<< HEAD
   from: gdpr:art-8:para-1
 - key: gdpr:art-6:para-1:pt-a
   text: point (a) of Article 6(1)
   from: gdpr:art-8:para-1
+=======
+- key: gdpr:art-6:para-1:pt-a
+  text: point (a) of Article 6(1)
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

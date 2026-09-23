@@ -4,6 +4,7 @@ lang: en
 label: Article 40
 title: Codes of conduct
 cross_references:
+<<<<<<< HEAD
 - key: gdpr:art-46:para-2
   text: Article 46(2)
   from: gdpr:art-40:para-3
@@ -16,6 +17,16 @@ cross_references:
 - key: gdpr:art-93:para-2
   text: Article 93(2)
   from: gdpr:art-40:para-9
+=======
+- key: gdpr:art-41:para-1
+  text: Article 41(1)
+- key: gdpr:art-46:para-2
+  text: Article 46(2)
+- key: gdpr:art-46:para-2:pt-e
+  text: point (e) of Article 46(2)
+- key: gdpr:art-93:para-2
+  text: Article 93(2)
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

@@ -6,7 +6,10 @@ title: Right to compensation and liability
 cross_references:
 - key: gdpr:art-79:para-2
   text: Article 79(2)
+<<<<<<< HEAD
   from: gdpr:art-82:para-6
+=======
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

@@ -18,6 +18,7 @@ import yaml
 SEGMENT_TYPES = {
     "art": "article",
     "para": "paragraph",
+    "sub": "subparagraph",
     "pt": "point",
     "sec": "section",
     "ch": "chapter",
@@ -67,6 +68,9 @@ class PackDocument:
     title: str
     normative: bool
     expected_clauses: int
+    source_url: str | None = None
+    source_sha256: str | None = None
+    """Where this document's text came from, so a rebuild can prove it used the same file."""
 
 
 @dataclass(frozen=True)
@@ -157,6 +161,8 @@ def _read_document_entry(path: Path, entry: dict[str, Any]) -> PackDocument:
         title=str(entry["title"]),
         normative=bool(entry.get("normative", True)),
         expected_clauses=int(entry["expected_clauses"]),
+        source_url=str(entry["source_url"]) if entry.get("source_url") else None,
+        source_sha256=str(entry["source_sha256"]) if entry.get("source_sha256") else None,
     )
 
 
@@ -191,7 +197,7 @@ def read_clause_file(path: Path, document_normative: bool = True) -> Clause:
     clause = Clause(
         key=key,
         clause_type=clause_type_for(key.split(":")[-1]),
-        label=None,
+        label=str(meta["label"]) if meta.get("label") else None,
         heading=str(meta["title"]) if meta.get("title") else None,
         body_text=root_text,
         lang=str(meta["lang"]),
@@ -315,7 +321,7 @@ def _build_tree(
             clause = Clause(
                 key=key,
                 clause_type=clause_type_for(section.segment),
-                label=section.label,
+                label=section.label or None,
                 heading=None,
                 body_text="\n".join(section.lines).strip(),
                 lang=lang,

@@ -4,6 +4,7 @@ lang: en
 label: Article 13
 title: Information to be provided where personal data are collected from the data subject
 cross_references:
+<<<<<<< HEAD
 - key: gdpr:art-6:para-1
   text: Article 6(1)
   from: gdpr:art-13:para-1:pt-d
@@ -28,6 +29,22 @@ cross_references:
 - key: gdpr:art-22:para-1
   text: Article 22(1)
   from: gdpr:art-13:para-2:pt-f
+=======
+- key: gdpr:art-22:para-1
+  text: Article 22(1)
+- key: gdpr:art-49:para-1
+  text: Article 49(1)
+- key: gdpr:art-6:para-1
+  text: Article 6(1)
+- key: gdpr:art-6:para-1:pt-a
+  text: point (a) of Article 6(1)
+- key: gdpr:art-6:para-1:pt-f
+  text: point (f) of Article 6(1)
+- key: gdpr:art-9:para-2
+  text: Article 9(2)
+- key: gdpr:art-9:para-2:pt-a
+  text: point (a) of Article 9(2)
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

@@ -84,6 +84,7 @@ def test_cross_references_point_inside_the_law(loaded: Session) -> None:
     assert set(targets) <= known, "every stored link resolves to a clause in this pack"
 
 
+<<<<<<< HEAD
 def test_a_link_is_stored_on_the_clause_whose_text_states_it(loaded: Session) -> None:
     """Article 17 itself cites nothing; its point (b) is what cites Article 6(1)."""
     on_the_point = loaded.scalars(
@@ -101,6 +102,8 @@ def test_a_link_is_stored_on_the_clause_whose_text_states_it(loaded: Session) ->
     assert list(on_the_article) == []
 
 
+=======
+>>>>>>> main
 def test_both_documents_are_one_pack_version(loaded: Session) -> None:
     slugs = loaded.scalars(select(Document.slug).order_by(Document.slug)).all()
 

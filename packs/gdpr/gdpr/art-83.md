@@ -4,6 +4,7 @@ lang: en
 label: Article 83
 title: General conditions for imposing administrative fines
 cross_references:
+<<<<<<< HEAD
 - key: gdpr:art-58:para-2
   text: Article 58(2)
   from: gdpr:art-83:para-2
@@ -25,6 +26,14 @@ cross_references:
 - key: gdpr:art-58:para-2
   text: Article 58(2)
   from: gdpr:art-83:para-7
+=======
+- key: gdpr:art-41:para-4
+  text: Article 41(4)
+- key: gdpr:art-58:para-1
+  text: Article 58(1)
+- key: gdpr:art-58:para-2
+  text: Article 58(2)
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

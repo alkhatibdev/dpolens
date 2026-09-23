@@ -6,7 +6,10 @@ title: Commission reports
 cross_references:
 - key: gdpr:art-45:para-3
   text: Article 45(3)
+<<<<<<< HEAD
   from: gdpr:art-97:para-2:pt-a
+=======
+>>>>>>> main
 ---
 
 ## 1. {#para-1}

@@ -6,7 +6,10 @@ title: Communication of a personal data breach to the data subject
 cross_references:
 - key: gdpr:art-33:para-3
   text: Article 33(3)
+<<<<<<< HEAD
   from: gdpr:art-34:para-2
+=======
+>>>>>>> main
 ---
 
 ## 1. {#para-1}
