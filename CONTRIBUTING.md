@@ -130,6 +130,10 @@ Where the official source is already structured (EUR-Lex publishes EU law as For
 for instance), convert it rather than re-typing it. Where it is a PDF, expect careful
 manual work. No LLM builds pack structure, in either case.
 
+[packs/BUILDING.md](packs/BUILDING.md) walks through the whole process: finding the
+official text, fetching it, running the converter, what the converter does with
+paragraphs, footnotes and references, and what the automatic checks do and do not prove.
+
 ### Trust tiers
 
 Every pack carries a tier, shown in every citation it produces:
