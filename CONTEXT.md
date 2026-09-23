@@ -206,6 +206,9 @@ The record of searches, clause lookups and (from v0.2) answers, with the query t
 PII-redacted and a retention period after which entries are deleted.
 _Avoid_: Q&A log, audit log, usage log, history
 
+This glossary is kept by review, not by a CI check for now. A term used loosely in a pull
+request is a review comment, not a failed build.
+
 ## Flagged ambiguities
 
 - "Context" is not a word this project uses on its own. Say breadcrumb, subtree,
