@@ -6,10 +6,7 @@ title: Processor
 cross_references:
 - key: gdpr:art-93:para-2
   text: Article 93(2)
-<<<<<<< HEAD
   from: gdpr:art-28:para-7
-=======
->>>>>>> main
 ---
 
 ## 1. {#para-1}

@@ -6,15 +6,10 @@ title: Reports
 cross_references:
 - key: gdpr:art-70:para-1
   text: Article 70(1)
-<<<<<<< HEAD
   from: gdpr:art-71:para-2
 - key: gdpr:art-70:para-1:pt-l
   text: point (l) of Article 70(1)
   from: gdpr:art-71:para-2
-=======
-- key: gdpr:art-70:para-1:pt-l
-  text: point (l) of Article 70(1)
->>>>>>> main
 ---
 
 ## 1. {#para-1}

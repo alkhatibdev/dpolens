@@ -4,7 +4,6 @@ lang: en
 label: Article 17
 title: Right to erasure (‘right to be forgotten’)
 cross_references:
-<<<<<<< HEAD
 - key: gdpr:art-6:para-1
   text: Article 6(1)
   from: gdpr:art-17:para-1:pt-b
@@ -35,26 +34,6 @@ cross_references:
 - key: gdpr:art-89:para-1
   text: Article 89(1)
   from: gdpr:art-17:para-3:pt-d
-=======
-- key: gdpr:art-21:para-1
-  text: Article 21(1)
-- key: gdpr:art-21:para-2
-  text: Article 21(2)
-- key: gdpr:art-6:para-1
-  text: Article 6(1)
-- key: gdpr:art-6:para-1:pt-a
-  text: point (a) of Article 6(1)
-- key: gdpr:art-89:para-1
-  text: Article 89(1)
-- key: gdpr:art-8:para-1
-  text: Article 8(1)
-- key: gdpr:art-9:para-2
-  text: Article 9(2)
-- key: gdpr:art-9:para-2:pt-a
-  text: point (a) of Article 9(2)
-- key: gdpr:art-9:para-3
-  text: Article 9(3)
->>>>>>> main
 ---
 
 ## 1. {#para-1}

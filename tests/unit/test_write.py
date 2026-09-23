@@ -40,7 +40,6 @@ def test_files_are_named_after_the_last_key_segment(tmp_path: Path, articles: li
     ]
 
 
-<<<<<<< HEAD
 def test_a_link_belongs_to_the_clause_that_states_it(
     tmp_path: Path, articles: list[Clause]
 ) -> None:
@@ -55,8 +54,6 @@ def test_a_link_belongs_to_the_clause_that_states_it(
     assert [reference.key for reference in point.cross_references] == ["testlaw:art-5:para-2"]
 
 
-=======
->>>>>>> main
 def test_links_are_stored_only_when_the_target_exists(articles: list[Clause]) -> None:
     links, dangling = link_clauses(articles, "testlaw")
 

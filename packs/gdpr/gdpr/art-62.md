@@ -6,7 +6,6 @@ title: Joint operations of supervisory authorities
 cross_references:
 - key: gdpr:art-56:para-1
   text: Article 56(1)
-<<<<<<< HEAD
   from: gdpr:art-62:para-2
 - key: gdpr:art-66:para-1
   text: Article 66(1)
@@ -14,12 +13,6 @@ cross_references:
 - key: gdpr:art-66:para-2
   text: Article 66(2)
   from: gdpr:art-62:para-7
-=======
-- key: gdpr:art-66:para-1
-  text: Article 66(1)
-- key: gdpr:art-66:para-2
-  text: Article 66(2)
->>>>>>> main
 ---
 
 ## 1. {#para-1}

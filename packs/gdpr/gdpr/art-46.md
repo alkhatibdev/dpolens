@@ -6,7 +6,6 @@ title: Transfers subject to appropriate safeguards
 cross_references:
 - key: gdpr:art-45:para-3
   text: Article 45(3)
-<<<<<<< HEAD
   from: gdpr:art-46:para-1
 - key: gdpr:art-93:para-2
   text: Article 93(2)
@@ -14,10 +13,6 @@ cross_references:
 - key: gdpr:art-93:para-2
   text: Article 93(2)
   from: gdpr:art-46:para-2:pt-d
-=======
-- key: gdpr:art-93:para-2
-  text: Article 93(2)
->>>>>>> main
 ---
 
 ## 1. {#para-1}

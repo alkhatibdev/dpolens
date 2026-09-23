@@ -6,10 +6,7 @@ title: Processing of special categories of personal data
 cross_references:
 - key: gdpr:art-89:para-1
   text: Article 89(1)
-<<<<<<< HEAD
   from: gdpr:art-9:para-2:pt-j
-=======
->>>>>>> main
 ---
 
 ## 1. {#para-1}

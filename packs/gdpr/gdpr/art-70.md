@@ -4,7 +4,6 @@ lang: en
 label: Article 70
 title: Tasks of the Board
 cross_references:
-<<<<<<< HEAD
 - key: gdpr:art-17:para-2
   text: Article 17(2)
   from: gdpr:art-70:para-1:pt-d
@@ -53,40 +52,6 @@ cross_references:
 - key: gdpr:art-40:para-9
   text: Article 40(9)
   from: gdpr:art-70:para-1:pt-x
-=======
-- key: gdpr:art-12:para-7
-  text: Article 12(7)
-- key: gdpr:art-17:para-2
-  text: Article 17(2)
-- key: gdpr:art-22:para-2
-  text: Article 22(2)
-- key: gdpr:art-33:para-1
-  text: Article 33(1)
-- key: gdpr:art-34:para-1
-  text: Article 34(1)
-- key: gdpr:art-40:para-9
-  text: Article 40(9)
-- key: gdpr:art-42:para-5
-  text: Article 42(5)
-- key: gdpr:art-42:para-7
-  text: Article 42(7)
-- key: gdpr:art-42:para-8
-  text: Article 42(8)
-- key: gdpr:art-43:para-3
-  text: Article 43(3)
-- key: gdpr:art-43:para-8
-  text: Article 43(8)
-- key: gdpr:art-49:para-1
-  text: Article 49(1)
-- key: gdpr:art-54:para-2
-  text: Article 54(2)
-- key: gdpr:art-58:para-1
-  text: Article 58(1)
-- key: gdpr:art-64:para-1
-  text: Article 64(1)
-- key: gdpr:art-64:para-2
-  text: Article 64(2)
->>>>>>> main
 ---
 
 ## 1. {#para-1}

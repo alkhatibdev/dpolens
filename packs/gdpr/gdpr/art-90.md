@@ -6,10 +6,7 @@ title: Obligations of secrecy
 cross_references:
 - key: gdpr:art-58:para-1
   text: Article 58(1)
-<<<<<<< HEAD
   from: gdpr:art-90:para-1
-=======
->>>>>>> main
 ---
 
 ## 1. {#para-1}

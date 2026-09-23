@@ -4,19 +4,12 @@ lang: en
 label: Article 35
 title: Data protection impact assessment
 cross_references:
-<<<<<<< HEAD
 - key: gdpr:art-9:para-1
   text: Article 9(1)
   from: gdpr:art-35:para-3:pt-b
 - key: gdpr:art-6:para-1
   text: Article 6(1)
   from: gdpr:art-35:para-10
-=======
-- key: gdpr:art-6:para-1
-  text: Article 6(1)
-- key: gdpr:art-9:para-1
-  text: Article 9(1)
->>>>>>> main
 ---
 
 ## 1. {#para-1}
