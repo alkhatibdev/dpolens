@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: dco-sign-off
+        name: commit message carries a DCO sign-off
+        entry: sh -c 'grep -q "^Signed-off-by: " "$1" || { echo "Commit with -s: contributions are certified by the Developer Certificate of Origin."; exit 1; }' --
+        language: system
+        stages: [commit-msg]
