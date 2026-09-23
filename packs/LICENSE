@@ -1,0 +1,39 @@
+Licence for packs/
+==================
+
+This directory holds law packs. Two different things live in every pack, and
+they carry different licences.
+
+1. The law text itself
+----------------------
+
+The text of a law, and any official translation of it, keeps the licence of the
+official source it was taken from. That licence is declared in each pack's
+pack.yaml, together with the source URL, the authoritative language and whether
+a translation is official or unofficial.
+
+Many jurisdictions exclude the text of laws from copyright altogether. Where
+that is the case, the pack records the provision that says so. Nothing in this
+file grants, restricts or alters any right in the law text: that is a matter
+between you and the source.
+
+Only the official source is authentic. A pack is a convenience for searching
+and citing, not a substitute for the text published by the state.
+
+2. The structural work around it
+--------------------------------
+
+Everything the project adds around the law text is licensed under the Creative
+Commons Attribution 4.0 International Licence (CC BY 4.0):
+
+  - clause keys and the clause tree
+  - breadcrumbs, cross-references and metadata
+  - eval questions and starter questions
+  - pack.yaml and any other file the project authors
+
+Full licence text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Attribution: "DPOLens law packs (https://github.com/alkhatibdev/dpolens),
+CC BY 4.0", with a note of any changes you made.
+
+Code elsewhere in this repository is licensed under Apache-2.0. See ../LICENSE.

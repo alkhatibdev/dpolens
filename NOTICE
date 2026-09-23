@@ -1,0 +1,10 @@
+DPOLens
+Copyright 2026 DPOLens contributors
+
+This product includes software developed as part of the DPOLens project
+(https://github.com/alkhatibdev/dpolens), licensed under the Apache License,
+Version 2.0.
+
+The contents of packs/ are covered by packs/LICENSE, not by this licence. Law
+text in a pack keeps the licence of the official source it came from, declared
+in that pack's pack.yaml.
