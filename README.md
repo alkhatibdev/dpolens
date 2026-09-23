@@ -1,7 +1,7 @@
 # DPOLens
 
-**Grounds your AI coding assistant in your company's policies and the law, with citations
-it can't make up.**
+**Grounds your AI coding assistant in your organisation's policies and the law, with
+citations it can't make up.**
 
 ---
 
@@ -20,7 +20,7 @@ it can't make up.**
 
 A developer writes code that stores a user's phone number, or logs an email address, or
 decides how long to keep a deleted account. Their AI assistant is happy to advise. It has
-never read the company's data retention policy, and what it knows about the law is a
+never read your organisation's data retention policy, and what it knows about the law is a
 compressed memory of text it saw during training: good enough to sound right, not good
 enough to cite.
 
@@ -40,8 +40,8 @@ they were parsed, publish immutable versions, choose which laws apply, and read 
 
 Two reasons this beats asking the model directly:
 
-1. **It knows your company's own policies**: the one thing a general model cannot know,
-   however good it gets.
+1. **It knows your organisation's own policies**: the one thing a general model cannot
+   know, however good it gets.
 2. **Its citations are real**: verbatim text from a versioned source, labelled with a
    trust tier, not a model's memory of an article number.
 
@@ -49,12 +49,12 @@ Two reasons this beats asking the model directly:
 
 - `docker compose up` with **no API keys and no LLM anywhere**. Search runs on a small
   multilingual embedding model on the CPU, inside the container
-- **GDPR and UAE PDPL** loaded on first start, plus a sample company policy
+- **GDPR and UAE PDPL** loaded on first start, plus a sample organisation policy
 - **MCP server**: `search_policies`, `get_clause`, `list_documents`, `get_document`,
   with one-command setup for Claude Code and Cursor
 - **Dashboard**: upload, review and publish DOCX and Markdown policies, with version
   history and diffs
-- **Two logs**: a tamper-evident governance log, and a PII-redacted Q&A log that shows
+- **Two logs**: a tamper-evident governance log, and a PII-redacted query log that shows
   how the policies are being consulted without turning into developer surveillance
 - **Published eval scores**, in CI, measuring whether search actually finds the right
   clause, including Arabic and cross-language questions

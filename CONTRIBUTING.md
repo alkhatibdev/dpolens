@@ -1,6 +1,6 @@
 # Contributing to DPOLens
 
-DPOLens grounds AI coding assistants in a company's own policies and the privacy laws
+DPOLens grounds AI coding assistants in an organisation's own policies and the privacy laws
 that apply to it, with citations that can be verified against a versioned source.
 
 > **Project status: pre-release.** v0.1 has not shipped. The codebase is being built in
@@ -84,8 +84,16 @@ The answer may be yes, but it should be a decision rather than a drift.
 
 ## Law packs
 
-A pack is the text of one statutory privacy law, structured into clauses with stable
-keys, so that a citation can point at exactly `gdpr:art-17:para-1:pt-b` and be checked.
+A pack is one statutory privacy law plus its official companion texts (recitals,
+implementing regulations), structured into clauses with stable keys, so that a citation
+can point at exactly `gdpr:art-17:para-1:pt-b` and be checked. Each of those texts is a
+separate document inside the pack.
+
+A pack is named after its law rather than its place, because one jurisdiction can have
+several: `packs/gdpr/`, `packs/uae-pdpl/`, `packs/difc-dpl/`. Where the same abbreviation
+is used in two countries, the slug carries the country (`sg-pdpa`, `th-pdpa`). The slug
+becomes the prefix of every clause key in the pack, so it is permanent: renaming it
+invalidates every citation ever made from that pack.
 
 ### What we accept
 
@@ -132,7 +140,7 @@ Every pack carries a tier, shown in every citation it produces:
   against the official source.
 
 A pack is promoted when someone qualified adopts it. Maintainers are recorded in
-`CODEOWNERS` per jurisdiction.
+`CODEOWNERS` per pack.
 
 ### A pack pull request needs
 
