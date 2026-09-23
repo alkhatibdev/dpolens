@@ -8,7 +8,7 @@ the reader is usually a contributor building a pack for their own jurisdiction.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -196,11 +196,12 @@ def read_clause_file(path: Path, document_normative: bool = True) -> Clause:
         body_text=root_text,
         lang=str(meta["lang"]),
         normative=normative,
-        cross_references=_read_cross_references(path, meta.get("cross_references") or []),
         children=children,
     )
     _reject_repeated_keys(path, clause)
-    return clause
+    return _attach_cross_references(
+        path, clause, _read_cross_references(path, meta.get("cross_references") or [])
+    )
 
 
 def _reject_repeated_keys(path: Path, clause: Clause) -> None:
@@ -214,15 +215,46 @@ def _reject_repeated_keys(path: Path, clause: Clause) -> None:
         seen.add(found.key)
 
 
-def _read_cross_references(path: Path, entries: list[Any]) -> tuple[CrossReference, ...]:
-    references = []
+def _read_cross_references(
+    path: Path, entries: list[Any]
+) -> dict[str | None, list[CrossReference]]:
+    """Group the file's links by the clause that states each one.
+
+    An entry without a `from` is stated by the file's own clause.
+    """
+    grouped: dict[str | None, list[CrossReference]] = {}
     for entry in entries:
         if not isinstance(entry, dict) or "key" not in entry or "text" not in entry:
             raise PackFormatError(
                 f"{path}: each cross reference needs a 'key' and the 'text' as written"
             )
-        references.append(CrossReference(key=str(entry["key"]), text=str(entry["text"])))
-    return tuple(references)
+        stated_by = str(entry["from"]) if entry.get("from") else None
+        reference = CrossReference(key=str(entry["key"]), text=str(entry["text"]))
+        grouped.setdefault(stated_by, []).append(reference)
+    return grouped
+
+
+def _attach_cross_references(
+    path: Path, clause: Clause, grouped: dict[str | None, list[CrossReference]]
+) -> Clause:
+    """Give every link to the clause that states it."""
+    keys = {found.key for found in clause.walk()}
+    for stated_by in grouped:
+        if stated_by is not None and stated_by not in keys:
+            raise PackFormatError(
+                f"{path}: a cross reference says it comes from '{stated_by}', which is "
+                "not a clause in this file"
+            )
+
+    def rebuild(current: Clause, is_root: bool) -> Clause:
+        found = grouped.get(None, []) if is_root else grouped.get(current.key, [])
+        return replace(
+            current,
+            cross_references=tuple(found),
+            children=tuple(rebuild(child, is_root=False) for child in current.children),
+        )
+
+    return rebuild(clause, is_root=True)
 
 
 @dataclass

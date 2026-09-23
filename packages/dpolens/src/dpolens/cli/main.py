@@ -5,12 +5,17 @@ from __future__ import annotations
 import typer
 
 from dpolens import __version__
+from dpolens.cli import clause, pack
 
 app = typer.Typer(
     name="dpolens",
     help="Grounds AI coding assistants in your organisation's policies and the law.",
     no_args_is_help=True,
 )
+
+
+app.add_typer(pack.app)
+app.add_typer(clause.app)
 
 
 @app.callback()

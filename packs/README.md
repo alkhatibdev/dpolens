@@ -1,5 +1,8 @@
 # The pack format
 
+This is the reference for what a pack file contains. To build one, start with
+[BUILDING.md](BUILDING.md).
+
 A pack is one law plus its official companion texts, structured so that a citation can
 point at exactly one clause and be checked against the official source.
 
@@ -93,10 +96,11 @@ Front matter carries the metadata:
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `key` | yes | Canonical key of the clause this file holds |
+| `label` | no | The numbering the text itself prints, such as `Article 17` |
 | `title` | no | The clause's own heading, where the law gives one |
 | `lang` | yes | BCP 47 code of the text in this file |
 | `normative` | no | `false` for text that explains without obliging, such as a recital. Defaults to the document's setting |
-| `cross_references` | no | Pointers this clause makes to other clauses, each with the target key and the wording used |
+| `cross_references` | no | Pointers this clause makes to other clauses, each with the target key and the wording used. Written by `pack build` from the references the text states, and only where the target exists |
 
 The body carries the text. Each heading opens a child clause:
 
@@ -120,6 +124,7 @@ paragraph 1, point (b). The recognised prefixes are:
 | --- | --- |
 | `art-` | article |
 | `para-` | paragraph |
+| `sub-` | subparagraph, for the second and later subparagraphs of a paragraph |
 | `pt-` | point |
 | `sec-` | section |
 | `ch-` | chapter |

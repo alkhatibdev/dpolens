@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONS.ACT>
+  <ARTICLE IDENTIFIER="005"><TI.ART>Article 5</TI.ART><STI.ART>Right to erasure (<QUOT.START CODE="2018"/>right to be forgotten<QUOT.END CODE="2019"/>)</STI.ART>
+    <PARAG IDENTIFIER="005.001"><NO.PARAG>1.</NO.PARAG>
+      <ALINEA><P>The controller shall erase personal data where one of the following applies:</P>
+        <LIST TYPE="alpha">
+          <ITEM><NP><NO.P>(a)</NO.P><TXT>the data are no longer necessary;</TXT></NP></ITEM>
+          <ITEM><NP><NO.P>(b)</NO.P><TXT>the data subject withdraws consent pursuant to Article 5(2), and there is no other ground;</TXT></NP></ITEM>
+        </LIST>
+      </ALINEA>
+      <ALINEA>Point (a) of the first subparagraph shall not apply to public authorities.</ALINEA>
+    </PARAG>
+    <PARAG IDENTIFIER="005.002"><NO.PARAG>2.</NO.PARAG>
+      <ALINEA>Member States shall provide for appointment by:
+        <LIST TYPE="DASH">
+          <ITEM><P>their parliament;</P></ITEM>
+          <ITEM><P>their government.</P></ITEM>
+        </LIST>
+      </ALINEA>
+    </PARAG>
+  </ARTICLE>
+  <ARTICLE IDENTIFIER="006"><TI.ART>Article 6</TI.ART><STI.ART>Definitions</STI.ART>
+    <ALINEA><P>For the purposes of this Regulation:</P>
+      <LIST TYPE="ARAB">
+        <ITEM><NP><NO.P>(1)</NO.P><TXT><QUOT.START CODE="2018"/>consent<QUOT.END CODE="2019"/> means any freely given indication of wishes<NOTE NOTE.ID="E1" TYPE="FOOTNOTE"><P>OJ L 119, 4.5.2016, p. 1.</P></NOTE>;</TXT></NP></ITEM>
+        <ITEM><NP><NO.P>(2)</NO.P><TXT>establishment means, as set out in Article 25(6) of Directive 95/46/EC, a stable arrangement;</TXT>
+          <P><LIST TYPE="alpha"><ITEM><NP><NO.P>(a)</NO.P><TXT>where a controller has establishments in several States;</TXT></NP></ITEM></LIST></P>
+        </NP></ITEM>
+      </LIST>
+    </ALINEA>
+  </ARTICLE>
+</CONS.ACT>

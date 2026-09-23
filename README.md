@@ -71,9 +71,17 @@ running on a private network.
 
 ## What exists today
 
-Design and decisions. Code starts with the pack pipeline: converting GDPR from EUR-Lex's
-structured XML into a reviewable, versioned pack, then search and the eval harness on top
-of it.
+The pack pipeline runs. GDPR is converted from EUR-Lex's structured XML into a reviewable
+pack of 99 articles and 173 recitals, loaded into Postgres as immutable versions, and read
+back by canonical key:
+
+```bash
+dpolens pack load packs/gdpr
+dpolens clause show gdpr:art-17 --subtree
+```
+
+Search, the embedding model and the eval harness come next, then the HTTP API, the MCP
+server and the dashboard. There is still no server to run and no Docker image.
 
 ## Contributing
 
