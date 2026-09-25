@@ -13,6 +13,7 @@ from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
+    Computed,
     Date,
     DateTime,
     Enum,
@@ -139,6 +140,11 @@ class NodeText(Base):
     heading: Mapped[str | None] = mapped_column(Text, nullable=True)
     body_text: Mapped[str] = mapped_column(Text)
     """Verbatim. This is what citations quote and what verification checks against."""
+
+    search_text: Mapped[str] = mapped_column(
+        Text, Computed("coalesce(heading, '') || ' ' || body_text")
+    )
+    """Heading and text together, which is what the BM25 index ranks."""
 
     node: Mapped[DocumentNode] = relationship(back_populates="texts")
 
