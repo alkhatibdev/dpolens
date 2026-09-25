@@ -51,11 +51,16 @@ def search(
     expand: Expand = "none",
     fusion: Fusion = RRF,
     as_of: date | None = None,
+    normative_only: bool = False,
 ) -> list[SearchResult]:
     """The clauses that answer a question, best first."""
     lists = {
-        "keyword": keyword_search(session, query, lang=lang, limit=CANDIDATE_DEPTH),
-        "meaning": vector_search(session, embedder, query, limit=CANDIDATE_DEPTH),
+        "keyword": keyword_search(
+            session, query, lang=lang, limit=CANDIDATE_DEPTH, normative_only=normative_only
+        ),
+        "meaning": vector_search(
+            session, embedder, query, limit=CANDIDATE_DEPTH, normative_only=normative_only
+        ),
     }
     fused = fuse(lists, fusion)[: limit + TIE_MARGIN]
 

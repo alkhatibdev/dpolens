@@ -7,7 +7,7 @@ itself, such as append-only logs and immutable published versions.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -76,6 +76,17 @@ def session(engine: Engine) -> Iterator[Session]:
     # Published rows cannot be deleted, by design, so tests reset with TRUNCATE.
     with engine.begin() as connection:
         connection.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+
+
+@pytest.fixture(scope="session")
+def truncate_corpus(engine: Engine) -> Callable[[], None]:
+    """Empty every corpus table, for fixtures that manage their own lifetime."""
+
+    def empty() -> None:
+        with engine.begin() as connection:
+            connection.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+
+    return empty
 
 
 @pytest.fixture

@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from dpolens import __version__
-from dpolens.cli import clause, index, pack, search
+from dpolens.cli import clause, evals, index, pack, search
 from dpolens.engine.documents.read import ClauseNotFound
 from dpolens.engine.packs.format import PackFormatError
 from dpolens.engine.session import MissingExtension, NotMigrated
@@ -22,6 +22,7 @@ app = typer.Typer(
 app.add_typer(pack.app)
 app.add_typer(clause.app)
 app.add_typer(index.app)
+app.add_typer(evals.app)
 app.command(name="search")(search.run)
 
 

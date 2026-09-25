@@ -35,7 +35,11 @@ class Candidate:
 
 
 def keyword_search(
-    session: Session, query: str, lang: str = "en", limit: int = 100
+    session: Session,
+    query: str,
+    lang: str = "en",
+    limit: int = 100,
+    normative_only: bool = False,
 ) -> list[Candidate]:
     """The clauses whose text matches the query, best first."""
     index = INDEXES.get(lang)
@@ -60,6 +64,7 @@ def keyword_search(
             WHERE t.lang = :lang
               AND v.status = 'published'
               AND v.effective_date <= :as_of
+              AND (NOT :normative_only OR n.is_normative)
               -- A clause that shares no term with the query scores zero, and
               -- the operator returns it anyway. An empty result is the honest
               -- answer to a question the corpus does not address.
@@ -68,7 +73,14 @@ def keyword_search(
             LIMIT :limit
             """
         ),
-        {"query": query, "index": index, "lang": lang, "as_of": date.today(), "limit": limit},
+        {
+            "query": query,
+            "index": index,
+            "lang": lang,
+            "as_of": date.today(),
+            "limit": limit,
+            "normative_only": normative_only,
+        },
     ).all()
 
     return [

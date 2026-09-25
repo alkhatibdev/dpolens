@@ -21,7 +21,11 @@ class NoActiveModel(Exception):
 
 
 def vector_search(
-    session: Session, embedder: Embedder, query: str, limit: int = 100
+    session: Session,
+    embedder: Embedder,
+    query: str,
+    limit: int = 100,
+    normative_only: bool = False,
 ) -> list[Candidate]:
     """The clauses closest in meaning to the query, best first."""
     model_id = session.execute(
@@ -48,6 +52,7 @@ def vector_search(
             WHERE e.embedding_model_id = :model_id
               AND v.status = 'published'
               AND v.effective_date <= :as_of
+              AND (NOT :normative_only OR n.is_normative)
             ORDER BY e.embedding::vector({embedder.model.dimensions}) <=> :vector
             LIMIT :limit
             """
@@ -57,6 +62,7 @@ def vector_search(
             "model_id": model_id,
             "as_of": date.today(),
             "limit": limit,
+            "normative_only": normative_only,
         },
     ).all()
 
