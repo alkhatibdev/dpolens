@@ -22,7 +22,15 @@ REPO_ROOT = Path(__file__).parents[1]
 POSTGRES_IMAGE = "dpolens-postgres:test"
 FIXTURE_PACKS = Path(__file__).parent / "fixtures" / "packs"
 
-TABLES = ("node_references", "node_texts", "document_nodes", "document_versions", "documents")
+TABLES = (
+    "node_embeddings",
+    "embedding_models",
+    "node_references",
+    "node_texts",
+    "document_nodes",
+    "document_versions",
+    "documents",
+)
 
 
 @pytest.fixture(scope="session")

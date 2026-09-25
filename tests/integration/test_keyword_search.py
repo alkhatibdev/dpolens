@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.search import UnsupportedLanguage, keyword_search
 from dpolens.engine.search.keyword import Candidate
-from dpolens.engine.session import MissingExtension, check_extensions
+from dpolens.engine.session import MissingExtension, NotMigrated, check_extensions
 
 pytestmark = pytest.mark.integration
 
@@ -70,13 +70,26 @@ def test_the_extension_check_passes_on_the_dpolens_image(engine: Engine) -> None
     check_extensions(engine)
 
 
-def test_the_extension_check_names_what_is_missing() -> None:
+def test_a_server_without_the_extension_is_refused() -> None:
     """An instance that cannot rank properly should refuse to start, not degrade."""
     from unittest.mock import MagicMock
 
     engine = MagicMock()
     connection = engine.connect.return_value.__enter__.return_value
-    connection.scalars.return_value.all.return_value = ["vector"]
+    # Created, then available: the server offers only pgvector.
+    connection.scalars.return_value.all.side_effect = [["vector"], ["vector"]]
 
-    with pytest.raises(MissingExtension, match="pg_textsearch"):
+    with pytest.raises(MissingExtension, match="does not offer pg_textsearch"):
+        check_extensions(engine)
+
+
+def test_a_database_that_has_not_been_migrated_says_so() -> None:
+    """The right fix here is the migrations, not a different image."""
+    from unittest.mock import MagicMock
+
+    engine = MagicMock()
+    connection = engine.connect.return_value.__enter__.return_value
+    connection.scalars.return_value.all.side_effect = [[], ["vector", "pg_textsearch"]]
+
+    with pytest.raises(NotMigrated, match="alembic upgrade head"):
         check_extensions(engine)

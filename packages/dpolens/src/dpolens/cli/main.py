@@ -5,7 +5,12 @@ from __future__ import annotations
 import typer
 
 from dpolens import __version__
-from dpolens.cli import clause, pack
+from dpolens.cli import clause, index, pack
+from dpolens.engine.documents.read import ClauseNotFound
+from dpolens.engine.packs.format import PackFormatError
+from dpolens.engine.session import MissingExtension, NotMigrated
+
+EXPECTED = (MissingExtension, NotMigrated, ClauseNotFound, PackFormatError)
 
 app = typer.Typer(
     name="dpolens",
@@ -16,6 +21,7 @@ app = typer.Typer(
 
 app.add_typer(pack.app)
 app.add_typer(clause.app)
+app.add_typer(index.app)
 
 
 @app.callback()
@@ -30,4 +36,8 @@ def version() -> None:
 
 
 def main() -> None:
-    app()
+    try:
+        app()
+    except EXPECTED as problem:
+        typer.secho(str(problem), fg=typer.colors.RED, err=True)
+        raise SystemExit(1) from problem

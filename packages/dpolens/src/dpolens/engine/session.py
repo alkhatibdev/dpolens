@@ -20,23 +20,38 @@ class MissingExtension(Exception):
     """The database cannot support retrieval as DPOLens performs it."""
 
 
+class NotMigrated(Exception):
+    """The extensions are available, but this database has not been set up yet."""
+
+
 def check_extensions(engine: Engine) -> None:
     """Refuse to run against a database that cannot rank properly.
 
-    Both halves of retrieval are database extensions. Running without one would
-    mean quietly returning worse results, which is harder to notice than a
-    refusal and worse for the person relying on them.
+    Both halves of retrieval are database extensions. Running without one means
+    quietly returning worse results, which is harder to notice than a refusal.
+
+    An extension that the server offers but this database has not created is a
+    different problem with a different fix, so the two are reported separately:
+    one needs a better image, the other needs the migrations.
     """
     with engine.connect() as connection:
-        installed = set(connection.scalars(text("SELECT extname FROM pg_extension")).all())
+        created = set(connection.scalars(text("SELECT extname FROM pg_extension")).all())
+        available = set(connection.scalars(text("SELECT name FROM pg_available_extensions")).all())
 
-    missing = {name: why for name, why in REQUIRED_EXTENSIONS.items() if name not in installed}
-    if missing:
-        listed = ", ".join(f"{name} ({why})" for name, why in sorted(missing.items()))
+    absent = {name: why for name, why in REQUIRED_EXTENSIONS.items() if name not in available}
+    if absent:
+        listed = ", ".join(f"{name} ({why})" for name, why in sorted(absent.items()))
         raise MissingExtension(
-            f"this database is missing {listed}. Use the DPOLens Postgres image, "
-            "which ships both, or install them into your own instance. Note that "
+            f"this PostgreSQL server does not offer {listed}. Use the DPOLens Postgres "
+            "image, which ships both, or install them into your own server. Note that "
             "pg_textsearch also has to be in shared_preload_libraries."
+        )
+
+    uncreated = sorted(name for name in REQUIRED_EXTENSIONS if name not in created)
+    if uncreated:
+        raise NotMigrated(
+            f"this database has not created {', '.join(uncreated)} yet. "
+            "Run `alembic upgrade head` to set it up."
         )
 
 
