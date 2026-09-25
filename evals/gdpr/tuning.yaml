@@ -1,0 +1,104 @@
+# GDPR tuning set.
+#
+# These questions are used while improving retrieval. The published score comes
+# from held_out.yaml, which this set never touches.
+#
+# Every entry names the guidance that ties the question to the clause. The
+# expected keys come from that guidance, not from what the search happens to
+# return today. See ../README.md before adding one.
+
+questions:
+  - id: erasure-request
+    question: A user asked us to delete their account and all their data. Do we have to?
+    lang: en
+    expected_keys: [gdpr:art-17:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-erasure/
+
+  - id: retention-period
+    question: How long are we allowed to keep personal data we collected?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
+    note: The storage limitation principle. Phrased the way a developer asks it.
+
+  - id: lawful-basis
+    question: What makes processing lawful in the first place?
+    lang: en
+    expected_keys: [gdpr:art-6:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/a-guide-to-lawful-basis/
+
+  - id: breach-deadline
+    question: We had a data breach. How quickly must we tell the regulator?
+    lang: en
+    expected_keys: [gdpr:art-33:para-1]
+    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+
+  - id: dpo-required
+    question: Do we need a DPO?
+    lang: en
+    expected_keys: [gdpr:art-37:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
+    note: >-
+      The corpus never writes "DPO", only "data protection officer". Kept
+      deliberately as an abbreviation the text does not contain.
+
+  - id: subject-access
+    question: Someone wants a copy of everything we hold about them.
+    lang: en
+    expected_keys: [gdpr:art-15:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
+
+  - id: security-measures
+    question: What security do we actually have to implement?
+    lang: en
+    expected_keys: [gdpr:art-32:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/
+
+  - id: export-data
+    question: Do we have to let users export their data to another service?
+    lang: en
+    expected_keys: [gdpr:art-20:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-data-portability/
+
+  - id: childrens-consent
+    question: Can a 13 year old sign up without a parent?
+    lang: en
+    expected_keys: [gdpr:art-8:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/childrens-code-guidance-and-resources/
+
+  - id: when-dpia
+    question: When do we have to run a data protection impact assessment?
+    lang: en
+    expected_keys: [gdpr:art-35:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/
+
+  - id: records-of-processing
+    question: Do we have to keep a record of what processing we do?
+    lang: en
+    expected_keys: [gdpr:art-30:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
+
+  - id: transfer-abroad
+    question: Can we host user data on servers outside Europe?
+    lang: en
+    expected_keys: [gdpr:art-46:para-1, gdpr:art-44]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/
+    note: Either the general principle or the safeguards clause answers this.
+
+  - id: privacy-notice
+    question: What do we have to tell people when we collect their data?
+    lang: en
+    expected_keys: [gdpr:art-13:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
+
+  - id: automated-decisions
+    question: Can we let an algorithm decide whether to approve someone?
+    lang: en
+    expected_keys: [gdpr:art-22:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
+
+  - id: proving-consent
+    question: Do we need to keep proof that a user agreed?
+    lang: en
+    expected_keys: [gdpr:art-7:para-1]
+    source: https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-052020-consent-under-regulation-2016679_en
