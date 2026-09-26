@@ -78,3 +78,20 @@ uv run dpolens evals run --pack gdpr --set held_out --baselines --write
 retriever (`keyword`, `meaning`), and a `+normative` suffix on any of them to exclude text
 that explains without obliging. `--baselines` adds the two single retrievers to the run, so
 a fusion rule can never be adopted while being worse than half the system.
+
+To score every model against every configuration, which is how the default model and the
+fusion rule are chosen:
+
+```bash
+uv run python scripts/run_matrix.py --set tuning
+uv run python scripts/run_matrix.py --set tuning --models e5-small,granite-97m-int8
+```
+
+It re-indexes the corpus once per model, so a full run takes a while and a first run also
+downloads the models. Rows are printed as they are measured.
+
+To check where each label comes from:
+
+```bash
+uv run python scripts/check_eval_sources.py
+```
