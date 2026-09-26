@@ -38,34 +38,42 @@ def main() -> int:
     for pack in PACKS:
         baseline = published(pack)
         if baseline is None:
-            print(f"{pack}: no published {SET} score yet, nothing to compare against")
+            # A missing baseline used to pass, which made this gate report
+            # success on every change without measuring one of them.
+            print(
+                f"{pack}: no published {SET} score in {RESULTS / f'{pack}.json'}. "
+                f"Produce one with: dpolens evals run --pack {pack} --set {SET} --write"
+            )
+            failures.append(pack)
             continue
 
-        measured = json.loads(
-            subprocess.run(
-                [
-                    "uv",
-                    "run",
-                    "dpolens",
-                    "evals",
-                    "run",
-                    "--pack",
-                    pack,
-                    "--set",
-                    SET,
-                    "--config",
-                    baseline["configuration"],
-                    "--model",
-                    baseline["model"],
-                    "--json",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-                cwd=REPO,
-            ).stdout
+        completed = subprocess.run(
+            [
+                "uv",
+                "run",
+                "dpolens",
+                "evals",
+                "run",
+                "--pack",
+                pack,
+                "--set",
+                SET,
+                "--config",
+                baseline["configuration"],
+                "--model",
+                baseline["model"],
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=REPO,
         )
+        if completed.returncode != 0:
+            print(f"{pack}: the eval run itself failed\n{completed.stderr.strip()}")
+            failures.append(pack)
+            continue
 
+        measured = json.loads(completed.stdout)
         verdict = compare(pack, measured["recall_at_5"], baseline)
         print(verdict)
         if verdict.is_regression:
