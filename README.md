@@ -1,39 +1,45 @@
 # DPOLens
 
-**Grounds your AI coding assistant in your organisation's policies and the law, with
-citations it can't make up.**
+**Give your AI coding assistant access to your organisation's privacy policies and the law,
+with exact, versioned citations. A self-hosted MCP server.**
 
 ---
 
 > ### Status: pre-release
 >
-> Nothing has shipped. There is no installable version, no Docker image and no packs yet.
-> This repository is being built in the open, one slice at a time, and its history is the
-> point as much as its contents.
+> There is no installable version and no Docker image yet. What works today is the command
+> line: the GDPR pack loads, and search is measured.
 >
-> Watch the repository if you want to know when v0.1 lands. Interfaces (the HTTP API,
-> the pack format, the database schema) change without notice until 1.0.
+> Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
+> the database schema) change without notice until 1.0.
 
 ---
 
-## The problem
+## Why this exists
 
-A developer writes code that stores a user's phone number, or logs an email address, or
-decides how long to keep a deleted account. Their AI assistant is happy to advise. It has
-never read your organisation's data retention policy, and what it knows about the law is a
-compressed memory of text it saw during training: good enough to sound right, not good
-enough to cite.
+Most of times you write code that touches someone's personal data. You log an email address to debug a problem. You add a phone number column. You decide that deleted accounts stay in the database for ninety days, because ninety sounded about right.
+
+Every one of those is a decision with rules attached, and the organisation is on the hook
+for getting them wrong. Most developers, have never read those rules. We are
+not lawyers, nobody hands us the retention policy on the first day, and the law is long and
+written for people who are.
+
+Now the AI assistant writes a lot of that code. It is fast, it sounds sure of itself, and it
+has never seen your organisation's policies. What it knows about the law is a blurry memory
+from training: close enough to sound right, not close enough to act on.
+
+So more code that touches personal data gets written, faster, by something that knows the
+rules less well than you do.
 
 ## What DPOLens does
 
-It gives the assistant a source to look things up in, and returns exact clauses rather
-than recollections.
+It gives the AI assistant somewhere to look the rules up, and hands back the exact clause
+rather than a recollection of one.
 
-**For developers.** DPOLens runs an MCP server. Your assistant calls it while you work, and
-gets back the verbatim text of the clauses that apply, each with a canonical key, a
-breadcrumb, the document version, the effective date and its language. Every quote comes
-from a stored, versioned source, so a claim about Article 17 can be checked in one click,
-and a claim about *your* retention policy can be checked at all.
+**For developers.** DPOLens runs an MCP server, so your AI assistant can search it while you
+work. What comes back is the clause itself, word for word, and where it came from: which
+document, which version, and the date that version took effect. A claim about Article 17 can
+be checked in one click, and a claim about *your* retention policy can be checked at all.
 
 **For the DPO, legal and policy owners.** A web dashboard to upload policies, review how
 they were parsed, publish immutable versions, choose which laws apply, and read the logs.
@@ -65,9 +71,7 @@ launch pack.
 ## Client support
 
 DPOLens is self-hosted, so it works with assistants that connect from your own machine:
-**Claude Code, Cursor and VS Code**. Claude Desktop and claude.ai connect to MCP servers
-from Anthropic's cloud rather than from your device, so they cannot reach an instance
-running on a private network.
+**Claude Code, Cursor and VS Code**.
 
 ## Does it actually find the right clause
 
