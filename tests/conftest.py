@@ -7,7 +7,7 @@ itself, such as append-only logs and immutable published versions.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -16,16 +16,32 @@ from alembic.config import Config
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session
 from testcontainers.community.postgres import PostgresContainer
+from testcontainers.core.image import DockerImage
 
-POSTGRES_IMAGE = "pgvector/pgvector:pg17"
 REPO_ROOT = Path(__file__).parents[1]
+POSTGRES_IMAGE = "dpolens-postgres:test"
 FIXTURE_PACKS = Path(__file__).parent / "fixtures" / "packs"
 
-TABLES = ("node_references", "node_texts", "document_nodes", "document_versions", "documents")
+TABLES = (
+    "node_embeddings",
+    "embedding_models",
+    "node_references",
+    "node_texts",
+    "document_nodes",
+    "document_versions",
+    "documents",
+)
 
 
 @pytest.fixture(scope="session")
 def postgres() -> Iterator[PostgresContainer]:
+    """Postgres with pgvector and pg_textsearch, built from deploy/postgres.
+
+    Built rather than pulled, so a contributor needs no registry access and the
+    image always matches the Dockerfile in the branch they are on. Docker caches
+    the layers, so this costs a second after the first run.
+    """
+    DockerImage(path=REPO_ROOT / "deploy" / "postgres", tag=POSTGRES_IMAGE).build()
     with PostgresContainer(POSTGRES_IMAGE, driver="psycopg") as container:
         yield container
 
@@ -60,6 +76,17 @@ def session(engine: Engine) -> Iterator[Session]:
     # Published rows cannot be deleted, by design, so tests reset with TRUNCATE.
     with engine.begin() as connection:
         connection.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+
+
+@pytest.fixture(scope="session")
+def truncate_corpus(engine: Engine) -> Callable[[], None]:
+    """Empty every corpus table, for fixtures that manage their own lifetime."""
+
+    def empty() -> None:
+        with engine.begin() as connection:
+            connection.execute(text(f"TRUNCATE {', '.join(TABLES)} CASCADE"))
+
+    return empty
 
 
 @pytest.fixture

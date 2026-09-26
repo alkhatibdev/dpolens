@@ -55,6 +55,11 @@ warn_unused_ignores = true
 module = ["dpolens.engine.*", "dpolens.api.*"]
 strict = true
 
+# ONNX Runtime ships no type information.
+[[tool.mypy.overrides]]
+module = ["onnxruntime.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--strict-markers --cov=dpolens --cov=dpolens_mcp --cov-report=term-missing"

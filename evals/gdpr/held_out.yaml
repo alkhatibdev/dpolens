@@ -1,0 +1,222 @@
+# GDPR held-out set.
+#
+# This set produces the published score and is never used to tune retrieval.
+# Nothing here should be read while improving search: that is the whole point of
+# keeping it separate.
+#
+# Each label is either cited (the source page names the article) or justified
+# (the note records why that clause answers the question). Run
+# scripts/check_eval_sources.py to see the split.
+
+questions:
+  - id: fix-wrong-address
+    question: We have the wrong address for a customer and they want it corrected.
+    lang: en
+    expected_keys: [gdpr:art-16]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-rectification/
+
+  - id: stop-marketing
+    question: A user says stop emailing them marketing. Can they demand that?
+    lang: en
+    expected_keys: [gdpr:art-21:para-2]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-object/
+
+  - id: pause-processing
+    question: Someone disputes our data about them. Do we have to stop using it meanwhile?
+    lang: en
+    expected_keys: [gdpr:art-18:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-restrict-processing/
+
+  - id: health-data
+    question: Our app stores health information. Are there extra rules?
+    lang: en
+    expected_keys: [gdpr:art-9:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/
+
+  - id: log-retention
+    question: How long can we keep server logs containing IP addresses?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+
+  - id: consent-not-forced
+    question: Can we make accepting marketing a condition of signing up?
+    lang: en
+    expected_keys: [gdpr:art-7:para-4]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
+
+  - id: unsubscribe-easy
+    question: How easy does it have to be to withdraw consent?
+    lang: en
+    expected_keys: [gdpr:art-7:para-3]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
+
+  - id: teen-signup
+    question: What age can someone consent to an online service themselves?
+    lang: en
+    expected_keys: [gdpr:art-8:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/children-and-the-uk-gdpr/what-are-the-rules-about-an-iss-and-consent/
+
+  - id: dpia-large-scale
+    question: We are building large scale profiling. Is an assessment mandatory?
+    lang: en
+    expected_keys: [gdpr:art-35:para-3]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/
+
+  - id: dpo-duties
+    question: What is the data protection officer actually responsible for?
+    lang: en
+    expected_keys: [gdpr:art-39:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
+
+  - id: publish-dpo-contact
+    question: Do we have to publish who our data protection officer is?
+    lang: en
+    expected_keys: [gdpr:art-37:para-7]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
+
+  - id: breach-report-contents
+    question: What information goes in a breach report to the regulator?
+    lang: en
+    expected_keys: [gdpr:art-33:para-3]
+    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+
+  - id: breach-internal-record
+    question: Do we have to log breaches we decided not to report?
+    lang: en
+    expected_keys: [gdpr:art-33:para-5]
+    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+
+  - id: breach-tell-users
+    question: When do we have to tell the affected users about a breach?
+    lang: en
+    expected_keys: [gdpr:art-34:para-1]
+    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+    note: >-
+      The guide separates notifying the regulator from notifying individuals,
+      and the duty to tell individuals where the risk is high is Article 34(1).
+
+  - id: encrypt-at-rest
+    question: Do we have to encrypt personal data at rest?
+    lang: en
+    expected_keys: [gdpr:art-32:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/
+
+  - id: send-data-to-competitor
+    question: A user wants their data sent straight to another provider.
+    lang: en
+    expected_keys: [gdpr:art-20:para-2]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-data-portability/
+
+  - id: small-company-records
+    question: We are a ten person startup. Do the record keeping rules apply to us?
+    lang: en
+    expected_keys: [gdpr:art-30:para-5]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
+    note: >-
+      The exemption for organisations under 250 people, with its conditions, is
+      Article 30(5).
+
+  - id: access-deadline
+    question: How long do we have to answer a data request?
+    lang: en
+    expected_keys: [gdpr:art-12:para-3]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
+    note: The one month deadline for responding to a request is Article 12(3).
+
+  - id: charge-for-access
+    question: Can we charge someone for a copy of their data?
+    lang: en
+    expected_keys: [gdpr:art-12:para-5]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
+    note: >-
+      Requests are free unless manifestly unfounded or excessive, which is
+      Article 12(5).
+
+  # Deliberately a developer's phrasing rather than the law's.
+  - id: plain-language
+    question: Does our privacy policy have to be written in plain English?
+    lang: en
+    expected_keys: [gdpr:art-12:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
+    note: >-
+      The requirement for concise, transparent, intelligible and easily
+      accessible information in clear and plain language is Article 12(1).
+
+  - id: signup-form-notice
+    question: What do we have to tell someone on the signup form?
+    lang: en
+    expected_keys: [gdpr:art-13:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
+    note: >-
+      The information to give when data is collected from the person is
+      Article 13(1).
+
+  - id: bought-a-list
+    question: We got a contact list from a partner. Do we have to tell those people?
+    lang: en
+    expected_keys: [gdpr:art-14:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
+    note: >-
+      Data obtained from someone other than the person is Article 14, and the
+      information to provide is Article 14(1).
+
+  - id: human-review-of-automation
+    question: If our model rejects an application, can the user demand a human look?
+    lang: en
+    expected_keys: [gdpr:art-22:para-3]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
+    note: >-
+      The safeguards for solely automated decisions, including human
+      intervention, are Article 22(3).
+
+  - id: what-counts-as-personal-data
+    question: Is a hashed user id personal data?
+    lang: en
+    expected_keys: [gdpr:art-4:pt-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/personal-information-what-is-it/what-is-personal-data/
+    note: The definition of personal data is Article 4(1).
+
+  - id: pseudonymisation-meaning
+    question: What does pseudonymised actually mean here?
+    lang: en
+    expected_keys: [gdpr:art-4:pt-5]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/personal-information-what-is-it/what-is-personal-data/
+    note: The definition of pseudonymisation is Article 4(5).
+
+  - id: profiling-meaning
+    question: Does scoring users count as profiling?
+    lang: en
+    expected_keys: [gdpr:art-4:pt-4]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
+    note: The definition of profiling is Article 4(4).
+
+  - id: vendor-contract
+    question: What has to be in the contract with a vendor that processes our data?
+    lang: en
+    expected_keys: [gdpr:art-28:para-3]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors/controllers-and-processors/
+    note: The mandatory contract terms between controller and processor are Article 28(3).
+
+  - id: two-companies-sharing
+    question: Two of our companies decide together how to use the data. What are we?
+    lang: en
+    expected_keys: [gdpr:art-26:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors/controllers-and-processors/
+    note: Joint controllers and their arrangement are Article 26(1).
+
+  - id: us-hosting
+    question: Can we host the database with a US cloud provider?
+    lang: en
+    expected_keys: [gdpr:art-46:para-1, gdpr:art-45:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/
+    note: >-
+      Either an adequacy decision, Article 45(1), or appropriate safeguards,
+      Article 46(1), answers this.
+
+  - id: legitimate-interests-test
+    question: Can we rely on legitimate interests for analytics?
+    lang: en
+    expected_keys: [gdpr:art-6:para-1:pt-f]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/legitimate-interests/
+    note: Legitimate interests as a lawful basis is point (f) of Article 6(1).

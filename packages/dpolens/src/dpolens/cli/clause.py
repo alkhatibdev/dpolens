@@ -48,7 +48,7 @@ def show(
         typer.secho(trail, fg=typer.colors.BRIGHT_BLACK)
 
     typer.echo("")
-    _print_clause(clause, indent=0)
+    print_clause(clause, indent=0)
 
     # A clause with children is incomplete without them, whether or not it has
     # text of its own. A lead-in that ends "one of the following applies:" is
@@ -62,7 +62,7 @@ def show(
 
     for descendant in descendants:
         typer.echo("")
-        _print_clause(descendant, indent=descendant.depth - clause.depth)
+        print_clause(descendant, indent=descendant.depth - clause.depth)
 
     if detail.cross_references:
         typer.echo("")
@@ -75,7 +75,7 @@ def _name(clause: ClauseView) -> str:
     return clause.heading or clause.label or clause.key
 
 
-def _print_clause(clause: ClauseView, indent: int) -> None:
+def print_clause(clause: ClauseView, indent: int, snippet: int | None = None) -> None:
     pad = "  " * indent
     title = " ".join(part for part in (clause.label, clause.heading) if part)
     header = f"{pad}{title}" if title else pad
@@ -86,7 +86,14 @@ def _print_clause(clause: ClauseView, indent: int) -> None:
         notes.append(f"{clause.lang}, translation")
 
     typer.secho(f"{header}  [{', '.join(notes)}]".lstrip(), bold=True)
-    for line in _wrap(clause.text, WRAP - len(pad)):
+
+    body = clause.text
+    if snippet is not None and len(body) > snippet:
+        # Recitals run to several hundred words, and a list of them buries the
+        # results below. The key is printed above, so the rest is one command away.
+        body = f"{body[:snippet].rstrip()} ... ({len(body) - snippet} more characters)"
+
+    for line in _wrap(body, WRAP - len(pad)):
         typer.echo(f"{pad}{line}")
 
 

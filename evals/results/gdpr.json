@@ -1,0 +1,100 @@
+{
+  "pack": "gdpr",
+  "measured_at": "2026-09-26",
+  "commit": "c6dc64d",
+  "runs": [
+    {
+      "question_set": "held_out",
+      "configuration": "convex:0.5+normative",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 30,
+      "recall_at_5": 0.7667,
+      "recall_at_10": 0.8333,
+      "mrr": 0.5386,
+      "interval": [
+        0.6,
+        0.9
+      ],
+      "misses": [
+        "fix-wrong-address",
+        "health-data",
+        "log-retention",
+        "breach-tell-users",
+        "signup-form-notice",
+        "human-review-of-automation",
+        "us-hosting"
+      ]
+    },
+    {
+      "question_set": "held_out",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 30,
+      "recall_at_5": 0.3,
+      "recall_at_10": 0.5667,
+      "mrr": 0.2554,
+      "interval": [
+        0.1333,
+        0.4667
+      ],
+      "misses": [
+        "fix-wrong-address",
+        "pause-processing",
+        "health-data",
+        "log-retention",
+        "consent-not-forced",
+        "dpo-duties",
+        "breach-report-contents",
+        "breach-internal-record",
+        "breach-tell-users",
+        "send-data-to-competitor",
+        "small-company-records",
+        "charge-for-access",
+        "plain-language",
+        "signup-form-notice",
+        "bought-a-list",
+        "human-review-of-automation",
+        "what-counts-as-personal-data",
+        "profiling-meaning",
+        "two-companies-sharing",
+        "us-hosting",
+        "legitimate-interests-test"
+      ]
+    },
+    {
+      "question_set": "held_out",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 30,
+      "recall_at_5": 0.4333,
+      "recall_at_10": 0.5667,
+      "mrr": 0.281,
+      "interval": [
+        0.2667,
+        0.6
+      ],
+      "misses": [
+        "fix-wrong-address",
+        "stop-marketing",
+        "pause-processing",
+        "health-data",
+        "log-retention",
+        "consent-not-forced",
+        "breach-internal-record",
+        "breach-tell-users",
+        "encrypt-at-rest",
+        "small-company-records",
+        "plain-language",
+        "signup-form-notice",
+        "bought-a-list",
+        "human-review-of-automation",
+        "two-companies-sharing",
+        "us-hosting",
+        "legitimate-interests-test"
+      ]
+    }
+  ]
+}

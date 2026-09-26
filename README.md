@@ -69,19 +69,32 @@ DPOLens is self-hosted, so it works with assistants that connect from your own m
 from Anthropic's cloud rather than from your device, so they cannot reach an instance
 running on a private network.
 
+## Does it actually find the right clause
+
+GDPR: **recall@5 of 0.77** (95% confidence interval 0.60 to 0.90), on 30 held-out questions
+drawn from ICO and EDPB guidance, using multilingual-e5-small and convex fusion, measured
+26 September 2026.
+
+That means the clause the guidance points at was among the top five answers 77% of the
+time. It does not mean DPOLens answers 77% of privacy questions correctly.
+[docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and
+the commands to reproduce the number yourself.
+
 ## What exists today
 
-The pack pipeline runs. GDPR is converted from EUR-Lex's structured XML into a reviewable
-pack of 99 articles and 173 recitals, loaded into Postgres as immutable versions, and read
-back by canonical key:
+Retrieval runs, and is measured. GDPR is converted from EUR-Lex's structured XML into a
+reviewable pack of 99 articles and 173 recitals, loaded into Postgres as immutable
+versions, indexed for BM25 and meaning search, and searched:
 
 ```bash
 dpolens pack load packs/gdpr
+dpolens index build
+dpolens search "how long can we keep a deleted user's data"
 dpolens clause show gdpr:art-17 --subtree
 ```
 
-Search, the embedding model and the eval harness come next, then the HTTP API, the MCP
-server and the dashboard. There is still no server to run and no Docker image.
+The HTTP API, the MCP server and the dashboard come next. There is still no server to run
+and no published image.
 
 ## Contributing
 

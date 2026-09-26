@@ -1,0 +1,142 @@
+# GDPR tuning set.
+#
+# These questions are used while improving retrieval. The published score comes
+# from held_out.yaml, which this set never touches.
+#
+# Every entry names the guidance that ties the question to the clause. The
+# expected keys come from that guidance, not from what the search happens to
+# return today. See ../README.md before adding one.
+
+questions:
+  - id: erasure-request
+    question: A user asked us to delete their account and all their data. Do we have to?
+    lang: en
+    expected_keys: [gdpr:art-17:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-erasure/
+
+  - id: retention-period
+    question: How long are we allowed to keep personal data we collected?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    note: The storage limitation principle. Phrased the way a developer asks it.
+
+  - id: lawful-basis
+    question: What makes processing lawful in the first place?
+    lang: en
+    expected_keys: [gdpr:art-6:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/a-guide-to-lawful-basis/
+    note: The six lawful bases the guide sets out are Article 6(1).
+
+  - id: breach-deadline
+    question: We had a data breach. How quickly must we tell the regulator?
+    lang: en
+    expected_keys: [gdpr:art-33:para-1]
+    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+
+  - id: dpo-required
+    question: Do we need a DPO?
+    lang: en
+    expected_keys: [gdpr:art-37:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
+    note: >-
+      The corpus never writes "DPO", only "data protection officer". Kept
+      deliberately as an abbreviation the text does not contain.
+
+  - id: subject-access
+    question: Someone wants a copy of everything we hold about them.
+    lang: en
+    expected_keys: [gdpr:art-15:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
+    note: The right to a copy of one's personal data is Article 15(1).
+
+  - id: security-measures
+    question: What security do we actually have to implement?
+    lang: en
+    expected_keys: [gdpr:art-32:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/
+
+  - id: export-data
+    question: Do we have to let users export their data to another service?
+    lang: en
+    expected_keys: [gdpr:art-20:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-data-portability/
+
+  - id: childrens-consent
+    question: Can a 13 year old sign up without a parent?
+    lang: en
+    expected_keys: [gdpr:art-8:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/children-and-the-uk-gdpr/what-are-the-rules-about-an-iss-and-consent/
+
+  - id: when-dpia
+    question: When do we have to run a data protection impact assessment?
+    lang: en
+    expected_keys: [gdpr:art-35:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/
+
+  - id: records-of-processing
+    question: Do we have to keep a record of what processing we do?
+    lang: en
+    expected_keys: [gdpr:art-30:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
+
+  - id: transfer-abroad
+    question: Can we host user data on servers outside Europe?
+    lang: en
+    expected_keys: [gdpr:art-46:para-1, gdpr:art-44]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/
+    note: Either the general principle or the safeguards clause answers this.
+
+  - id: privacy-notice
+    question: What do we have to tell people when we collect their data?
+    lang: en
+    expected_keys: [gdpr:art-13:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
+    note: The information to give when collecting data from the person is Article 13(1).
+
+  - id: automated-decisions
+    question: Can we let an algorithm decide whether to approve someone?
+    lang: en
+    expected_keys: [gdpr:art-22:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
+    note: The right not to be subject to a solely automated decision is Article 22(1).
+
+  - id: proving-consent
+    question: Do we need to keep proof that a user agreed?
+    lang: en
+    expected_keys: [gdpr:art-7:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
+
+  - id: collect-less
+    question: Can we store extra fields we might need later?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-c]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    note: Data minimisation, collecting no more than is necessary, is point (c) of Article 5(1).
+
+  - id: keep-data-accurate
+    question: Whose job is it to keep the data correct and up to date?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-d]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    note: The accuracy principle is point (d) of Article 5(1).
+
+  - id: object-to-processing
+    question: Can someone tell us to stop processing their data altogether?
+    lang: en
+    expected_keys: [gdpr:art-21:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-object/
+
+  - id: complain-about-us
+    question: Where can a user complain if they think we mishandled their data?
+    lang: en
+    expected_keys: [gdpr:art-77:para-1]
+    source: https://ico.org.uk/make-a-complaint/data-protection-complaints/
+    note: The right to lodge a complaint with a supervisory authority is Article 77(1).
+
+  - id: sue-for-damages
+    question: Can someone claim compensation from us for a breach?
+    lang: en
+    expected_keys: [gdpr:art-82:para-1]
+    source: https://ico.org.uk/make-a-complaint/data-protection-complaints/
+    note: The right to compensation for damage caused by an infringement is Article 82(1).
