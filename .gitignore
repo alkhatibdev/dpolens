@@ -19,3 +19,5 @@ dist/
 .coverage
 coverage.xml
 htmlcov/
+
+evals/results/*

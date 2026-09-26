@@ -8,17 +8,20 @@ could adopt a fusion rule that is worse than half the system.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.evals.score import Outcome, Score, score
 from dpolens.engine.search.engine import CANDIDATE_DEPTH, search
-from dpolens.engine.search.fuse import Fusion
-from dpolens.engine.search.keyword import keyword_search
+from dpolens.engine.search.fuse import Fused, Fusion, fuse
+from dpolens.engine.search.keyword import Candidate, keyword_search
+from dpolens.engine.search.rerank import Reranker, rerank
 from dpolens.engine.search.vector import vector_search
 
 DEPTH = 10
@@ -91,16 +94,19 @@ def run_set(
     configuration: str = "rrf:10",
     pack: str = "",
     question_set: str = "",
+    reranker: Reranker | None = None,
 ) -> Run:
     """Score one configuration over one question set.
 
-    The configuration is either a fusion rule ("rrf:10", "convex:0.5") or a
-    single retriever ("keyword", "meaning"), so baselines and fusion rules are
-    reported in the same units.
+    A configuration is a fusion rule ("rrf:10", "convex:0.5") or a single
+    retriever ("keyword", "meaning"), so baselines and fusion rules are reported
+    in the same units. Modifiers follow it: "+normative" drops text that
+    explains without obliging, and "+rerank25" rescores the top 25 with a
+    cross-encoder.
     """
     outcomes = []
     for question in questions:
-        returned = _retrieve(session, embedder, question, configuration)
+        returned = _retrieve(session, embedder, question, configuration, reranker)
         outcomes.append(
             Outcome(
                 question_id=question.id,
@@ -121,32 +127,61 @@ def run_set(
 
 
 def _retrieve(
-    session: Session, embedder: Embedder, question: Question, configuration: str
+    session: Session,
+    embedder: Embedder,
+    question: Question,
+    configuration: str,
+    reranker: Reranker | None = None,
 ) -> list[str]:
-    # A "+normative" suffix drops recitals and other explaining text, which is
-    # the hypothesis that they crowd out the articles that oblige someone.
-    configuration, _, modifier = configuration.partition("+")
-    normative_only = modifier == "normative"
+    base, modifiers = _parse(configuration)
+    normative_only = "normative" in modifiers
+    depth = _rerank_depth(modifiers)
 
-    if configuration == "keyword":
-        found = keyword_search(
-            session,
-            question.question,
-            lang=question.lang,
-            limit=CANDIDATE_DEPTH,
-            normative_only=normative_only,
+    if base in ("keyword", "meaning"):
+        found = (
+            keyword_search(
+                session,
+                question.question,
+                lang=question.lang,
+                limit=CANDIDATE_DEPTH,
+                normative_only=normative_only,
+            )
+            if base == "keyword"
+            else vector_search(
+                session,
+                embedder,
+                question.question,
+                limit=CANDIDATE_DEPTH,
+                normative_only=normative_only,
+            )
         )
+        if depth and reranker is not None:
+            rescored = _reranked(
+                session, reranker, question, {base: found}, Fusion.parse("rrf:10"), depth
+            )
+            return [candidate.key for candidate in rescored[:DEPTH]]
         return [candidate.key for candidate in found[:DEPTH]]
 
-    if configuration == "meaning":
-        found = vector_search(
-            session,
-            embedder,
-            question.question,
-            limit=CANDIDATE_DEPTH,
-            normative_only=normative_only,
-        )
-        return [candidate.key for candidate in found[:DEPTH]]
+    fusion = Fusion.parse(base)
+    if depth and reranker is not None:
+        lists = {
+            "keyword": keyword_search(
+                session,
+                question.question,
+                lang=question.lang,
+                limit=CANDIDATE_DEPTH,
+                normative_only=normative_only,
+            ),
+            "meaning": vector_search(
+                session,
+                embedder,
+                question.question,
+                limit=CANDIDATE_DEPTH,
+                normative_only=normative_only,
+            ),
+        }
+        fused = _reranked(session, reranker, question, lists, fusion, depth)
+        return [candidate.key for candidate in fused[:DEPTH]]
 
     results = search(
         session,
@@ -154,7 +189,53 @@ def _retrieve(
         question.question,
         limit=DEPTH,
         lang=question.lang,
-        fusion=Fusion.parse(configuration),
+        fusion=fusion,
         normative_only=normative_only,
     )
     return [result.clause.key for result in results]
+
+
+def _parse(configuration: str) -> tuple[str, set[str]]:
+    base, *modifiers = configuration.split("+")
+    return base, set(modifiers)
+
+
+def _rerank_depth(modifiers: set[str]) -> int:
+    for modifier in modifiers:
+        if modifier.startswith("rerank"):
+            return int(modifier.removeprefix("rerank") or 25)
+    return 0
+
+
+def _reranked(
+    session: Session,
+    reranker: Reranker,
+    question: Question,
+    lists: Mapping[str, Sequence[Candidate]],
+    fusion: Fusion,
+    depth: int,
+) -> list[Fused]:
+    """Fuse, then rescore the head with the cross-encoder."""
+    fused = fuse(lists, fusion)
+    head = fused[:depth]
+    texts = _texts_for(session, [candidate.key for candidate in head])
+    return rerank(reranker, question.question, fused, texts, depth=depth)
+
+
+def _texts_for(session: Session, keys: list[str]) -> dict[str, str]:
+    """The text a cross-encoder reads, which is what a person would read."""
+    if not keys:
+        return {}
+    rows = session.execute(
+        text(
+            """
+            SELECT n.canonical_key AS key,
+                   coalesce(t.heading, '') || ' ' || t.body_text AS body
+            FROM document_nodes n
+            JOIN node_texts t ON t.node_id = n.id
+            WHERE n.canonical_key = ANY(:keys)
+            """
+        ),
+        {"keys": keys},
+    ).all()
+    return {row.key: row.body for row in rows}

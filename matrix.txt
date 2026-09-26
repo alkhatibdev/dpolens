@@ -1,0 +1,37 @@
+gdpr tuning: 20 questions
+
+| model              | configuration          | recall@5 | interval     | recall@10 | MRR  |
+| ------------------ | ---------------------- | -------- | ------------ | --------- | ---- |
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+| e5-small           | keyword                |     0.25 | 0.10 to 0.45 |      0.30 | 0.12 |
+| e5-small           | meaning                |     0.50 | 0.30 to 0.70 |      0.60 | 0.29 |
+| e5-small           | meaning+normative      |     0.60 | 0.40 to 0.80 |      0.70 | 0.48 |
+| e5-small           | rrf:10                 |     0.35 | 0.15 to 0.55 |      0.50 | 0.28 |
+| e5-small           | rrf:10+normative       |     0.45 | 0.25 to 0.65 |      0.65 | 0.39 |
+| e5-small           | rrf:60+normative       |     0.45 | 0.25 to 0.65 |      0.65 | 0.38 |
+| e5-small           | convex:0.5+normative   |     0.50 | 0.30 to 0.70 |      0.65 | 0.41 |
+| e5-small           | (index built)          |      34s | | | |
+| e5-small-int8      | keyword                |     0.25 | 0.10 to 0.45 |      0.30 | 0.12 |
+| e5-small-int8      | meaning                |     0.40 | 0.20 to 0.60 |      0.60 | 0.33 |
+| e5-small-int8      | meaning+normative      |     0.50 | 0.30 to 0.70 |      0.70 | 0.46 |
+| e5-small-int8      | rrf:10                 |     0.35 | 0.15 to 0.55 |      0.45 | 0.28 |
+| e5-small-int8      | rrf:10+normative       |     0.55 | 0.35 to 0.75 |      0.65 | 0.36 |
+| e5-small-int8      | rrf:60+normative       |     0.45 | 0.25 to 0.65 |      0.70 | 0.35 |
+| e5-small-int8      | convex:0.5+normative   |     0.45 | 0.25 to 0.65 |      0.65 | 0.38 |
+| e5-small-int8      | (index built)          |      18s | | | |
+| e5-base            | keyword                |     0.25 | 0.10 to 0.45 |      0.30 | 0.12 |
+| e5-base            | meaning                |     0.55 | 0.35 to 0.75 |      0.60 | 0.34 |
+| e5-base            | meaning+normative      |     0.65 | 0.45 to 0.85 |      0.75 | 0.39 |
+| e5-base            | rrf:10                 |     0.35 | 0.15 to 0.55 |      0.60 | 0.31 |
+| e5-base            | rrf:10+normative       |     0.55 | 0.35 to 0.75 |      0.70 | 0.37 |
+| e5-base            | rrf:60+normative       |     0.50 | 0.30 to 0.70 |      0.75 | 0.36 |
+| e5-base            | convex:0.5+normative   |     0.50 | 0.30 to 0.70 |      0.75 | 0.42 |
+| e5-base            | (index built)          |     108s | | | |
+| granite-97m-int8   | keyword                |     0.25 | 0.10 to 0.45 |      0.30 | 0.12 |
+| granite-97m-int8   | meaning                |     0.50 | 0.30 to 0.70 |      0.60 | 0.29 |
+| granite-97m-int8   | meaning+normative      |     0.55 | 0.35 to 0.75 |      0.60 | 0.30 |
+| granite-97m-int8   | rrf:10                 |     0.45 | 0.25 to 0.65 |      0.55 | 0.30 |
+| granite-97m-int8   | rrf:10+normative       |     0.50 | 0.25 to 0.70 |      0.55 | 0.32 |
+| granite-97m-int8   | rrf:60+normative       |     0.40 | 0.20 to 0.60 |      0.50 | 0.31 |
+| granite-97m-int8   | convex:0.5+normative   |     0.50 | 0.30 to 0.70 |      0.55 | 0.37 |
+| granite-97m-int8   | (index built)          |      21s | | | |

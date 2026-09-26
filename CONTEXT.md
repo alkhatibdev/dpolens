@@ -188,6 +188,11 @@ An example question shipped in a pack or built from a policy's headings, shown t
 who does not know what to ask.
 _Avoid_: Suggested question, sample question
 
+**Eval harness**:
+The code that runs a question set through retrieval and scores what comes back: recall, MRR
+and the confidence interval behind the published number.
+_Avoid_: Benchmark, test suite (which means the unit and integration tests)
+
 **Eval question**:
 A question with the clause keys it should retrieve, used to score search. It belongs
 either to the **tuning set**, used while improving search, or to the **held-out set**,

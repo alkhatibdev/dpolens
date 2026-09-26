@@ -69,15 +69,147 @@ a few points on its own and a bare number invites more confidence than it has ea
 fails a change that drops below the published interval. The pack, the questions and the
 model are all fixed, so a drop has exactly one possible cause.
 
-## What the numbers say
+## The published score
 
-`evals/results/gdpr.json` carries the machine-readable version, including the model, the
-context recipe, the fusion rule and the commit that produced it.
+**GDPR: recall@5 of 0.77, 95% confidence interval 0.60 to 0.90.** Thirty held-out
+questions, multilingual-e5-small, context recipe v1, convex combination at 0.5 with text
+that only explains excluded. Measured 26 September 2026.
 
-**No score is published yet.** The four-model comparison has not been run to completion, so
-this section stays empty rather than quoting a number measured on one model and one
-configuration. What exists today is a tuning-set reading, which is not a published result
-and is not written to `evals/results`.
+`evals/results/gdpr.json` carries the same numbers in machine-readable form, with the
+commit that produced them, and CI compares every change against it.
+
+Read that sentence strictly. It says that on thirty questions drawn from regulator
+guidance, the clause the guidance points at was in the top five answers 77% of the time.
+It does not say that DPOLens answers 77% of privacy questions correctly.
+
+### Every configuration, on the held-out set
+
+| Configuration | recall@5 | 95% interval | recall@10 | MRR | s/query |
+| --- | --- | --- | --- | --- | --- |
+| Keyword only (BM25) | 0.30 | 0.13 to 0.47 | 0.57 | 0.26 | |
+| Meaning only | 0.43 | 0.27 to 0.60 | 0.57 | 0.28 | |
+| Meaning, explaining text excluded | 0.60 | 0.40 to 0.77 | 0.73 | 0.41 | |
+| Reciprocal rank fusion, k=10 | 0.77 | 0.60 to 0.90 | 0.83 | 0.45 | |
+| **Convex combination, 0.5** | **0.77** | 0.60 to 0.90 | 0.83 | **0.54** | 0.11 |
+| Convex combination, e5-base | 0.80 | 0.63 to 0.93 | 0.83 | 0.57 | 0.12 |
+
+Both fusion rules reach the same recall and convex combination ranks the right clause
+higher, so it is the default. e5-base scores three points better, which on thirty
+questions is one question, and costs 13 minutes of first-start indexing against 34 seconds
+and a 1.1 GB download against 470 MB. It is available as a setting rather than the default.
+
+### Reranking made it worse
+
+The standard next step is to rescore the top candidates with a cross-encoder. It was
+measured rather than assumed, with `jina-reranker-v2-base-multilingual`:
+
+| Rerank window | e5-small | e5-base | s/query |
+| --- | --- | --- | --- |
+| None | **0.77** | **0.80** | 0.11 |
+| Top 10 | 0.57 | 0.67 | 0.7 |
+| Top 25 | 0.47 | 0.57 | 1.9 |
+| Top 50 | 0.43 | 0.53 | 4.4 |
+
+Worse at every depth, on both models, and monotonically worse as the window widens, at up
+to 40 times the latency. Three implementation faults were ruled out first: the output
+index, the direction of the score, and the pair encoding, which produces the expected
+`query </s></s> passage` form. The visible cause is that the model barely separates
+relevant from irrelevant legal text: it scores the exact answer to a breach-notification
+question at -2.11 and boilerplate about the regulation entering into force at -2.20.
+Reordering by numbers that close destroys an ordering that fusion had already got right.
+
+So DPOLens ships no reranker. `bge-reranker-v2-m3`, the other candidate, has no ONNX
+build, and exporting one would require PyTorch, which this project avoids for image size.
+
+### Reproduce it yourself
+
+Nothing here rests on trusting the number. With Docker and `uv` installed:
+
+```bash
+git clone https://github.com/alkhatibdev/dpolens && cd dpolens
+uv sync --all-packages
+
+docker build -t dpolens-postgres deploy/postgres/
+docker run -d --name dpolens-db -p 5432:5432 \
+  -e POSTGRES_USER=dpolens -e POSTGRES_PASSWORD=dpolens -e POSTGRES_DB=dpolens \
+  dpolens-postgres
+
+export DPOLENS_DATABASE_URL=postgresql+psycopg://dpolens:dpolens@localhost:5432/dpolens
+uv run alembic upgrade head
+uv run dpolens pack load packs/gdpr
+uv run dpolens index build
+
+uv run dpolens evals run --pack gdpr --set held_out \
+  --config "convex:0.5+normative" --baselines
+```
+
+The first `index build` downloads the model, roughly 470 MB, and takes about half a minute
+on a laptop CPU after that. The eval run takes a few seconds. You should see the numbers
+above; the bootstrap interval is seeded, so it is identical run to run, while timings
+depend on your machine.
+
+To check the question labels rather than the scores:
+
+```bash
+uv run python scripts/check_eval_sources.py
+```
+
+That fetches every source and reports which labels a regulator page names outright and
+which rest on a recorded justification.
+
+### On the tuning set, for comparison
+
+Everything below was measured on the **tuning** set of 20 questions. It is not a published
+result and is not written to `evals/results`. It is here because the comparisons it settles
+are worth showing, and because it demonstrates a trap worth knowing about.
+
+### Which embedding model
+
+Recall@5 on the tuning set, with the index built from scratch each time on an Apple M
+series CPU.
+
+| Model | Meaning search | Recitals excluded | Index time | Note |
+| --- | --- | --- | --- | --- |
+| multilingual-e5-small | 0.50 | 0.60 | 34s | |
+| multilingual-e5-small int8 | 0.40 | 0.50 | 102s | Built for AVX512-VNNI |
+| granite-embedding-97m-r2 int8 | 0.50 | 0.55 | 96s | Built for AVX2 |
+| multilingual-e5-base | 0.55 | **0.65** | 776s | 768 dimensions |
+
+Every interval spans roughly 0.20, so all four overlap: this ranks the candidates, it does
+not separate them. Two things it does show clearly:
+
+- **Quantised was both less accurate and slower here.** Both int8 builds target instruction
+  sets this machine does not have, so the quantisation buys nothing and costs accuracy. On
+  a server with AVX512 the arithmetic may reverse, which is why the comparison records the
+  architecture it ran on rather than quoting a single number.
+- **e5-base leads, and costs 23 times the indexing time** for it. Whether five points of
+  recall is worth that is a held-out question, not a tuning one.
+
+### What BM25 bought over ts_rank
+
+| Keyword ranker | recall@5 | recall@10 | MRR |
+| --- | --- | --- | --- |
+| `ts_rank`, terms combined with OR | 0.15 | 0.20 | 0.08 |
+| BM25 through `pg_textsearch` | 0.25 | 0.30 | 0.12 |
+
+A fairer comparison than it first appeared. With `plainto_tsquery`, which requires every
+term to match, `ts_rank` scored 0.00 on all 20 questions, because a question phrased as a
+sentence shares no full term set with any clause. Combining the terms with OR is the honest
+baseline, and against that BM25 is worth about ten points of recall@5.
+
+### What keyword search is for
+
+Keyword search alone reaches 0.25, and meaning search reaches 0.60. That is not an argument
+for dropping it: it earns its place on quoted phrases, defined terms and article numbers,
+which is how a lawyer searches and how an assistant follows a citation. On the
+conversational questions in these sets, meaning search does the work.
+
+**A warning about small question sets.** On these 20 tuning questions, fusion scored
+*below* meaning search alone (0.45 against 0.60), and the opposite is true on the 30
+held-out questions (0.77 against 0.60). Same code, same corpus, different questions. Two
+sets of this size are not equally hard, so configurations can only be compared within a
+set, never across them. Had the tuning set alone been trusted, the conclusion would have
+been to drop fusion, which the held-out set shows would have cost 17 points of recall.
 
 ## What is not solved
 
