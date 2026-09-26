@@ -20,4 +20,5 @@ dist/
 coverage.xml
 htmlcov/
 
-evals/results/*
+# Local eval scratch
+matrix*.txt

@@ -5,8 +5,11 @@ published as a table, rather than by argument. It indexes the corpus once per
 model, which is the slow part, then scores each configuration over the same
 questions.
 
-    uv run python scripts/run_matrix.py --set tuning
+    uv run python scripts/run_matrix.py --set tuning > matrix.txt
     uv run python scripts/run_matrix.py --set held_out --models e5-small,e5-base
+
+The table goes to stdout, so redirect it where you want it. matrix*.txt is
+ignored, and the conclusions belong in docs/retrieval.md rather than in a file.
 
 The first run of a model downloads it. Everything after that is offline.
 """
