@@ -1,7 +1,7 @@
 """Documents: the corpus of laws and organisation policies."""
 
+from dpolens.engine.base import Base
 from dpolens.engine.documents.models import (
-    Base,
     Document,
     DocumentNode,
     DocumentVersion,
