@@ -84,17 +84,6 @@ time. It does not mean DPOLens answers 77% of privacy questions correctly.
 [docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and
 the commands to reproduce the number yourself.
 
-## Does it actually find the right clause
-
-GDPR: **recall@5 of 0.77** (95% confidence interval 0.60 to 0.90), on 30 held-out questions
-drawn from ICO and EDPB guidance, using multilingual-e5-small and convex fusion, measured
-26 September 2026.
-
-That means the clause the guidance points at was among the top five answers 77% of the
-time. It does not mean DPOLens answers 77% of privacy questions correctly.
-[docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and
-the commands to reproduce the number yourself.
-
 ## What exists today
 
 Retrieval runs, and is measured. GDPR is converted from EUR-Lex's structured XML into a
@@ -108,8 +97,31 @@ dpolens search "how long can we keep a deleted user's data"
 dpolens clause show gdpr:art-17 --subtree
 ```
 
-The HTTP API, the MCP server and the dashboard come next. There is still no server to run
-and no published image.
+Users, roles and the governance log also exist, which is what the API and the MCP server
+will authenticate and record against:
+
+```bash
+dpolens user create --email you@example.com --name "Your Name" --role Admin
+dpolens role list
+dpolens governance verify
+dpolens governance export ./export-2026-09
+```
+
+Permissions are a fixed list in code and roles are data, so an organisation can invent
+"Legal" without waiting for a release. Admin, DPO and Developer are seeded and editable,
+and no seeded role can see who asked a question: that permission starts off, so the first
+time anyone holds it, somebody decided to grant it.
+
+The governance log is append-only and hash-chained. The application's database role holds
+`INSERT` and `SELECT` on it and nothing else, triggers refuse an update, a delete or a
+truncation whoever runs them, and an export verifies from its files alone with no DPOLens
+in the loop. [docs/governance-log.md](docs/governance-log.md) is the specification,
+including the hash recipe, so the export can be checked by something other than this
+project.
+
+There is no login yet: a personal access token is how a surface will authenticate, and
+tokens, the HTTP API, the MCP server and the dashboard come next. There is still no server
+to run and no published image.
 
 ## Contributing
 

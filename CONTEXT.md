@@ -147,6 +147,27 @@ A revocable credential a user creates for a surface that is not the dashboard. I
 permissions are chosen at creation and can never exceed its owner's current permissions.
 _Avoid_: API key, secret, credential
 
+**Permission**:
+One entry in a fixed catalog defined in code, naming one thing somebody may do, such as
+`documents.publish`. Roles are bundles of permissions; nothing grants a permission
+directly to a user.
+_Avoid_: Scope, right, capability, privilege (which is what PostgreSQL grants)
+
+**Role**:
+A named bundle of permissions, created and edited in the running instance. Admin, DPO and
+Developer are seeded on first use and are ordinary roles afterwards.
+_Avoid_: Group, profile, permission set
+
+**Lockout guard**:
+The rule that refuses any change leaving no active person able to manage roles. It lives
+in the engine, so every surface inherits it, and it has no override.
+_Avoid_: Last admin check, safety check
+
+**Instance**:
+One deployment of DPOLens, serving one organisation. It has an id of its own, which the
+governance log's first link and every export are built from.
+_Avoid_: Tenant, organisation (which is the people, not the deployment), installation
+
 ### Trust and authority
 
 **Authoritative text**:
@@ -204,7 +225,20 @@ _Avoid_: Test question, golden question
 **Governance log**:
 The append-only, hash-chained record of actions that change the system: publishing,
 permission changes, token creation, logins, and every view of identities in the query log.
+Entries name a user by id, so identities can be erased without breaking the chain.
+[docs/governance-log.md](docs/governance-log.md) specifies the hash.
 _Avoid_: Audit log, admin log, system log
+
+**Hash recipe**:
+The versioned rule for turning one governance entry into its hash. An entry records which
+version produced it, so a later rule can be told apart from this one rather than guessed
+at.
+_Avoid_: Checksum, signature (nothing here is signed with a key)
+
+**Export**:
+A directory holding a range of the governance log, its manifest, and the identities behind
+the ids, written so an auditor can verify it without running DPOLens.
+_Avoid_: Dump, backup, report
 
 **Query log**:
 The record of searches, clause lookups and (from v0.2) answers, with the query text
