@@ -44,6 +44,15 @@ class Settings(BaseSettings):
         ),
     )
 
+    rate_limit_per_minute: int = Field(
+        default=60,
+        ge=1,
+        description=(
+            "Requests a token may make each minute, counted inside each worker, so an "
+            "instance running several workers allows that many times this number"
+        ),
+    )
+
     @field_validator("database_url", "migration_database_url")
     @classmethod
     def _require_postgres(cls, value: PostgresDsn | None) -> PostgresDsn | None:

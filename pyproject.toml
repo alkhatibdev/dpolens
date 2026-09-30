@@ -9,6 +9,7 @@ dpolens-mcp = { workspace = true }
 dev = [
     "dpolens",
     "dpolens-mcp",
+    "httpx>=0.28",
     "import-linter>=2.1",
     "mypy>=1.14",
     "pre-commit>=4.0",

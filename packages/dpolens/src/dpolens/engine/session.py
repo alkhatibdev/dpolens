@@ -10,6 +10,14 @@ from sqlalchemy.orm import Session
 
 from dpolens.settings import Settings
 
+type DatabaseEngine = Engine
+type EngineSession = Session
+"""The database types under names of our own.
+
+A surface can then annotate a session or an engine without importing the ORM,
+which is a boundary CI enforces rather than a habit.
+"""
+
 REQUIRED_EXTENSIONS = {
     "vector": "pgvector, for meaning search",
     "pg_textsearch": "BM25 keyword ranking",
@@ -66,14 +74,38 @@ def create_db_engine(settings: Settings, verify: bool = True) -> Engine:
     return engine
 
 
+def ping(session: Session) -> None:
+    """The cheapest proof that the database answers, for a readiness probe.
+
+    It lives here because a surface must not import the ORM, and one statement
+    is the whole of it.
+    """
+    session.execute(text("SELECT 1"))
+
+
+@contextmanager
+def session_from(engine: Engine) -> Iterator[Session]:
+    """One session on an engine that outlives it, committing on success.
+
+    This is what a server uses: the engine and its pool belong to the process,
+    and a session belongs to one request.
+    """
+    with Session(engine) as session:
+        yield session
+        session.commit()
+
+
 @contextmanager
 def session_scope(settings: Settings) -> Iterator[Session]:
-    """A session that commits on success and rolls back on failure."""
+    """A session and an engine of its own, for a command that then exits.
+
+    A server wants `session_from` instead, so that one pool serves every
+    request rather than one pool per request.
+    """
     engine = create_db_engine(settings)
     try:
-        with Session(engine) as session:
+        with session_from(engine) as session:
             yield session
-            session.commit()
     finally:
         engine.dispose()
 

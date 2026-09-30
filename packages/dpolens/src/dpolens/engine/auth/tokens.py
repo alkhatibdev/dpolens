@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -47,6 +48,10 @@ class PermissionsExceedOwner(Exception):
 
 class OwnerCannotHoldTokens(Exception):
     """A deactivated or erased account cannot be given new credentials."""
+
+
+class DelegationRefused(Exception):
+    """An assertion about who a surface is acting for does not hold."""
 
 
 class UnknownToken(Exception):
@@ -169,6 +174,19 @@ def mint(
     return row, token
 
 
+def _owner_if_usable(session: Session, row: PersonalAccessToken) -> User:
+    """The owner of a token that may be used right now, or a refusal saying why."""
+    if row.revoked_at is not None:
+        raise TokenRejected("revoked", row)
+    if row.expires_at is not None and row.expires_at <= datetime.now(UTC):
+        raise TokenRejected("expired", row)
+
+    owner = session.get_one(User, row.user_id)
+    if owner.status != "active":
+        raise TokenRejected("owner_inactive", row)
+    return owner
+
+
 def authenticate(session: Session, presented: str) -> Authenticated:
     """Turn a token into who is calling, or refuse and say why."""
     if not looks_like_a_token(presented):
@@ -180,15 +198,25 @@ def authenticate(session: Session, presented: str) -> Authenticated:
     if row is None:
         raise UnknownToken("no token matches")
 
-    if row.revoked_at is not None:
-        raise TokenRejected("revoked", row)
-    if row.expires_at is not None and row.expires_at <= datetime.now(UTC):
-        raise TokenRejected("expired", row)
+    owner = _owner_if_usable(session, row)
+    return Authenticated(token=row, user=owner, permissions=effective_permissions(row, owner))
 
-    owner = session.get_one(User, row.user_id)
-    if owner.status != "active":
-        raise TokenRejected("owner_inactive", row)
 
+def authenticate_delegated(
+    session: Session, *, user_id: uuid.UUID, pat_id: uuid.UUID
+) -> Authenticated:
+    """Who a trusted surface says it is acting for, checked rather than believed.
+
+    The trust a surface is given is that it may name the caller, not that it may
+    invent a token id. So the named token has to exist, still be usable, and
+    belong to the named user, and the permissions are that token's intersected
+    with that user's roles, exactly as if they had called directly.
+    """
+    row = session.get(PersonalAccessToken, pat_id)
+    if row is None or row.user_id != user_id:
+        raise DelegationRefused("the asserted token does not belong to the asserted user")
+
+    owner = _owner_if_usable(session, row)
     return Authenticated(token=row, user=owner, permissions=effective_permissions(row, owner))
 
 

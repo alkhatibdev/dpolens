@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 license = "Apache-2.0"
 dependencies = [
     "alembic>=1.14",
+    "fastapi>=0.120",
     "numpy>=2.5.3",
     "onnxruntime>=1.30.0",
     "psycopg[binary]>=3.2",
@@ -15,6 +16,7 @@ dependencies = [
     "structlog>=25.1",
     "tokenizers>=0.23.2",
     "typer>=0.15",
+    "uvicorn>=0.36",
 ]
 
 [project.scripts]

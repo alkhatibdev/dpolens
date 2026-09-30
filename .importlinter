@@ -23,6 +23,12 @@ source_modules =
 forbidden_modules =
     sqlalchemy
     alembic
+# Indirect imports are allowed on purpose: a handler calls an engine function,
+# and that function is where the ORM belongs. What this forbids is a handler
+# importing the ORM itself, which is how a query leaks upward. The engine
+# re-exports the session and engine types under names of its own so a handler
+# can annotate them without reaching for sqlalchemy.
+allow_indirect_imports = True
 rationale =
     Route handlers authenticate, call one engine function and return. Anything
     building a query has leaked upward.

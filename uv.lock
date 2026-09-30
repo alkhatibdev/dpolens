@@ -16,6 +16,7 @@ members = [
 dev = [
     { name = "dpolens", editable = "packages/dpolens" },
     { name = "dpolens-mcp", editable = "packages/dpolens-mcp" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "import-linter", specifier = ">=2.1" },
     { name = "mypy", specifier = ">=1.14" },
     { name = "pre-commit", specifier = ">=4.0" },
@@ -481,6 +482,7 @@ version = "0.0.0"
 source = { editable = "packages/dpolens" }
 dependencies = [
     { name = "alembic" },
+    { name = "fastapi" },
     { name = "numpy" },
     { name = "onnxruntime" },
     { name = "psycopg", extra = ["binary"] },
@@ -490,11 +492,13 @@ dependencies = [
     { name = "structlog" },
     { name = "tokenizers" },
     { name = "typer" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.14" },
+    { name = "fastapi", specifier = ">=0.120" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "onnxruntime", specifier = ">=1.30.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
@@ -504,6 +508,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=25.1" },
     { name = "tokenizers", specifier = ">=0.23.2" },
     { name = "typer", specifier = ">=0.15" },
+    { name = "uvicorn", specifier = ">=0.36" },
 ]
 
 [[package]]
@@ -519,6 +524,23 @@ dependencies = [
 requires-dist = [
     { name = "httpx", specifier = ">=0.28" },
     { name = "mcp", specifier = ">=1.2" },
+]
+
+[[package]]
+name = "fastapi"
+version = "0.142.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annotated-doc" },
+    { name = "opentelemetry-api" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/d4/96b417c2ec88df6be2fe90010e6e23c5323eeb2160c6cb0108f99707c130/fastapi-0.142.1.tar.gz", hash = "sha256:761663e3e6939da45f997a6f68362abc0fa9d8606e76d504f15f806d2281581d", size = 466491, upload-time = "2026-09-29T22:36:22.34Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/17/bb503d4b3bea614eae48ffecafe192b097082e8afcf3f2dbde3d78438cc4/fastapi-0.142.1-py3-none-any.whl", hash = "sha256:7eea2b5b1632ed43de2c090b3a43b7d92267189dfbbd55a967307ed763b6c57a", size = 144481, upload-time = "2026-09-29T22:36:19.603Z" },
 ]
 
 [[package]]
