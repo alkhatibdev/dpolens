@@ -126,6 +126,22 @@ def unique() -> str:
 
 
 @pytest.fixture(scope="session")
+def committed_owner_url(committed_database_url: str, database_url: str) -> str:
+    """The committing tests' database, reached as the role that owns the tables.
+
+    Creating an index needs ownership, which the application role deliberately
+    does not have, so loading a corpus for a test connects the way an operator's
+    maintenance command does.
+    """
+    owner = make_url(database_url)
+    return (
+        make_url(committed_database_url)
+        .set(username=owner.username, password=owner.password)
+        .render_as_string(hide_password=False)
+    )
+
+
+@pytest.fixture(scope="session")
 def committed_database_url(database_url: str, app_role: str) -> str:
     """A database of its own for tests that commit, reached as the application role.
 

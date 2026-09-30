@@ -28,6 +28,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dpolens.engine.base import Base
+from dpolens.engine.packs.models import Pack
 
 
 def _uuid_column() -> Mapped[uuid.UUID]:
@@ -39,6 +40,10 @@ class Document(Base):
 
     id: Mapped[uuid.UUID] = _uuid_column()
     org_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    # Null for an organisation's own policy, which is its own source.
+    pack_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("packs.id"), nullable=True
+    )
     kind: Mapped[str] = mapped_column(Enum("law", "org_policy", name="document_kind"))
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     title: Mapped[str] = mapped_column(Text)
@@ -48,6 +53,9 @@ class Document(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     versions: Mapped[list[DocumentVersion]] = relationship(back_populates="document")
+    # Joined, because every result a reader sees carries the pack's trust tier
+    # and where the text came from.
+    pack: Mapped[Pack | None] = relationship(lazy="joined")
 
 
 class DocumentVersion(Base):

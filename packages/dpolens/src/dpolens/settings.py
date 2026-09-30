@@ -53,6 +53,15 @@ class Settings(BaseSettings):
         ),
     )
 
+    intra_op_num_threads: int = Field(
+        default=2,
+        ge=1,
+        description=(
+            "Threads one embedding call may use. Left to ONNX Runtime it takes every core, "
+            "and several requests each taking every core is slower than one at a time"
+        ),
+    )
+
     @field_validator("database_url", "migration_database_url")
     @classmethod
     def _require_postgres(cls, value: PostgresDsn | None) -> PostgresDsn | None:

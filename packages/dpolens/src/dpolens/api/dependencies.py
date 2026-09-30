@@ -13,6 +13,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 
 from dpolens.api import problems
+from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.tokens import (
     Authenticated,
     DelegationRefused,
@@ -22,6 +23,7 @@ from dpolens.engine.auth.tokens import (
     authenticate_delegated,
     touch,
 )
+from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.logs.governance import PAT_REJECTED, Actor, record
 from dpolens.engine.session import EngineSession, session_from
 from dpolens.settings import Settings
@@ -156,3 +158,13 @@ def trusted_surface_only(who: Caller) -> Authenticated:
 
 
 Surface = Annotated[Authenticated, Depends(trusted_surface_only)]
+Reader = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_READ))]
+
+
+def embedder(request: Request) -> Embedder:
+    """The one model this process loaded at startup, shared by every request."""
+    loaded: Embedder = request.app.state.embedder
+    return loaded
+
+
+Embedding = Annotated[Embedder, Depends(embedder)]

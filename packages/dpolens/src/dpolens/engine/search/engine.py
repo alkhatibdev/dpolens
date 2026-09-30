@@ -13,7 +13,13 @@ from typing import Literal
 
 from sqlalchemy.orm import Session
 
-from dpolens.engine.documents.read import ClauseDetail, ClauseView, get_clause, get_subtree
+from dpolens.engine.documents.read import (
+    ClauseDetail,
+    ClauseNotFound,
+    ClauseView,
+    get_clause,
+    get_subtree,
+)
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.search.fuse import RRF, Fusion, fuse
 from dpolens.engine.search.keyword import keyword_search
@@ -64,10 +70,16 @@ def search(
     }
     fused = fuse(lists, fusion)[: limit + TIE_MARGIN]
 
-    resolved = [
-        (candidate, get_clause(session, candidate.key, lang=candidate.lang, as_of=as_of))
-        for candidate in fused
-    ]
+    # A candidate the retrievers found may have no version in force on the date
+    # being asked about, which is not an error: it is a clause that did not say
+    # this then, so it is not an answer now.
+    resolved = []
+    for candidate in fused:
+        try:
+            detail = get_clause(session, candidate.key, lang=candidate.lang, as_of=as_of)
+        except ClauseNotFound:
+            continue
+        resolved.append((candidate, detail))
 
     # A clause that obliges someone outranks one that only explains, where the
     # retrievers cannot separate them. A recital reads more like a question than

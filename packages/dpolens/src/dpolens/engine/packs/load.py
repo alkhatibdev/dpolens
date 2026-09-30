@@ -29,6 +29,7 @@ from dpolens.engine.packs.format import (
     read_document,
     read_pack_metadata,
 )
+from dpolens.engine.packs.models import Pack
 
 
 @dataclass(frozen=True)
@@ -48,14 +49,19 @@ def load_pack(session: Session, pack_dir: Path) -> LoadResult:
     """Read a pack directory and store every clause in it."""
     pack = read_pack_metadata(pack_dir)
     reference = source_ref(pack)
+    row = _pack_row(session, pack)
 
     if _already_loaded(session, pack, reference):
+        # The documents are here; their pack may not be, on an instance loaded
+        # before this table existed. Linking them is what gives an old instance
+        # its trust tier back.
+        _link_documents(session, row, [entry.slug for entry in pack.documents])
         return LoadResult(pack.slug, pack.version, 0, 0, already_loaded=True)
 
     clauses_loaded = 0
     for entry in pack.documents:
         clauses = read_document(pack_dir, entry)
-        document = _document_for(session, pack, entry)
+        document = _document_for(session, pack, entry, row)
         version = _new_version(session, document, pack, reference)
         clauses_loaded += _store_clauses(session, version, clauses, pack)
 
@@ -79,10 +85,46 @@ def _already_loaded(session: Session, pack: PackMetadata, reference: str) -> boo
     return existing is not None
 
 
-def _document_for(session: Session, pack: PackMetadata, entry: PackDocument) -> Document:
+def _pack_row(session: Session, pack: PackMetadata) -> Pack:
+    """Store what the pack file says about itself, or refresh it.
+
+    One row per slug, holding the version that is loaded. A newer pack version
+    updates it in place, because a citation carries the document version it came
+    from and this row only answers which law it is and how far it has been
+    checked.
+    """
+    row = session.scalar(select(Pack).where(Pack.slug == pack.slug))
+    if row is None:
+        row = Pack(slug=pack.slug)
+        session.add(row)
+
+    row.name = pack.name
+    row.jurisdiction = pack.jurisdiction
+    row.version = pack.version
+    row.effective_date = pack.effective_date
+    row.trust_tier = pack.trust_tier
+    row.source_url = pack.source_url
+    row.license = pack.license
+    row.authoritative_language = pack.authoritative_language
+    session.flush()
+    return row
+
+
+def _link_documents(session: Session, row: Pack, slugs: list[str]) -> None:
+    for document in session.scalars(select(Document).where(Document.slug.in_(slugs))).all():
+        if document.pack_id is None:
+            document.pack_id = row.id
+    session.flush()
+
+
+def _document_for(
+    session: Session, pack: PackMetadata, entry: PackDocument, row: Pack
+) -> Document:
     document = session.scalar(select(Document).where(Document.slug == entry.slug))
     if document is None:
-        document = Document(kind="law", slug=entry.slug, title=entry.title, status="active")
+        document = Document(
+            kind="law", slug=entry.slug, title=entry.title, status="active", pack_id=row.id
+        )
         session.add(document)
         session.flush()
     elif document.kind != "law":
@@ -90,6 +132,8 @@ def _document_for(session: Session, pack: PackMetadata, entry: PackDocument) -> 
             f"slug '{entry.slug}' already belongs to an organisation policy. Pack slugs are "
             "reserved so that a citation always says which text it came from"
         )
+    else:
+        document.pack_id = row.id
     return document
 
 

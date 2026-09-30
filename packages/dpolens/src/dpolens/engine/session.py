@@ -96,6 +96,23 @@ def session_from(engine: Engine) -> Iterator[Session]:
 
 
 @contextmanager
+def maintenance_scope(settings: Settings) -> Iterator[Session]:
+    """A session for work that changes the schema, such as creating an index.
+
+    PostgreSQL requires ownership of a table to create an index on it, and the
+    application role deliberately owns nothing: that is what keeps it from
+    rewriting the governance log. So index building connects as the role that
+    owns the tables, the same one migrations use, and falls back to the ordinary
+    URL on a development database where both are the same role.
+    """
+    settings_for_owner = settings.model_copy(
+        update={"database_url": settings.migration_database_url or settings.database_url}
+    )
+    with session_scope(settings_for_owner) as session:
+        yield session
+
+
+@contextmanager
 def session_scope(settings: Settings) -> Iterator[Session]:
     """A session and an engine of its own, for a command that then exits.
 

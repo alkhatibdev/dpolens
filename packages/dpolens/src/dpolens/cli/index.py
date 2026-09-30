@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.embedding.index import build_index
-from dpolens.engine.session import session_scope
+from dpolens.engine.session import maintenance_scope, session_scope
 from dpolens.settings import load_settings
 
 app = typer.Typer(name="index", help="Build and inspect the vector index.", no_args_is_help=True)
@@ -31,7 +31,7 @@ def build(
     started = time.time()
     with (
         Embedder(get_model(model), cache_dir=cache_dir) as embedder,
-        session_scope(load_settings()) as session,
+        maintenance_scope(load_settings()) as session,
     ):
         result = build_index(session, embedder)
     elapsed = time.time() - started

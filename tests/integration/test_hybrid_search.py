@@ -8,6 +8,7 @@ turns out to be.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -120,3 +121,17 @@ def test_a_question_the_corpus_cannot_answer_returns_little(
     results = search(indexed, embedder, "kubernetes sidecar helm chart", limit=3)
 
     assert all(not result.ranks.get("keyword") for result in results)
+
+
+def test_a_date_before_the_corpus_existed_finds_nothing(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Asking what was in force in 1990 is a question, not an error.
+
+    The retrievers find candidates whatever the date, so resolving each one as of
+    that date is what decides. A clause with no version in force then is skipped
+    rather than raised, which would otherwise be a 500 on a valid request.
+    """
+    found = search(indexed, embedder, "personal data", as_of=date(1990, 1, 1))
+
+    assert found == []

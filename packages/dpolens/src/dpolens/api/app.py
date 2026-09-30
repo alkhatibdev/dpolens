@@ -18,10 +18,12 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 
 from dpolens import __version__
-from dpolens.api import health, problems, tokens
+from dpolens.api import corpus, health, problems, tokens
 from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER
 from dpolens.api.limits import RateLimiter
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.embedding import DEFAULT_MODEL, get_model
+from dpolens.engine.embedding.encode import Embedder, ensure_cached
 from dpolens.engine.logs.governance import Actor
 from dpolens.engine.session import (
     check_governance_privileges,
@@ -57,17 +59,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     with session_from(engine) as opened:
         seeded = bootstrap(opened, actor=Actor(via="api"))
 
+    # Refused here rather than on the first search: a server that reaches for the
+    # network mid-request breaks the promise that the container runs offline.
+    model = get_model(DEFAULT_MODEL)
+    ensure_cached(model)
+    embedder = Embedder(model, intra_op_num_threads=settings.intra_op_num_threads)
+
     app.state.engine = engine
+    app.state.embedder = embedder
     app.state.limiter = RateLimiter(settings.rate_limit_per_minute)
     telemetry.info(
         "api.started",
         version=__version__,
         seeded_roles=seeded,
         limit=settings.rate_limit_per_minute,
+        model=model.name,
     )
     try:
         yield
     finally:
+        # Closing the session while Python is still running is what keeps ONNX
+        # Runtime from printing an alarming teardown message at interpreter exit.
+        embedder.close()
         engine.dispose()
         telemetry.info("api.stopped")
 
@@ -90,6 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(tokens.router)
+    app.include_router(corpus.router)
     return app
 
 
