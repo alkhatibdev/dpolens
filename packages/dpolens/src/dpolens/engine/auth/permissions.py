@@ -10,7 +10,7 @@ stops the instance, because the alternative is somebody silently losing access.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from types import MappingProxyType
 
 DOCUMENTS_READ = "documents.read"
@@ -74,3 +74,8 @@ SEEDED_ROLE_DESCRIPTIONS: Mapping[str, str] = MappingProxyType(
         DEVELOPER: "Reads the corpus through an editor, and their own questions",
     }
 )
+
+
+def unknown(keys: Iterable[str]) -> tuple[str, ...]:
+    """Which of these are not in the catalog, sorted, for a message that names them."""
+    return tuple(sorted(set(keys) - set(PERMISSIONS)))

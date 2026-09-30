@@ -62,6 +62,11 @@ ROLE_CREATED = "role.created"
 ROLE_SEEDED = "role.seeded"
 ROLE_DELETED = "role.deleted"
 ROLE_PERMISSIONS_CHANGED = "role.permissions_changed"
+PAT_CREATED = "pat.created"
+PAT_REVOKED = "pat.revoked"
+# A token that exists but may no longer be used. An unknown token is not an
+# entry here: it has no owner, so there is nobody for the entry to be about.
+PAT_REJECTED = "pat.rejected"
 GOVERNANCE_EXPORTED = "governance_log.exported"
 
 

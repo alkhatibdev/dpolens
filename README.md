@@ -102,6 +102,7 @@ will authenticate and record against:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Admin
+dpolens token create --email you@example.com --name laptop --permission documents.read
 dpolens role list
 dpolens governance verify
 dpolens governance export ./export-2026-09
@@ -119,9 +120,14 @@ in the loop. [docs/governance-log.md](docs/governance-log.md) is the specificati
 including the hash recipe, so the export can be checked by something other than this
 project.
 
-There is no login yet: a personal access token is how a surface will authenticate, and
-tokens, the HTTP API, the MCP server and the dashboard come next. There is still no server
-to run and no published image.
+A token is printed once and stored only as its SHA-256. What it may do is fixed when it is
+created and can only narrow afterwards: every request takes the token's permissions
+intersected with whatever its owner holds at that moment, so losing a role, or being
+deactivated, limits every token that person owns with nothing to update and no cache to wait
+out.
+
+There is no login yet, so a token is the only credential. The HTTP API, the MCP server and
+the dashboard come next. There is still no server to run and no published image.
 
 ## Contributing
 

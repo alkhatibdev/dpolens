@@ -8,9 +8,17 @@ import typer
 from typer.core import TyperGroup
 
 from dpolens import __version__
-from dpolens.cli import clause, evals, governance, index, pack, role, search, user
+from dpolens.cli import clause, evals, governance, index, pack, role, search, token, user
 from dpolens.engine.auth.catalog import StalePermission
 from dpolens.engine.auth.roles import DuplicateRole, RoleInUse, UnknownPermission
+from dpolens.engine.auth.tokens import (
+    AmbiguousPrefix,
+    OwnerCannotHoldTokens,
+    PermissionsExceedOwner,
+    TokenNotFound,
+    TokenRejected,
+    UnknownToken,
+)
 from dpolens.engine.auth.users import (
     DuplicateEmail,
     LockoutRefused,
@@ -42,6 +50,12 @@ EXPECTED = (
     UnknownPermission,
     ExportRefused,
     MalformedExport,
+    PermissionsExceedOwner,
+    OwnerCannotHoldTokens,
+    TokenNotFound,
+    AmbiguousPrefix,
+    TokenRejected,
+    UnknownToken,
 )
 
 
@@ -73,6 +87,7 @@ app.add_typer(pack.app)
 app.add_typer(clause.app)
 app.add_typer(user.app)
 app.add_typer(role.app)
+app.add_typer(token.app)
 app.add_typer(governance.app)
 app.add_typer(index.app)
 app.add_typer(evals.app)

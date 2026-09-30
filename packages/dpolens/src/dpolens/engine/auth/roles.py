@@ -6,11 +6,13 @@ deleted, and the only thing stopping a delete is somebody still holding it.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dpolens.engine.auth.models import Permission, Role, User, user_roles
-from dpolens.engine.auth.permissions import PERMISSIONS
+from dpolens.engine.auth.permissions import PERMISSIONS, unknown
 from dpolens.engine.auth.users import get_role, lockout_guard
 from dpolens.engine.logs.governance import (
     ROLE_CREATED,
@@ -48,11 +50,12 @@ def holders(session: Session, role: Role) -> list[User]:
     )
 
 
-def _check_known(keys: tuple[str, ...]) -> None:
-    unknown = sorted(set(keys) - set(PERMISSIONS))
-    if unknown:
+def check_known(keys: Iterable[str]) -> None:
+    """Refuse anything outside the catalog, and say what the catalog holds."""
+    missing = unknown(keys)
+    if missing:
         raise UnknownPermission(
-            f"{', '.join(unknown)} is not in the permission catalog. "
+            f"{', '.join(missing)} is not in the permission catalog. "
             f"The catalog holds: {', '.join(sorted(PERMISSIONS))}"
         )
 
@@ -67,7 +70,7 @@ def create_role(
 ) -> Role:
     if session.scalars(select(Role).where(Role.name == name)).first() is not None:
         raise DuplicateRole(f"a role named {name!r} already exists")
-    _check_known(permissions)
+    check_known(permissions)
 
     role = Role(
         name=name,
@@ -90,7 +93,7 @@ def create_role(
 
 
 def grant_permission(session: Session, *, role_name: str, permission: str, actor: Actor) -> Role:
-    _check_known((permission,))
+    check_known((permission,))
     role = get_role(session, role_name)
     before = role.permission_keys()
     if permission in before:
@@ -114,7 +117,7 @@ def grant_permission(session: Session, *, role_name: str, permission: str, actor
 
 
 def revoke_permission(session: Session, *, role_name: str, permission: str, actor: Actor) -> Role:
-    _check_known((permission,))
+    check_known((permission,))
     role = get_role(session, role_name)
     before = role.permission_keys()
     if permission not in before:

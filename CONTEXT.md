@@ -147,6 +147,12 @@ A revocable credential a user creates for a surface that is not the dashboard. I
 permissions are chosen at creation and can never exceed its owner's current permissions.
 _Avoid_: API key, secret, credential
 
+**Trusted surface**:
+A token marked as allowed to say which user it is acting for, which the MCP server needs and
+a person never does. It is not a permission, because it must not be grantable by editing a
+role in a web form, and it is set from the command line only.
+_Avoid_: Service token (that is a token owned by a service account), impersonation, admin token
+
 **Permission**:
 One entry in a fixed catalog defined in code, naming one thing somebody may do, such as
 `documents.publish`. Roles are bundles of permissions; nothing grants a permission
