@@ -208,7 +208,13 @@ class TestRedaction:
     def test_the_raw_question_is_nowhere_in_the_row(
         self, api: TestClient, reader: str, opened: Session
     ) -> None:
-        """There is no column for it, which is the point of having no column."""
+        """There is no column for it, which is the point of having no column.
+
+        The needle is the whole card number rather than one group of it. A row
+        carries uuids and microsecond timestamps, and a four digit group turns up
+        in those by chance about once in six hundred rows, which made the first
+        version of this test fail with nothing personal stored at all.
+        """
         api.post(
             "/v1/search", json={"query": "card 4242 4242 4242 4242 retention"}, headers=auth(reader)
         )
@@ -219,7 +225,19 @@ class TestRedaction:
             .mappings()
             .one()
         )
-        assert "4242" not in json.dumps(dict(stored), default=str)
+
+        whole_row = json.dumps(dict(stored), default=str)
+        assert "4242 4242 4242 4242" not in whole_row
+        assert "4242424242424242" not in whole_row
+
+        # And the group on its own is absent from every column that can hold
+        # what somebody typed, which is the narrower claim worth making.
+        written = {
+            name: value
+            for name, value in stored.items()
+            if isinstance(value, str | list)
+        }
+        assert "4242" not in json.dumps(written, default=str)
 
     def test_an_operators_own_pattern_is_applied_and_named(
         self, api: TestClient, reader: str, opened: Session
