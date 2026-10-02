@@ -29,7 +29,11 @@ def live() -> dict[str, str]:
     return {"status": "alive"}
 
 
-@router.get("/ready", summary="Can the process serve requests")
+@router.get(
+    "/ready",
+    summary="Can the process serve requests",
+    responses=problems.responses(503),
+)
 def ready(opened: Opened) -> dict[str, str]:
     try:
         ping(opened)

@@ -39,7 +39,12 @@ from dpolens.engine.documents.read import (
 from dpolens.engine.logs.queries import Returned
 from dpolens.engine.search.engine import search
 
-router = APIRouter(prefix="/v1", tags=["corpus"])
+router = APIRouter(
+    prefix="/v1",
+    tags=["corpus"],
+    # Every route here authenticates, so every route can fail these ways.
+    responses=problems.responses(401, 403, 429),
+)
 
 MAX_QUERY = 1000
 """Longer than any question, and short enough that nobody can spend this
@@ -102,7 +107,11 @@ def run_search(
     return Results(results=[Result.of(result, explain=body.explain) for result in found])
 
 
-@router.get("/clauses/{key}", summary="Read one clause by its canonical key")
+@router.get(
+    "/clauses/{key}",
+    summary="Read one clause by its canonical key",
+    responses=problems.responses(404),
+)
 def read_clause(
     request: Request,
     who: Reader,
@@ -131,7 +140,11 @@ def read_clause(
     return ClauseInContext.of(detail)
 
 
-@router.get("/clauses/{key}/subtree", summary="Read a clause and everything beneath it")
+@router.get(
+    "/clauses/{key}/subtree",
+    summary="Read a clause and everything beneath it",
+    responses=problems.responses(404),
+)
 def read_subtree(
     request: Request,
     who: Reader,
@@ -186,7 +199,11 @@ def list_corpus(
     )
 
 
-@router.get("/documents/{slug}", summary="One document and its top-level structure")
+@router.get(
+    "/documents/{slug}",
+    summary="One document and its top-level structure",
+    responses=problems.responses(404),
+)
 def read_document(
     request: Request,
     who: Reader,

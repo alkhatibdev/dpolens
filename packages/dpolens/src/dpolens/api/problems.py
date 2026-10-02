@@ -13,6 +13,7 @@ from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 MEDIA_TYPE = "application/problem+json"
 BASE = "/problems/"
@@ -129,3 +130,41 @@ def too_many_requests(retry_after: int) -> Problem:
 
 def not_ready(detail: str) -> Problem:
     return Problem(kind="not-ready", title="Not ready", status=503, detail=detail)
+
+
+class ProblemDocument(BaseModel):
+    """The error shape, declared so the specification carries it.
+
+    A client branches on `type`. `title` and `status` say what class of failure it
+    is, and `detail` is written for whoever has to fix it. Some problems add a
+    field of their own, such as the permission a token is missing.
+    """
+
+    type: str = Field(description="Stable identifier for this kind of failure")
+    title: str
+    status: int
+    detail: str
+    instance: str = Field(description="The path that produced it")
+
+
+TITLES = {
+    400: "The request does not make sense",
+    401: "No usable credential",
+    403: "The credential may not do this",
+    404: "No such clause or document",
+    422: "The request body or parameters are not valid",
+    429: "The token has spent its quota for the minute",
+    503: "The instance is not ready",
+}
+
+
+def responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
+    """What a route says it can fail with, in the specification."""
+    return {
+        status: {
+            "model": ProblemDocument,
+            "description": TITLES[status],
+            "content": {MEDIA_TYPE: {"schema": {"$ref": "#/components/schemas/ProblemDocument"}}},
+        }
+        for status in statuses
+    }

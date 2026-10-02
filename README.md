@@ -7,8 +7,9 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 > ### Status: pre-release
 >
-> There is no installable version and no Docker image yet. What works today is the command
-> line: the GDPR pack loads, and search is measured.
+> There is no installable version and no Docker image yet. What runs today is the command
+> line and the HTTP API: the GDPR pack loads, search is measured, and every call is
+> authenticated and logged.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -17,12 +18,12 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 ## Why this exists
 
-Most of times you write code that touches someone's personal data. You log an email address to debug a problem. You add a phone number column. You decide that deleted accounts stay in the database for ninety days, because ninety sounded about right.
+Most weeks you write code that touches someone's personal data. You log an email address to debug a problem. You add a phone number column. You decide that deleted accounts stay in the database for ninety days, because ninety sounded about right.
 
 Every one of those is a decision with rules attached, and the organisation is on the hook
-for getting them wrong. Most developers, have never read those rules. We are
-not lawyers, nobody hands us the retention policy on the first day, and the law is long and
-written for people who are.
+for getting them wrong. Most developers have never read those rules. We are not lawyers,
+nobody hands us the retention policy on the first day, and the law is long and written for
+people who are.
 
 Now the AI assistant writes a lot of that code. It is fast, it sounds sure of itself, and it
 has never seen your organisation's policies. What it knows about the law is a blurry memory
@@ -97,8 +98,8 @@ dpolens search "how long can we keep a deleted user's data"
 dpolens clause show gdpr:art-17 --subtree
 ```
 
-Users, roles and the governance log also exist, which is what the API and the MCP server
-will authenticate and record against:
+Users, roles and the governance log are what every surface authenticates and records
+against:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Admin
@@ -126,8 +127,30 @@ intersected with whatever its owner holds at that moment, so losing a role, or b
 deactivated, limits every token that person owns with nothing to update and no cache to wait
 out.
 
-There is no login yet, so a token is the only credential. The HTTP API, the MCP server and
-the dashboard come next. There is still no server to run and no published image.
+The HTTP API is the door every surface uses:
+
+```bash
+uvicorn --factory dpolens.api.app:create_app
+
+curl -X POST http://localhost:8000/v1/search \
+  -H "Authorization: Bearer dpol_..." \
+  -H "Content-Type: application/json" \
+  -d '{"query": "how long can we keep a deleted user'"'"'s data"}'
+```
+
+Search, one clause, a clause and its subtree, and the documents in force, each result
+carrying the text verbatim with its key, its version, the date that version took effect and,
+for a law, the pack it came from and how far that pack has been checked. Failures are RFC
+9457 problem details. [docs/api.md](docs/api.md) covers authentication, the error shapes and
+every route, and [docs/openapi.json](docs/openapi.json) is committed, so a change to the
+contract is visible in the change that caused it.
+
+Every call writes one row to the query log, with personal data taken out of the question and
+an expiry the instance enforces itself. Telemetry never carries the words. An instance that
+could rewrite its own governance log refuses to serve at all.
+
+There is no login yet, so a token is the only credential, and there is no published image.
+The MCP server, Compose and the dashboard are coming.
 
 ## Contributing
 

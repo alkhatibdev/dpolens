@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The contract check compares against the base branch, which needs more
+          # than the one commit a shallow checkout gives.
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -36,6 +40,13 @@ jobs:
       - name: Import boundaries
         run: uv run lint-imports
 
+      - name: API contract
+        # The specification is committed, so a contract change is a diff in the
+        # pull request. A changed contract also needs a changelog line.
+        run: |
+          uv run python scripts/api_contract.py \
+            ${{ github.base_ref && format('--base origin/{0}', github.base_ref) || '' }}
+
       - name: Cache embedding models
         uses: actions/cache@v4
         with:
@@ -46,6 +57,24 @@ jobs:
         # Docker is available on the runner, so integration tests start their
         # own Postgres via testcontainers, built from deploy/postgres.
         run: uv run pytest
+
+  contract:
+    name: breaking API changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Reported rather than refused. A breaking change before 1.0 is allowed and
+      # sometimes right; what matters is that the pull request says so out loud.
+      - name: Compare the specification with the base branch
+        uses: oasdiff/oasdiff-action/breaking@v0.0.21
+        with:
+          base: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.base_ref }}/dpolens/docs/openapi.json
+          revision: docs/openapi.json
+          fail-on-diff: false
 
   evals:
     name: retrieval evals

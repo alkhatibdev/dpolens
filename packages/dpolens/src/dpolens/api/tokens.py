@@ -14,10 +14,15 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+from dpolens.api import problems
 from dpolens.api.dependencies import Opened, Surface
 from dpolens.engine.auth.tokens import TokenRejected, UnknownToken, authenticate
 
-router = APIRouter(prefix="/v1/tokens", tags=["tokens"])
+router = APIRouter(
+    prefix="/v1/tokens",
+    tags=["tokens"],
+    responses=problems.responses(401, 403, 429),
+)
 
 
 class IntrospectionRequest(BaseModel):
