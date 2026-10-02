@@ -286,9 +286,7 @@ class DocumentDetail:
     outline: tuple[OutlineItem, ...]
 
 
-def _summary(
-    session: Session, document: Document, version: DocumentVersion
-) -> DocumentSummary:
+def _summary(session: Session, document: Document, version: DocumentVersion) -> DocumentSummary:
     clauses = session.scalar(
         select(func.count())
         .select_from(DocumentNode)

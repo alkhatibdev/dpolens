@@ -18,6 +18,7 @@ dev = [
     "ruff>=0.9",
     "testcontainers[postgres]>=4.9",
     "types-pyyaml>=6.0.12.20260906",
+    "types-regex>=2026.9.0",
 ]
 
 [tool.ruff]

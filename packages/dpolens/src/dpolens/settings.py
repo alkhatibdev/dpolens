@@ -10,6 +10,8 @@ from urllib.parse import urlsplit
 from pydantic import Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from dpolens.engine.logs.redaction import check_pattern
+
 SECRET_SETTINGS = ("database_url", "migration_database_url")
 """Settings that also accept a `<NAME>_FILE` variant, for mounted secrets."""
 
@@ -61,6 +63,32 @@ class Settings(BaseSettings):
             "and several requests each taking every core is slower than one at a time"
         ),
     )
+
+    query_log_retention_days: int = Field(
+        default=365,
+        ge=1,
+        description=(
+            "How long a question is kept before the instance deletes it. Changing it "
+            "needs a restart, which is the right amount of friction for a promise with "
+            "legal weight"
+        ),
+    )
+
+    redaction_patterns: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Extra patterns to redact from a stored question, as {name: regex}. Patterns "
+            "can only be added: nothing here can remove a built-in or switch redaction off"
+        ),
+    )
+
+    @field_validator("redaction_patterns")
+    @classmethod
+    def _usable_patterns(cls, value: dict[str, str]) -> dict[str, str]:
+        """Refuse a bad pattern at startup rather than on the first question."""
+        for name, pattern in value.items():
+            check_pattern(name, pattern)
+        return value
 
     @field_validator("database_url", "migration_database_url")
     @classmethod

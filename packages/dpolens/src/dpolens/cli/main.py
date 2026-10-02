@@ -8,7 +8,7 @@ import typer
 from typer.core import TyperGroup
 
 from dpolens import __version__
-from dpolens.cli import clause, evals, governance, index, pack, role, search, token, user
+from dpolens.cli import clause, evals, governance, index, pack, queries, role, search, token, user
 from dpolens.engine.auth.catalog import StalePermission
 from dpolens.engine.auth.roles import DuplicateRole, RoleInUse, UnknownPermission
 from dpolens.engine.auth.tokens import (
@@ -89,6 +89,7 @@ app.add_typer(user.app)
 app.add_typer(role.app)
 app.add_typer(token.app)
 app.add_typer(governance.app)
+app.add_typer(queries.app)
 app.add_typer(index.app)
 app.add_typer(evals.app)
 app.command(name="search")(search.run)

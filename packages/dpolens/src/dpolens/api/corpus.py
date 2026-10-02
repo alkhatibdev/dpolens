@@ -14,11 +14,12 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Request
 from pydantic import BaseModel, Field
 
 from dpolens.api import problems
-from dpolens.api.dependencies import Embedding, Opened, Reader
+from dpolens.api.dependencies import Configured, Delegated, Embedding, Opened, Reader
+from dpolens.api.logging import logged, surface_of
 from dpolens.api.schemas import (
     Clause,
     ClauseInContext,
@@ -35,6 +36,7 @@ from dpolens.engine.documents.read import (
     get_subtree,
     list_documents,
 )
+from dpolens.engine.logs.queries import Returned
 from dpolens.engine.search.engine import search
 
 router = APIRouter(prefix="/v1", tags=["corpus"])
@@ -69,63 +71,113 @@ class SearchRequest(BaseModel):
 
 @router.post("/search", summary="Find the clauses that answer a question")
 def run_search(
-    body: SearchRequest, who: Reader, opened: Opened, embedder: Embedding
+    request: Request,
+    body: SearchRequest,
+    who: Reader,
+    opened: Opened,
+    embedder: Embedding,
+    settings: Configured,
+    delegated: Delegated,
 ) -> Results:
-    assert who  # the dependency is the guard; naming it keeps that visible here
-    found = search(
-        opened,
-        embedder,
-        body.query,
-        limit=body.limit,
-        lang=body.lang,
-        expand=body.expand,
-        as_of=body.as_of,
-        normative_only=not body.include_explanatory,
-    )
+    with logged(
+        request,
+        who,
+        settings,
+        operation="search",
+        surface=surface_of(delegated),
+        query=body.query,
+    ) as asked:
+        found = search(
+            opened,
+            embedder,
+            body.query,
+            limit=body.limit,
+            lang=body.lang,
+            expand=body.expand,
+            as_of=body.as_of,
+            normative_only=not body.include_explanatory,
+        )
+        asked.found([Returned.of(result.clause) for result in found])
+
     return Results(results=[Result.of(result, explain=body.explain) for result in found])
 
 
 @router.get("/clauses/{key}", summary="Read one clause by its canonical key")
 def read_clause(
+    request: Request,
     who: Reader,
     opened: Opened,
+    settings: Configured,
+    delegated: Delegated,
     key: Annotated[str, Path(description="A canonical key, such as gdpr:art-17:para-1")],
     lang: Annotated[str | None, Query(max_length=20)] = None,
     as_of: Annotated[date | None, Query()] = None,
 ) -> ClauseInContext:
-    assert who
-    try:
-        return ClauseInContext.of(get_clause(opened, key, lang=lang, as_of=as_of))
-    except ClauseNotFound as missing:
-        raise problems.not_found(str(missing)) from missing
+    with logged(
+        request,
+        who,
+        settings,
+        operation="get_clause",
+        surface=surface_of(delegated),
+        target=key,
+    ) as asked:
+        try:
+            detail = get_clause(opened, key, lang=lang, as_of=as_of)
+        except ClauseNotFound as missing:
+            asked.status = "no_match"
+            raise problems.not_found(str(missing)) from missing
+        asked.found([Returned.of(detail.clause)])
+
+    return ClauseInContext.of(detail)
 
 
 @router.get("/clauses/{key}/subtree", summary="Read a clause and everything beneath it")
 def read_subtree(
+    request: Request,
     who: Reader,
     opened: Opened,
+    settings: Configured,
+    delegated: Delegated,
     key: Annotated[str, Path(description="A canonical key, such as gdpr:art-17")],
     lang: Annotated[str | None, Query(max_length=20)] = None,
     as_of: Annotated[date | None, Query()] = None,
 ) -> list[Clause]:
     """What an assistant wants once it has the top hit: the whole article, in order."""
-    assert who
-    try:
-        return [Clause.of(view) for view in get_subtree(opened, key, lang=lang, as_of=as_of)]
-    except ClauseNotFound as missing:
-        raise problems.not_found(str(missing)) from missing
+    with logged(
+        request,
+        who,
+        settings,
+        operation="get_subtree",
+        surface=surface_of(delegated),
+        target=key,
+    ) as asked:
+        try:
+            branch = get_subtree(opened, key, lang=lang, as_of=as_of)
+        except ClauseNotFound as missing:
+            asked.status = "no_match"
+            raise problems.not_found(str(missing)) from missing
+        asked.found([Returned.of(view) for view in branch])
+
+    return [Clause.of(view) for view in branch]
 
 
 @router.get("/documents", summary="List the documents in force")
 def list_corpus(
+    request: Request,
     who: Reader,
     opened: Opened,
+    settings: Configured,
+    delegated: Delegated,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
     as_of: Annotated[date | None, Query()] = None,
 ) -> Documents:
-    assert who
-    documents, total = list_documents(opened, limit=limit, offset=offset, as_of=as_of)
+    with logged(
+        request, who, settings, operation="list_documents", surface=surface_of(delegated)
+    ) as asked:
+        documents, total = list_documents(opened, limit=limit, offset=offset, as_of=as_of)
+        asked.status = "ok" if documents else "no_match"
+
     return Documents(
         documents=[Document.of(summary) for summary in documents],
         total=total,
@@ -136,13 +188,27 @@ def list_corpus(
 
 @router.get("/documents/{slug}", summary="One document and its top-level structure")
 def read_document(
+    request: Request,
     who: Reader,
     opened: Opened,
+    settings: Configured,
+    delegated: Delegated,
     slug: Annotated[str, Path(description="The document's slug, such as gdpr")],
     as_of: Annotated[date | None, Query()] = None,
 ) -> DocumentInDetail:
-    assert who
-    try:
-        return DocumentInDetail.of(get_document(opened, slug, as_of=as_of))
-    except ClauseNotFound as missing:
-        raise problems.not_found(str(missing)) from missing
+    with logged(
+        request,
+        who,
+        settings,
+        operation="get_document",
+        surface=surface_of(delegated),
+        target=slug,
+    ) as asked:
+        try:
+            detail = get_document(opened, slug, as_of=as_of)
+        except ClauseNotFound as missing:
+            asked.status = "no_match"
+            raise problems.not_found(str(missing)) from missing
+        asked.status = "ok"
+
+    return DocumentInDetail.of(detail)

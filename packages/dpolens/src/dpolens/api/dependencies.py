@@ -42,6 +42,9 @@ def settings_of(request: Request) -> Settings:
     return settings
 
 
+Configured = Annotated[Settings, Depends(settings_of)]
+
+
 def session(request: Request) -> Iterator[EngineSession]:
     """One session per request, on the engine the process opened at startup."""
     with session_from(request.app.state.engine) as opened:
@@ -168,3 +171,11 @@ def embedder(request: Request) -> Embedder:
 
 
 Embedding = Annotated[Embedder, Depends(embedder)]
+
+
+def was_delegated(request: Request) -> bool:
+    """Whether a surface asked on somebody's behalf, which is what names it."""
+    return ON_BEHALF_OF_USER in request.headers
+
+
+Delegated = Annotated[bool, Depends(was_delegated)]

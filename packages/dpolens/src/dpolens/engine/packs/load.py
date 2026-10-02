@@ -117,9 +117,7 @@ def _link_documents(session: Session, row: Pack, slugs: list[str]) -> None:
     session.flush()
 
 
-def _document_for(
-    session: Session, pack: PackMetadata, entry: PackDocument, row: Pack
-) -> Document:
+def _document_for(session: Session, pack: PackMetadata, entry: PackDocument, row: Pack) -> Document:
     document = session.scalar(select(Document).where(Document.slug == entry.slug))
     if document is None:
         document = Document(
