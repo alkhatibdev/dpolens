@@ -7,14 +7,43 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 > ### Status: pre-release
 >
-> There is no installable version and no Docker image yet. What runs today is the command
-> line and the HTTP API: the GDPR pack loads, search is measured, and every call is
-> authenticated and logged.
+> There is no published image yet, and no dashboard. What runs today is a whole instance
+> from source: `docker compose up` starts Postgres, the HTTP API and the MCP server, with
+> GDPR loaded and the embedding model inside the image, and your assistant can search it.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
 
 ---
+
+## Getting it running
+
+Four commands, and nothing asks for an API key:
+
+```bash
+printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
+  "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+docker compose up -d
+
+docker compose exec api dpolens user create --email you@example.com \
+  --name "Your Name" --role Developer
+docker compose exec api dpolens token create --email you@example.com \
+  --name laptop --permission documents.read
+```
+
+The second command builds the images and loads GDPR, which takes a few minutes the first
+time and seconds afterwards. The last one prints a token once. Then point your assistant at
+`http://localhost:8765/mcp` with that token: [clients/](clients/) has the configuration for
+Claude Code, Cursor and VS Code, and Claude Code installs as a plugin.
+
+```bash
+claude plugin marketplace add alkhatibdev/dpolens
+claude plugin install dpolens@dpolens
+```
+
+Ask it something you would otherwise guess at: how long you may keep a deleted account, or
+whether you need consent to log an IP address. What comes back is the clause, word for word,
+with the document, the version and the date that version took effect.
 
 ## Why this exists
 
@@ -69,11 +98,6 @@ Two reasons this beats asking the model directly:
 Arabic and English are both first-class. UAE PDPL is authoritative in Arabic, and it is a
 launch pack.
 
-## Client support
-
-DPOLens is self-hosted, so it works with assistants that connect from your own machine:
-**Claude Code, Cursor and VS Code**.
-
 ## Does it actually find the right clause
 
 GDPR: **recall@5 of 0.77** (95% confidence interval 0.60 to 0.90), on 30 held-out questions
@@ -87,9 +111,12 @@ the commands to reproduce the number yourself.
 
 ## What exists today
 
-Retrieval runs, and is measured. GDPR is converted from EUR-Lex's structured XML into a
-reviewable pack of 99 articles and 173 recitals, loaded into Postgres as immutable
-versions, indexed for BM25 and meaning search, and searched:
+The commands below are the command line, which runs inside the container
+(`docker compose exec api dpolens ...`) or from a source checkout.
+
+GDPR is converted from EUR-Lex's structured XML into a reviewable pack of 99 articles and
+173 recitals, loaded into Postgres as immutable versions, indexed for BM25 and meaning
+search, and searched:
 
 ```bash
 dpolens pack load packs/gdpr
@@ -111,8 +138,8 @@ dpolens governance export ./export-2026-09
 
 Permissions are a fixed list in code and roles are data, so an organisation can invent
 "Legal" without waiting for a release. Admin, DPO and Developer are seeded and editable,
-and no seeded role can see who asked a question: that permission starts off, so the first
-time anyone holds it, somebody decided to grant it.
+and no seeded role can see who asked a question: that permission has to be granted to
+somebody on purpose.
 
 The governance log is append-only and hash-chained. The application's database role holds
 `INSERT` and `SELECT` on it and nothing else, triggers refuse an update, a delete or a
@@ -124,8 +151,7 @@ project.
 A token is printed once and stored only as its SHA-256. What it may do is fixed when it is
 created and can only narrow afterwards: every request takes the token's permissions
 intersected with whatever its owner holds at that moment, so losing a role, or being
-deactivated, limits every token that person owns with nothing to update and no cache to wait
-out.
+deactivated, limits every token that person owns straight away.
 
 The HTTP API is the door every surface uses:
 
@@ -142,15 +168,20 @@ Search, one clause, a clause and its subtree, and the documents in force, each r
 carrying the text verbatim with its key, its version, the date that version took effect and,
 for a law, the pack it came from and how far that pack has been checked. Failures are RFC
 9457 problem details. [docs/api.md](docs/api.md) covers authentication, the error shapes and
-every route, and [docs/openapi.json](docs/openapi.json) is committed, so a change to the
-contract is visible in the change that caused it.
+every route, and [docs/openapi.json](docs/openapi.json) is the contract itself.
 
 Every call writes one row to the query log, with personal data taken out of the question and
 an expiry the instance enforces itself. Telemetry never carries the words. An instance that
 could rewrite its own governance log refuses to serve at all.
 
-There is no login yet, so a token is the only credential, and there is no published image.
-The MCP server, Compose and the dashboard are coming.
+The MCP server is the surface your assistant talks to: four tools, two commands, and the
+guidance that tells an assistant to look something up before writing code that touches
+personal data. It never receives your token as its own credential. It asks the API whose
+token it is, then acts with its own and names you, so the query log records the question as
+yours. [docs/mcp.md](docs/mcp.md) covers the tools, the prompts and what each call records.
+
+There is no login yet, so a token is the only credential, and there is no published image:
+`docker compose up` builds from source. The dashboard is coming.
 
 ## Contributing
 

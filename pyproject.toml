@@ -47,6 +47,8 @@ ignore = [
 [tool.mypy]
 python_version = "3.14"
 files = ["packages/dpolens/src", "packages/dpolens-mcp/src", "tests"]
+# A test imports the script that writes the client files, the way pytest does.
+mypy_path = "scripts"
 strict = false
 warn_unused_configs = true
 warn_redundant_casts = true

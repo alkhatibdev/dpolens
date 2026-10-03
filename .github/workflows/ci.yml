@@ -47,6 +47,18 @@ jobs:
           uv run python scripts/api_contract.py \
             ${{ github.base_ref && format('--base origin/{0}', github.base_ref) || '' }}
 
+      - name: Client configuration
+        # The MCP server's instructions, the Claude Code plugin and the Cursor
+        # rules file have to say the same thing, and the Compose file has to be
+        # valid. None of that is exercised by running the server.
+        env:
+          # Only to satisfy the two variables the file refuses to start without.
+          DPOLENS_OWNER_PASSWORD: checking-the-file-only
+          DPOLENS_APP_PASSWORD: checking-the-file-only
+        run: |
+          uv run python scripts/client_text.py
+          docker compose config --quiet
+
       - name: Cache embedding models
         uses: actions/cache@v4
         with:

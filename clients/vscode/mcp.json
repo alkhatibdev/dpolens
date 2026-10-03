@@ -1,0 +1,19 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "dpolens-token",
+      "description": "Your DPOLens personal access token, from `dpolens token create`",
+      "password": true
+    }
+  ],
+  "servers": {
+    "dpolens": {
+      "type": "http",
+      "url": "http://localhost:8765/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:dpolens-token}"
+      }
+    }
+  }
+}

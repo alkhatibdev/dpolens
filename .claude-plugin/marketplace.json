@@ -1,0 +1,17 @@
+{
+  "name": "dpolens",
+  "description": "DPOLens: your organisation's privacy policies and the law, with citations, inside your editor.",
+  "owner": {
+    "name": "DPOLens",
+    "url": "https://github.com/alkhatibdev/dpolens"
+  },
+  "plugins": [
+    {
+      "name": "dpolens",
+      "source": "./clients/claude-code",
+      "description": "Search the policies and the law from Claude Code, and check a change against them.",
+      "category": "compliance",
+      "tags": ["privacy", "gdpr", "compliance", "legal"]
+    }
+  ]
+}

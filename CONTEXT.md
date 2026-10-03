@@ -149,9 +149,13 @@ _Avoid_: API key, secret, credential
 
 **Trusted surface**:
 A token marked as allowed to say which user it is acting for, which the MCP server needs and
-a person never does. It is not a permission, because it must not be grantable by editing a
-role in a web form, and it is set from the command line only.
+a person never does. It is not a permission, and it is set from the command line only.
 _Avoid_: Service token (that is a token owned by a service account), impersonation, admin token
+
+**Surface credential**:
+The token a surface presents as itself, provisioned by the instance into a file the surface
+reads. It carries no permissions: what it is trusted with is naming the person it acts for.
+_Avoid_: Service key, shared secret, internal token
 
 **Permission**:
 One entry in a fixed catalog defined in code, naming one thing somebody may do, such as
@@ -251,16 +255,15 @@ The record of searches, clause lookups and (from v0.2) answers, with the query t
 PII-redacted and a retention period after which entries are deleted.
 _Avoid_: Q&A log, audit log, usage log, history
 
-This glossary is kept by review, not by a CI check for now. A term used loosely in a pull
+This glossary is kept by review rather than by a check in CI. A term used loosely in a pull
 request is a review comment, not a failed build.
 
-## Flagged ambiguities
+## Words that are easy to misuse
 
 - "Context" is not a word this project uses on its own. Say breadcrumb, subtree,
   cross-reference or **context recipe** (the versioned rule for building the string that
   gets embedded), so that nothing is confused with an assistant's context
   window or with this file.
-- The MCP tool `search_policies` and the prompts `/policy-check` and `/policy-tour` search
-  laws as well as organisation policies. The names are kept on purpose, because they may
-  help assistants decide to call the tool. They do not change what **organisation policy**
-  means.
+- The MCP tool `search_policies` and the prompts `policy_check` and `policy_tour` search
+  laws as well as organisation policies. The names are kept, because they help an assistant
+  decide to call the tool, and they do not change what **organisation policy** means.

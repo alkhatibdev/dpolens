@@ -26,6 +26,32 @@ def test_accepts_a_postgres_url() -> None:
     assert settings.database_url.path == "/dpolens"
 
 
+def test_the_driver_is_named_even_when_the_url_leaves_it_out() -> None:
+    """A bare postgresql:// URL is read by SQLAlchemy as a request for psycopg2.
+
+    DPOLens installs psycopg 3, so a URL written the way every Postgres document
+    writes it would fail with a missing module instead of connecting. The driver
+    is filled in here rather than in each of the three places that connect.
+    """
+    settings = build(database_url=VALID_URL, migration_database_url=VALID_URL)
+
+    assert str(settings.database_url).startswith("postgresql+psycopg://")
+    assert str(settings.migration_database_url).startswith("postgresql+psycopg://")
+
+
+def test_a_named_driver_is_left_as_it_is() -> None:
+    settings = build(database_url="postgresql+psycopg://user:pass@localhost:5432/dpolens")
+
+    assert str(settings.database_url) == "postgresql+psycopg://user:pass@localhost:5432/dpolens"
+
+
+def test_naming_the_driver_does_not_change_the_role_the_url_names() -> None:
+    """Migrations grant to this name, so it has to survive the rewrite."""
+    settings = build(database_url=VALID_URL)
+
+    assert settings.app_role == "user"
+
+
 def test_refuses_a_missing_database_url() -> None:
     with pytest.raises(ValidationError):
         build()

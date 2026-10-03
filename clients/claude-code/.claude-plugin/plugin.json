@@ -1,0 +1,37 @@
+{
+  "name": "dpolens",
+  "displayName": "DPOLens",
+  "description": "Search your organisation's privacy policies and the law, with the clause text and a citation.",
+  "author": {
+    "name": "DPOLens",
+    "url": "https://github.com/alkhatibdev/dpolens"
+  },
+  "repository": "https://github.com/alkhatibdev/dpolens",
+  "license": "Apache-2.0",
+  "keywords": ["privacy", "gdpr", "compliance", "legal", "mcp"],
+  "userConfig": {
+    "url": {
+      "type": "string",
+      "title": "DPOLens MCP server",
+      "description": "Where your instance's MCP server is. The default is a local docker compose instance.",
+      "default": "http://localhost:8765/mcp",
+      "required": true
+    },
+    "token": {
+      "type": "string",
+      "title": "Personal access token",
+      "description": "Your own token, from `dpolens token create`. It is kept in your operating system's credential store, not in a file.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "mcpServers": {
+    "dpolens": {
+      "type": "http",
+      "url": "${user_config.url}",
+      "headers": {
+        "Authorization": "Bearer ${user_config.token}"
+      }
+    }
+  }
+}

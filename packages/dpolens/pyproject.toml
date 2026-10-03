@@ -7,6 +7,9 @@ license = "Apache-2.0"
 dependencies = [
     "alembic>=1.14",
     "fastapi>=0.120",
+    # Imported directly to find and fetch model files. It also arrives with
+    # tokenizers, which is not a reason to leave it undeclared.
+    "huggingface-hub>=1.0",
     "numpy>=2.5.3",
     "onnxruntime>=1.30.0",
     "psycopg[binary]>=3.2",

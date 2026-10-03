@@ -1,15 +1,13 @@
 # The HTTP API
 
 Every surface reaches DPOLens over this API: the MCP server, the dashboard, and
-anything you write yourself. That is the reason it exists rather than a library.
-A surface can be written in any language, and it can run somewhere the database
-is not.
+anything you write yourself. A surface can be written in any language, and it can
+run somewhere the database is not.
 
 > **Unstable until 1.0.** Routes, fields and error identifiers may change in any
 > release before 1.0. Every change is recorded in
-> [api-changelog.md](api-changelog.md), and CI refuses a change to the contract
-> that does not carry a line there. [openapi.json](openapi.json) is committed, so
-> the diff is visible in the pull request that caused it.
+> [api-changelog.md](api-changelog.md), and [openapi.json](openapi.json) is
+> published beside it.
 
 ## Authentication
 
@@ -58,8 +56,8 @@ with the media type `application/problem+json`:
 }
 ```
 
-`type` is the field to branch on. It is stable, and there is deliberately no
-second code field beside it.
+`type` is the field to branch on, and it is stable. There is no second code field
+beside it.
 
 | `type` | Status | What happened |
 | --- | --- | --- |
@@ -83,9 +81,8 @@ syntax can change, so nothing here emits them yet.
 
 ### Search
 
-`POST /v1/search`. The question goes in the body on purpose: a question in a query
-string is written to the access log of every proxy in front of the instance, which
-would undo the redaction the query log performs two tables away.
+`POST /v1/search`. The question goes in the body rather than a query string, so it
+does not reach the access log of a proxy in front of the instance.
 
 | Field | Default | What it does |
 | --- | --- | --- |
@@ -104,8 +101,8 @@ authoritative, and for a law the pack, the jurisdiction, the trust tier and the
 source URL. An organisation's own policy carries nulls there, because it is its own
 source.
 
-The fusion rule is not a parameter. It is chosen by measurement, and a client that
-could pick one would produce results nobody can reproduce or improve.
+The fusion rule is not a parameter. It is chosen by measurement, and
+[retrieval.md](retrieval.md) publishes the measurement.
 
 ### Clauses
 

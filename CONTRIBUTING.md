@@ -3,10 +3,9 @@
 DPOLens grounds AI coding assistants in an organisation's own policies and the privacy laws
 that apply to it, with citations that can be verified against a versioned source.
 
-> **Project status: pre-release.** v0.1 has not shipped. The codebase is being built in
-> the open, in thin slices. Interfaces change without notice until 1.0, including the
-> HTTP API, the pack format and the database schema. If you build on DPOLens now, pin a
-> commit.
+> **Project status: pre-release.** v0.1 has not shipped. Interfaces change without
+> notice until 1.0, including the HTTP API, the pack format and the database schema. If
+> you build on DPOLens now, pin a commit.
 
 ## Ways to contribute
 
@@ -57,7 +56,9 @@ Two Python packages in a uv workspace:
 - **`dpolens`**: the engine, the HTTP API, the background worker and the CLI.
 - **`dpolens-mcp`**: the MCP server. It talks to the HTTP API and nothing else.
 
-Plus `dashboard/` (React and TypeScript), `packs/`, `evals/` and `deploy/`.
+Plus `dashboard/` (React and TypeScript), `packs/`, `evals/`, `clients/` (the
+configuration an editor needs) and `deploy/` (the images and the init scripts
+`compose.yaml` builds from).
 
 Three boundaries are enforced in CI by `import-linter`, not by convention:
 

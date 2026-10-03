@@ -1,8 +1,8 @@
 # API changelog
 
-Every change to the HTTP contract, newest first. CI refuses a change to
-[openapi.json](openapi.json) that does not add a line here, because the people
-building against this API have no other way to find out.
+Every change to the HTTP contract, newest first, because the people building
+against this API have no other way to find out. [openapi.json](openapi.json) is
+the contract itself.
 
 Until 1.0, a release may change anything in this file's list. After 1.0, a
 breaking change needs a new major version.

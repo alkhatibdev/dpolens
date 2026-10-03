@@ -4,7 +4,7 @@
 
 ## Why
 
-<!-- The reason, or the ADR this follows. If it changes a decision, say which. -->
+<!-- The reason. If it changes something the documentation states, say which. -->
 
 ## How it was verified
 
