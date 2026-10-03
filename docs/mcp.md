@@ -15,8 +15,7 @@ four tools and two prompts, it answers over HTTP, and it reads the corpus throug
 
 Every result carries the clause word for word, a citation line, the document, the version, the
 date that version took effect, and for a law the jurisdiction, the trust tier and the source
-the text was taken from. So a claim about Article 17 can be checked, and a claim about your own
-retention policy can be checked at all.
+the text was taken from.
 
 `search_policies` searches every pack loaded on the instance and the organisation's own
 policies. It takes `query`, `limit`, `lang`, `as_of` and `include_explanatory`. A date in

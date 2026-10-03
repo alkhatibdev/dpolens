@@ -10,9 +10,9 @@ from pathlib import Path
 
 import anyio
 import pytest
-from dpolens_stub import SURFACE
 
 from dpolens_mcp.credential import Credential, MissingCredential
+from dpolens_stub import SURFACE
 
 pytestmark = pytest.mark.anyio
 

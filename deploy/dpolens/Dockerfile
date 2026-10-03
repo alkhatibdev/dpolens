@@ -4,9 +4,8 @@
 # operator runs `dpolens` commands, because all three are the same program with
 # the same configuration.
 #
-# The embedding model is baked in at build time. That is what makes the promise
-# that an instance answers questions with no network at all, and it is checked
-# at startup: the API refuses to serve if the model is not already here.
+# The embedding model is baked in at build time, and the API refuses to serve if
+# it is not there.
 
 FROM python:3.14-slim
 

@@ -26,7 +26,10 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --all-packages
+        # From the lock file, so the tools that decide whether this build passes
+        # are the versions the lock names. Resolving fresh on every run means a
+        # release of a linter can fail a commit that was green an hour earlier.
+        run: uv sync --frozen --all-packages
 
       - name: Lint
         run: uv run ruff check .
@@ -102,7 +105,10 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --all-packages
+        # From the lock file, so the tools that decide whether this build passes
+        # are the versions the lock names. Resolving fresh on every run means a
+        # release of a linter can fail a commit that was green an hour earlier.
+        run: uv sync --frozen --all-packages
 
       - name: Start Postgres
         # Built here rather than declared under services:, which starts its

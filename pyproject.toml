@@ -44,6 +44,12 @@ ignore = [
     "RUF003",
 ]
 
+[tool.ruff.lint.isort]
+# Named rather than inferred. A test helper beside the tests that import it is
+# first party, and leaving that to be worked out from `src` made the fix and the
+# check disagree about where its import belongs.
+known-first-party = ["dpolens", "dpolens_mcp", "dpolens_stub"]
+
 [tool.mypy]
 python_version = "3.14"
 files = ["packages/dpolens/src", "packages/dpolens-mcp/src", "tests"]

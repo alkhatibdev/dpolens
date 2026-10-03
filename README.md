@@ -18,7 +18,7 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 ## Getting it running
 
-Four commands, and nothing asks for an API key:
+Four commands:
 
 ```bash
 printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
@@ -41,9 +41,8 @@ claude plugin marketplace add alkhatibdev/dpolens
 claude plugin install dpolens@dpolens
 ```
 
-Ask it something you would otherwise guess at: how long you may keep a deleted account, or
-whether you need consent to log an IP address. What comes back is the clause, word for word,
-with the document, the version and the date that version took effect.
+Then ask your assistant a question: how long you may keep a deleted account, or whether you
+need consent to log an IP address.
 
 ## Why this exists
 
