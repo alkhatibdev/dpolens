@@ -18,31 +18,64 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 ## Getting it running
 
-Four commands:
+You need Git, Docker with Compose, and an assistant that speaks MCP (Claude Code, Cursor or
+VS Code).
+
+**1. Get the code and start an instance**
 
 ```bash
+git clone https://github.com/alkhatibdev/dpolens.git
+cd dpolens
 printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
   "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
 docker compose up -d
+```
 
+The first `up` builds the images and loads GDPR, which takes a few minutes. After that it
+takes seconds. When it returns, `docker compose ps` shows `db`, `api` and `mcp` as healthy.
+
+**2. Create yourself a user and a token**
+
+```bash
 docker compose exec api dpolens user create --email you@example.com \
   --name "Your Name" --role Developer
 docker compose exec api dpolens token create --email you@example.com \
   --name laptop --permission documents.read
 ```
 
-The second command builds the images and loads GDPR, which takes a few minutes the first
-time and seconds afterwards. The last one prints a token once. Then point your assistant at
-`http://localhost:8765/mcp` with that token: [clients/](clients/) has the configuration for
-Claude Code, Cursor and VS Code, and Claude Code installs as a plugin.
+The token starts with `dpol_` and is shown once, so copy it now.
+
+**3. Connect your assistant**
+
+For Claude Code, install the plugin:
 
 ```bash
 claude plugin marketplace add alkhatibdev/dpolens
 claude plugin install dpolens@dpolens
 ```
 
-Then ask your assistant a question: how long you may keep a deleted account, or whether you
-need consent to log an IP address.
+The plugin needs two settings, the server address and your token. Open Claude Code and run
+`/plugin configure dpolens@dpolens`, keep the default address (`http://localhost:8765/mcp`)
+and paste the token. The token is kept in your operating system's credential store, not in a
+file. Restart Claude Code, and `/mcp` lists `dpolens` as connected.
+
+For Cursor and VS Code, [clients/](clients/) has the configuration.
+
+**4. Ask a question**
+
+Ask your assistant how long you may keep a deleted account, or whether you need consent to
+log an IP address. The answer quotes the clause it relies on and cites it.
+
+**If `setup` fails with "password authentication failed"**
+
+The passwords in `.env` are fixed when the database is first created, so a new `.env` does
+not reach a database that already exists. To start over, delete the local database and bring
+the instance up again:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
 
 ## Why this exists
 
