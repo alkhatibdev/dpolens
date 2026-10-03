@@ -6,6 +6,8 @@ about the design depends on that being the only time it appears.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
@@ -183,3 +185,71 @@ def test_a_token_with_no_permissions_says_it_can_do_nothing(instance: None, uniq
     created = run("token", "create", "--email", email, "--name", "empty")
 
     assert "can do nothing" in created
+
+
+class TestEnsuringASurfaceCredential:
+    """What a container's entrypoint runs, which is where this has to work.
+
+    The command reports after the session has closed, so these also cover the
+    reason it has a prefix of its own to print.
+    """
+
+    def test_it_writes_a_credential_and_never_prints_one(
+        self, instance: None, tmp_path: Path, unique: str
+    ) -> None:
+        out = tmp_path / "surface-token"
+
+        output = run(
+            "token",
+            "ensure-surface",
+            "--out",
+            str(out),
+            "--name",
+            f"mcp-{unique}",
+            "--email",
+            f"surface-{unique}@surface.invalid",
+        )
+
+        written = out.read_text(encoding="utf-8").strip()
+        assert written.startswith("dpol_")
+        assert written not in output
+        assert out.read_text(encoding="utf-8").strip() == written
+        assert "Wrote a surface credential" in output
+        assert written[:11] in output
+
+    def test_running_it_again_leaves_the_credential_alone(
+        self, instance: None, tmp_path: Path, unique: str
+    ) -> None:
+        out = tmp_path / "surface-token"
+        email = f"surface-{unique}@surface.invalid"
+        run("token", "ensure-surface", "--out", str(out), "--email", email)
+        written = out.read_text(encoding="utf-8")
+
+        output = run("token", "ensure-surface", "--out", str(out), "--email", email)
+
+        assert "still works" in output
+        assert out.read_text(encoding="utf-8") == written
+
+    def test_the_credential_it_writes_is_listed_as_a_trusted_surface(
+        self, instance: None, tmp_path: Path, unique: str
+    ) -> None:
+        out = tmp_path / "surface-token"
+        run(
+            "token",
+            "ensure-surface",
+            "--out",
+            str(out),
+            "--name",
+            f"mcp-{unique}",
+            "--email",
+            f"surface-{unique}@surface.invalid",
+        )
+
+        listed = run("token", "list")
+
+        # Exactly one credential works at a time: provisioning a new one
+        # supersedes whatever the service account held before.
+        rows = [row for row in listed.splitlines() if f"mcp-{unique}" in row]
+        active = [row for row in rows if "[active]" in row]
+        assert len(active) == 1
+        assert "[trusted surface]" in active[0]
