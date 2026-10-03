@@ -1,0 +1,117 @@
+# A whole DPOLens instance: a database, a one off setup, the HTTP API and the
+# MCP server your editor connects to.
+#
+#   printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
+#     "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+#   docker compose up -d
+#
+# Then create yourself a user and a token, which is the only way in until the
+# dashboard exists:
+#
+#   docker compose exec api dpolens user create --email you@example.com \
+#     --name "Your Name" --role Developer
+#   docker compose exec api dpolens token create --email you@example.com \
+#     --name laptop --permission documents.read
+#
+# Nothing here needs an API key, and no question leaves the instance.
+
+name: dpolens
+
+x-database: &database
+  DPOLENS_DATABASE_URL: postgresql://dpolens_app:${DPOLENS_APP_PASSWORD:?generate one, see the top of this file}@db:5432/dpolens
+  DPOLENS_MIGRATION_DATABASE_URL: postgresql://dpolens_owner:${DPOLENS_OWNER_PASSWORD:?generate one, see the top of this file}@db:5432/dpolens
+
+services:
+  db:
+    build: ./deploy/postgres
+    environment:
+      POSTGRES_DB: dpolens
+      POSTGRES_USER: dpolens_owner
+      POSTGRES_PASSWORD: ${DPOLENS_OWNER_PASSWORD:?generate one, see the top of this file}
+      # Read by the script that creates the application role, once, when the
+      # database is first initialised.
+      DPOLENS_APP_PASSWORD: ${DPOLENS_APP_PASSWORD:?generate one, see the top of this file}
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./deploy/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username dpolens_owner --dbname dpolens"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  # Migrates, loads every pack in the image, and embeds what is not embedded
+  # yet. It runs as the role that owns the tables and then exits, which is why
+  # the API can run as a role that cannot rewrite its own audit log.
+  setup:
+    build:
+      context: .
+      dockerfile: deploy/dpolens/Dockerfile
+    command: ["setup.sh"]
+    environment: *database
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/dpolens/Dockerfile
+    environment:
+      <<: *database
+      DPOLENS_SURFACE_TOKEN_FILE: /run/dpolens/surface-token
+    volumes:
+      # The credential the API provisions for the MCP server. Both containers
+      # run as the same user, because the file is readable by its owner alone.
+      - surface:/run/dpolens
+    ports:
+      - "${DPOLENS_API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready')"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  mcp:
+    build:
+      context: .
+      dockerfile: deploy/mcp/Dockerfile
+    environment:
+      DPOLENS_MCP_API_URL: http://api:8000
+      DPOLENS_MCP_SURFACE_TOKEN_FILE: /run/dpolens/surface-token
+      # Listening on every interface inside the container, so the published port
+      # reaches it. It still answers only to localhost in the Host header; a
+      # team instance behind a hostname adds that name to
+      # DPOLENS_MCP_ALLOWED_HOSTS.
+      DPOLENS_MCP_HOST: 0.0.0.0
+      DPOLENS_MCP_ALLOWED_HOSTS: ${DPOLENS_MCP_ALLOWED_HOSTS:-[]}
+    volumes:
+      - surface:/run/dpolens:ro
+    ports:
+      - "${DPOLENS_MCP_PORT:-8765}:8765"
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/live')"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  database:
+  surface:
