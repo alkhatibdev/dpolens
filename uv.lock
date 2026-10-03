@@ -484,6 +484,7 @@ source = { editable = "packages/dpolens" }
 dependencies = [
     { name = "alembic" },
     { name = "fastapi" },
+    { name = "huggingface-hub" },
     { name = "numpy" },
     { name = "onnxruntime" },
     { name = "psycopg", extra = ["binary"] },
@@ -501,6 +502,7 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.14" },
     { name = "fastapi", specifier = ">=0.120" },
+    { name = "huggingface-hub", specifier = ">=1.0" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "onnxruntime", specifier = ">=1.30.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
@@ -519,14 +521,22 @@ name = "dpolens-mcp"
 version = "0.0.0"
 source = { editable = "packages/dpolens-mcp" }
 dependencies = [
-    { name = "httpx" },
+    { name = "anyio" },
+    { name = "httpx2" },
     { name = "mcp" },
+    { name = "pydantic-settings" },
+    { name = "starlette" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "mcp", specifier = ">=1.2" },
+    { name = "anyio", specifier = ">=4.10" },
+    { name = "httpx2", specifier = ">=2.13" },
+    { name = "mcp", specifier = "==2.2.0" },
+    { name = "pydantic-settings", specifier = ">=2.7" },
+    { name = "starlette", specifier = ">=0.48" },
+    { name = "uvicorn", specifier = ">=0.31" },
 ]
 
 [[package]]
