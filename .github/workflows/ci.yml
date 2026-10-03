@@ -87,7 +87,8 @@ jobs:
       - name: Compare the specification with the base branch
         uses: oasdiff/oasdiff-action/breaking@v0.0.21
         with:
-          base: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.base_ref }}/dpolens/docs/openapi.json
+          # The repository root is this directory, so the path has no prefix.
+          base: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.base_ref }}/docs/openapi.json
           revision: docs/openapi.json
           fail-on-diff: false
 
