@@ -12,8 +12,6 @@
 #     --name "Your Name" --role Developer
 #   docker compose exec api dpolens token create --email you@example.com \
 #     --name laptop --permission documents.read
-#
-# Nothing here needs an API key, and no question leaves the instance.
 
 name: dpolens
 

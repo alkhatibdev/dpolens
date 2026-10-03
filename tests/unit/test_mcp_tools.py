@@ -12,6 +12,10 @@ import json
 from typing import Any
 
 import pytest
+from mcp import Client
+
+from dpolens_mcp.api import Api, Refused
+from dpolens_mcp.credential import Credential
 from dpolens_stub import (
     DEVELOPER,
     PAT_ID,
@@ -23,10 +27,6 @@ from dpolens_stub import (
     said,
     structured,
 )
-from mcp import Client
-
-from dpolens_mcp.api import Api, Refused
-from dpolens_mcp.credential import Credential
 
 pytestmark = pytest.mark.anyio
 
