@@ -8,9 +8,22 @@ import typer
 from typer.core import TyperGroup
 
 from dpolens import __version__
-from dpolens.cli import clause, evals, governance, index, pack, queries, role, search, token, user
+from dpolens.cli import (
+    clause,
+    evals,
+    governance,
+    index,
+    model,
+    pack,
+    queries,
+    role,
+    search,
+    token,
+    user,
+)
 from dpolens.engine.auth.catalog import StalePermission
 from dpolens.engine.auth.roles import DuplicateRole, RoleInUse, UnknownPermission
+from dpolens.engine.auth.surface import SurfaceOwnerIsAPerson
 from dpolens.engine.auth.tokens import (
     AmbiguousPrefix,
     OwnerCannotHoldTokens,
@@ -56,6 +69,7 @@ EXPECTED = (
     AmbiguousPrefix,
     TokenRejected,
     UnknownToken,
+    SurfaceOwnerIsAPerson,
 )
 
 
@@ -91,6 +105,7 @@ app.add_typer(token.app)
 app.add_typer(governance.app)
 app.add_typer(queries.app)
 app.add_typer(index.app)
+app.add_typer(model.app)
 app.add_typer(evals.app)
 app.command(name="search")(search.run)
 

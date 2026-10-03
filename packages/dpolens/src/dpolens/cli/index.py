@@ -21,11 +21,18 @@ app = typer.Typer(name="index", help="Build and inspect the vector index.", no_a
 def build(
     model: Annotated[str, typer.Option(help="Embedding model to use")] = DEFAULT_MODEL,
     cache_dir: Annotated[Path | None, typer.Option(help="Where model files are kept")] = None,
+    skip_embedded: Annotated[
+        bool,
+        typer.Option(
+            "--skip-embedded",
+            help="Leave clauses this model has already embedded alone, so a second run is cheap",
+        ),
+    ] = False,
 ) -> None:
     """Embed every clause that has text.
 
-    The first run downloads the model, which is the only time DPOLens reaches
-    the network. After that it works offline.
+    The model has to be on the machine already: `dpolens model fetch` puts it
+    there, and nothing else reaches the network.
     """
     typer.echo(f"Loading {model} ...")
     started = time.time()
@@ -33,7 +40,7 @@ def build(
         Embedder(get_model(model), cache_dir=cache_dir) as embedder,
         maintenance_scope(load_settings()) as session,
     ):
-        result = build_index(session, embedder)
+        result = build_index(session, embedder, skip_embedded=skip_embedded)
     elapsed = time.time() - started
 
     typer.echo(
@@ -41,6 +48,8 @@ def build(
         f"({result.recipe}) in {elapsed:.1f}s, "
         f"skipping {result.skipped_without_text} with no text of their own"
     )
+    if result.skipped_already_embedded:
+        typer.echo(f"Left {result.skipped_already_embedded} already embedded clauses alone")
 
 
 @app.command()

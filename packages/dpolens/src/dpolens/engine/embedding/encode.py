@@ -41,10 +41,23 @@ def ensure_cached(model: EmbeddingModel, cache_dir: Path | None = None) -> None:
     if missing:
         where = cache or "the default Hugging Face cache"
         raise ModelNotCached(
-            f"{model.repo} is not in {where}, missing {', '.join(missing)}. Bake the model "
-            "into the image, mount the cache, or run `dpolens index build` once on a machine "
-            "with a network."
+            f"{model.repo} is not in {where}, missing {', '.join(missing)}. Run "
+            "`dpolens model fetch` once on a machine with a network, bake the model into "
+            "the image, or mount the cache."
         )
+
+
+def fetch(model: EmbeddingModel, cache_dir: Path | None = None) -> list[Path]:
+    """Download the files a model needs, and return where they landed.
+
+    The one moment DPOLens reaches the network. Run it while building an image or
+    once on a machine that has a network, and every search afterwards is local.
+    """
+    cache = str(cache_dir) if cache_dir else None
+    return [
+        Path(hf_hub_download(model.repo, name, cache_dir=cache))
+        for name in ("tokenizer.json", model.onnx_file)
+    ]
 
 
 class Embedder:
