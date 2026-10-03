@@ -232,11 +232,7 @@ class TestRedaction:
 
         # And the group on its own is absent from every column that can hold
         # what somebody typed, which is the narrower claim worth making.
-        written = {
-            name: value
-            for name, value in stored.items()
-            if isinstance(value, str | list)
-        }
+        written = {name: value for name, value in stored.items() if isinstance(value, str | list)}
         assert "4242" not in json.dumps(written, default=str)
 
     def test_an_operators_own_pattern_is_applied_and_named(

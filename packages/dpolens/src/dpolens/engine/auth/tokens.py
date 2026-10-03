@@ -245,8 +245,14 @@ def find(session: Session, prefix: str) -> PersonalAccessToken:
 
 
 def revoke(session: Session, *, prefix: str, actor: Actor) -> PersonalAccessToken:
+    """Stop the token a prefix names from working."""
+    return revoke_token(session, find(session, prefix), actor=actor)
+
+
+def revoke_token(
+    session: Session, row: PersonalAccessToken, *, actor: Actor
+) -> PersonalAccessToken:
     """Stop a token working, keeping the row because the query log points at it."""
-    row = find(session, prefix)
     if row.revoked_at is not None:
         return row
 

@@ -8,15 +8,20 @@ the only way a surface reaches the corpus.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.surface import SURFACE_EMAIL, SURFACE_NAME, ensure_surface
 from dpolens.engine.auth.tokens import list_tokens, mint, revoke, status_of
 from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
+
+SURFACE_PATH = Path("/run/dpolens/surface-token")
+"""Where a container writes the credential its MCP server reads."""
 
 app = typer.Typer(
     name="token", help="Create, list and revoke personal access tokens.", no_args_is_help=True
@@ -105,3 +110,37 @@ def revoke_(
         bootstrap(session, actor=actor)
         row = revoke(session, prefix=prefix, actor=actor)
         typer.echo(f"{row.prefix} is revoked. It stops working on its next call.")
+
+
+@app.command(name="ensure-surface")
+def ensure_surface_(
+    out: Annotated[
+        Path, typer.Option(help="Where to write the credential, for a surface to read")
+    ] = SURFACE_PATH,
+    name: Annotated[str, typer.Option(help="What the credential is for")] = SURFACE_NAME,
+    email: Annotated[
+        str,
+        typer.Option(help="The service account the credential belongs to. One per surface"),
+    ] = SURFACE_EMAIL,
+) -> None:
+    """Make sure a surface credential exists on disk, minting one if it does not.
+
+    Run on every start. A credential that still works is left alone, and a new
+    one supersedes whatever the service account held before, because a secret
+    that is no longer on disk cannot be recovered from the database.
+
+    The credential is never printed. It is written to the file, with a mode only
+    its owner can read, and a surface reads it from there.
+    """
+    settings = load_settings()
+    actor = cli_actor()
+
+    with session_scope(settings) as session:
+        bootstrap(session, actor=actor)
+        done = ensure_surface(session, path=out, actor=actor, name=name, email=email)
+
+    if done.minted:
+        typer.echo(f"Wrote a surface credential to {done.path}: {done.prefix}...")
+        typer.echo("Any credential the service account held before it no longer works.")
+    else:
+        typer.echo(f"The surface credential at {done.path} still works: {done.prefix}...")

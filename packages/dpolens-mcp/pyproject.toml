@@ -5,8 +5,19 @@ description = "MCP server for DPOLens. Talks to the HTTP API and nothing else."
 requires-python = ">=3.14"
 license = "Apache-2.0"
 dependencies = [
-    "httpx>=0.28",
-    "mcp>=1.2",
+    # Pinned exactly, because what this server supports of the protocol is
+    # whatever this version supports: an upgrade is a pull request of its own.
+    "mcp==2.2.0",
+    # The maintained httpx line, and the one the SDK already installs. Plain
+    # `httpx` is a different distribution that stopped at 0.28.
+    "httpx2>=2.13",
+    "pydantic-settings>=2.7",
+    # Imported directly: the credential wait, the liveness route and the server
+    # the container runs. All three arrive with the SDK, and a package that
+    # imports something names it.
+    "anyio>=4.10",
+    "starlette>=0.48",
+    "uvicorn>=0.31",
 ]
 
 [project.scripts]
