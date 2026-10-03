@@ -24,8 +24,9 @@ claude plugin marketplace add alkhatibdev/dpolens
 claude plugin install dpolens@dpolens
 ```
 
-Claude Code asks for the URL and the token when the plugin is enabled. The token goes to your
-operating system's credential store, not into a file in your repository.
+Then set the URL and the token: open Claude Code and run `/plugin configure dpolens@dpolens`.
+The token goes to your operating system's credential store, not into a file in your
+repository. Restart Claude Code, and `/mcp` lists `dpolens` as connected.
 
 You get `/dpolens:policy-check`, which reviews the change you are working on, and
 `/dpolens:policy-tour`, which shows what your instance holds. The plugin also carries a skill,
