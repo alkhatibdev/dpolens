@@ -138,9 +138,9 @@ def upgrade() -> None:
             sa.ForeignKey("users.id"),
             nullable=True,
         ),
-        # The foreign key to personal_access_tokens arrives with that table, in
-        # slice 2b. The column is here now because it is inside the hash, and
-        # adding a hashed field later would mean a second recipe.
+        # The foreign key to personal_access_tokens is added by the migration
+        # that creates that table. The column is here now because it is inside
+        # the hash, and adding a hashed field later would mean a second recipe.
         sa.Column("actor_pat_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("action", sa.Text(), nullable=False),
         sa.Column("target_type", sa.Text(), nullable=False),

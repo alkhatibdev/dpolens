@@ -32,6 +32,7 @@ class IndexResult:
     recipe: str
     embedded: int
     skipped_without_text: int
+    skipped_already_embedded: int = 0
 
 
 def register_model(session: Session, model: EmbeddingModel, activate: bool = True) -> uuid.UUID:
@@ -58,13 +59,32 @@ def register_model(session: Session, model: EmbeddingModel, activate: bool = Tru
     return uuid.UUID(str(model_id))
 
 
-def build_index(session: Session, embedder: Embedder, activate: bool = True) -> IndexResult:
-    """Embed every clause that has text, then build the vector index."""
+def build_index(
+    session: Session,
+    embedder: Embedder,
+    activate: bool = True,
+    skip_embedded: bool = False,
+) -> IndexResult:
+    """Embed every clause that has text, then build the vector index.
+
+    With `skip_embedded`, a clause this model has already embedded under the
+    current recipe is left alone. That makes a second run cheap, which is what an
+    instance restarting wants, and it is why the recipe is part of the condition:
+    a change to the recipe has to embed everything again.
+    """
     model_id = register_model(session, embedder.model, activate=activate)
 
+    unchanged = """
+            AND NOT EXISTS (
+                SELECT 1 FROM node_embeddings e
+                WHERE e.node_text_id = t.id
+                  AND e.embedding_model_id = :model_id
+                  AND e.context_recipe = :recipe
+            )
+    """
     rows = session.execute(
         text(
-            """
+            f"""
             SELECT t.id AS text_id, t.body_text, t.heading, d.title AS document_title,
                    n.canonical_key, n.id AS node_id
             FROM node_texts t
@@ -72,10 +92,26 @@ def build_index(session: Session, embedder: Embedder, activate: bool = True) -> 
             JOIN document_versions v ON v.id = n.document_version_id
             JOIN documents d ON d.id = v.document_id
             WHERE v.status = 'published' AND length(trim(t.body_text)) > 0
+            {unchanged if skip_embedded else ""}
             ORDER BY n.canonical_key
             """
-        )
+        ),
+        {"model_id": model_id, "recipe": RECIPE_VERSION} if skip_embedded else {},
     ).all()
+
+    already = (
+        session.execute(
+            text(
+                """
+                SELECT count(*) FROM node_embeddings
+                WHERE embedding_model_id = :model_id AND context_recipe = :recipe
+                """
+            ),
+            {"model_id": model_id, "recipe": RECIPE_VERSION},
+        ).scalar_one()
+        if skip_embedded
+        else 0
+    )
 
     skipped = session.execute(
         text("SELECT count(*) FROM node_texts WHERE length(trim(body_text)) = 0")
@@ -129,6 +165,7 @@ def build_index(session: Session, embedder: Embedder, activate: bool = True) -> 
         recipe=RECIPE_VERSION,
         embedded=embedded,
         skipped_without_text=int(skipped),
+        skipped_already_embedded=int(already),
     )
 
 

@@ -8,17 +8,27 @@ itself, such as append-only logs and immutable published versions.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from pathlib import Path
 
+import httpx2
 import pytest
 from alembic import command
 from alembic.config import Config
+from mcp import Client
+from mcp.client.streamable_http import streamable_http_client
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
+from starlette.applications import Starlette
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.core.image import DockerImage
+
+from dpolens_mcp.api import Api
+from dpolens_mcp.credential import Credential
+from dpolens_mcp.main import asgi
+from dpolens_mcp.settings import Settings
+from dpolens_stub import DEVELOPER, HOST, SURFACE, Stub
 
 REPO_ROOT = Path(__file__).parents[1]
 POSTGRES_IMAGE = "dpolens-postgres:test"
@@ -212,3 +222,73 @@ def clean_tables(engine: Engine) -> Iterator[None]:
 @pytest.fixture
 def testlaw_pack() -> Path:
     return FIXTURE_PACKS / "testlaw"
+
+
+# The MCP server's tests drive the real server over a DPOLens instance that
+# answers from canned bodies, which needs no database and no socket.
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture
+def surface_file(tmp_path: Path) -> Path:
+    path = tmp_path / "surface-token"
+    path.write_text(SURFACE + "\n", encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def stub() -> Stub:
+    return Stub()
+
+
+@pytest.fixture
+def settings(surface_file: Path) -> Settings:
+    return Settings(
+        api_url="http://api.invalid",  # type: ignore[arg-type]
+        surface_token_file=surface_file,
+        credential_wait_seconds=1,
+    )
+
+
+@pytest.fixture
+def instance(settings: Settings, stub: Stub) -> Starlette:
+    """The server as a container serves it, over the stub instance."""
+    api = Api(
+        base_url=settings.api,
+        credential=Credential(settings.surface_token_file),
+        timeout=5,
+        transport=stub.transport,
+    )
+    return asgi(settings, api)
+
+
+@pytest.fixture
+async def running(instance: Starlette) -> AsyncIterator[Starlette]:
+    """The app with its startup done, which is where the credential is read."""
+    async with instance.router.lifespan_context(instance):
+        yield instance
+
+
+@pytest.fixture
+async def over_http(running: Starlette) -> AsyncIterator[httpx2.AsyncClient]:
+    """An ordinary HTTP client, for the questions that are about the door."""
+    async with httpx2.AsyncClient(transport=httpx2.ASGITransport(running), base_url=HOST) as client:
+        yield client
+
+
+@pytest.fixture
+async def connected(running: Starlette) -> AsyncIterator[Client]:
+    """A real MCP client, presenting a developer's token the way a host does."""
+    async with (
+        httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(running),
+            base_url=HOST,
+            headers={"Authorization": f"Bearer {DEVELOPER}"},
+        ) as http,
+        Client(
+            streamable_http_client(f"{HOST}/mcp", http_client=http), raise_exceptions=True
+        ) as client,
+    ):
+        yield client

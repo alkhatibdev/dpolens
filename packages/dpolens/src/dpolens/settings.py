@@ -100,6 +100,12 @@ class Settings(BaseSettings):
                 "database URLs must be PostgreSQL URLs: several of the guarantees "
                 "DPOLens makes are enforced by Postgres itself."
             )
+        if value.scheme == "postgresql":
+            # Name the driver. SQLAlchemy reads a bare postgresql:// URL as a
+            # request for psycopg2, which DPOLens does not install, and the
+            # failure arrives as a missing module rather than as anything an
+            # operator could act on.
+            return PostgresDsn(str(value).replace("postgresql://", "postgresql+psycopg://", 1))
         return value
 
     @property

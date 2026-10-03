@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "dpolens": {
+      "url": "http://localhost:8765/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:DPOLENS_TOKEN}"
+      }
+    }
+  }
+}

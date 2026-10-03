@@ -45,9 +45,9 @@ class GovernanceEntry(Base):
     actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
-    # No foreign key yet: the tokens table arrives in slice 2b. The column is
-    # here from the start because it is inside the hash, and adding a hashed
-    # field later would mean a second hash recipe.
+    # The database has a foreign key here, added with the tokens table; the
+    # mapping does not need one. The column is here from the start because it is
+    # inside the hash, and adding a hashed field later would mean a second recipe.
     actor_pat_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     action: Mapped[str] = mapped_column(Text)
     target_type: Mapped[str] = mapped_column(Text)
