@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from dpolens.api import limits
 from dpolens.api.app import REQUEST_ID_HEADER, create_app
 from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER
 from dpolens.api.problems import MEDIA_TYPE
@@ -368,6 +369,12 @@ class TestActingForSomebodyElse:
 
 
 class TestTheLimit:
+    @pytest.fixture(autouse=True)
+    def stopped_clock(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The bucket earns a request back every second, so a burst that takes longer
+        than that on a busy machine would be granted its last request."""
+        monkeypatch.setattr(limits, "monotonic", lambda: 0.0)
+
     def test_a_token_that_spends_its_quota_is_told_when_to_return(
         self, api: TestClient, opened: Session, unique: str
     ) -> None:
