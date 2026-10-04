@@ -95,8 +95,29 @@ It does not say that DPOLens answers 77% of privacy questions correctly.
 
 Both fusion rules reach the same recall and convex combination ranks the right clause
 higher, so it is the default. e5-base scores three points better, which on thirty
-questions is one question, and costs 13 minutes of first-start indexing against 34 seconds
-and a 1.1 GB download against 470 MB. It is available as a setting rather than the default.
+questions is one question. It costs three times the first-start indexing, 108 seconds against
+33, and a 1.1 GB download against 470 MB. It is available as a setting rather than the default.
+
+### Why the default is not quantised
+
+The int8 build of multilingual-e5-small is a quarter of the size, 118 MB against 470 MB, and
+indexes GDPR in half the time on an Apple M series CPU. It is not the default because its score
+depends on the processor it runs on, and the published number has to be one you can reproduce.
+
+The published configuration, on the held-out set, measured 4 October 2026:
+
+| Model | CPU | recall@5 | 95% interval | MRR |
+| --- | --- | --- | --- | --- |
+| e5-small | Apple M series | 0.77 | 0.60 to 0.90 | 0.54 |
+| e5-small | x86-64 with AVX2 | 0.77 | 0.60 to 0.90 | 0.54 |
+| e5-small int8 | Apple M series | 0.77 | 0.60 to 0.90 | 0.49 |
+| e5-small int8 | x86-64 with AVX2 | 0.70 | 0.53 to 0.87 | 0.50 |
+
+Full precision gives the same answers on both processors. The int8 build runs different integer
+arithmetic on each, and on x86-64 without AVX512 it misses two more questions. The x86-64 rows
+were measured under emulation on the same machine; the full precision rows matching exactly is
+the check that emulation did not change the results. The build targets AVX512-VNNI, which was
+not available to measure. The command line still accepts it with `--model e5-small-int8`.
 
 ### Reranking made it worse
 
@@ -166,23 +187,24 @@ are worth showing, and because it demonstrates a trap worth knowing about.
 ### Which embedding model
 
 Recall@5 on the tuning set, with the index built from scratch each time on an Apple M
-series CPU.
+series CPU, measured 4 October 2026.
 
 | Model | Meaning search | Recitals excluded | Index time | Note |
 | --- | --- | --- | --- | --- |
-| multilingual-e5-small | 0.50 | 0.60 | 34s | |
-| multilingual-e5-small int8 | 0.40 | 0.50 | 102s | Built for AVX512-VNNI |
-| granite-embedding-97m-r2 int8 | 0.50 | 0.55 | 96s | Built for AVX2 |
-| multilingual-e5-base | 0.55 | **0.65** | 776s | 768 dimensions |
+| multilingual-e5-small | 0.50 | 0.60 | 33s | |
+| multilingual-e5-small int8 | 0.40 | 0.50 | 17s | Built for AVX512-VNNI |
+| granite-embedding-97m-r2 int8 | 0.50 | 0.55 | 20s | Built for AVX2 |
+| multilingual-e5-base | 0.55 | **0.65** | 108s | 768 dimensions |
 
 Every interval spans roughly 0.20, so all four overlap: this ranks the candidates, it does
 not separate them. Two things it does show clearly:
 
-- **Quantised was both less accurate and slower here.** Both int8 builds target instruction
-  sets this machine does not have, so the quantisation buys nothing and costs accuracy. On
-  a server with AVX512 the arithmetic may reverse, which is why the comparison records the
-  architecture it ran on rather than quoting a single number.
-- **e5-base leads, and costs 23 times the indexing time** for it. Whether five points of
+- **Quantised is faster here, and less accurate.** The e5-small int8 build indexes in half
+  the time and loses ten points. Both int8 builds target x86 instruction sets this machine
+  does not have, and int8 arithmetic differs from one processor to the next, which is why the
+  comparison records the architecture it ran on. The held-out comparison above shows how much
+  that matters.
+- **e5-base leads, and costs three times the indexing time** for it. Whether five points of
   recall is worth that is a held-out question, not a tuning one.
 
 ### What BM25 bought over ts_rank
