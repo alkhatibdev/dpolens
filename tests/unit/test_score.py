@@ -6,10 +6,13 @@ does not depend on what search happens to return today.
 
 from __future__ import annotations
 
+import pytest
+
 from dpolens.engine.evals.score import (
     Outcome,
     answers,
     bootstrap_interval,
+    grouped_interval,
     mean_reciprocal_rank,
     recall_at,
     score,
@@ -84,6 +87,32 @@ def test_a_perfect_set_has_no_spread() -> None:
     interval = bootstrap_interval(outcomes)
 
     assert (interval.low, interval.high) == (1.0, 1.0)
+
+
+def test_one_measurement_per_item_is_the_question_interval() -> None:
+    """The published retrieval interval must not move because tasks share the code."""
+    outcomes = [outcome(f"q{n}", "x:1", "x:1" if n % 3 else "y:1") for n in range(30)]
+
+    grouped = grouped_interval([[item.hit_at(5)] for item in outcomes])
+    questions = bootstrap_interval(outcomes, k=5)
+
+    assert (grouped.low, grouped.high) == (questions.low, questions.high)
+
+
+def test_repeated_runs_do_not_count_as_more_tasks() -> None:
+    """Three runs of ten tasks is ten tasks, so the range stays as wide as ten allow."""
+    tasks = [[True, True, True] if n % 2 else [False, False, False] for n in range(10)]
+    as_if_independent = [[run] for task in tasks for run in task]
+
+    kept_together = grouped_interval(tasks)
+    pretending = grouped_interval(as_if_independent)
+
+    assert kept_together.high - kept_together.low > pretending.high - pretending.low
+
+
+def test_an_item_with_no_measurement_is_refused() -> None:
+    with pytest.raises(ValueError, match="at least one measurement"):
+        grouped_interval([[True], []])
 
 
 def test_score_reports_what_failed() -> None:

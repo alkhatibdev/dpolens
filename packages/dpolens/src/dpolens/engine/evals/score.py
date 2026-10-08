@@ -95,13 +95,33 @@ def bootstrap_interval(
     measurement supports. The seed is fixed so that CI comparing two runs is
     comparing scores, not random draws.
     """
-    if not outcomes:
+    return grouped_interval(
+        [[outcome.hit_at(k)] for outcome in outcomes], resamples=resamples, seed=seed
+    )
+
+
+def grouped_interval(
+    groups: Sequence[Sequence[bool]], resamples: int = RESAMPLES, seed: int = 0
+) -> Interval:
+    """How much a rate would move on a different sample of items.
+
+    Each group is one item measured one or more times, such as a task given to
+    an assistant three times. Resampling the items with their measurements kept
+    together stops three runs of one task from counting as three tasks, which
+    would claim more precision than the set has.
+    """
+    if not groups:
         return Interval(0.0, 0.0)
+    if any(not group for group in groups):
+        raise ValueError("every item needs at least one measurement")
 
     rng = random.Random(seed)
-    hits = [outcome.hit_at(k) for outcome in outcomes]
-    size = len(hits)
-    draws = sorted(sum(rng.choice(hits) for _ in range(size)) / size for _ in range(resamples))
+    size = len(groups)
+    draws = []
+    for _ in range(resamples):
+        chosen = [rng.choice(groups) for _ in range(size)]
+        draws.append(sum(sum(group) for group in chosen) / sum(len(group) for group in chosen))
+    draws.sort()
 
     tail = (1 - CONFIDENCE) / 2
     low = draws[int(tail * resamples)]

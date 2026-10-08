@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Larder</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>Larder</h1>
+      <p>Groceries from local shops, delivered the same day.</p>
+    </header>
+    <main>
+      <ul id="products" class="product-grid"></ul>
+    </main>
+    <script>
+      async function showProducts() {
+        const response = await fetch("/products");
+        const products = await response.json();
+        const list = document.getElementById("products");
+        for (const product of products) {
+          const card = document.createElement("li");
+          card.className = "product-card";
+          card.innerHTML = `<h2>${product.name}</h2><p>${product.description}</p><strong>${product.price}</strong>`;
+          list.appendChild(card);
+        }
+      }
+      showProducts();
+    </script>
+  </body>
+</html>

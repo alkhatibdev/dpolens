@@ -22,3 +22,7 @@ htmlcov/
 
 # Local eval scratch
 matrix*.txt
+
+# The trigger test's subscription token, and what each batch produced
+evals/trigger/.oauth-token
+evals/trigger/runs/

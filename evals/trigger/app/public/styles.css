@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #1f2a1f;
+  background: #f7f5ef;
+}
+
+.site-header {
+  padding: 24px;
+  background: #2f5d3a;
+  color: #fff;
+}
+
+.site-header h1 {
+  margin: 0 0 4px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 24px;
+  list-style: none;
+}
+
+.product-card {
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.product-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
