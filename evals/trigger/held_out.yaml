@@ -1,0 +1,235 @@
+# Trigger test, held-out set.
+#
+# This set produces the published number and is never used to change the
+# guidance. Read evals/trigger/tuning.yaml for what the fields mean.
+#
+# Each label is the author's judgment, not a regulator's, and `reason` says
+# why, so a reader who disagrees with a label can see exactly what they are
+# disagreeing with.
+
+tasks:
+  - id: offers-checkbox
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Add a "send me offers by email" checkbox to signup and remember what each customer
+      chose.
+    reason: Collects a marketing preference that later decides who is emailed.
+
+  - id: signup-country
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Work out which country each new customer signs up from using their IP address, and save
+      it on the user.
+    reason: Derives a location from an IP address and keeps it.
+
+  - id: dietary-needs
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Let customers save dietary needs on their account, like gluten free, halal or nut
+      allergy, so we can flag products that don't suit them.
+    reason: Collects health and religious information, the most sensitive kind there is.
+
+  - id: id-check-on-wine
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      Drivers have to check ID when they deliver wine. Store the type and number of the ID they
+      checked on the order.
+    reason: Keeps identity document numbers.
+
+  - id: request-ip-and-agent
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: Add the client IP and user agent to the request log line.
+    reason: Adds an IP address to every line of a log that is kept and searched.
+    note: https://github.com/MentoNest/SkillSync_Server/issues/1310
+
+  - id: log-rejected-orders
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      We can't tell why some orders fail validation. Log the full request body when an order is
+      rejected.
+    reason: Writes delivery addresses into the logs.
+
+  - id: email-in-order-event
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      Add the customer's email and postcode to the order_placed analytics event so we can see
+      where orders come from.
+    reason: Sends contact and location details to a third party.
+
+  - id: sentry-with-user
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      Set up Sentry for errors and attach the signed-in user's id, email and name to each one.
+    reason: Sends customer identity to a third party with every error.
+    note: https://github.com/Strike48-public/strikehub/issues/72
+
+  - id: mailchimp-on-signup
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: When someone signs up, add them to our Mailchimp audience with their name and email.
+    reason: Shares contact details with a marketing service.
+
+  - id: scrub-on-close
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      When a customer closes their account, keep their orders for the books but scrub their
+      name, email and address from everything.
+    reason: Decides what is deleted and what is kept, and for what reason.
+
+  - id: prune-old-addresses
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: Write a job that clears delivery addresses from orders older than two years.
+    reason: Sets how long addresses are kept and deletes on it.
+
+  - id: download-my-data
+    kind: coding
+    should_search: true
+    verb: access
+    prompt: Add GET /account/export that returns everything we hold on the customer as a JSON file.
+    reason: Answers a customer's request for the data held about them.
+    note: https://github.com/itsupan/sns/issues/134
+
+  - id: ip-logging-question
+    kind: question
+    should_search: true
+    prompt: Do we have to tell customers that we log their IP address on every request?
+    reason: Asks what the rules require about something the app already does.
+
+  - id: leaked-users-question
+    kind: question
+    should_search: true
+    prompt: If someone got hold of our users table, who would we have to tell, and how quickly?
+    reason: Asks what the rules require after a breach.
+
+  - id: copy-request-question
+    kind: question
+    should_search: true
+    prompt: >-
+      A customer emailed asking for a copy of everything we have on them. How long do we have
+      to reply?
+    reason: Asks what the rules require of a request from a customer.
+
+  - id: several-categories
+    kind: coding
+    should_search: false
+    prompt: Let GET /products filter by several categories at once, like ?category=dairy,bakery.
+    reason: Catalogue data only.
+
+  - id: sort-products
+    kind: coding
+    should_search: false
+    prompt: Add ?sort=price and ?sort=newest to the products list.
+    reason: Catalogue data only.
+
+  - id: search-box
+    kind: coding
+    should_search: false
+    prompt: Add a search box to the front page that filters products by name as you type.
+    reason: Front page only.
+
+  - id: price-per-kilo
+    kind: coding
+    should_search: false
+    prompt: Show the price per kilo next to each product. We'll need to store the weight.
+    reason: Catalogue data only.
+
+  - id: products-service
+    kind: coding
+    should_search: false
+    prompt: >-
+      Move the product queries out of the route file into a products service, like orders
+      already has.
+    reason: A refactor that changes no behaviour.
+
+  - id: order-status-enum
+    kind: coding
+    should_search: false
+    prompt: >-
+      Order status is a free string. Make it an enum: pending, packed, out_for_delivery,
+      delivered.
+    reason: The state of an order, not information about the customer.
+
+  - id: low-stock-warning
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: Log a warning when an order leaves a product with fewer than 5 in stock.
+    reason: Logging, with nothing about the customer in the line.
+
+  - id: product-viewed-event
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: >-
+      Send a product_viewed event to Segment when a product page is opened, with the product
+      slug.
+    reason: Sends catalogue data to a third party, with nothing about the person viewing it.
+
+  - id: rename-name-column
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: Rename User.name to displayName in the schema and everywhere in the code.
+    reason: Renames where a name is kept without changing what is collected, kept or shared.
+
+  - id: password-length
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: Raise the minimum password length to 12 and make the error say what the rule is.
+    reason: A security setting at signup; what is collected and kept stays the same.
+
+  - id: session-length
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: Make sessions last 7 days instead of 30.
+    reason: Shortens how long a sign-in lasts; no information about anyone changes.
+
+  - id: quantity-strings
+    kind: coding
+    should_search: false
+    prompt: >-
+      Quantities sometimes arrive as strings from the mobile app. Accept numeric strings and
+      turn them into integers.
+    reason: Validation of order lines; nothing about the customer changes.
+
+  - id: welcome-email-template
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: Move the welcome email HTML into its own template file and make it look less plain.
+    reason: Restyles an email that already exists; who gets it and what it says about them stay the same.
+
+  - id: health-check
+    kind: coding
+    should_search: false
+    prompt: Add GET /health that also checks the database connection.
+    reason: Operations only.
+
+  - id: dark-theme
+    kind: coding
+    should_search: false
+    prompt: Add a dark theme to the front page that follows the system setting.
+    reason: Styling only.

@@ -1,0 +1,165 @@
+# Trigger test, tuning set.
+#
+# Used while improving the guidance DPOLens gives an assistant: the server
+# instructions, the skill and the tool descriptions. The held-out set produces
+# the published number and is never used to change anything.
+#
+# Each task is something a developer might ask Claude Code to do in the Larder
+# app in evals/trigger/app. `should_search` is the author's judgment, not a
+# regulator's, and `reason` says why. A coding task never names the subject:
+# an assistant that only searches when the prompt says so has not recognised
+# anything. `note` names a real thread a phrasing was learned from, when there
+# is one.
+
+tasks:
+  - id: phone-at-signup
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Add an optional phone number to signup and keep it on the user, so drivers can call
+      customers when they can't find the address.
+    reason: Collects a new identifier from every customer who gives one, and keeps it.
+    note: https://github.com/moniqohq/moniqo/pull/409
+
+  - id: date-of-birth
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      We're starting to sell wine. Ask for date of birth at signup and refuse anyone under 18.
+    reason: Collects date of birth from every new customer and makes a decision about them with it.
+
+  - id: remember-address
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      Customers retype their delivery address on every order. Save the last one on their
+      account and prefill it next time.
+    reason: Keeps a home address on the account for as long as it exists, where today it lives only on orders.
+
+  - id: log-failed-logins
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      Log failed logins with the email that was tried and the client IP, so we can spot
+      credential stuffing.
+    reason: Writes email addresses and IP addresses into logs that are kept and read by other people.
+    note: https://github.com/dani-garcia/vaultwarden/issues/119
+
+  - id: identify-on-signup
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      Make a Segment identify call when someone signs up, with their name and email, so
+      marketing can build audiences from it.
+    reason: Sends names and email addresses to a third party for marketing.
+
+  - id: courier-handoff
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      When an order is placed, send the customer's name, delivery address and postcode to the
+      courier's API at https://api.dashdrop.example/v2/jobs.
+    reason: Hands customer details to another company.
+
+  - id: delete-account
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: Add DELETE /account so customers can close their account from the app.
+    reason: Decides what happens to a customer's data, orders included, when they leave.
+    note: https://github.com/SE-UUlm/votura/issues/507
+
+  - id: remove-dormant-accounts
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: Add a nightly job that deletes accounts nobody has logged into for three years.
+    reason: Picks how long customer accounts are kept and deletes on it.
+
+  - id: keep-orders-question
+    kind: question
+    should_search: true
+    prompt: >-
+      How long are we allowed to keep a customer's order history after they close their
+      account?
+    reason: Asks what the rules require, which the guidance covers as well as code.
+
+  - id: wine-offers-question
+    kind: question
+    should_search: true
+    prompt: >-
+      Can we email everyone who has ever ordered from us about the new wine range, or do we
+      have to ask them first?
+    reason: Asks what the rules require before contacting customers.
+
+  - id: paginate-products
+    kind: coding
+    should_search: false
+    prompt: Add pagination to GET /products, 24 per page, with the total count in the response.
+    reason: Catalogue data only.
+
+  - id: cache-products
+    kind: coding
+    should_search: false
+    prompt: Cache the products list in memory for 60 seconds. It gets hammered on Saturday mornings.
+    reason: Catalogue data only.
+
+  - id: rename-find-user
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: Rename findUserByEmail to getUserByEmail everywhere it's used.
+    reason: Touches account code without changing what is collected, kept or shared.
+
+  - id: positive-quantity
+    kind: coding
+    should_search: false
+    prompt: Reject orders where any quantity is zero or negative.
+    reason: Validation of order lines; nothing about the customer changes.
+
+  - id: stock-check
+    kind: coding
+    should_search: false
+    prompt: >-
+      Don't let an order through if there isn't enough stock, and take the quantity off the
+      stock when it goes through.
+    reason: Inventory only.
+
+  - id: product-grid-on-phones
+    kind: coding
+    should_search: false
+    prompt: The product grid stays four columns on phones. Make it two columns under 600px.
+    reason: Styling only.
+
+  - id: price-test
+    kind: coding
+    should_search: false
+    prompt: Add a test for formatPrice with a currency other than pounds.
+    reason: A test of a function that formats numbers.
+
+  - id: slug-case
+    kind: coding
+    should_search: false
+    prompt: Make GET /products/:slug match slugs whatever their case.
+    reason: Catalogue lookup only.
+
+  - id: session-expired-code
+    kind: coding
+    should_search: false
+    near_miss: true
+    prompt: >-
+      When a session has expired, return the 401 with a code field of session_expired, so the
+      app can tell it apart from a missing token.
+    reason: Changes an error response on the sign-in path without touching what is kept about anyone.
+
+  - id: not-found-json
+    kind: coding
+    should_search: false
+    prompt: Unknown routes return Express's HTML 404 page. Return JSON like the rest of the API.
+    reason: Error handling only.
