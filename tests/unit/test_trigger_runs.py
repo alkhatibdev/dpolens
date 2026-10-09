@@ -7,21 +7,34 @@ without running an assistant.
 
 from __future__ import annotations
 
+import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
 
+import run_trigger_test  # noqa: E402
 from run_trigger_test import (  # noqa: E402
     PREFIXES,
     SERVERS,
+    TRIGGER,
+    NotPublishable,
     Observation,
     Outcome,
     Task,
     agrees,
+    differing,
+    digests,
     outcome_of,
+    published,
+    read_outcomes,
+    read_tasks,
+    reread,
     score,
     token_from,
 )
@@ -234,3 +247,168 @@ def test_rows_outside_what_was_sent_and_answered_are_a_disagreement() -> None:
             rows=rows,
         )
         assert not agrees(outcome)
+
+
+def retry() -> dict[str, Any]:
+    return {"type": "system", "subtype": "api_retry", "error": "unknown", "error_status": None}
+
+
+def test_a_run_cut_off_while_its_model_requests_kept_failing_is_not_scored() -> None:
+    """Ten minutes of failed requests is not ten minutes of choosing not to search."""
+    seen = watch(init(), use("1", "Read"), answer("1"), retry(), retry())
+
+    assert seen.unusable("plugin") == "the model requests kept failing (unknown)"
+
+
+def test_a_run_that_recovered_from_a_failed_request_is_scored() -> None:
+    seen = watch(init(), retry(), use("1", "Read"), answer("1"), use("2", "Edit"))
+
+    assert seen.unusable("plugin") is None
+
+
+def test_rereading_a_batch_rescores_what_the_old_rule_misjudged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_trigger_test, "RUNS", tmp_path)
+    batch = tmp_path / "held"
+    (batch / "transcripts").mkdir(parents=True)
+    (batch / "batch.json").write_text(json.dumps({"set": "held_out", "setup": "plugin"}))
+    events = [init(), use("1", "Read"), answer("1"), retry(), retry()]
+    (batch / "transcripts" / "dark-theme.2.1.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    misjudged = Outcome(
+        task="dark-theme",
+        run=2,
+        attempt=1,
+        setup="plugin",
+        scored=True,
+        called=False,
+        before_edit=False,
+        stopped_at_call=False,
+        capped="clock",
+        unusable=None,
+        model="claude-test-1",
+        version="2.1.288",
+        turns=None,
+        cost_usd=None,
+        seconds=600.0,
+        tools=["Read"],
+        dpolens_calls=0,
+        query_log_rows=0,
+    )
+    (batch / "outcomes.jsonl").write_text(json.dumps(asdict(misjudged)) + "\n")
+
+    reread("held")
+
+    [now] = read_outcomes(batch / "outcomes.jsonl")
+    assert not now.scored
+    assert now.unusable == "the model requests kept failing (unknown)"
+    assert read_outcomes(batch / "outcomes.recorded.jsonl") == [misjudged]
+
+
+def test_an_image_holding_the_checkout_differs_in_nothing() -> None:
+    listing = "aaa  /opt/dpolens/uv.lock\nbbb  /opt/dpolens/packages/x.py\n"
+    expected = {"/opt/dpolens/uv.lock": "aaa", "/opt/dpolens/packages/x.py": "bbb"}
+
+    assert differing(expected, digests(listing)) == []
+
+
+def test_a_changed_or_missing_file_is_named() -> None:
+    """A file the checkout has and the image lacks is as stale as one that changed."""
+    listing = "aaa  /opt/dpolens/uv.lock\nzzz  /opt/dpolens/packages/x.py\n"
+    expected = {
+        "/opt/dpolens/uv.lock": "aaa",
+        "/opt/dpolens/packages/x.py": "bbb",
+        "/opt/dpolens/packages/new.py": "ccc",
+    }
+
+    assert differing(expected, digests(listing)) == [
+        "/opt/dpolens/packages/new.py",
+        "/opt/dpolens/packages/x.py",
+    ]
+
+
+def held_out_batch(
+    runs: Path,
+    name: str,
+    *,
+    question_set: str = "held_out",
+    model: str | None = "claude-sonnet-5-5",
+    drop: int = 0,
+) -> None:
+    """A batch in which every task did what its label says, once."""
+    batch = runs / name
+    batch.mkdir(parents=True)
+    meta = {
+        "set": question_set,
+        "setup": "plugin",
+        "model": model,
+        "claude_code": "2.1.288",
+        "runs_per_task": 1,
+        "started": "2026-10-09T08:00:00+00:00",
+    }
+    (batch / "batch.json").write_text(json.dumps(meta))
+    session = {**init(), "model": model or "claude-sonnet-5-5"}
+    lines = []
+    for task in read_tasks(TRIGGER / "held_out.yaml"):
+        events = [session, *([use("1", SEARCH), answer("1")] if task.should_search else [])]
+        seen = watch(*events)
+        result = outcome_of(
+            task,
+            1,
+            1,
+            "plugin",
+            seen,
+            stopped_at_call=task.should_search,
+            clock=False,
+            seconds=1.0,
+            rows=1 if task.should_search else 0,
+        )
+        lines.append(json.dumps(asdict(result)) + "\n")
+    (batch / "outcomes.jsonl").write_text("".join(lines[drop:]))
+
+
+def test_a_complete_pinned_held_out_batch_is_published(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_trigger_test, "RUNS", tmp_path)
+    held_out_batch(tmp_path, "plugin")
+
+    payload = published(["plugin"])
+
+    assert payload["model"] == "claude-sonnet-5-5"
+    assert payload["measured_at"] == "2026-10-09"
+    [run] = payload["runs"]
+    assert run["groups"]["should"]["rate"]["calls"] == 12
+    assert run["groups"]["should_not"]["rate"]["calls"] == 0
+    assert run["groups"]["questions"]["rate"]["calls"] == 3
+
+
+@pytest.mark.parametrize(
+    ("kind", "reason"),
+    [
+        ({"question_set": "tuning"}, "only held-out is published"),
+        ({"model": None}, "not a pinned one"),
+        ({"drop": 1}, "scored 29 of 30 runs"),
+    ],
+)
+def test_a_batch_that_cannot_stand_behind_the_number_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: dict[str, Any], reason: str
+) -> None:
+    monkeypatch.setattr(run_trigger_test, "RUNS", tmp_path)
+    held_out_batch(tmp_path, "batch", **kind)
+
+    with pytest.raises(NotPublishable, match=reason):
+        published(["batch"])
+
+
+def test_batches_on_different_models_are_not_published_together(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(run_trigger_test, "RUNS", tmp_path)
+    held_out_batch(tmp_path, "one")
+    held_out_batch(tmp_path, "two", model="claude-other-1")
+
+    with pytest.raises(NotPublishable, match="different models"):
+        published(["one", "two"])
