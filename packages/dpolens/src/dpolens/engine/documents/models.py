@@ -144,6 +144,8 @@ class NodeText(Base):
         )
     )
     heading: Mapped[str | None] = mapped_column(Text, nullable=True)
+    label: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """The numbering in this language, such as Article (4) beside المادة (4)."""
     body_text: Mapped[str] = mapped_column(Text)
     """Verbatim. This is what citations quote and what verification checks against."""
 

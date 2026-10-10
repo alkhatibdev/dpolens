@@ -97,6 +97,27 @@ def test_a_recital_is_marked_non_normative(loaded: None) -> None:
     assert "non-normative" in result.output
 
 
+def test_a_pack_of_one_document_says_one_document(
+    instance: None, clean_tables: None, bilingual_pack: Path
+) -> None:
+    result = runner.invoke(app, ["pack", "load", str(bilingual_pack)])
+
+    assert result.exit_code == 0
+    assert result.output.rstrip().endswith("across 1 document")
+
+
+def test_a_translation_says_which_text_prevails(
+    instance: None, clean_tables: None, bilingual_pack: Path
+) -> None:
+    assert runner.invoke(app, ["pack", "load", str(bilingual_pack)]).exit_code == 0
+
+    result = runner.invoke(app, ["clause", "show", "bilingual:art-2", "--lang", "en"])
+
+    assert result.exit_code == 0
+    assert "Cases of Processing" in result.output
+    assert "en translation, ar prevails" in result.output
+
+
 def test_an_unknown_key_fails_with_a_clear_message(loaded: None) -> None:
     result = runner.invoke(app, ["clause", "show", "gdpr:art-500"])
 

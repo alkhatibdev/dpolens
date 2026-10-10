@@ -28,6 +28,7 @@ from dpolens.engine.packs.format import (
     PackMetadata,
     read_document,
     read_pack_metadata,
+    read_translations,
 )
 from dpolens.engine.packs.models import Pack
 
@@ -61,9 +62,10 @@ def load_pack(session: Session, pack_dir: Path) -> LoadResult:
     clauses_loaded = 0
     for entry in pack.documents:
         clauses = read_document(pack_dir, entry)
+        translations = read_translations(pack_dir, entry, pack, clauses)
         document = _document_for(session, pack, entry, row)
         version = _new_version(session, document, pack, reference)
-        clauses_loaded += _store_clauses(session, version, clauses, pack)
+        clauses_loaded += _store_clauses(session, version, clauses, translations, pack)
 
     return LoadResult(
         pack_slug=pack.slug,
@@ -156,11 +158,18 @@ def _new_version(
 
 
 def _store_clauses(
-    session: Session, version: DocumentVersion, clauses: list[Clause], pack: PackMetadata
+    session: Session,
+    version: DocumentVersion,
+    clauses: list[Clause],
+    translations: dict[str, list[Clause]],
+    pack: PackMetadata,
 ) -> int:
     stored = 0
     for order, clause in enumerate(clauses):
-        stored += _store_clause(session, version, clause, pack, parent=None, order=order, depth=0)
+        translated = [aligned[order] for aligned in translations.values()]
+        stored += _store_clause(
+            session, version, clause, translated, pack, parent=None, order=order, depth=0
+        )
     return stored
 
 
@@ -168,6 +177,7 @@ def _store_clause(
     session: Session,
     version: DocumentVersion,
     clause: Clause,
+    translated: list[Clause],
     pack: PackMetadata,
     parent: DocumentNode | None,
     order: int,
@@ -186,17 +196,32 @@ def _store_clause(
     session.add(node)
     session.flush()
 
-    is_authoritative = clause.lang == pack.authoritative_language
     session.add(
         NodeText(
             node_id=node.id,
             lang=clause.lang,
-            is_authoritative=is_authoritative,
-            translation_status="original" if is_authoritative else "official_translation",
+            is_authoritative=True,
+            translation_status="original",
             heading=clause.heading,
+            label=clause.label,
             body_text=clause.body_text,
         )
     )
+    statuses = {
+        translation.lang: translation.translation_status for translation in pack.translations
+    }
+    for translation in translated:
+        session.add(
+            NodeText(
+                node_id=node.id,
+                lang=translation.lang,
+                is_authoritative=False,
+                translation_status=statuses[translation.lang],
+                heading=translation.heading,
+                label=translation.label,
+                body_text=translation.body_text,
+            )
+        )
     for reference in clause.cross_references:
         session.add(
             NodeReference(node_id=node.id, to_canonical_key=reference.key, raw_text=reference.text)
@@ -204,5 +229,8 @@ def _store_clause(
 
     stored = 1
     for child_order, child in enumerate(clause.children):
-        stored += _store_clause(session, version, child, pack, node, child_order, depth + 1)
+        child_translated = [translation.children[child_order] for translation in translated]
+        stored += _store_clause(
+            session, version, child, child_translated, pack, node, child_order, depth + 1
+        )
     return stored

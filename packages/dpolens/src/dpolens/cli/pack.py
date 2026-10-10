@@ -101,7 +101,8 @@ def load(
     if result.already_loaded:
         typer.echo(f"{result.pack_slug} {result.version} is already loaded")
         return
+    documents = "document" if result.documents_loaded == 1 else "documents"
     typer.echo(
         f"Loaded {result.pack_slug} {result.version}: "
-        f"{result.clauses_loaded} clauses across {result.documents_loaded} documents"
+        f"{result.clauses_loaded} clauses across {result.documents_loaded} {documents}"
     )

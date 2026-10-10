@@ -118,6 +118,44 @@ which is what makes a pack reproducible and a review meaningful.
 Files are read in the law's own order, so `art-2.md` comes before `art-10.md` whatever a plain
 sort of the names would say.
 
+## Translations
+
+A clause file holds the text that prevails in law, in the language `pack.yaml` names as
+`authoritative_language`. A translation sits beside it, with its language before `.md`:
+
+```
+packs/uae-pdpl/
+    pack.yaml
+    uae-pdpl/
+        art-4.md        the Arabic, which prevails
+        art-4.en.md     the official English translation
+```
+
+`pack.yaml` declares each one:
+
+```yaml
+authoritative_language: ar
+translations:
+  - lang: en
+    status: official     # official when the state published it, unofficial otherwise
+    license: >-
+      Not protected by copyright, under the same exclusion as the Arabic.
+    source_url: https://uaelegislation.gov.ae/en/legislations/1972
+```
+
+A translation holds the same clauses under the same keys, in the same order, with its labels
+and headings in its own language: `### أ. {#pt-a}` in the Arabic is `### a. {#pt-a}` in the
+English, so a citation resolves to the same clause in either. `expected_clauses` counts the
+files without a language suffix.
+
+The loader refuses a translation that is missing a clause or has one the original does not,
+a file in a language `pack.yaml` does not declare, and a file whose name and `lang` disagree.
+A translation covers the whole document or it is not loaded, because a partial one would
+answer some questions in one language and silently not in the other.
+
+A clause read in translation says which language prevails, and the MCP server puts that in
+the citation it builds.
+
 ## Segment names
 
 A key segment names what the clause is, so `art-17:para-1:pt-b` reads as article 17,

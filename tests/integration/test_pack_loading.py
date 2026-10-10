@@ -15,6 +15,7 @@ from dpolens.engine.documents.models import (
     NodeReference,
     NodeText,
 )
+from dpolens.engine.documents.read import get_clause
 from dpolens.engine.packs.load import load_pack
 
 pytestmark = pytest.mark.integration
@@ -122,3 +123,39 @@ def test_loading_the_same_pack_version_twice_changes_nothing(
 
     versions = session.scalars(select(DocumentVersion)).all()
     assert len(versions) == 2  # one per document, not four
+
+
+def test_stores_every_language_of_a_clause(session: Session, bilingual_pack: Path) -> None:
+    load_pack(session, bilingual_pack)
+    session.commit()
+
+    texts = session.scalars(
+        select(NodeText)
+        .join(DocumentNode)
+        .where(DocumentNode.canonical_key == "bilingual:art-2:para-1:pt-a")
+        .order_by(NodeText.lang)
+    ).all()
+
+    assert [(t.lang, t.is_authoritative, t.translation_status, t.label) for t in texts] == [
+        ("ar", True, "original", "أ."),
+        ("en", False, "official_translation", "a."),
+    ]
+
+
+def test_reads_a_clause_in_the_language_asked_for(session: Session, bilingual_pack: Path) -> None:
+    """A translation says which text prevails, and is numbered in its own words."""
+    load_pack(session, bilingual_pack)
+    session.commit()
+
+    english = get_clause(session, "bilingual:art-2", lang="en").clause
+    arabic = get_clause(session, "bilingual:art-2", lang="ar").clause
+    unspecified = get_clause(session, "bilingual:art-2").clause
+
+    assert (english.label, english.heading, english.is_authoritative) == (
+        "Article (2)",
+        "Cases of Processing",
+        False,
+    )
+    assert english.authoritative_language == "ar"
+    assert (arabic.label, arabic.is_authoritative) == ("المادة (2)", True)
+    assert unspecified.lang == "ar", "with no language asked for, the text that prevails"

@@ -8,6 +8,7 @@ the reader is usually a contributor building a pack for their own jurisdiction.
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass, field, replace
 from datetime import date
 from pathlib import Path
@@ -30,6 +31,13 @@ FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n?(.*)\Z", re.DOTALL)
 ANY_HEADING = re.compile(r"^#{1,6}[ \t]")
 HEADING = re.compile(r"^(#{2,6})[ \t]+(.*?)[ \t]*\{#([a-z0-9][a-z0-9-]*)\}[ \t]*$")
 KEY = re.compile(r"^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)+$")
+TRANSLATION_FILE = re.compile(r"^(?P<stem>[^.]+)\.(?P<lang>[a-z]{2,3}(?:-[a-z0-9]+)?)\.md$")
+"""`art-5.en.md` holds the English translation of `art-5.md`, under the same keys."""
+
+TRANSLATION_STATUSES = {
+    "official": "official_translation",
+    "unofficial": "unofficial_translation",
+}
 
 
 class PackFormatError(Exception):
@@ -74,6 +82,21 @@ class PackDocument:
 
 
 @dataclass(frozen=True)
+class PackTranslation:
+    """A translation the pack carries beside the text that prevails."""
+
+    lang: str
+    status: str
+    """official, when the state published it, or unofficial."""
+    license: str
+    source_url: str | None = None
+
+    @property
+    def translation_status(self) -> str:
+        return TRANSLATION_STATUSES[self.status]
+
+
+@dataclass(frozen=True)
 class PackMetadata:
     slug: str
     name: str
@@ -85,7 +108,7 @@ class PackMetadata:
     license: str
     authoritative_language: str
     documents: tuple[PackDocument, ...]
-    translations: tuple[dict[str, Any], ...] = field(default=())
+    translations: tuple[PackTranslation, ...] = field(default=())
 
 
 REQUIRED_PACK_FIELDS = (
@@ -148,8 +171,35 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
         license=str(raw["license"]),
         authoritative_language=str(raw["authoritative_language"]),
         documents=documents,
-        translations=tuple(raw.get("translations") or ()),
+        translations=_read_translation_entries(path, raw),
     )
+
+
+def _read_translation_entries(path: Path, raw: dict[str, Any]) -> tuple[PackTranslation, ...]:
+    translations = []
+    for entry in raw.get("translations") or ():
+        if not isinstance(entry, dict) or not {"lang", "status", "license"} <= set(entry):
+            raise PackFormatError(
+                f"{path}: each translation needs a 'lang', a 'status' and a 'license'"
+            )
+        if entry["status"] not in TRANSLATION_STATUSES:
+            raise PackFormatError(
+                f"{path}: translation status must be one of "
+                f"{', '.join(TRANSLATION_STATUSES)}, not {entry['status']!r}"
+            )
+        if entry["lang"] == raw["authoritative_language"]:
+            raise PackFormatError(
+                f"{path}: '{entry['lang']}' is the authoritative language, not a translation"
+            )
+        translations.append(
+            PackTranslation(
+                lang=str(entry["lang"]),
+                status=str(entry["status"]),
+                license=str(entry["license"]),
+                source_url=str(entry["source_url"]) if entry.get("source_url") else None,
+            )
+        )
+    return tuple(translations)
 
 
 def _read_document_entry(path: Path, entry: dict[str, Any]) -> PackDocument:
@@ -356,6 +406,7 @@ def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
     clauses = [
         read_clause_file(path, document_normative=document.normative)
         for path in sorted(directory.glob("*.md"), key=law_order)
+        if TRANSLATION_FILE.match(path.name) is None
     ]
     if len(clauses) != document.expected_clauses:
         raise PackFormatError(
@@ -372,3 +423,80 @@ def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
                 "so it would not resolve inside this document"
             )
     return clauses
+
+
+def read_translations(
+    pack_dir: Path, document: PackDocument, pack: PackMetadata, clauses: list[Clause]
+) -> dict[str, list[Clause]]:
+    """Every translation of one document, clause for clause with the text that prevails.
+
+    A translation covers the whole document under exactly the same keys, so a
+    citation resolves to the same clause in every language. A partial or
+    misaligned translation is refused rather than loaded, since it would answer
+    some questions in one language and silently not in another.
+    """
+    directory = pack_dir / document.slug
+    declared = {translation.lang for translation in pack.translations}
+    files: dict[str, list[Path]] = {}
+    for path in sorted(directory.glob("*.md"), key=law_order):
+        match = TRANSLATION_FILE.match(path.name)
+        if match is None:
+            continue
+        lang = match.group("lang")
+        if lang not in declared:
+            raise PackFormatError(
+                f"{path}: '{lang}' is not a translation pack.yaml declares. List it under "
+                "translations, with its status and licence"
+            )
+        files.setdefault(lang, []).append(path)
+
+    for clause in clauses:
+        if clause.lang != pack.authoritative_language:
+            raise PackFormatError(
+                f"{directory}: '{clause.key}' is written in '{clause.lang}', and a clause file "
+                f"without a language suffix holds the authoritative text, "
+                f"'{pack.authoritative_language}'"
+            )
+
+    found: dict[str, list[Clause]] = {}
+    for lang in sorted(declared):
+        read = [read_clause_file(path, document.normative) for path in files.get(lang, [])]
+        counted = Counter(translated.key for translated in read)
+        repeated = sorted(key for key, count in counted.items() if count > 1)
+        if repeated:
+            raise PackFormatError(
+                f"{directory}: more than one '{lang}' file holds {repeated}. A clause has "
+                "one text in each language"
+            )
+        by_key = {translated.key: translated for translated in read}
+        for path, translated in zip(files.get(lang, []), read, strict=True):
+            if translated.lang != lang:
+                raise PackFormatError(
+                    f"{path}: the file name says '{lang}' and the front matter says "
+                    f"'{translated.lang}'"
+                )
+        aligned = []
+        for clause in clauses:
+            counterpart = by_key.pop(clause.key, None)
+            if counterpart is None:
+                raise PackFormatError(
+                    f"{directory}: '{clause.key}' has no '{lang}' translation. A translation "
+                    "covers every clause, or it is not loaded"
+                )
+            original_keys = [found_clause.key for found_clause in clause.walk()]
+            translated_keys = [found_clause.key for found_clause in counterpart.walk()]
+            if translated_keys != original_keys:
+                missing = sorted(set(original_keys) - set(translated_keys))
+                extra = sorted(set(translated_keys) - set(original_keys))
+                raise PackFormatError(
+                    f"{directory}: the '{lang}' translation of '{clause.key}' does not have the "
+                    f"same clauses in the same order. Missing: {missing or 'none'}. "
+                    f"Not in the original: {extra or 'none'}"
+                )
+            aligned.append(counterpart)
+        if by_key:
+            raise PackFormatError(
+                f"{directory}: '{lang}' files hold keys the original does not: {sorted(by_key)}"
+            )
+        found[lang] = aligned
+    return found

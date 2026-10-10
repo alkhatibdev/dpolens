@@ -185,6 +185,12 @@ The language version of a clause that prevails in law, such as the Arabic text o
 PDPL. Other languages are translations of it.
 _Avoid_: Binding text, official text, master text
 
+**Translation**:
+A clause's text in a language other than the authoritative one, under the same canonical
+key. It is official when the state that made the law published it, and unofficial
+otherwise. A clause read in translation says which text prevails.
+_Avoid_: Localisation, copy
+
 **Non-normative**:
 A clause that explains the law without creating an obligation, such as a GDPR recital.
 Search returns it, and every result says it is non-normative.

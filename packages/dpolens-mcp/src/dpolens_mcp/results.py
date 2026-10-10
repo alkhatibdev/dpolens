@@ -16,6 +16,9 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+LANGUAGES = {"ar": "Arabic", "en": "English"}
+"""Names for the languages packs carry, so a citation says Arabic rather than ar."""
+
 
 class Clause(BaseModel):
     """One clause, and what it takes to check it."""
@@ -32,6 +35,10 @@ class Clause(BaseModel):
     in_force_since: str = Field(description="The date this version took effect")
     lang: str
     authoritative: bool = Field(description="Whether this language is the one that prevails in law")
+    prevails: str | None = Field(
+        default=None,
+        description="For a clause shown in translation, the language whose text prevails",
+    )
     jurisdiction: str | None = Field(description="Null for an organisation's own policy")
     trust_tier: str | None = Field(
         description=(
@@ -55,6 +62,7 @@ class Clause(BaseModel):
             in_force_since=clause["effective_date"],
             lang=clause["lang"],
             authoritative=clause["is_authoritative"],
+            prevails=_prevails(clause),
             jurisdiction=clause["jurisdiction"],
             trust_tier=clause["trust_tier"],
             source_url=clause["source_url"],
@@ -151,10 +159,23 @@ def citation_for(clause: dict[str, Any], trail: list[str]) -> str:
     """One line somebody can check, built from the fields rather than remembered."""
     where = " > ".join([*trail, _names(clause) or clause["key"]])
     version = clause["version_label"] or "unversioned"
-    return (
+    citation = (
         f"{clause['document_title']}, {where} ({clause['key']}), "
         f"version {version}, in force since {clause['effective_date']}"
     )
+    prevails = _prevails(clause)
+    if prevails:
+        name = LANGUAGES.get(prevails, prevails)
+        citation += f". A translation: where the texts differ, the {name} text prevails"
+    return citation
+
+
+def _prevails(clause: dict[str, Any]) -> str | None:
+    """The language to rely on, when the clause in hand is not in it."""
+    if clause.get("is_authoritative", True):
+        return None
+    language = clause.get("authoritative_language")
+    return str(language) if language else None
 
 
 def _names(view: dict[str, Any]) -> str:

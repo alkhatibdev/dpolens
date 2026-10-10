@@ -224,6 +224,12 @@ def testlaw_pack() -> Path:
     return FIXTURE_PACKS / "testlaw"
 
 
+@pytest.fixture
+def bilingual_pack() -> Path:
+    """Arabic prevails, with an official English translation under the same keys."""
+    return FIXTURE_PACKS / "bilingual"
+
+
 # The MCP server's tests drive the real server over a DPOLens instance that
 # answers from canned bodies, which needs no database and no socket.
 @pytest.fixture
