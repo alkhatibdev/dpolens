@@ -4,7 +4,7 @@ jurisdiction: United Arab Emirates
 version: "2026.1"
 effective_date: 2022-01-02
 trust_tier: community
-source_url: https://uaelegislation.gov.ae/ar/legislations/1972
+source_url: https://uaelegislation.gov.ae/ar/legislations/1972/download
 license: >-
   Not protected by copyright. Federal Decree by Law No. (38) of 2021 on Copyright and
   Neighbouring Rights, Article (3), excludes official documents, whatever their original
@@ -21,7 +21,7 @@ translations:
     license: >-
       Not protected by copyright, under the same Article (3). Published by the portal as the
       official English translation of the law.
-    source_url: https://uaelegislation.gov.ae/en/legislations/1972
+    source_url: https://uaelegislation.gov.ae/en/legislations/1972/download
 
 documents:
   - slug: uae-pdpl

@@ -51,6 +51,13 @@ pack earns its trust tier: somebody read every provision.
 The checks in step 4 still apply, and they are what stops manual work from quietly losing
 an article.
 
+Where the publisher offers the same text as a PDF and as a web page, the PDF is the
+reference: `source_url` and `source_sha256` name it. Copying the text from the web page is
+fine, and for Arabic it is the practical way, since copying Arabic out of a PDF scrambles it.
+Then compare every article with the PDF and take its wording wherever the two differ. The pack's
+`SOURCE.md` says how the text was checked, and lists only where the pack departs from the
+PDF itself.
+
 ## 3. Convert
 
 ```bash

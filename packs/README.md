@@ -140,7 +140,7 @@ translations:
     status: official     # official when the state published it, unofficial otherwise
     license: >-
       Not protected by copyright, under the same exclusion as the Arabic.
-    source_url: https://uaelegislation.gov.ae/en/legislations/1972
+    source_url: https://uaelegislation.gov.ae/en/legislations/1972/download
 ```
 
 A translation holds the same clauses under the same keys, in the same order, with its labels

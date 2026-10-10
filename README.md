@@ -184,12 +184,9 @@ dpolens pack load packs/uae-pdpl
 dpolens clause show uae-pdpl:art-23 --lang en
 ```
 
-The text comes from the official legislation portal, which publishes each law as a web page
-and as a PDF, and every article was checked against the PDF. Leaving aside spellings that
-change no word, the two differ in 19 places. In 18 the web page is wrong, sometimes in a way
-that changes the meaning: its article 23 carries the title of article 22, which says the
-opposite. [packs/uae-pdpl/SOURCE.md](packs/uae-pdpl/SOURCE.md) lists every one, and which
-text the pack follows.
+The text follows the official PDFs from the UAE Legislations portal, and every article was
+checked against them, the English word by word and the Arabic letter by letter.
+[packs/uae-pdpl/SOURCE.md](packs/uae-pdpl/SOURCE.md) says how, and gives each PDF's checksum.
 
 Users, roles and the governance log are what every surface authenticates and records
 against:
