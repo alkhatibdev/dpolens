@@ -105,3 +105,18 @@ def test_both_documents_are_one_pack_version(loaded: Session) -> None:
     slugs = loaded.scalars(select(Document.slug).order_by(Document.slug)).all()
 
     assert list(slugs) == ["gdpr", "gdpr-recitals"]
+
+
+def test_articles_keep_the_laws_order(loaded: Session) -> None:
+    """Article 2 comes before article 10, which file names sorted as text would reverse."""
+    order = dict(
+        loaded.execute(
+            select(DocumentNode.canonical_key, DocumentNode.order_index).where(
+                DocumentNode.canonical_key.in_(("gdpr:art-2", "gdpr:art-10"))
+            )
+        )
+        .tuples()
+        .all()
+    )
+
+    assert order["gdpr:art-2"] < order["gdpr:art-10"]

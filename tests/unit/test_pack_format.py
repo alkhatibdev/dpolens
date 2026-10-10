@@ -8,6 +8,7 @@ import pytest
 
 from dpolens.engine.packs.format import (
     PackFormatError,
+    law_order,
     read_clause_file,
     read_document,
     read_pack_metadata,
@@ -131,3 +132,16 @@ def test_rejects_a_file_without_front_matter(tmp_path: Path) -> None:
 
     with pytest.raises(PackFormatError, match="front matter"):
         read_clause_file(path)
+
+
+def test_articles_keep_the_laws_order() -> None:
+    """Sorted as text, article 10 would come before article 2."""
+    names = [Path(name) for name in ("art-10.md", "art-2.md", "art-1.md", "rec-100.md", "rec-9.md")]
+
+    assert [path.name for path in sorted(names, key=law_order)] == [
+        "art-1.md",
+        "art-2.md",
+        "art-10.md",
+        "rec-9.md",
+        "rec-100.md",
+    ]

@@ -115,6 +115,9 @@ The body carries the text. Each heading opens a child clause:
 Structure is never guessed from the prose. A clause exists because a heading declares it,
 which is what makes a pack reproducible and a review meaningful.
 
+Files are read in the law's own order, so `art-2.md` comes before `art-10.md` whatever a plain
+sort of the names would say.
+
 ## Segment names
 
 A key segment names what the clause is, so `art-17:para-1:pt-b` reads as article 17,
