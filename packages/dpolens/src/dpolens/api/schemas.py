@@ -32,6 +32,11 @@ class Clause(BaseModel):
     is_authoritative: bool = Field(
         description="Whether this language is the one that prevails in law"
     )
+    authoritative_language: str | None = Field(
+        default=None,
+        description="For a law, the language whose text prevails where its texts disagree. "
+        "Null for an organisation's own policy",
+    )
     is_normative: bool = Field(
         description="False for text that explains without obliging, such as a recital"
     )

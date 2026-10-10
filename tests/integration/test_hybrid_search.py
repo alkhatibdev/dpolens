@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from dpolens.engine.embedding import Embedder, get_model
 from dpolens.engine.embedding.index import build_index
 from dpolens.engine.packs.load import load_pack
-from dpolens.engine.search import Fusion, search
+from dpolens.engine.search import Fusion, search, vector_search
 
 pytestmark = pytest.mark.integration
 
@@ -31,6 +31,15 @@ def embedder() -> Iterator[Embedder]:
 @pytest.fixture
 def indexed(session: Session, testlaw_pack: Path, embedder: Embedder) -> Session:
     load_pack(session, testlaw_pack)
+    session.commit()
+    build_index(session, embedder)
+    session.commit()
+    return session
+
+
+@pytest.fixture
+def bilingual(session: Session, bilingual_pack: Path, embedder: Embedder) -> Session:
+    load_pack(session, bilingual_pack)
     session.commit()
     build_index(session, embedder)
     session.commit()
@@ -135,3 +144,24 @@ def test_a_date_before_the_corpus_existed_finds_nothing(
     found = search(indexed, embedder, "personal data", as_of=date(1990, 1, 1))
 
     assert found == []
+
+
+def test_a_clause_with_two_texts_is_one_candidate(bilingual: Session, embedder: Embedder) -> None:
+    """Both texts are embedded, and counting both would rank a translated law above
+    one with a single text for no better reason than having two."""
+    found = vector_search(bilingual, embedder, "if the data subject consents")
+    keys = [candidate.key for candidate in found]
+
+    assert len(keys) == len(set(keys))
+    assert [candidate.rank for candidate in found] == list(range(1, len(found) + 1))
+
+
+def test_a_result_comes_back_in_the_language_asked_for(
+    bilingual: Session, embedder: Embedder
+) -> None:
+    """Asked in Arabic, the Arabic texts match best, and the clauses still come back in
+    English, because English is the language the search asked for."""
+    results = search(bilingual, embedder, "إذا وافق صاحب البيانات", limit=3, lang="en")
+
+    assert results
+    assert {result.clause.lang for result in results} == {"en"}

@@ -19,6 +19,9 @@ from sqlalchemy.orm import Session
 
 INDEXES = {"en": "node_texts_bm25_en"}
 
+SEARCHABLE_LANGUAGES = tuple(INDEXES)
+"""The languages a question can be asked in, since each needs its own index."""
+
 
 class UnsupportedLanguage(Exception):
     """No BM25 index exists for that language yet."""

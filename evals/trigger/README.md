@@ -52,7 +52,7 @@ Every run is a new container: Claude Code at a pinned version, a fresh checkout 
 its dependencies installed, and an empty profile with DPOLens installed the way the README
 installs it, from the plugin marketplace, with `claude plugin configure`. Nothing else is in the
 profile: no `CLAUDE.md`, no memory, no other plugins. The runs talk to a throwaway DPOLens
-instance built from your checkout with GDPR loaded, which is removed afterwards.
+instance built from your checkout, with every pack in it loaded, which is removed afterwards.
 
 A run counts as a call when the assistant calls `search_policies` or `get_clause`, the two
 tools that return clause text. It counts as a call before editing when that happens before its

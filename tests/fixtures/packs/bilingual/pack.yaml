@@ -1,0 +1,19 @@
+slug: bilingual
+name: Test Bilingual Law
+jurisdiction: Example Republic
+version: "2026.1"
+effective_date: 2026-01-01
+trust_tier: community
+source_url: https://example.invalid/bilingual
+license: Public domain, official documents are excluded from copyright.
+authoritative_language: ar
+translations:
+  - lang: en
+    status: official
+    license: Public domain, under the same exclusion.
+
+documents:
+  - slug: bilingual
+    title: Test Bilingual Law
+    normative: true
+    expected_clauses: 3

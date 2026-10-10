@@ -48,6 +48,8 @@ class ClauseView:
     jurisdiction: str | None = None
     trust_tier: str | None = None
     source_url: str | None = None
+    authoritative_language: str | None = None
+    """Which language prevails where a law's texts disagree, so a translation can say so."""
 
 
 @dataclass(frozen=True)
@@ -85,7 +87,7 @@ def _view(
     return ClauseView(
         key=node.canonical_key,
         clause_type=node.node_type,
-        label=node.label,
+        label=text.label or node.label,
         heading=text.heading,
         text=text.body_text,
         lang=text.lang,
@@ -100,6 +102,7 @@ def _view(
         jurisdiction=document.pack.jurisdiction if document.pack else None,
         trust_tier=document.pack.trust_tier if document.pack else None,
         source_url=document.pack.source_url if document.pack else None,
+        authoritative_language=document.pack.authoritative_language if document.pack else None,
     )
 
 

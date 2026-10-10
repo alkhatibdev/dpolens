@@ -9,6 +9,7 @@ one.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from fastapi import Request
@@ -111,6 +112,18 @@ def not_found(detail: str) -> Problem:
 
 def invalid_request(detail: str) -> Problem:
     return Problem(kind="invalid-request", title="Invalid request", status=400, detail=detail)
+
+
+def unsupported_language(lang: str, languages: Sequence[str]) -> Problem:
+    """A language with no index here, refused with the ones that have one, so the
+    caller can ask again in one of them."""
+    return Problem(
+        kind="unsupported-language",
+        title="Unsupported language",
+        status=422,
+        detail=f"this instance cannot search in {lang!r}. It searches in: {', '.join(languages)}",
+        languages=list(languages),
+    )
 
 
 def too_many_requests(retry_after: int) -> Problem:

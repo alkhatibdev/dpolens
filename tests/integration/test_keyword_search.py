@@ -61,7 +61,7 @@ def test_returns_nothing_for_words_the_corpus_does_not_have(loaded: Session) -> 
 
 
 def test_a_language_without_an_index_is_refused(loaded: Session) -> None:
-    """Arabic gets its own index when the PDPL pack lands, not a silent empty result."""
+    """A language with no index of its own is refused, not answered with nothing."""
     with pytest.raises(UnsupportedLanguage, match="no BM25 index"):
         keyword_search(loaded, "محو البيانات", lang="ar")
 

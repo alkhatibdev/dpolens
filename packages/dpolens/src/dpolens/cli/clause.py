@@ -83,7 +83,9 @@ def print_clause(clause: ClauseView, indent: int, snippet: int | None = None) ->
     if not clause.is_normative:
         notes.append("non-normative")
     if not clause.is_authoritative:
-        notes.append(f"{clause.lang}, translation")
+        notes.append(f"{clause.lang} translation")
+        if clause.authoritative_language:
+            notes.append(f"{clause.authoritative_language} prevails")
 
     typer.secho(f"{header}  [{', '.join(notes)}]".lstrip(), bold=True)
 

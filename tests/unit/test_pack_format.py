@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
 
 from dpolens.engine.packs.format import (
+    Clause,
     PackFormatError,
     law_order,
     read_clause_file,
     read_document,
     read_pack_metadata,
+    read_translations,
 )
 
 FIXTURE_PACK = Path(__file__).parents[1] / "fixtures" / "packs" / "testlaw"
+BILINGUAL_PACK = Path(__file__).parents[1] / "fixtures" / "packs" / "bilingual"
 
 
 def write(tmp_path: Path, text: str) -> Path:
@@ -134,6 +138,17 @@ def test_rejects_a_file_without_front_matter(tmp_path: Path) -> None:
         read_clause_file(path)
 
 
+def bilingual_copy(tmp_path: Path) -> Path:
+    """The two-language fixture, somewhere a test may break it."""
+    return Path(shutil.copytree(BILINGUAL_PACK, tmp_path / "bilingual"))
+
+
+def read_both(pack_dir: Path) -> tuple[list[Clause], dict[str, list[Clause]]]:
+    pack = read_pack_metadata(pack_dir)
+    clauses = read_document(pack_dir, pack.documents[0])
+    return clauses, read_translations(pack_dir, pack.documents[0], pack, clauses)
+
+
 def test_articles_keep_the_laws_order() -> None:
     """Sorted as text, article 10 would come before article 2."""
     names = [Path(name) for name in ("art-10.md", "art-2.md", "art-1.md", "rec-100.md", "rec-9.md")]
@@ -145,3 +160,83 @@ def test_articles_keep_the_laws_order() -> None:
         "rec-9.md",
         "rec-100.md",
     ]
+    clauses, _ = read_both(BILINGUAL_PACK)
+    assert [clause.key for clause in clauses] == [
+        "bilingual:art-1",
+        "bilingual:art-2",
+        "bilingual:art-10",
+    ]
+
+
+def test_reads_a_translation_clause_for_clause() -> None:
+    clauses, translations = read_both(BILINGUAL_PACK)
+    english = translations["en"]
+
+    assert [clause.key for clause in english] == [clause.key for clause in clauses]
+    point, translated = clauses[1].children[0].children[0], english[1].children[0].children[0]
+    assert (point.key, point.lang, point.label) == ("bilingual:art-2:para-1:pt-a", "ar", "أ.")
+    assert (translated.key, translated.lang, translated.label) == (point.key, "en", "a.")
+
+
+def test_a_translation_declares_its_status() -> None:
+    pack = read_pack_metadata(BILINGUAL_PACK)
+
+    [translation] = pack.translations
+    assert (translation.lang, translation.translation_status) == ("en", "official_translation")
+
+
+def test_a_translation_missing_a_clause_is_refused(tmp_path: Path) -> None:
+    pack_dir = bilingual_copy(tmp_path)
+    (pack_dir / "bilingual" / "art-10.en.md").unlink()
+
+    with pytest.raises(PackFormatError, match="has no 'en' translation"):
+        read_both(pack_dir)
+
+
+def test_a_translation_with_other_clauses_is_refused(tmp_path: Path) -> None:
+    pack_dir = bilingual_copy(tmp_path)
+    english = pack_dir / "bilingual" / "art-2.en.md"
+    text = english.read_text(encoding="utf-8")
+    english.write_text(text.split("### b.")[0], encoding="utf-8")
+
+    with pytest.raises(PackFormatError, match="does not have the same clauses"):
+        read_both(pack_dir)
+
+
+def test_two_translations_of_one_clause_are_refused(tmp_path: Path) -> None:
+    """Otherwise one of them would be loaded and the other silently ignored."""
+    pack_dir = bilingual_copy(tmp_path)
+    english = pack_dir / "bilingual" / "art-1.en.md"
+    shutil.copy(english, english.with_name("art-1-again.en.md"))
+
+    with pytest.raises(PackFormatError, match="more than one 'en' file holds"):
+        read_both(pack_dir)
+
+
+def test_a_language_pack_yaml_does_not_declare_is_refused(tmp_path: Path) -> None:
+    pack_dir = bilingual_copy(tmp_path)
+    french = (pack_dir / "bilingual" / "art-1.en.md").read_text(encoding="utf-8")
+    (pack_dir / "bilingual" / "art-1.fr.md").write_text(
+        french.replace("lang: en", "lang: fr"), encoding="utf-8"
+    )
+
+    with pytest.raises(PackFormatError, match="'fr' is not a translation"):
+        read_both(pack_dir)
+
+
+def test_a_file_name_and_its_front_matter_must_agree(tmp_path: Path) -> None:
+    pack_dir = bilingual_copy(tmp_path)
+    english = pack_dir / "bilingual" / "art-1.en.md"
+    english.write_text(english.read_text(encoding="utf-8").replace("lang: en", "lang: ar"))
+
+    with pytest.raises(PackFormatError, match="the file name says 'en'"):
+        read_both(pack_dir)
+
+
+def test_a_translation_status_must_be_known(tmp_path: Path) -> None:
+    pack_dir = bilingual_copy(tmp_path)
+    metadata = pack_dir / "pack.yaml"
+    metadata.write_text(metadata.read_text().replace("status: official", "status: machine"))
+
+    with pytest.raises(PackFormatError, match="translation status must be one of"):
+        read_pack_metadata(pack_dir)
