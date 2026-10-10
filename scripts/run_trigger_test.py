@@ -21,6 +21,7 @@ so a batch stopped by a usage limit resumes where it stopped.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import queue
@@ -81,6 +82,20 @@ MAX_TURNS = 25
 CLOCK_SECONDS = 600
 ATTEMPTS = 3
 FAILURES_BEFORE_STOPPING = 2
+STARTS = 3
+"""Building the instance asks registries about base images, and a network blip fails it."""
+
+BAKED_IN = {
+    "api": ("pyproject.toml", "uv.lock", "alembic.ini", "packages", "packs"),
+    "setup": ("pyproject.toml", "uv.lock", "alembic.ini", "packages", "packs"),
+    "mcp": ("pyproject.toml", "uv.lock", "packages/dpolens/pyproject.toml", "packages/dpolens-mcp"),
+}
+"""What each image copies from the checkout, under /opt/dpolens."""
+
+ENGINE_SCRIPTS = {
+    "/usr/local/bin/setup.sh": "deploy/dpolens/setup.sh",
+    "/usr/local/bin/serve.sh": "deploy/dpolens/serve.sh",
+}
 
 
 class TaskSetError(Exception):
@@ -203,6 +218,8 @@ class Observation:
     retries: list[str] = field(default_factory=list)
     result: dict[str, Any] | None = None
     started: bool = False
+    retrying: bool = False
+    """Whether the last thing that happened was a failed request to the model."""
     _names: dict[str, str] = field(default_factory=dict)
     _call_id: str | None = None
 
@@ -212,7 +229,9 @@ class Observation:
             self._init(event)
         elif kind == "system" and subtype == "api_retry":
             self.retries.append(str(event.get("error")))
+            self.retrying = True
         elif kind == "assistant":
+            self.retrying = False
             self._assistant(event)
         elif kind == "user":
             self._user(event)
@@ -282,6 +301,8 @@ class Observation:
             return f"the MCP server was {self.server_status or 'missing'} at the start"
         if self.called:
             return None
+        if self.retrying:
+            return f"the model requests kept failing ({', '.join(sorted(set(self.retries)))})"
         if self.result and self.result.get("is_error") and capped_by(self.result) is None:
             return f"the run failed: {self.result.get('result') or self.result.get('subtype')}"
         return None
@@ -540,13 +561,21 @@ class Instance:
             **kwargs,
         )
 
-    def start(self) -> None:
+    def start(self, build: bool = True) -> None:
         print("starting a throwaway DPOLens instance", flush=True)
-        try:
-            self.compose("up", "-d", "--build", "--quiet-pull", capture_output=True)
-        except subprocess.CalledProcessError as error:
-            print(error.stdout, error.stderr, sep="\n")
-            raise
+        if build:
+            self._retry("up", "-d", "--build", "--quiet-pull")
+        else:
+            # The database image copies nothing from the checkout and its base
+            # comes from Docker Hub, so it is built either way.
+            self._retry("build", "--quiet", "db")
+            stale = stale_images()
+            if stale:
+                raise RuntimeError(
+                    "the images do not hold this checkout, so they have to be built: "
+                    + ", ".join(stale[:10])
+                )
+            self.compose("up", "-d", "--no-build", capture_output=True)
         self._wait_until_healthy(("api", "mcp"), timeout=900)
         self.compose(
             "exec",
@@ -580,6 +609,19 @@ class Instance:
         )
         self.token = token_from(created.stdout)
 
+    def _retry(self, *args: str) -> None:
+        """A Compose command that a network blip can fail, tried a few times."""
+        for attempt in range(1, STARTS + 1):
+            try:
+                self.compose(*args, capture_output=True)
+                return
+            except subprocess.CalledProcessError as error:
+                if attempt == STARTS:
+                    print(error.stdout, error.stderr, sep="\n")
+                    raise
+                print(f"  the instance did not start, trying again ({attempt} of {STARTS})")
+                time.sleep(30)
+
     def _wait_until_healthy(self, services: Sequence[str], timeout: float) -> None:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -605,6 +647,52 @@ class Instance:
 
     def stop(self) -> None:
         self.compose("down", "-v", "--remove-orphans", capture_output=True)
+
+
+def digests(listing: str) -> dict[str, str]:
+    """Paths and their SHA-256, from what `sha256sum` prints."""
+    found = {}
+    for line in listing.splitlines():
+        digest, _, path = line.partition("  ")
+        if path:
+            found[path] = digest
+    return found
+
+
+def differing(expected: dict[str, str], found: dict[str, str]) -> list[str]:
+    """The files whose contents are not what the checkout holds, missing ones included."""
+    return sorted(path for path, digest in expected.items() if found.get(path) != digest)
+
+
+def stale_images() -> list[str]:
+    """Every file an instance image holds differently from this checkout.
+
+    Starting from images already built is only a measurement of this checkout
+    if they were built from it, which a timestamp cannot show: a rebuild that
+    changes nothing keeps the old date, and so does a build from files that
+    were committed later.
+    """
+    stale = []
+    for service, paths in BAKED_IN.items():
+        tracked = subprocess.run(
+            ["git", "ls-files", "--", *paths], cwd=REPO, capture_output=True, text=True, check=True
+        ).stdout.split()
+        inside = {f"/opt/dpolens/{name}": name for name in tracked}
+        if service in ("api", "setup"):
+            inside.update(ENGINE_SCRIPTS)
+        expected = {
+            path: hashlib.sha256((REPO / name).read_bytes()).hexdigest()
+            for path, name in inside.items()
+        }
+        listing = subprocess.run(
+            ["docker", "run", "--rm", "--entrypoint", "sha256sum", f"{PROJECT}-{service}", *inside],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout
+        stale += [f"{service}:{inside[path]}" for path in differing(expected, digests(listing))]
+
+    return stale
 
 
 def build_image() -> None:
@@ -840,20 +928,38 @@ def run_batch(args: argparse.Namespace) -> int:
     (batch / "transcripts").mkdir(parents=True, exist_ok=True)
     outcomes_file = batch / "outcomes.jsonl"
     outcomes = read_outcomes(outcomes_file)
-    meta = {
-        "set": args.set,
-        "setup": args.setup,
-        "model": args.model,
-        "claude_code": CLAUDE_CODE,
-        "runs_per_task": args.runs,
-        "max_turns": MAX_TURNS,
-        "max_budget_usd": args.max_budget_usd,
-        "commit": subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True
-        ).stdout.strip(),
+    meta_file = batch / "batch.json"
+    this_run = {
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
+        **checkout(),
+        "instance": (
+            "reused images holding the same files as the checkout"
+            if args.reuse_images
+            else "built from the checkout"
+        ),
     }
-    (batch / "batch.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    if meta_file.is_file():
+        meta = json.loads(meta_file.read_text(encoding="utf-8"))
+        asked = {"set": args.set, "setup": args.setup, "model": args.model}
+        if any(meta.get(key) != value for key, value in asked.items()):
+            print(
+                f"batch {batch_id} is {meta['set']}, {meta['setup']}, {meta['model']}: "
+                "resume it with those"
+            )
+            return 2
+        meta.setdefault("resumed", []).append(this_run)
+    else:
+        meta = {
+            "set": args.set,
+            "setup": args.setup,
+            "model": args.model,
+            "claude_code": CLAUDE_CODE,
+            "runs_per_task": args.runs,
+            "max_turns": MAX_TURNS,
+            "max_budget_usd": args.max_budget_usd,
+            **this_run,
+        }
+    meta_file.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(f"batch {batch_id}: {len(tasks)} tasks, {args.runs} runs each, setup {args.setup}")
 
     build_image()
@@ -861,7 +967,7 @@ def run_batch(args: argparse.Namespace) -> int:
     volume = f"{PROJECT}-profile-{args.setup}"
     failures = 0
     try:
-        instance.start()
+        instance.start(build=not args.reuse_images)
         plugin_source = marketplace(batch)
         prepare_profile(args.setup, instance.token, volume, plugin_source)
 
@@ -904,6 +1010,128 @@ def run_batch(args: argparse.Namespace) -> int:
     return 0
 
 
+def checkout() -> dict[str, Any]:
+    """The commit a batch ran from, and whether tracked files had changed since."""
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=REPO, capture_output=True, text=True, check=False
+        ).stdout.strip()
+
+    return {
+        "commit": git("rev-parse", "--short", "HEAD"),
+        "uncommitted_changes": bool(git("status", "--porcelain", "--untracked-files=no")),
+    }
+
+
+def reread(batch_id: str) -> int:
+    """Apply the rules as they stand to every run a batch recorded, from its transcripts.
+
+    For a rule that was decided before the batch and implemented wrongly: the
+    runs it misjudged are rescored, and any that should not have been scored
+    become runs the next resume tries again. What was recorded first is kept
+    beside the new file.
+    """
+    batch = RUNS / batch_id
+    meta = json.loads((batch / "batch.json").read_text(encoding="utf-8"))
+    tasks = {task.id: task for task in read_tasks(TRIGGER / f"{meta['set']}.yaml")}
+    outcomes_file = batch / "outcomes.jsonl"
+    recorded = read_outcomes(outcomes_file)
+    first = batch / "outcomes.recorded.jsonl"
+    if not first.is_file():
+        shutil.copy2(outcomes_file, first)
+
+    updated = []
+    for old in recorded:
+        seen = Observation(prefix=PREFIXES[old.setup], server=SERVERS[old.setup])
+        transcript = batch / "transcripts" / f"{old.task}.{old.run}.{old.attempt}.jsonl"
+        for line in transcript.read_text(encoding="utf-8").splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(event, dict):
+                seen.see(event)
+        new = outcome_of(
+            tasks[old.task],
+            old.run,
+            old.attempt,
+            old.setup,
+            seen,
+            stopped_at_call=old.stopped_at_call,
+            clock=old.capped == "clock",
+            seconds=old.seconds,
+            rows=old.query_log_rows,
+        )
+        if verdict(new) != verdict(old):
+            print(
+                f"  {old.task} #{old.run}, attempt {old.attempt}: {verdict(old)} -> {verdict(new)}"
+            )
+        updated.append(new)
+
+    outcomes_file.write_text(
+        "".join(json.dumps(asdict(outcome)) + "\n" for outcome in updated), encoding="utf-8"
+    )
+    return 0
+
+
+class NotPublishable(Exception):
+    """Batches that cannot stand behind a published number together."""
+
+
+def published(batch_ids: Sequence[str]) -> dict[str, Any]:
+    """The results file for complete held-out batches run on one model and one version."""
+    tasks = read_tasks(TRIGGER / "held_out.yaml")
+    runs = []
+    for batch_id in batch_ids:
+        meta = json.loads((RUNS / batch_id / "batch.json").read_text(encoding="utf-8"))
+        if meta["set"] != "held_out":
+            raise NotPublishable(f"{batch_id} is a {meta['set']} batch; only held-out is published")
+        if not meta.get("model"):
+            raise NotPublishable(
+                f"{batch_id} ran on whatever model was the default, not a pinned one"
+            )
+        found = score(tasks, read_outcomes(RUNS / batch_id / "outcomes.jsonl"))
+        expected = len(tasks) * meta["runs_per_task"]
+        if found["runs_scored"] != expected:
+            raise NotPublishable(f"{batch_id} scored {found['runs_scored']} of {expected} runs")
+        if found["models"] != [meta["model"]] or found["versions"] != [meta["claude_code"]]:
+            raise NotPublishable(
+                f"{batch_id} pinned {meta['model']} on {meta['claude_code']}, and its sessions "
+                f"reported {found['models']} on {found['versions']}"
+            )
+        runs.append({"setup": meta["setup"], "batch": {"id": batch_id, **meta}, **found})
+
+    if len({run["batch"]["model"] for run in runs}) != 1:
+        raise NotPublishable("the batches ran on different models")
+    if len({run["batch"]["claude_code"] for run in runs}) != 1:
+        raise NotPublishable("the batches ran on different versions of Claude Code")
+
+    dates = [
+        entry["started"][:10]
+        for run in runs
+        for entry in (run["batch"], *run["batch"].get("resumed", []))
+    ]
+    return {
+        "question_set": "held_out",
+        "measured_at": max(dates),
+        "model": runs[0]["batch"]["model"],
+        "claude_code": runs[0]["batch"]["claude_code"],
+        "runs": runs,
+    }
+
+
+def write(batch_ids: Sequence[str]) -> int:
+    try:
+        payload = published(batch_ids)
+    except NotPublishable as reason:
+        print(f"not written: {reason}")
+        return 2
+    RESULTS.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {RESULTS.relative_to(REPO)} from {', '.join(batch_ids)}")
+    return 0
+
+
 def report(batch_id: str) -> int:
     batch = RUNS / batch_id
     meta = json.loads((batch / "batch.json").read_text(encoding="utf-8"))
@@ -931,11 +1159,28 @@ def main() -> int:
         "--max-budget-usd", type=float, help="Claude Code's estimated cost cap per run"
     )
     parser.add_argument("--keep-instance", action="store_true", help="leave the instance running")
+    parser.add_argument(
+        "--reuse-images",
+        action="store_true",
+        help="start the instance from the images already built, if they hold this checkout",
+    )
     parser.add_argument("--report", metavar="BATCH", help="score an existing batch and stop")
+    parser.add_argument(
+        "--reread", metavar="BATCH", help="apply the current rules to a batch's recorded runs"
+    )
+    parser.add_argument(
+        "--write",
+        metavar="BATCHES",
+        help="write evals/results/trigger.json from held-out batches, separated by commas",
+    )
     args = parser.parse_args()
 
     if args.report:
         return report(args.report)
+    if args.reread:
+        return reread(args.reread)
+    if args.write:
+        return write([batch.strip() for batch in args.write.split(",") if batch.strip()])
     return run_batch(args)
 
 

@@ -92,6 +92,20 @@ of every run, and the full stream of events from each one, which is where to loo
 did something unexpected. A batch stopped by a usage limit resumes with
 `--batch <batch>`, and `--report <batch>` scores one again without running anything.
 
+`--write held_out-plugin,held_out-mcp-only` writes `evals/results/trigger.json` from held-out
+batches, and refuses one that is incomplete, ran on an unpinned model, or disagrees with the
+others about the model or the version of Claude Code.
+
+Building the instance asks the image registries about base images, so a network that cannot
+reach them stops a batch before it starts. `--reuse-images` starts from the images already
+built instead, after checking that every file they copy from the repository is the same as in
+your checkout, and refuses otherwise.
+
+When a rule turns out to have been applied wrongly to recorded runs, `--reread <batch>` applies
+the rule as it now stands to each run's saved stream of events. What was recorded first is kept
+in `outcomes.recorded.jsonl`, and any run that should not have been scored is run again by the
+next resume.
+
 ## Reading the number
 
 The report gives two rates: the share of runs that searched on tasks that should, and on tasks

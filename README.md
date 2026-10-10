@@ -141,6 +141,19 @@ time. It does not mean DPOLens answers 77% of privacy questions correctly.
 [docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and
 the commands to reproduce the number yourself.
 
+## Does an assistant actually use it
+
+Claude Code with the DPOLens plugin searched before writing code in **36 of 36 runs** of tasks
+that touch personal data, and in **3 of 45 runs** of tasks that do not: 30 held-out tasks, three
+runs each, Claude Code 2.1.288 with `claude-sonnet-5-5`, measured 8 and 9 October 2026.
+
+That means that asked to store the ID a driver checked, or to add a customer's email to an
+analytics event, it looked the rules up before touching the code, every time, and asked to sort
+the product list or add a dark theme, it did not. It does not mean every assistant behaves this
+way: only Claude Code was measured, and whether a task should trigger a search is a judgment,
+written down beside each one. [docs/trigger-test.md](docs/trigger-test.md) has the method, the
+tasks, and the commands to run it yourself.
+
 ## What exists today
 
 The commands below are the command line, which runs inside the container

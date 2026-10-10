@@ -1,0 +1,183 @@
+{
+  "question_set": "held_out",
+  "measured_at": "2026-10-09",
+  "model": "claude-sonnet-5-5",
+  "claude_code": "2.1.288",
+  "runs": [
+    {
+      "setup": "plugin",
+      "batch": {
+        "id": "held_out-plugin",
+        "set": "held_out",
+        "setup": "plugin",
+        "model": "claude-sonnet-5-5",
+        "claude_code": "2.1.288",
+        "runs_per_task": 3,
+        "max_turns": 25,
+        "max_budget_usd": null,
+        "commit": "1260d14",
+        "started": "2026-10-08T19:44:46+00:00",
+        "resumed": [
+          {
+            "started": "2026-10-08T20:35:58+00:00",
+            "commit": "1260d14",
+            "uncommitted_changes": true
+          },
+          {
+            "started": "2026-10-09T06:51:59+00:00",
+            "commit": "1260d14",
+            "uncommitted_changes": true,
+            "instance": "reused images holding the same files as the checkout"
+          }
+        ]
+      },
+      "groups": {
+        "should": {
+          "tasks": 12,
+          "rate": {
+            "runs": 36,
+            "calls": 36,
+            "low": 1.0,
+            "high": 1.0
+          },
+          "consistency": {
+            "every": 12,
+            "none": 0,
+            "some": 0
+          },
+          "before_edit": {
+            "runs": 36,
+            "calls": 36,
+            "low": 1.0,
+            "high": 1.0
+          }
+        },
+        "should_not": {
+          "tasks": 15,
+          "rate": {
+            "runs": 45,
+            "calls": 3,
+            "low": 0.0,
+            "high": 0.2
+          },
+          "consistency": {
+            "every": 1,
+            "none": 14,
+            "some": 0
+          }
+        },
+        "questions": {
+          "tasks": 3,
+          "rate": {
+            "runs": 9,
+            "calls": 9,
+            "low": 1.0,
+            "high": 1.0
+          },
+          "consistency": {
+            "every": 3,
+            "none": 0,
+            "some": 0
+          }
+        }
+      },
+      "runs_scored": 90,
+      "attempts_not_scored": 2,
+      "capped": 0,
+      "query_log_mismatches": [],
+      "estimated_cost_usd": 2.17,
+      "never_searched": [],
+      "searched_without_need": [
+        "product-viewed-event"
+      ],
+      "models": [
+        "claude-sonnet-5-5"
+      ],
+      "versions": [
+        "2.1.288"
+      ]
+    },
+    {
+      "setup": "mcp-only",
+      "batch": {
+        "id": "held_out-mcp-only",
+        "set": "held_out",
+        "setup": "mcp-only",
+        "model": "claude-sonnet-5-5",
+        "claude_code": "2.1.288",
+        "runs_per_task": 3,
+        "max_turns": 25,
+        "max_budget_usd": null,
+        "started": "2026-10-09T06:54:36+00:00",
+        "commit": "1260d14",
+        "uncommitted_changes": true,
+        "instance": "reused images holding the same files as the checkout"
+      },
+      "groups": {
+        "should": {
+          "tasks": 12,
+          "rate": {
+            "runs": 36,
+            "calls": 36,
+            "low": 1.0,
+            "high": 1.0
+          },
+          "consistency": {
+            "every": 12,
+            "none": 0,
+            "some": 0
+          },
+          "before_edit": {
+            "runs": 36,
+            "calls": 36,
+            "low": 1.0,
+            "high": 1.0
+          }
+        },
+        "should_not": {
+          "tasks": 15,
+          "rate": {
+            "runs": 45,
+            "calls": 0,
+            "low": 0.0,
+            "high": 0.0
+          },
+          "consistency": {
+            "every": 0,
+            "none": 15,
+            "some": 0
+          }
+        },
+        "questions": {
+          "tasks": 3,
+          "rate": {
+            "runs": 9,
+            "calls": 9,
+            "low": 1.0,
+            "high": 1.0
+          },
+          "consistency": {
+            "every": 3,
+            "none": 0,
+            "some": 0
+          }
+        }
+      },
+      "runs_scored": 90,
+      "attempts_not_scored": 0,
+      "capped": 0,
+      "query_log_mismatches": [
+        "copy-request-question#1"
+      ],
+      "estimated_cost_usd": 2.33,
+      "never_searched": [],
+      "searched_without_need": [],
+      "models": [
+        "claude-sonnet-5-5"
+      ],
+      "versions": [
+        "2.1.288"
+      ]
+    }
+  ]
+}
