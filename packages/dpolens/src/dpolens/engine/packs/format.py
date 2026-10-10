@@ -340,8 +340,13 @@ def _build_tree(
     return tuple(roots)
 
 
+def law_order(path: Path) -> list[int | str]:
+    """Sort key that puts art-2 before art-10, the order the law itself uses."""
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", path.name)]
+
+
 def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
-    """Read every clause file in one document, in file name order."""
+    """Read every clause file in one document, in the law's own order."""
     directory = pack_dir / document.slug
     if not directory.is_dir():
         raise PackFormatError(
@@ -350,7 +355,7 @@ def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
 
     clauses = [
         read_clause_file(path, document_normative=document.normative)
-        for path in sorted(directory.glob("*.md"))
+        for path in sorted(directory.glob("*.md"), key=law_order)
     ]
     if len(clauses) != document.expected_clauses:
         raise PackFormatError(
