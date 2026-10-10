@@ -71,7 +71,7 @@ class TestWhatTheToolsSayAboutThemselves:
         assert "before writing or changing code" in search.description
 
     async def test_the_search_tool_says_what_it_searches(self, connected: Client) -> None:
-        """Every loaded pack, which is worth saying while there is one pack."""
+        """Every loaded pack, which is worth saying while an organisation cannot choose."""
         listed = await connected.list_tools()
 
         search = next(tool for tool in listed.tools if tool.name == "search_policies")

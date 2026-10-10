@@ -68,7 +68,8 @@ plugins. Claude Code's defaults stay as they are, including tool search, which s
 only the names of MCP tools until it decides to look one up. The assistant works in a fresh
 checkout of [Larder](../evals/trigger/app/), a small shop backend with accounts, orders,
 logging, a Segment call and a Postmark email, and a catalogue and front page that hold no data
-about people. It talks to a throwaway DPOLens instance with GDPR loaded.
+about people. It talks to a throwaway DPOLens instance built from the DPOLens checkout under
+test, which for the published runs held GDPR alone.
 
 **The tasks.** [held_out.yaml](../evals/trigger/held_out.yaml) holds thirty: twelve coding
 tasks that collect, store, log, share or delete data about a person, three questions about the

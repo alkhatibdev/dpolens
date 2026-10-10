@@ -9,7 +9,10 @@ with exact, versioned citations. A self-hosted MCP server.**
 >
 > There is no published image yet, and no dashboard. What runs today is a whole instance
 > from source: `docker compose up` starts Postgres, the HTTP API and the MCP server, with
-> GDPR loaded and the embedding model inside the image, and your assistant can search it.
+> GDPR and the UAE's data protection law loaded and the embedding model inside the image,
+> and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
+> its official English translation. Two things are not built yet: searching in Arabic, and
+> choosing which laws apply to an organisation, so every search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -31,8 +34,9 @@ printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
 docker compose up -d
 ```
 
-The first `up` builds the images and loads GDPR, which takes a few minutes. After that it
-takes seconds. When it returns, `docker compose ps` shows `db`, `api` and `mcp` as healthy.
+The first `up` builds the images and loads GDPR and the UAE law, which takes a few minutes.
+After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api` and
+`mcp` as healthy.
 
 **2. Create yourself a user and a token**
 
@@ -169,6 +173,23 @@ dpolens index build
 dpolens search "how long can we keep a deleted user's data"
 dpolens clause show gdpr:art-17 --subtree
 ```
+
+The UAE's Personal Data Protection Law, Federal Decree by Law No. (45) of 2021, is a pack of
+31 articles in Arabic, which prevails, and in the official English translation. Both texts
+sit under the same keys, so a citation points at the same clause in either language, and a
+clause read in English says that the Arabic prevails:
+
+```bash
+dpolens pack load packs/uae-pdpl
+dpolens clause show uae-pdpl:art-23 --lang en
+```
+
+The text comes from the official legislation portal, which publishes each law as a web page
+and as a PDF, and every article was checked against the PDF. Leaving aside spellings that
+change no word, the two differ in 19 places. In 18 the web page is wrong, sometimes in a way
+that changes the meaning: its article 23 carries the title of article 22, which says the
+opposite. [packs/uae-pdpl/SOURCE.md](packs/uae-pdpl/SOURCE.md) lists every one, and which
+text the pack follows.
 
 Users, roles and the governance log are what every surface authenticates and records
 against:

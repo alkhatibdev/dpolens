@@ -1,0 +1,32 @@
+slug: uae-pdpl
+name: Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data
+jurisdiction: United Arab Emirates
+version: "2026.1"
+effective_date: 2022-01-02
+trust_tier: community
+source_url: https://uaelegislation.gov.ae/ar/legislations/1972
+license: >-
+  Not protected by copyright. Federal Decree by Law No. (38) of 2021 on Copyright and
+  Neighbouring Rights, Article (3), excludes official documents, whatever their original
+  language or the language into which they are translated, such as the texts of laws. Taken
+  from the United Arab Emirates Legislations portal. In case of conflict, the Arabic text
+  prevails.
+
+# The Arabic text is the law. The English is the official translation the same portal
+# publishes, and it yields to the Arabic wherever the two differ.
+authoritative_language: ar
+translations:
+  - lang: en
+    status: official
+    license: >-
+      Not protected by copyright, under the same Article (3). Published by the portal as the
+      official English translation of the law.
+    source_url: https://uaelegislation.gov.ae/en/legislations/1972
+
+documents:
+  - slug: uae-pdpl
+    title: Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data
+    normative: true
+    expected_clauses: 31
+    source_url: https://uaelegislation.gov.ae/ar/legislations/1972/download
+    source_sha256: 74a19403c31259f6b8c62e7a6e4fa6c5afaebd875071a83af269fed908a09dcd
