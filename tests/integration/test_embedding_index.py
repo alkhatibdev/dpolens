@@ -35,6 +35,15 @@ def indexed(session: Session, testlaw_pack: Path, embedder: Embedder) -> Session
     return session
 
 
+@pytest.fixture
+def bilingual(session: Session, bilingual_pack: Path, embedder: Embedder) -> Session:
+    load_pack(session, bilingual_pack)
+    session.commit()
+    build_index(session, embedder)
+    session.commit()
+    return session
+
+
 def test_only_clauses_with_text_are_embedded(indexed: Session) -> None:
     """An empty string embeds to a vector that matches everything weakly."""
     embedded, embeddable = indexed.execute(
@@ -77,6 +86,27 @@ def test_the_stored_string_carries_the_ancestry_and_the_prefix(indexed: Session)
     assert stored.embedded_string.startswith("Test Data Protection Law > Right to erasure")
     assert stored.embedded_string.endswith("no other legal ground for the processing;")
     assert stored.context_recipe == "v1"
+
+
+def test_a_text_is_placed_under_the_headings_of_its_own_language(bilingual: Session) -> None:
+    """Every clause above has a heading in each language, and only one of them belongs."""
+    rows = bilingual.execute(
+        text(
+            """
+            SELECT t.lang, e.embedded_string
+            FROM node_embeddings e
+            JOIN node_texts t ON t.id = e.node_text_id
+            JOIN document_nodes n ON n.id = t.node_id
+            WHERE n.canonical_key = 'bilingual:art-2:para-1:pt-a'
+            """
+        )
+    ).all()
+    stored = {row.lang: row.embedded_string for row in rows}
+
+    assert "Cases of Processing" in stored["en"]
+    assert "حالات المعالجة" not in stored["en"]
+    assert "حالات المعالجة" in stored["ar"]
+    assert "Cases of Processing" not in stored["ar"]
 
 
 def test_the_passage_prefix_is_applied_at_encoding(embedder: Embedder) -> None:

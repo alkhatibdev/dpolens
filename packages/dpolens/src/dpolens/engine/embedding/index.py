@@ -85,7 +85,7 @@ def build_index(
     rows = session.execute(
         text(
             f"""
-            SELECT t.id AS text_id, t.body_text, t.heading, d.title AS document_title,
+            SELECT t.id AS text_id, t.body_text, t.heading, t.lang, d.title AS document_title,
                    n.canonical_key, n.id AS node_id
             FROM node_texts t
             JOIN document_nodes n ON n.id = t.node_id
@@ -124,7 +124,7 @@ def build_index(
             build(
                 RecipeInput(
                     document_short_name=row.document_title,
-                    ancestor_headings=_ancestor_headings(session, row.node_id),
+                    ancestor_headings=_ancestor_headings(session, row.node_id, row.lang),
                     text=row.body_text,
                 ),
                 embedder.count_tokens,
@@ -169,8 +169,8 @@ def build_index(
     )
 
 
-def _ancestor_headings(session: Session, node_id: uuid.UUID) -> list[str]:
-    """The headings above a clause, outermost first."""
+def _ancestor_headings(session: Session, node_id: uuid.UUID, lang: str) -> list[str]:
+    """The headings above a clause, outermost first, in the language of its text."""
     rows = session.execute(
         text(
             """
@@ -180,15 +180,15 @@ def _ancestor_headings(session: Session, node_id: uuid.UUID) -> list[str]:
                 SELECT n.id, n.parent_node_id, up.depth + 1
                 FROM document_nodes n JOIN up ON n.id = up.parent_node_id
             )
-            SELECT coalesce(t.heading, n.label) AS heading
+            SELECT coalesce(t.heading, t.label, n.label) AS heading
             FROM up
             JOIN document_nodes n ON n.id = up.id
-            LEFT JOIN node_texts t ON t.node_id = n.id
+            LEFT JOIN node_texts t ON t.node_id = n.id AND t.lang = :lang
             WHERE up.depth > 0
             ORDER BY up.depth DESC
             """
         ),
-        {"node_id": node_id},
+        {"node_id": node_id, "lang": lang},
     ).all()
     return [row.heading for row in rows if row.heading]
 

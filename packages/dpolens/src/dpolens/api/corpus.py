@@ -37,6 +37,7 @@ from dpolens.engine.documents.read import (
     list_documents,
 )
 from dpolens.engine.logs.queries import Returned
+from dpolens.engine.search import SEARCHABLE_LANGUAGES
 from dpolens.engine.search.engine import search
 
 router = APIRouter(
@@ -54,7 +55,14 @@ instance's CPU by asking it to embed a megabyte."""
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=MAX_QUERY, description="The question, in words")
     limit: int = Field(default=10, ge=1, le=50)
-    lang: str = Field(default="en", max_length=20)
+    lang: str = Field(
+        default="en",
+        max_length=20,
+        description=(
+            "The language of the question. Each clause comes back in it where the clause has "
+            "text in it, and otherwise in the language that prevails"
+        ),
+    )
     expand: Literal["none", "siblings", "parent"] = Field(
         default="none", description="Also return the siblings, or the parent, of each hit"
     )
@@ -84,6 +92,10 @@ def run_search(
     settings: Configured,
     delegated: Delegated,
 ) -> Results:
+    # Refused before the log, like any other request this instance cannot read.
+    if body.lang not in SEARCHABLE_LANGUAGES:
+        raise problems.unsupported_language(body.lang, SEARCHABLE_LANGUAGES)
+
     with logged(
         request,
         who,

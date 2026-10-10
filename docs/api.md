@@ -67,6 +67,7 @@ beside it.
 | `/problems/delegation-not-permitted` | 403 | This token may not say who it is acting for |
 | `/problems/not-found` | 404 | No such clause or document in the version in force |
 | `/problems/invalid-request` | 400, 422 | The request does not make sense. `errors` names the fields |
+| `/problems/unsupported-language` | 422 | The instance cannot search in that `lang`. `languages` lists the ones it can |
 | `/problems/too-many-requests` | 429 | The quota for the minute is spent. `Retry-After` says when |
 | `/problems/not-ready` | 503 | The database is not reachable |
 
@@ -88,7 +89,7 @@ does not reach the access log of a proxy in front of the instance.
 | --- | --- | --- |
 | `query` | required | The question, in words. At most 1000 characters |
 | `limit` | 10 | How many clauses to return, at most 50 |
-| `lang` | `en` | Which language to prefer |
+| `lang` | `en` | The language of the question. Only `en` can be searched today |
 | `expand` | `none` | Also return each hit's `siblings` or its `parent` |
 | `as_of` | today | Read the corpus as it stood on this date |
 | `include_explanatory` | false | Include text that explains without obliging, such as a recital |
@@ -97,9 +98,15 @@ does not reach the access log of a proxy in front of the instance.
 Every result carries what it takes to check it: the clause verbatim, its canonical
 key, its breadcrumb, whether it obliges anyone, the document title and version, the
 date that version took effect, the language and whether that language is
-authoritative, and for a law the pack, the jurisdiction, the trust tier and the
-source URL. An organisation's own policy carries nulls there, because it is its own
-source.
+authoritative, and for a law the pack, the jurisdiction, the trust tier, the source
+URL and the language that prevails. An organisation's own policy carries nulls
+there, because it is its own source.
+
+A clause comes back in `lang` where it has text in that language, and otherwise in
+the language that prevails. A law published in two languages, such as the UAE's in
+Arabic and English, has both texts under the same key: an English search returns
+its English text, with `is_authoritative` false and `authoritative_language` saying
+that the Arabic prevails.
 
 The fusion rule is not a parameter. It is chosen by measurement, and
 [retrieval.md](retrieval.md) publishes the measurement.
@@ -111,7 +118,8 @@ the cross-references its text states. `GET /v1/clauses/{key}/subtree` returns th
 clause and everything beneath it in reading order, which is what an assistant wants
 once it has the top hit.
 
-Both take `lang` and `as_of`.
+Both take `lang` and `as_of`. Without `lang`, or for a language the clause has no
+text in, a clause comes back in the language that prevails.
 
 ### Documents
 

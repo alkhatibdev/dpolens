@@ -73,10 +73,13 @@ def search(
     # A candidate the retrievers found may have no version in force on the date
     # being asked about, which is not an error: it is a clause that did not say
     # this then, so it is not an answer now.
+    #
+    # Each clause is read in the language asked for, whichever of its texts
+    # matched, and in the language that prevails where it has no text in that one.
     resolved = []
     for candidate in fused:
         try:
-            detail = get_clause(session, candidate.key, lang=candidate.lang, as_of=as_of)
+            detail = get_clause(session, candidate.key, lang=lang, as_of=as_of)
         except ClauseNotFound:
             continue
         resolved.append((candidate, detail))
@@ -93,7 +96,7 @@ def search(
             ranks=candidate.ranks,
             breadcrumb=detail.breadcrumb,
             cross_references=detail.cross_references,
-            expanded=_expanded(session, detail, expand, candidate.lang, as_of),
+            expanded=_expanded(session, detail, expand, lang, as_of),
         )
         for candidate, detail in resolved[:limit]
     ]

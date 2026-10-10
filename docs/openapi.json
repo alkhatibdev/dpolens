@@ -815,6 +815,18 @@
             "title": "Is Authoritative",
             "description": "Whether this language is the one that prevails in law"
           },
+          "authoritative_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authoritative Language",
+            "description": "For a law, the language whose text prevails where its texts disagree. Null for an organisation's own policy"
+          },
           "is_normative": {
             "type": "boolean",
             "title": "Is Normative",
@@ -1403,6 +1415,7 @@
             "type": "string",
             "maxLength": 20,
             "title": "Lang",
+            "description": "The language of the question. Each clause comes back in it where the clause has text in it, and otherwise in the language that prevails",
             "default": "en"
           },
           "expand": {
