@@ -71,6 +71,9 @@ def check(path: Path) -> tuple[int, int, list[str]]:
 def main() -> int:
     failures = []
     for path in sorted((REPO / "evals").glob("*/*.yaml")):
+        if path.parent.name == "trigger":
+            # The trigger test's tasks are not retrieval questions and carry no labels.
+            continue
         print(f"\n{path.relative_to(REPO)}")
         cited, justified, problems = check(path)
         total = cited + justified
