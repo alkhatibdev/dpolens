@@ -1,0 +1,147 @@
+# GDPR tuning set, asked in Arabic.
+#
+# The same questions as tuning.yaml, under the same ids, labels and sources, written
+# the way a developer asks in Arabic rather than translated word for word. GDPR has
+# no Arabic text, so every hit here crosses languages: an Arabic question finding an
+# English clause.
+#
+# These questions are used while improving retrieval, like tuning.yaml. See
+# ../README.md before adding one.
+
+questions:
+  - id: erasure-request
+    question: طلب منا أحد المستخدمين حذف حسابه وكل بياناته. هل يجب علينا ذلك؟
+    lang: ar
+    expected_keys: [gdpr:art-17:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-erasure/
+
+  - id: retention-period
+    question: إلى متى يسمح لنا بالاحتفاظ بالبيانات الشخصية التي جمعناها؟
+    lang: ar
+    expected_keys: [gdpr:art-5:para-1:pt-e]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    note: The storage limitation principle.
+
+  - id: lawful-basis
+    question: ما الذي يجعل معالجة البيانات قانونية من الأساس؟
+    lang: ar
+    expected_keys: [gdpr:art-6:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/a-guide-to-lawful-basis/
+    note: The six lawful bases the guide sets out are Article 6(1).
+
+  - id: breach-deadline
+    question: تعرضنا لاختراق بيانات. خلال كم من الوقت يجب أن نبلغ الجهة الرقابية؟
+    lang: ar
+    expected_keys: [gdpr:art-33:para-1]
+    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+
+  - id: dpo-required
+    question: هل نحتاج DPO؟
+    lang: ar
+    expected_keys: [gdpr:art-37:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
+    note: >-
+      Kept as developers write it, with the English abbreviation, which the
+      corpus never uses. The hardest question in the set, as in English.
+
+  - id: subject-access
+    question: شخص يريد نسخة من كل البيانات التي نحتفظ بها عنه.
+    lang: ar
+    expected_keys: [gdpr:art-15:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
+    note: The right to a copy of one's personal data is Article 15(1).
+
+  - id: security-measures
+    question: شو إجراءات الأمان اللي لازم نطبقها فعلياً؟
+    lang: ar
+    expected_keys: [gdpr:art-32:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/
+    note: Written colloquially, as developers often type.
+
+  - id: export-data
+    question: لازم نخلي اليوزرز يصدرون بياناتهم لخدمة ثانية؟
+    lang: ar
+    expected_keys: [gdpr:art-20:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-data-portability/
+    note: Written colloquially, with اليوزرز for the users, as developers often type.
+
+  - id: childrens-consent
+    question: هل يمكن لطفل عمره 13 سنة أن يسجل في التطبيق بدون موافقة ولي أمره؟
+    lang: ar
+    expected_keys: [gdpr:art-8:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/children-and-the-uk-gdpr/what-are-the-rules-about-an-iss-and-consent/
+
+  - id: when-dpia
+    question: متى يجب أن نجري تقييماً لأثر حماية البيانات؟
+    lang: ar
+    expected_keys: [gdpr:art-35:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/
+
+  - id: records-of-processing
+    question: هل يجب أن نحتفظ بسجل لعمليات المعالجة التي نقوم بها؟
+    lang: ar
+    expected_keys: [gdpr:art-30:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
+
+  - id: transfer-abroad
+    question: هل يمكننا استضافة بيانات المستخدمين على خوادم خارج أوروبا؟
+    lang: ar
+    expected_keys: [gdpr:art-46:para-1, gdpr:art-44]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/
+    note: Either the general principle or the safeguards clause answers this.
+
+  - id: privacy-notice
+    question: ماذا يجب أن نخبر الناس عندما نجمع بياناتهم؟
+    lang: ar
+    expected_keys: [gdpr:art-13:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
+    note: The information to give when collecting data from the person is Article 13(1).
+
+  - id: automated-decisions
+    question: هل يمكن أن نترك خوارزمية تقرر قبول شخص أو رفضه؟
+    lang: ar
+    expected_keys: [gdpr:art-22:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
+    note: The right not to be subject to a solely automated decision is Article 22(1).
+
+  - id: proving-consent
+    question: هل نحتاج إلى الاحتفاظ بإثبات على موافقة المستخدم؟
+    lang: ar
+    expected_keys: [gdpr:art-7:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
+
+  - id: collect-less
+    question: نقدر نخزن حقول زيادة يمكن نحتاجها بعدين؟
+    lang: ar
+    expected_keys: [gdpr:art-5:para-1:pt-c]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    note: >-
+      Data minimisation is point (c) of Article 5(1). Written colloquially, as
+      developers often type.
+
+  - id: keep-data-accurate
+    question: على من تقع مسؤولية إبقاء البيانات صحيحة ومحدّثة؟
+    lang: ar
+    expected_keys: [gdpr:art-5:para-1:pt-d]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    note: The accuracy principle is point (d) of Article 5(1).
+
+  - id: object-to-processing
+    question: هل يمكن لشخص أن يطلب منا التوقف عن معالجة بياناته نهائياً؟
+    lang: ar
+    expected_keys: [gdpr:art-21:para-1]
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-object/
+
+  - id: complain-about-us
+    question: أين يمكن للمستخدم أن يقدم شكوى إذا اعتقد أننا أسأنا التعامل مع بياناته؟
+    lang: ar
+    expected_keys: [gdpr:art-77:para-1]
+    source: https://ico.org.uk/make-a-complaint/data-protection-complaints/
+    note: The right to lodge a complaint with a supervisory authority is Article 77(1).
+
+  - id: sue-for-damages
+    question: هل يمكن لشخص أن يطالبنا بتعويض إذا خالفنا قواعد حماية البيانات؟
+    lang: ar
+    expected_keys: [gdpr:art-82:para-1]
+    source: https://ico.org.uk/make-a-complaint/data-protection-complaints/
+    note: The right to compensation for damage caused by an infringement is Article 82(1).

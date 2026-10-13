@@ -20,6 +20,25 @@ Meaning search is a multilingual embedding model running on the CPU inside the c
 through ONNX Runtime. No API key, no network call after the first start, nothing to
 configure. An embedding model is not an LLM: it turns text into numbers and writes nothing.
 
+**Languages.** A question is searched in the language of the letters it is written in:
+Arabic letters, Arabic, and anything else, English. Keyword search keeps one index per
+language, because an index fixes how it splits and folds words when it is built. Meaning
+search needs no such split: the model places an Arabic question near the English clause that
+answers it, which is how an Arabic question finds GDPR.
+
+Arabic keyword search has three indexes, and the evals compare them. Postgres's own Snowball
+stemmer cuts بيانات (data) to يانا but البيانات (the data) to بيان, so a question and the law
+can miss each other on the commonest word in the law. A light normalisation folds the
+spellings that change no word (the alef forms, ة and ه, the hamza seats, Arabic-Indic digits),
+drops diacritics and the stretching stroke, and takes the article off the front of a word, so
+both become بيانات, and stems nothing else. The one in use runs the light normalisation and
+then the stemmer, so both forms reach the stemmer alike, and ضروري (necessary) in a question
+still finds ضرورية in the law. It ranked first of the three, as measured further down.
+
+A law with a translation has a text in each language, and both are embedded. A clause counts
+once, at whichever text is closer to the question, and comes back in the question's language
+where it has a text in it.
+
 **2. What gets embedded matters more than which model.**
 
 A clause is embedded with its ancestry in front of it: the document's short name, then the
@@ -232,6 +251,38 @@ held-out questions (0.77 against 0.60). Same code, same corpus, different questi
 sets of this size are not equally hard, so configurations can only be compared within a
 set, never across them. Had the tuning set alone been trusted, the conclusion would have
 been to drop fusion, which the held-out set shows would have cost 17 points of recall.
+
+### Which Arabic keyword index
+
+The three Arabic indexes, measured on the UAE law's tuning set in Arabic: 20 questions, ten
+topics each asked formally and the way people type in chat, with multilingual-e5-small,
+measured 13 October 2026. How to choose was settled before these numbers existed: the highest
+recall@5 under the published configuration wins, then the higher MRR, then the light
+normalisation, the most predictable of the three.
+
+| Arabic keyword index | recall@5, keyword only | recall@5, convex 0.5 | 95% interval | MRR |
+| --- | --- | --- | --- | --- |
+| Light normalisation | 0.30 | 0.60 | 0.40 to 0.80 | 0.39 |
+| Snowball stemmer | 0.40 | 0.70 | 0.50 to 0.90 | 0.43 |
+| **Light normalisation, then the stemmer** | 0.40 | **0.70** | 0.50 to 0.90 | **0.45** |
+
+The interval and MRR are for convex combination, the published configuration, and every
+column excludes text that only explains. The two stemmers tie on recall and the folded one
+ranks the right clause higher, so it is the default. Read the margin strictly: two questions in
+twenty separate it from the light normalisation, and the intervals overlap almost entirely, so
+this ranks the three rather than proving one better. Settling the rule first is what keeps the
+choice from being fitted to these questions. The scores are identical with the UAE law loaded
+alone and beside GDPR.
+
+The other two indexes stay, so the comparison can be run again as the set grows:
+
+```bash
+uv run dpolens pack load packs/uae-pdpl
+uv run dpolens index build
+uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative"
+uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative+light"
+uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative+snowball"
+```
 
 ## What is not solved
 

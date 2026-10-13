@@ -1,0 +1,108 @@
+# UAE PDPL tuning set, asked in English.
+#
+# The same questions as tuning.yaml, which asks them in Arabic, under the same ids
+# and labels. The English text of the law is the official translation, so these
+# questions are answered from it, and the Arabic prevails where the two differ.
+# See tuning.yaml for where the labels come from.
+
+questions:
+  - id: automated-decision
+    question: We want a model to approve or reject loan applications on its own, with no human review. Is that allowed?
+    lang: en
+    expected_keys: [uae-pdpl:art-18:para-1]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      The right not to be subject to automated decision making, including profiling
+      (Article 18)
+
+  - id: dpia
+    question: We're about to launch a recommendation engine that builds a profile of each user's interests. Do we have to assess the privacy risks first?
+    lang: en
+    expected_keys: [uae-pdpl:art-21:para-1, uae-pdpl:art-21:para-2]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      As per Article 21 of the PDPL, the Controller is required to assess the impact of
+      data processing on personal data protection before initiating any high-risk
+      processing activities
+    note: Paragraph 1 is the duty, paragraph 2 when it applies.
+
+  - id: erasure
+    question: A customer closed their account and wants everything we hold about them deleted. Do we have to?
+    lang: en
+    expected_keys: [uae-pdpl:art-15:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Right to correction or erasure ('right to be forgotten') (Article 15)
+    note: Erasure is paragraph 2.
+
+  - id: notice-before-processing
+    question: What do we have to tell users before we start using their data?
+    lang: en
+    expected_keys: [uae-pdpl:art-13:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      per Article 13 of the PDPL, the Controller is required to, in all cases and prior
+      to the commencement of processing, provide Data Subjects with information
+    note: That duty is paragraph 2.
+
+  - id: purpose-limitation
+    question: We collected phone numbers for two-factor login. Can we use them for marketing campaigns too?
+    lang: en
+    expected_keys: [uae-pdpl:art-5:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Data Protection Controls (Article 5) ... Personal Data must be collected for a
+      specific and clear purpose, and may not be processed at any subsequent time in a
+      manner incompatible with that purpose
+    note: Marketing may pull the search towards the right to object.
+
+  - id: retention
+    question: How long can we keep a user's data after they stop using the app?
+    lang: en
+    expected_keys: [uae-pdpl:art-5:para-7]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Data Protection Controls (Article 5) ... Personal Data may not be kept after
+      fulfilling the purpose of Processing thereof
+
+  - id: scope-free-zone
+    question: Our company is licensed in the DIFC. Does the federal data protection law apply to us?
+    lang: en
+    expected_keys: [uae-pdpl:art-2:para-2:pt-g]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 2 of the PDPL provides that the Decree Law governs personal data
+      processing ... Exceptions include ... organizations/entities with their own data
+      protection laws (such as DIFC)
+    note: The law says free zones with their own legislation and never names the DIFC.
+
+  - id: transfer-abroad
+    question: Can we host our customers' data on AWS servers in Europe?
+    lang: en
+    expected_keys: [uae-pdpl:art-22, uae-pdpl:art-23]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 22 of the PDPL permits the transfer of personal data to countries with
+      robust data protection laws ... Article 23 of the PDPL allows personal data to be
+      transferred to countries lacking adequate data protection
+    note: Either article answers.
+
+  - id: transfer-no-adequacy
+    question: Our customer support team works from a country with no data protection law. Can we send them customer records?
+    lang: en
+    expected_keys: [uae-pdpl:art-23:para-1]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 23 of the PDPL allows personal data to be transferred to countries lacking
+      adequate data protection if the transfer is necessary for the conclusion or
+      implementation of a contract
+
+  - id: vendor-instructions
+    question: We send customer data to an outside company to process for us. Can they use it however they like?
+    lang: en
+    expected_keys: [uae-pdpl:art-8:para-1]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(1) states that the Data Processor shall carry out the processing in
+      accordance with the instructions of the Controller and the contracts and
+      agreements concluded between them
