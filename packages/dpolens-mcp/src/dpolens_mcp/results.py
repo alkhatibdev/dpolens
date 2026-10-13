@@ -39,6 +39,10 @@ class Clause(BaseModel):
         default=None,
         description="For a clause shown in translation, the language whose text prevails",
     )
+    prevailing_text: str | None = Field(
+        default=None,
+        description="For a clause shown in translation, the text that prevails, word for word",
+    )
     jurisdiction: str | None = Field(description="Null for an organisation's own policy")
     trust_tier: str | None = Field(
         description=(
@@ -63,6 +67,7 @@ class Clause(BaseModel):
             lang=clause["lang"],
             authoritative=clause["is_authoritative"],
             prevails=_prevails(clause),
+            prevailing_text=clause.get("authoritative_text") if _prevails(clause) else None,
             jurisdiction=clause["jurisdiction"],
             trust_tier=clause["trust_tier"],
             source_url=clause["source_url"],

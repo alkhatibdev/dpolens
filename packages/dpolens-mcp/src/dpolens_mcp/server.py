@@ -97,8 +97,14 @@ def build(settings: Settings, api: Api) -> MCPServer:
         ],
         limit: Annotated[int, Field(description="How many clauses to return", ge=1, le=50)] = 10,
         lang: Annotated[
-            str, Field(description="Which language to prefer, as a two letter code")
-        ] = "en",
+            str | None,
+            Field(
+                description=(
+                    "The language of the question, en or ar. Leave it out to have it read "
+                    "from the letters the question is written in"
+                )
+            ),
+        ] = None,
         as_of: Annotated[
             date | None,
             Field(description="Read the documents as they stood on this date"),

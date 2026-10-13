@@ -20,7 +20,7 @@ from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.evals.score import Outcome, Score, score
 from dpolens.engine.search.engine import CANDIDATE_DEPTH, search
 from dpolens.engine.search.fuse import Fused, Fusion, fuse
-from dpolens.engine.search.keyword import Candidate, keyword_search
+from dpolens.engine.search.keyword import ALTERNATIVES, Candidate, KeywordIndex, keyword_search
 from dpolens.engine.search.rerank import Reranker, rerank
 from dpolens.engine.search.vector import vector_search
 
@@ -136,6 +136,7 @@ def _retrieve(
     base, modifiers = _parse(configuration)
     normative_only = "normative" in modifiers
     depth = _rerank_depth(modifiers)
+    indexes = _keyword_indexes(modifiers)
 
     if base in ("keyword", "meaning"):
         found = (
@@ -145,6 +146,7 @@ def _retrieve(
                 lang=question.lang,
                 limit=CANDIDATE_DEPTH,
                 normative_only=normative_only,
+                indexes=indexes,
             )
             if base == "keyword"
             else vector_search(
@@ -171,6 +173,7 @@ def _retrieve(
                 lang=question.lang,
                 limit=CANDIDATE_DEPTH,
                 normative_only=normative_only,
+                indexes=indexes,
             ),
             "meaning": vector_search(
                 session,
@@ -191,6 +194,7 @@ def _retrieve(
         lang=question.lang,
         fusion=fusion,
         normative_only=normative_only,
+        keyword_indexes=indexes,
     )
     return [result.clause.key for result in results]
 
@@ -198,6 +202,14 @@ def _retrieve(
 def _parse(configuration: str) -> tuple[str, set[str]]:
     base, *modifiers = configuration.split("+")
     return base, set(modifiers)
+
+
+def _keyword_indexes(modifiers: set[str]) -> dict[str, KeywordIndex]:
+    """The keyword indexes a run swaps in, such as `+snowball` for Arabic."""
+    chosen: dict[str, KeywordIndex] = {}
+    for modifier in modifiers:
+        chosen.update(ALTERNATIVES.get(modifier, {}))
+    return chosen
 
 
 def _rerank_depth(modifiers: set[str]) -> int:

@@ -168,7 +168,7 @@ class TestArgumentsThatCannotBeSent:
         assert sent == {
             "query": "retention",
             "limit": 10,
-            "lang": "en",
+            "lang": None,
             "as_of": None,
             "include_explanatory": False,
         }

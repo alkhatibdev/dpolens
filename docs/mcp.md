@@ -15,12 +15,14 @@ four tools and two prompts, it answers over HTTP, and it reads the corpus throug
 
 Every result carries the clause word for word, a citation line, the document, the version, the
 date that version took effect, and for a law the jurisdiction, the trust tier and the source
-the text was taken from.
+the text was taken from. A clause shown in translation also carries the text that prevails,
+in `prevailing_text`, and its citation says which language that is.
 
 `search_policies` searches every pack loaded on the instance and the organisation's own
-policies. It takes `query`, `limit`, `lang`, `as_of` and `include_explanatory`. A date in
-`as_of` reads the documents as they stood then, which is how to answer a question about code
-written two years ago.
+policies. It takes `query`, `limit`, `lang`, `as_of` and `include_explanatory`. `lang` can be
+left out: a question in Arabic letters is searched in Arabic, and any other in English. A date
+in `as_of` reads the documents as they stood then, which is how to answer a question about
+code written two years ago.
 
 Two prompts arrive as commands in the clients that show them:
 

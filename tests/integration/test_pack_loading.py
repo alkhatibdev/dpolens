@@ -159,3 +159,21 @@ def test_reads_a_clause_in_the_language_asked_for(session: Session, bilingual_pa
     assert english.authoritative_language == "ar"
     assert (arabic.label, arabic.is_authoritative) == ("المادة (2)", True)
     assert unspecified.lang == "ar", "with no language asked for, the text that prevails"
+
+
+def test_a_clause_read_in_translation_carries_the_text_that_prevails(
+    session: Session, bilingual_pack: Path
+) -> None:
+    """Read in English, the Arabic comes too, so a reader can set one against the other."""
+    load_pack(session, bilingual_pack)
+    session.commit()
+    key = "bilingual:art-2:para-1:pt-a"
+
+    english = get_clause(session, key, lang="en")
+    arabic = get_clause(session, key, lang="ar").clause
+
+    assert english.clause.text == "If the Data Subject consents."
+    assert english.clause.authoritative_text == "إذا وافق صاحب البيانات."
+    assert arabic.authoritative_text is None
+    # The paragraph above it, read in English too, carries its own Arabic.
+    assert english.breadcrumb[-1].authoritative_text == "تجوز المعالجة في الحالات الآتية:"

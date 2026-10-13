@@ -165,3 +165,14 @@ def test_a_result_comes_back_in_the_language_asked_for(
 
     assert results
     assert {result.clause.lang for result in results} == {"en"}
+
+
+def test_a_question_in_arabic_letters_is_searched_and_answered_in_arabic(
+    bilingual: Session, embedder: Embedder
+) -> None:
+    """No language is named: the question's letters choose the Arabic index."""
+    results = search(bilingual, embedder, "هل يجوز معالجة البيانات إذا وافق صاحبها؟", limit=3)
+
+    assert results
+    assert {result.clause.lang for result in results} == {"ar"}
+    assert any("keyword" in result.ranks for result in results)

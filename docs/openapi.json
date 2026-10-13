@@ -827,6 +827,18 @@
             "title": "Authoritative Language",
             "description": "For a law, the language whose text prevails where its texts disagree. Null for an organisation's own policy"
           },
+          "authoritative_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authoritative Text",
+            "description": "For a clause shown in translation, the text that prevails, verbatim. Null when the clause is shown in the language that prevails"
+          },
           "is_normative": {
             "type": "boolean",
             "title": "Is Normative",
@@ -1412,11 +1424,17 @@
             "default": 10
           },
           "lang": {
-            "type": "string",
-            "maxLength": 20,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Lang",
-            "description": "The language of the question. Each clause comes back in it where the clause has text in it, and otherwise in the language that prevails",
-            "default": "en"
+            "description": "The language of the question, en or ar. Left out, it is read from the letters the question is written in. Each clause comes back in it where the clause has text in it, and otherwise in the language that prevails"
           },
           "expand": {
             "type": "string",

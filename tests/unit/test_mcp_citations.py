@@ -33,3 +33,15 @@ def test_an_instance_that_does_not_send_the_field_reads_as_before() -> None:
     clause = Clause.of({**ARTICLE, "is_authoritative": False})
 
     assert clause.prevails is None
+
+
+def test_a_translation_carries_the_text_that_prevails() -> None:
+    translated = {
+        **ARTICLE,
+        "is_authoritative": False,
+        "authoritative_language": "ar",
+        "authoritative_text": "إذا وافق صاحب البيانات.",
+    }
+
+    assert Clause.of(translated).prevailing_text == "إذا وافق صاحب البيانات."
+    assert Clause.of({**ARTICLE, "authoritative_language": "en"}).prevailing_text is None

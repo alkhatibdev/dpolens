@@ -118,6 +118,19 @@ def test_a_translation_says_which_text_prevails(
     assert "en translation, ar prevails" in result.output
 
 
+def test_a_point_read_in_translation_shows_the_text_that_prevails(
+    instance: None, clean_tables: None, bilingual_pack: Path
+) -> None:
+    assert runner.invoke(app, ["pack", "load", str(bilingual_pack)]).exit_code == 0
+
+    result = runner.invoke(app, ["clause", "show", "bilingual:art-2:para-1:pt-a", "--lang", "en"])
+
+    assert result.exit_code == 0
+    assert "If the Data Subject consents." in result.output
+    assert "The ar text, which prevails:" in result.output
+    assert "إذا وافق صاحب البيانات." in result.output
+
+
 def test_an_unknown_key_fails_with_a_clear_message(loaded: None) -> None:
     result = runner.invoke(app, ["clause", "show", "gdpr:art-500"])
 

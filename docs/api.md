@@ -89,7 +89,7 @@ does not reach the access log of a proxy in front of the instance.
 | --- | --- | --- |
 | `query` | required | The question, in words. At most 1000 characters |
 | `limit` | 10 | How many clauses to return, at most 50 |
-| `lang` | `en` | The language of the question. Only `en` can be searched today |
+| `lang` | from the question | The language of the question, `en` or `ar`. Left out, it is read from the letters the question is written in |
 | `expand` | `none` | Also return each hit's `siblings` or its `parent` |
 | `as_of` | today | Read the corpus as it stood on this date |
 | `include_explanatory` | false | Include text that explains without obliging, such as a recital |
@@ -105,8 +105,9 @@ there, because it is its own source.
 A clause comes back in `lang` where it has text in that language, and otherwise in
 the language that prevails. A law published in two languages, such as the UAE's in
 Arabic and English, has both texts under the same key: an English search returns
-its English text, with `is_authoritative` false and `authoritative_language` saying
-that the Arabic prevails.
+its English text, with `is_authoritative` false, `authoritative_language` saying
+that the Arabic prevails, and `authoritative_text` holding the Arabic, word for word,
+so the two can be read side by side.
 
 The fusion rule is not a parameter. It is chosen by measurement, and
 [retrieval.md](retrieval.md) publishes the measurement.

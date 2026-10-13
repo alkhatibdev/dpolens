@@ -50,6 +50,15 @@ def show(
     typer.echo("")
     print_clause(clause, indent=0)
 
+    if clause.authoritative_text:
+        typer.echo("")
+        typer.secho(
+            f"The {clause.authoritative_language} text, which prevails:",
+            fg=typer.colors.BRIGHT_BLACK,
+        )
+        for line in _wrap(clause.authoritative_text, WRAP):
+            typer.echo(line)
+
     # A clause with children is incomplete without them, whether or not it has
     # text of its own. A lead-in that ends "one of the following applies:" is
     # the worst case: the reader is left exactly where the list should be.

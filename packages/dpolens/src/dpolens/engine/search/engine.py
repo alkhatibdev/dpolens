@@ -7,6 +7,7 @@ whether it obliges anyone, and which version it came from.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from typing import Literal
@@ -22,7 +23,8 @@ from dpolens.engine.documents.read import (
 )
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.search.fuse import RRF, Fusion, fuse
-from dpolens.engine.search.keyword import keyword_search
+from dpolens.engine.search.keyword import KeywordIndex, keyword_search
+from dpolens.engine.search.language import language_of
 from dpolens.engine.search.vector import vector_search
 
 CANDIDATE_DEPTH = 100
@@ -53,16 +55,27 @@ def search(
     embedder: Embedder,
     query: str,
     limit: int = 10,
-    lang: str = "en",
+    lang: str | None = None,
     expand: Expand = "none",
     fusion: Fusion = RRF,
     as_of: date | None = None,
     normative_only: bool = False,
+    keyword_indexes: Mapping[str, KeywordIndex] | None = None,
 ) -> list[SearchResult]:
-    """The clauses that answer a question, best first."""
+    """The clauses that answer a question, best first.
+
+    Without `lang`, the question's own letters say which language it is in.
+    `keyword_indexes` swaps a language's keyword index for another, for the evals.
+    """
+    lang = lang or language_of(query)
     lists = {
         "keyword": keyword_search(
-            session, query, lang=lang, limit=CANDIDATE_DEPTH, normative_only=normative_only
+            session,
+            query,
+            lang=lang,
+            limit=CANDIDATE_DEPTH,
+            normative_only=normative_only,
+            indexes=keyword_indexes,
         ),
         "meaning": vector_search(
             session, embedder, query, limit=CANDIDATE_DEPTH, normative_only=normative_only
