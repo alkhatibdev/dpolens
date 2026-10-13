@@ -11,7 +11,7 @@ from typing import Annotated
 import typer
 
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
-from dpolens.engine.evals import Run, read_questions, run_set
+from dpolens.engine.evals import Run, check_configuration, read_questions, run_set
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -58,8 +58,13 @@ def run(
     as_json: Annotated[bool, typer.Option("--json", help="Print one run as JSON")] = False,
 ) -> None:
     """Score retrieval over a question set."""
-    questions = read_questions(EVALS / pack / f"{question_set}.yaml")
     configurations = [configuration, *BASELINES] if baselines else [configuration]
+    for config in configurations:
+        try:
+            check_configuration(config)
+        except ValueError as problem:
+            raise typer.BadParameter(str(problem), param_hint="--config") from problem
+    questions = read_questions(EVALS / pack / f"{question_set}.yaml")
 
     with (
         Embedder(get_model(model)) as embedder,

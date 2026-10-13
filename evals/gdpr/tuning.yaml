@@ -111,14 +111,14 @@ questions:
     question: Can we store extra fields we might need later?
     lang: en
     expected_keys: [gdpr:art-5:para-1:pt-c]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/data-minimisation/
     note: Data minimisation, collecting no more than is necessary, is point (c) of Article 5(1).
 
   - id: keep-data-accurate
     question: Whose job is it to keep the data correct and up to date?
     lang: en
     expected_keys: [gdpr:art-5:para-1:pt-d]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/accuracy/
     note: The accuracy principle is point (d) of Article 5(1).
 
   - id: object-to-processing

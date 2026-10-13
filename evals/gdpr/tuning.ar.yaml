@@ -114,7 +114,7 @@ questions:
     question: نقدر نخزن حقول زيادة يمكن نحتاجها بعدين؟
     lang: ar
     expected_keys: [gdpr:art-5:para-1:pt-c]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/data-minimisation/
     note: >-
       Data minimisation is point (c) of Article 5(1). Written colloquially, as
       developers often type.
@@ -123,7 +123,7 @@ questions:
     question: على من تقع مسؤولية إبقاء البيانات صحيحة ومحدّثة؟
     lang: ar
     expected_keys: [gdpr:art-5:para-1:pt-d]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
+    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/accuracy/
     note: The accuracy principle is point (d) of Article 5(1).
 
   - id: object-to-processing

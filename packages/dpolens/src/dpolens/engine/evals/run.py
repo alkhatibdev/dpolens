@@ -8,6 +8,7 @@ could adopt a fusion rule that is worse than half the system.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -101,9 +102,11 @@ def run_set(
     A configuration is a fusion rule ("rrf:10", "convex:0.5") or a single
     retriever ("keyword", "meaning"), so baselines and fusion rules are reported
     in the same units. Modifiers follow it: "+normative" drops text that
-    explains without obliging, and "+rerank25" rescores the top 25 with a
-    cross-encoder.
+    explains without obliging, "+light", "+snowball" or "+folded-snowball" picks
+    the Arabic keyword index, and "+rerank25" rescores the top 25 with the
+    cross-encoder passed as `reranker`.
     """
+    check_configuration(configuration, reranker)
     outcomes = []
     for question in questions:
         returned = _retrieve(session, embedder, question, configuration, reranker)
@@ -197,6 +200,46 @@ def _retrieve(
         keyword_indexes=indexes,
     )
     return [result.clause.key for result in results]
+
+
+MODIFIERS = frozenset({"normative", *ALTERNATIVES})
+"""The modifiers a configuration can carry, besides +rerank and its depth."""
+
+RERANK = re.compile(r"rerank\d*")
+
+
+def check_configuration(configuration: str, reranker: Reranker | None = None) -> None:
+    """Refuse a configuration that would not run as written.
+
+    A modifier nothing reads, two of a kind where one is used, or +rerank with
+    no reranker would each score something else, and report it under the name
+    that was asked for.
+    """
+    base, modifiers = _parse(configuration)
+    if base not in ("keyword", "meaning"):
+        Fusion.parse(base)
+
+    unknown = sorted(
+        f"+{modifier}" for modifier in modifiers - MODIFIERS if not RERANK.fullmatch(modifier)
+    )
+    if unknown:
+        known = ", ".join(f"+{modifier}" for modifier in sorted(MODIFIERS))
+        raise ValueError(
+            f"{configuration!r} has a modifier nothing reads: {', '.join(unknown)}. "
+            f"The modifiers are {known}, and +rerank with a depth, such as +rerank25"
+        )
+
+    # A set has no order, so with two of a kind, which one is used would vary by run.
+    for kind, chosen in (
+        ("keyword index", modifiers & ALTERNATIVES.keys()),
+        ("rerank depth", {modifier for modifier in modifiers if RERANK.fullmatch(modifier)}),
+    ):
+        if len(chosen) > 1:
+            listed = ", ".join(f"+{modifier}" for modifier in sorted(chosen))
+            raise ValueError(f"{configuration!r} names more than one {kind}: {listed}")
+
+    if _rerank_depth(modifiers) and reranker is None:
+        raise ValueError(f"{configuration!r} asks for reranking, and no reranker was given")
 
 
 def _parse(configuration: str) -> tuple[str, set[str]]:

@@ -136,3 +136,12 @@ def test_an_unknown_key_fails_with_a_clear_message(loaded: None) -> None:
 
     assert result.exit_code == 1
     assert "gdpr:art-500" in result.output
+
+
+def test_an_eval_run_naming_a_modifier_nothing_reads_stops_before_it_starts() -> None:
+    result = runner.invoke(
+        app, ["evals", "run", "--pack", "uae-pdpl", "--config", "convex:0.5+normative+ligth"]
+    )
+
+    assert result.exit_code == 2
+    assert "+ligth" in result.output
