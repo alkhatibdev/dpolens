@@ -11,8 +11,9 @@ with exact, versioned citations. A self-hosted MCP server.**
 > from source: `docker compose up` starts Postgres, the HTTP API and the MCP server, with
 > GDPR and the UAE's data protection law loaded and the embedding model inside the image,
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
-> its official English translation. Two things are not built yet: searching in Arabic, and
-> choosing which laws apply to an organisation, so every search covers both.
+> its official English translation, and a question can be asked in either language. Arabic
+> search has no published score yet, and choosing which laws apply to an organisation is not
+> built yet, so every search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -177,7 +178,7 @@ dpolens clause show gdpr:art-17 --subtree
 The UAE's Personal Data Protection Law, Federal Decree by Law No. (45) of 2021, is a pack of
 31 articles in Arabic, which prevails, and in the official English translation. Both texts
 sit under the same keys, so a citation points at the same clause in either language, and a
-clause read in English says that the Arabic prevails:
+clause read in English says that the Arabic prevails and carries the Arabic with it:
 
 ```bash
 dpolens pack load packs/uae-pdpl

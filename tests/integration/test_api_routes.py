@@ -151,6 +151,15 @@ class TestSearch:
     def test_an_empty_query_is_refused(self, api: TestClient, reader: str) -> None:
         assert api.post("/v1/search", json={"query": ""}, headers=auth(reader)).status_code == 422
 
+    def test_a_question_in_arabic_needs_no_language_named(
+        self, api: TestClient, reader: str
+    ) -> None:
+        response = api.post(
+            "/v1/search", json={"query": "حذف بيانات المستخدم"}, headers=auth(reader)
+        )
+
+        assert response.status_code == 200
+
     def test_a_language_this_instance_cannot_search_in_is_refused_with_the_ones_it_can(
         self, api: TestClient, reader: str
     ) -> None:
@@ -161,7 +170,7 @@ class TestSearch:
 
         assert response.status_code == 422
         assert response.json()["type"] == "/problems/unsupported-language"
-        assert response.json()["languages"] == ["en"]
+        assert response.json()["languages"] == ["en", "ar"]
         assert "'fr'" in response.json()["detail"]
 
     def test_a_question_nothing_answers_comes_back_empty_rather_than_wrong(

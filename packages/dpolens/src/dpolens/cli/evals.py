@@ -43,7 +43,14 @@ def run(
     pack: Annotated[str, typer.Option(help="Pack slug, for example gdpr")],
     question_set: Annotated[str, typer.Option("--set", help="tuning or held_out")] = "tuning",
     configuration: Annotated[
-        str, typer.Option("--config", help="rrf:10, convex:0.5, keyword or meaning")
+        str,
+        typer.Option(
+            "--config",
+            help=(
+                "rrf:10, convex:0.5, keyword or meaning, optionally with +normative, "
+                "+light, +snowball or +folded-snowball"
+            ),
+        ),
     ] = "rrf:10",
     model: Annotated[str, typer.Option(help="Embedding model")] = DEFAULT_MODEL,
     baselines: Annotated[bool, typer.Option(help="Also score each retriever alone")] = False,

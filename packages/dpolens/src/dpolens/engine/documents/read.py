@@ -50,6 +50,8 @@ class ClauseView:
     source_url: str | None = None
     authoritative_language: str | None = None
     """Which language prevails where a law's texts disagree, so a translation can say so."""
+    authoritative_text: str | None = None
+    """The text that prevails, when this one is a translation, so the two can be read together."""
 
 
 @dataclass(frozen=True)
@@ -82,8 +84,12 @@ def _version_in_force(session: Session, document_id: object, as_of: date) -> Doc
 
 
 def _view(
-    node: DocumentNode, text: NodeText, document: Document, version: DocumentVersion
+    node: DocumentNode,
+    texts: tuple[NodeText, NodeText | None],
+    document: Document,
+    version: DocumentVersion,
 ) -> ClauseView:
+    text, prevailing = texts
     return ClauseView(
         key=node.canonical_key,
         clause_type=node.node_type,
@@ -103,21 +109,23 @@ def _view(
         trust_tier=document.pack.trust_tier if document.pack else None,
         source_url=document.pack.source_url if document.pack else None,
         authoritative_language=document.pack.authoritative_language if document.pack else None,
+        authoritative_text=prevailing.body_text if prevailing else None,
     )
 
 
-def _text_for(session: Session, node: DocumentNode, lang: str | None) -> NodeText:
-    query = select(NodeText).where(NodeText.node_id == node.id)
-    if lang:
-        requested = session.scalar(query.where(NodeText.lang == lang))
-        if requested is not None:
-            return requested
-
-    # Fall back to the authoritative text, which is the one that prevails in law.
-    found = session.scalars(query.order_by(NodeText.is_authoritative.desc())).first()
-    if found is None:
+def _texts_for(
+    session: Session, node: DocumentNode, lang: str | None
+) -> tuple[NodeText, NodeText | None]:
+    """The text to show, in `lang` where the clause has it, and the one that prevails
+    when the shown one is a translation. One query, since both may be needed."""
+    texts = session.scalars(select(NodeText).where(NodeText.node_id == node.id)).all()
+    if not texts:
         raise ClauseNotFound(f"{node.canonical_key} has no stored text")
-    return found
+
+    # The authoritative text prevails in law, and it is what a missing language falls back to.
+    prevailing = next((text for text in texts if text.is_authoritative), texts[0])
+    shown = next((text for text in texts if text.lang == lang), prevailing) if lang else prevailing
+    return shown, None if shown is prevailing else prevailing
 
 
 @dataclass(frozen=True)
@@ -160,10 +168,10 @@ def get_clause(
     document, version, node = found.document, found.version, found.node
 
     return ClauseDetail(
-        clause=_view(node, _text_for(session, node, lang), document, version),
+        clause=_view(node, _texts_for(session, node, lang), document, version),
         breadcrumb=_breadcrumb(session, node, document, version, lang),
         children=tuple(
-            _view(child, _text_for(session, child, lang), document, version)
+            _view(child, _texts_for(session, child, lang), document, version)
             for child in _children(session, node)
         ),
         cross_references=tuple(
@@ -201,11 +209,11 @@ def get_subtree(
     for node in descendants:
         by_parent.setdefault(node.parent_node_id, []).append(node)
 
-    found = [_view(root, _text_for(session, root, lang), document, version)]
+    found = [_view(root, _texts_for(session, root, lang), document, version)]
 
     def walk(parent: DocumentNode) -> None:
         for child in by_parent.get(parent.id, []):
-            found.append(_view(child, _text_for(session, child, lang), document, version))
+            found.append(_view(child, _texts_for(session, child, lang), document, version))
             walk(child)
 
     walk(root)
@@ -235,7 +243,7 @@ def _breadcrumb(
         parent = session.get(DocumentNode, current.parent_node_id)
         if parent is None:
             break
-        ancestors.append(_view(parent, _text_for(session, parent, lang), document, version))
+        ancestors.append(_view(parent, _texts_for(session, parent, lang), document, version))
         current = parent
     return tuple(reversed(ancestors))
 

@@ -6,18 +6,48 @@ because it accounts for how rare a term is, how often it repeats, and how long
 the clause is. Postgres `ts_rank` does none of those three.
 
 A BM25 index fixes its text search configuration when it is created, so there is
-one index per language and a query names the one it wants.
+one index per language and a query names the one it wants. Arabic has three, which
+treat word forms differently, so that the evals can measure which finds more.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-INDEXES = {"en": "node_texts_bm25_en"}
+
+@dataclass(frozen=True)
+class KeywordIndex:
+    """A BM25 index, the column it ranks, and how a question reaches it."""
+
+    name: str
+    column: str
+    terms: str
+    """SQL that turns the question, bound as :query, into the index's words."""
+
+
+INDEXES = {
+    "en": KeywordIndex("node_texts_bm25_en", "search_text", ":query"),
+    # Spellings folded and articles off, the same steps the text went through, then
+    # Postgres's Arabic stemmer, which both forms of a word now reach alike.
+    "ar": KeywordIndex(
+        "node_texts_bm25_ar_folded_snowball", "search_text_ar", "arabic_light(:query)"
+    ),
+}
+
+ALTERNATIVES = {
+    # The folding alone, with nothing stemmed.
+    "light": {"ar": KeywordIndex("node_texts_bm25_ar", "search_text_ar", "arabic_light(:query)")},
+    # Postgres's Arabic stemmer, on the text as written.
+    "snowball": {"ar": KeywordIndex("node_texts_bm25_ar_snowball", "search_text", ":query")},
+    # The default, by name, so that a comparison can name all three.
+    "folded-snowball": {"ar": INDEXES["ar"]},
+}
+"""The indexes an eval run can name for a language, to measure one against another."""
 
 SEARCHABLE_LANGUAGES = tuple(INDEXES)
 """The languages a question can be asked in, since each needs its own index."""
@@ -43,24 +73,32 @@ def keyword_search(
     lang: str = "en",
     limit: int = 100,
     normative_only: bool = False,
+    indexes: Mapping[str, KeywordIndex] | None = None,
 ) -> list[Candidate]:
-    """The clauses whose text matches the query, best first."""
-    index = INDEXES.get(lang)
+    """The clauses whose text matches the query, best first.
+
+    `indexes` replaces a language's index with another, which is how an eval run
+    compares them.
+    """
+    index = {**INDEXES, **(indexes or {})}.get(lang)
     if index is None:
         raise UnsupportedLanguage(
             f"no BM25 index for {lang!r}: a language needs its own index, "
             f"since the text search configuration is fixed when the index is built"
         )
 
+    # The column and the terms come from the table above, never from a caller.
+    rank = f"t.{index.column} <@> to_bm25query({index.terms}, :index)"
+
     # The operator returns negative scores and sorts ascending, so the best
     # match is the most negative. Flipping the sign here keeps every retriever
     # in this package on the same convention: higher is better.
     rows = session.execute(
         text(
-            """
+            f"""
             SELECT n.canonical_key AS key,
                    t.lang AS lang,
-                   -(t.search_text <@> to_bm25query(:query, :index)) AS score
+                   -({rank}) AS score
             FROM node_texts t
             JOIN document_nodes n ON n.id = t.node_id
             JOIN document_versions v ON v.id = n.document_version_id
@@ -71,14 +109,14 @@ def keyword_search(
               -- A clause that shares no term with the query scores zero, and
               -- the operator returns it anyway. An empty result is the honest
               -- answer to a question the corpus does not address.
-              AND (t.search_text <@> to_bm25query(:query, :index)) < 0
-            ORDER BY t.search_text <@> to_bm25query(:query, :index)
+              AND ({rank}) < 0
+            ORDER BY {rank}
             LIMIT :limit
             """
         ),
         {
             "query": query,
-            "index": index,
+            "index": index.name,
             "lang": lang,
             "as_of": date.today(),
             "limit": limit,

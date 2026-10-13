@@ -154,6 +154,14 @@ class NodeText(Base):
     )
     """Heading and text together, which is what the BM25 index ranks."""
 
+    search_text_ar: Mapped[str | None] = mapped_column(
+        Text,
+        Computed(
+            "CASE WHEN lang = 'ar' THEN arabic_light(coalesce(heading, '') || ' ' || body_text) END"
+        ),
+    )
+    """An Arabic text with its spellings folded and its articles off, for the Arabic index."""
+
     node: Mapped[DocumentNode] = relationship(back_populates="texts")
 
 

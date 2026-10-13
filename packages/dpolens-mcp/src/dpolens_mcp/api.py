@@ -107,7 +107,7 @@ class Api:
         caller: Caller,
         query: str,
         limit: int,
-        lang: str,
+        lang: str | None,
         as_of: date | None,
         include_explanatory: bool,
     ) -> dict[str, Any]:

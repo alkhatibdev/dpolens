@@ -55,12 +55,13 @@ instance's CPU by asking it to embed a megabyte."""
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=MAX_QUERY, description="The question, in words")
     limit: int = Field(default=10, ge=1, le=50)
-    lang: str = Field(
-        default="en",
+    lang: str | None = Field(
+        default=None,
         max_length=20,
         description=(
-            "The language of the question. Each clause comes back in it where the clause has "
-            "text in it, and otherwise in the language that prevails"
+            "The language of the question, en or ar. Left out, it is read from the letters the "
+            "question is written in. Each clause comes back in it where the clause has text in "
+            "it, and otherwise in the language that prevails"
         ),
     )
     expand: Literal["none", "siblings", "parent"] = Field(
@@ -93,7 +94,7 @@ def run_search(
     delegated: Delegated,
 ) -> Results:
     # Refused before the log, like any other request this instance cannot read.
-    if body.lang not in SEARCHABLE_LANGUAGES:
+    if body.lang is not None and body.lang not in SEARCHABLE_LANGUAGES:
         raise problems.unsupported_language(body.lang, SEARCHABLE_LANGUAGES)
 
     with logged(

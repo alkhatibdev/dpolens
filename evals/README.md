@@ -9,8 +9,15 @@ packs themselves.
 ```
 evals/<pack>/tuning.yaml      used while improving retrieval
 evals/<pack>/held_out.yaml    produces the published score, and nothing else
+evals/<pack>/tuning.ar.yaml   the same questions, asked in another language
 evals/results/<pack>.json     the published held-out score, committed
 ```
+
+A set without a language suffix is asked in the language the pack's text prevails in:
+English for GDPR, Arabic for the UAE PDPL. The same set asked in another language sits
+beside it with that language before `.yaml`, as a pack's translations do, and keeps the
+same ids, labels and sources, so the two can be compared question by question. It is
+written the way people ask in that language, not translated word for word.
 
 `evals/results` is committed, because CI compares every change against it and because it
 is the evidence behind any number in the README. It holds **held-out runs only**:
@@ -41,6 +48,7 @@ questions:
 | `lang` | yes | BCP 47 code |
 | `expected_keys` | yes | The clauses that answer it. Any one of them counts as a hit |
 | `source` | yes | Guidance that ties this question to that clause |
+| `quote` | no | The source's own words that tie the question to the clause. The source check confirms the page contains them, and `...` marks words left out |
 | `note` | no | Anything a reader of the file would wonder about |
 
 ## Where questions come from
@@ -49,6 +57,11 @@ questions:
 guidance that already names the article, such as ICO guides and EDPB guidelines, is the
 best kind: it settles what the answer is before anyone looks at what DPOLens returns. A
 question written by reading the search results is a test of memory, not of retrieval.
+
+No regulator has published guidance that names the UAE PDPL's articles, so that law's
+labels come from law firms' published guides that do. They are practitioners' readings,
+not the regulator's, and every question gives the words that name its article in `quote`,
+so a reader can check them.
 
 **Phrasings are learned, never copied.** Real developer questions on Stack Overflow and
 similar sites are the best guide to how people actually ask, and Stack Overflow content is
@@ -71,13 +84,16 @@ regression beyond that interval. `recall@10` and MRR are reported and never gate
 
 ```bash
 uv run dpolens evals run --pack gdpr --set tuning
+uv run dpolens evals run --pack gdpr --set tuning.ar
 uv run dpolens evals run --pack gdpr --set held_out --baselines --write
 ```
 
 `--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`), a single
 retriever (`keyword`, `meaning`), and a `+normative` suffix on any of them to exclude text
-that explains without obliging. `--baselines` adds the two single retrievers to the run, so
-a fusion rule can never be adopted while being worse than half the system.
+that explains without obliging. For Arabic questions, `+light`, `+snowball` or
+`+folded-snowball` picks one of the three Arabic keyword indexes; the last is the default.
+`--baselines` adds the two single retrievers to the run, so a fusion rule can never be
+adopted while being worse than half the system.
 
 To score every model against every configuration, which is how the default model and the
 fusion rule are chosen:
@@ -90,7 +106,7 @@ uv run python scripts/run_matrix.py --set tuning --models e5-small,granite-97m-i
 It re-indexes the corpus once per model, so a full run takes a while and a first run also
 downloads the models. Rows are printed as they are measured.
 
-To check where each label comes from:
+To check where each label comes from, and that every quote is on its source page:
 
 ```bash
 uv run python scripts/check_eval_sources.py
