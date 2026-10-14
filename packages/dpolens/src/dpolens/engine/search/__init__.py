@@ -1,7 +1,14 @@
 """Retrieval: finding the clauses that answer a question."""
 
 from dpolens.engine.search.engine import Expand, SearchResult, search
-from dpolens.engine.search.fuse import RRF, Fused, Fusion, convex, fuse, reciprocal_rank
+from dpolens.engine.search.fuse import (
+    DEFAULT_FUSION,
+    Fused,
+    Fusion,
+    convex,
+    fuse,
+    reciprocal_rank,
+)
 from dpolens.engine.search.keyword import (
     ALTERNATIVES,
     INDEXES,
@@ -16,8 +23,8 @@ from dpolens.engine.search.vector import NoActiveModel, vector_search
 
 __all__ = [
     "ALTERNATIVES",
+    "DEFAULT_FUSION",
     "INDEXES",
-    "RRF",
     "SEARCHABLE_LANGUAGES",
     "Candidate",
     "Expand",

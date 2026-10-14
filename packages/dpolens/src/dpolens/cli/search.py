@@ -10,7 +10,7 @@ import typer
 from dpolens.cli.clause import print_clause
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.packs.selection import scope_for
-from dpolens.engine.search import Fusion, search
+from dpolens.engine.search import DEFAULT_FUSION, Fusion, search
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -24,7 +24,10 @@ def run(
     query: Annotated[str, typer.Argument(help="A question, in your own words")],
     limit: Annotated[int, typer.Option(help="How many clauses to return")] = 5,
     expand: Annotated[str, typer.Option(help="none, siblings or parent")] = "none",
-    fusion: Annotated[str, typer.Option(help="rrf:10, rrf:60 or convex:0.5")] = "rrf:10",
+    fusion: Annotated[str, typer.Option(help="rrf:10, rrf:60 or convex:0.5")] = DEFAULT_FUSION.name,
+    include_explanatory: Annotated[
+        bool, typer.Option(help="Include text that explains without obliging, such as a recital")
+    ] = False,
     model: Annotated[str, typer.Option(help="Embedding model")] = DEFAULT_MODEL,
     cache_dir: Annotated[Path | None, typer.Option(help="Where model files are kept")] = None,
     explain: Annotated[bool, typer.Option(help="Show which retriever found what")] = False,
@@ -45,6 +48,7 @@ def run(
             limit=limit,
             expand=expand,  # type: ignore[arg-type]
             fusion=Fusion.parse(fusion),
+            normative_only=not include_explanatory,
             scope=scope_for(session, law),
         )
 

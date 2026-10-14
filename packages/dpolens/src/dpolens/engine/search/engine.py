@@ -23,7 +23,7 @@ from dpolens.engine.documents.read import (
 )
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.packs.selection import Scope, scope_for
-from dpolens.engine.search.fuse import RRF, Fusion, fuse
+from dpolens.engine.search.fuse import DEFAULT_FUSION, Fusion, fuse
 from dpolens.engine.search.keyword import KeywordIndex, keyword_search
 from dpolens.engine.search.language import language_of
 from dpolens.engine.search.vector import vector_search
@@ -61,7 +61,7 @@ def search(
     limit: int = 10,
     lang: str | None = None,
     expand: Expand = "none",
-    fusion: Fusion = RRF,
+    fusion: Fusion = DEFAULT_FUSION,
     as_of: date | None = None,
     normative_only: bool = False,
     keyword_indexes: Mapping[str, KeywordIndex] | None = None,

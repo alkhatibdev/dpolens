@@ -56,11 +56,13 @@ class Fusion:
         return cls(rule=rule, parameter=float(parameter) if parameter else default)
 
 
-RRF = Fusion(rule="rrf", parameter=DEFAULT_K)
-"""The default until the evals say otherwise: it has no weight to overfit."""
+DEFAULT_FUSION = Fusion(rule="convex", parameter=DEFAULT_ALPHA)
+"""The rule search uses unless told otherwise, and the one the published score
+measures. On the held-out questions it finds the right clause as often as
+reciprocal rank fusion and ranks it higher."""
 
 
-def fuse(lists: Mapping[str, Sequence[Candidate]], fusion: Fusion = RRF) -> list[Fused]:
+def fuse(lists: Mapping[str, Sequence[Candidate]], fusion: Fusion = DEFAULT_FUSION) -> list[Fused]:
     if fusion.rule == "rrf":
         return reciprocal_rank(lists, k=int(fusion.parameter))
     return convex(lists, alpha=fusion.parameter)
