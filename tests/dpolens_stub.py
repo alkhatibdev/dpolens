@@ -107,6 +107,7 @@ class Stub:
     permissions: tuple[str, ...] = ("documents.read",)
     expires_at: str | None = None
     results: list[dict[str, Any]] = field(default_factory=list)
+    laws: list[str] = field(default_factory=lambda: ["testlaw"])
     documents: list[dict[str, Any]] = field(default_factory=list)
     accepts: str | None = None
     refusals: dict[str, Refusal] = field(default_factory=dict)
@@ -122,6 +123,7 @@ class Stub:
                     "cross_references": [{"key": "testlaw:art-6", "text": "Article 6"}],
                     "expanded": [],
                     "ranks": None,
+                    "in_selected_laws": True,
                 }
             ]
         if not self.documents:
@@ -160,7 +162,7 @@ class Stub:
         if path == "/v1/tokens/introspect":
             return httpx2.Response(200, json=self._introspection())
         if path == "/v1/search":
-            return httpx2.Response(200, json={"results": self.results})
+            return httpx2.Response(200, json={"laws": self.laws, "results": self.results})
         if path.endswith("/subtree"):
             return httpx2.Response(200, json=[ARTICLE, PARAGRAPH])
         if path.startswith("/v1/clauses/"):

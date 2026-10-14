@@ -115,6 +115,16 @@ def build(settings: Settings, api: Api) -> MCPServer:
                 description=("Include text that explains without obliging, such as a GDPR recital")
             ),
         ] = False,
+        laws: Annotated[
+            list[str] | None,
+            Field(
+                description=(
+                    "The laws to search instead, by slug, such as gdpr or uae-pdpl. Leave it "
+                    "out to search the laws this organisation has selected"
+                ),
+                max_length=20,
+            ),
+        ] = None,
     ) -> Found:
         """Search this organisation's privacy policies and the privacy law that applies to it.
 
@@ -123,9 +133,10 @@ def build(settings: Settings, api: Api) -> MCPServer:
         law requires. What comes back is the clause itself, word for word, with the key,
         document and version to cite it by.
 
-        Searches every pack loaded on this instance, and the organisation's own policies.
-        Every call is recorded: who asked, which clauses came back, and the question with
-        personal data taken out.
+        Searches the laws this organisation has selected, or every loaded law until it has
+        chosen, and its own policies. A law named in `laws` that it has not selected comes
+        back marked as outside the selection. Every call is recorded: who asked, which
+        clauses came back, and the question with personal data taken out.
         """
         caller = calling()
         with _answering():
@@ -136,12 +147,11 @@ def build(settings: Settings, api: Api) -> MCPServer:
                 lang=lang,
                 as_of=as_of,
                 include_explanatory=include_explanatory,
+                laws=laws,
             )
 
-        return Found(
-            searched=_scope(as_of),
-            results=[_match(result) for result in answer["results"]],
-        )
+        results = [_match(result) for result in answer["results"]]
+        return Found(searched=_scope(answer["laws"], as_of, results), results=results)
 
     @mcp.tool(title="Read one clause", annotations=READING)
     async def get_clause(
@@ -300,9 +310,14 @@ def _told(refused: Refused) -> ToolError:
     return ToolError(said)
 
 
-def _scope(as_of: date | None) -> str:
+def _scope(laws: list[str], as_of: date | None, results: list[Match]) -> str:
     when = f"as they stood on {as_of.isoformat()}" if as_of else "as they stand today"
-    return f"every pack loaded on this instance, and the organisation's own policies, {when}"
+    searched = f"{', '.join(laws) or 'no law'}, and the organisation's own policies, {when}"
+    if any(not result.in_selected_laws for result in results):
+        searched += (
+            ". A result with in_selected_laws false is not in your organisation's selected laws"
+        )
+    return searched
 
 
 def _match(result: dict[str, Any]) -> Match:
@@ -312,4 +327,5 @@ def _match(result: dict[str, Any]) -> Match:
         **clause.model_dump(),
         score=result["score"],
         cross_references=[reference["key"] for reference in result["cross_references"]],
+        in_selected_laws=result["in_selected_laws"],
     )

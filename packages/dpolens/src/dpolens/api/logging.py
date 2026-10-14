@@ -33,6 +33,8 @@ class Asked:
 
     status: str = "ok"
     results: Sequence[Returned] = field(default_factory=tuple)
+    scope: str | None = None
+    """For a search: selected, or other when it reached a law outside the selection."""
 
     def found(self, results: Sequence[Returned]) -> None:
         self.results = results
@@ -87,6 +89,7 @@ def _write(
             target=target,
             results=asked.results,
             redaction_patterns=settings.redaction_patterns,
+            scope=asked.scope,
         )
     telemetry.info(
         "corpus.asked",

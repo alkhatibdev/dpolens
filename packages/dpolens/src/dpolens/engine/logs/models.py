@@ -61,6 +61,7 @@ class GovernanceEntry(Base):
 SURFACES = ("dashboard", "mcp", "api", "slack", "github_action")
 OPERATIONS = ("search", "get_clause", "get_subtree", "list_documents", "get_document", "ask")
 STATUSES = ("ok", "no_match", "refused", "error")
+SCOPES = ("selected", "other")
 
 
 class QueryLogEntry(Base):
@@ -92,6 +93,8 @@ class QueryLogEntry(Base):
     redaction_count: Mapped[int] = mapped_column(Integer, default=0)
     redaction_types: Mapped[list[str]] = mapped_column(ARRAY(String(50)), default=list)
     status: Mapped[str] = mapped_column(Enum(*STATUSES, name="query_status"))
+    scope: Mapped[str | None] = mapped_column(Enum(*SCOPES, name="query_scope"), nullable=True)
+    """For a search, whether it stayed inside the selected laws or reached another."""
 
     results: Mapped[list[QueryLogResult]] = relationship(
         back_populates="entry", cascade="all, delete-orphan"

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.evals.score import Outcome, Score, score
+from dpolens.engine.packs.selection import Scope, scope_for
 from dpolens.engine.search.engine import CANDIDATE_DEPTH, search
 from dpolens.engine.search.fuse import Fused, Fusion, fuse
 from dpolens.engine.search.keyword import ALTERNATIVES, Candidate, KeywordIndex, keyword_search
@@ -105,11 +106,16 @@ def run_set(
     explains without obliging, "+light", "+snowball" or "+folded-snowball" picks
     the Arabic keyword index, and "+rerank25" rescores the top 25 with the
     cross-encoder passed as `reranker`.
+
+    A run for a pack searches that pack's law alone, whatever else is loaded or
+    selected, so its score means that law. Without a pack it searches what any
+    search would.
     """
     check_configuration(configuration, reranker)
+    scope = scope_for(session, [pack]) if pack else None
     outcomes = []
     for question in questions:
-        returned = _retrieve(session, embedder, question, configuration, reranker)
+        returned = _retrieve(session, embedder, question, configuration, reranker, scope)
         outcomes.append(
             Outcome(
                 question_id=question.id,
@@ -135,11 +141,13 @@ def _retrieve(
     question: Question,
     configuration: str,
     reranker: Reranker | None = None,
+    scope: Scope | None = None,
 ) -> list[str]:
     base, modifiers = _parse(configuration)
     normative_only = "normative" in modifiers
     depth = _rerank_depth(modifiers)
     indexes = _keyword_indexes(modifiers)
+    packs = list(scope.laws) if scope is not None and scope.narrowed else None
 
     if base in ("keyword", "meaning"):
         found = (
@@ -150,6 +158,7 @@ def _retrieve(
                 limit=CANDIDATE_DEPTH,
                 normative_only=normative_only,
                 indexes=indexes,
+                packs=packs,
             )
             if base == "keyword"
             else vector_search(
@@ -158,6 +167,7 @@ def _retrieve(
                 question.question,
                 limit=CANDIDATE_DEPTH,
                 normative_only=normative_only,
+                packs=packs,
             )
         )
         if depth and reranker is not None:
@@ -177,6 +187,7 @@ def _retrieve(
                 limit=CANDIDATE_DEPTH,
                 normative_only=normative_only,
                 indexes=indexes,
+                packs=packs,
             ),
             "meaning": vector_search(
                 session,
@@ -184,6 +195,7 @@ def _retrieve(
                 question.question,
                 limit=CANDIDATE_DEPTH,
                 normative_only=normative_only,
+                packs=packs,
             ),
         }
         fused = _reranked(session, reranker, question, lists, fusion, depth)
@@ -198,6 +210,7 @@ def _retrieve(
         fusion=fusion,
         normative_only=normative_only,
         keyword_indexes=indexes,
+        scope=scope,
     )
     return [result.clause.key for result in results]
 

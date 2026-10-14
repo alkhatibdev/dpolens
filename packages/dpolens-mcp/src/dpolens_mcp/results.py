@@ -81,6 +81,12 @@ class Match(Clause):
     cross_references: list[str] = Field(
         description="Keys this clause's own words point at, to read with get_clause"
     )
+    in_selected_laws: bool = Field(
+        description=(
+            "False for a law this organisation has not selected, which the search reached "
+            "because laws named it. Say so when citing it"
+        )
+    )
 
 
 class Found(BaseModel):

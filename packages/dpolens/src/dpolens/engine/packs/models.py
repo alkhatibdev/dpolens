@@ -16,7 +16,8 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Enum, String, Text, func
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from dpolens.engine.base import Base, uuid_pk
@@ -38,3 +39,16 @@ class Pack(Base):
     license: Mapped[str] = mapped_column(Text)
     authoritative_language: Mapped[str] = mapped_column(String(20))
     loaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SelectedLaw(Base):
+    """A law the organisation has said applies to it. No rows means none chosen yet."""
+
+    __tablename__ = "selected_laws"
+
+    pack_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("packs.id"), primary_key=True
+    )
+    selected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

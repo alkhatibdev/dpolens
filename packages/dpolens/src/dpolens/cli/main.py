@@ -13,6 +13,7 @@ from dpolens.cli import (
     evals,
     governance,
     index,
+    laws,
     model,
     pack,
     queries,
@@ -43,6 +44,7 @@ from dpolens.engine.documents.read import ClauseNotFound
 from dpolens.engine.instance import MissingInstanceRow
 from dpolens.engine.logs.export import ExportRefused, MalformedExport
 from dpolens.engine.packs.format import PackFormatError
+from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
 from dpolens.engine.session import MissingExtension, NotMigrated
 
 # Problems a person can act on: printed as one line, without a traceback.
@@ -70,6 +72,8 @@ EXPECTED = (
     TokenRejected,
     UnknownToken,
     SurfaceOwnerIsAPerson,
+    UnknownLaw,
+    EmptySelection,
 )
 
 
@@ -98,6 +102,7 @@ app = typer.Typer(
 
 
 app.add_typer(pack.app)
+app.add_typer(laws.app)
 app.add_typer(clause.app)
 app.add_typer(user.app)
 app.add_typer(role.app)

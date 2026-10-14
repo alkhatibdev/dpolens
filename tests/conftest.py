@@ -45,6 +45,9 @@ TABLES = (
     "document_nodes",
     "document_versions",
     "documents",
+    # A selection left behind would quietly narrow every later test's search.
+    "selected_laws",
+    "packs",
 )
 
 
@@ -135,6 +138,39 @@ def unique() -> str:
     return uuid.uuid4().hex[:8]
 
 
+def _as_owner(url: str, database_url: str) -> str:
+    owner = make_url(database_url)
+    return (
+        make_url(url)
+        .set(username=owner.username, password=owner.password)
+        .render_as_string(hide_password=False)
+    )
+
+
+def _migrated_database(database_url: str, app_role: str, name: str) -> str:
+    """Create and migrate a database under `name`, reached as the application role."""
+    server = create_engine(database_url, isolation_level="AUTOCOMMIT")
+    try:
+        with server.connect() as connection:
+            exists = connection.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": name}
+            ).first()
+            if exists is None:
+                connection.execute(text(f'CREATE DATABASE "{name}"'))
+    finally:
+        server.dispose()
+
+    owner_url = make_url(database_url).set(database=name)
+    config = Config(str(REPO_ROOT / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", owner_url.render_as_string(hide_password=False))
+    config.attributes["app_role"] = app_role
+    command.upgrade(config, "head")
+
+    return owner_url.set(username=APP_ROLE, password=APP_PASSWORD).render_as_string(
+        hide_password=False
+    )
+
+
 @pytest.fixture(scope="session")
 def committed_owner_url(committed_database_url: str, database_url: str) -> str:
     """The committing tests' database, reached as the role that owns the tables.
@@ -143,12 +179,7 @@ def committed_owner_url(committed_database_url: str, database_url: str) -> str:
     does not have, so loading a corpus for a test connects the way an operator's
     maintenance command does.
     """
-    owner = make_url(database_url)
-    return (
-        make_url(committed_database_url)
-        .set(username=owner.username, password=owner.password)
-        .render_as_string(hide_password=False)
-    )
+    return _as_owner(committed_database_url, database_url)
 
 
 @pytest.fixture(scope="session")
@@ -160,26 +191,22 @@ def committed_database_url(database_url: str, app_role: str) -> str:
     instance-wide state, such as who the last administrator is, depend on which
     test ran first.
     """
-    server = create_engine(database_url, isolation_level="AUTOCOMMIT")
-    try:
-        with server.connect() as connection:
-            exists = connection.execute(
-                text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": COMMITTED_DB}
-            ).first()
-            if exists is None:
-                connection.execute(text(f'CREATE DATABASE "{COMMITTED_DB}"'))
-    finally:
-        server.dispose()
+    return _migrated_database(database_url, app_role, COMMITTED_DB)
 
-    owner_url = make_url(database_url).set(database=COMMITTED_DB)
-    config = Config(str(REPO_ROOT / "alembic.ini"))
-    config.set_main_option("sqlalchemy.url", owner_url.render_as_string(hide_password=False))
-    config.attributes["app_role"] = app_role
-    command.upgrade(config, "head")
 
-    return owner_url.set(username=APP_ROLE, password=APP_PASSWORD).render_as_string(
-        hide_password=False
-    )
+@pytest.fixture(scope="session")
+def database_of_its_own(database_url: str, app_role: str) -> Callable[[str], tuple[str, str]]:
+    """A migrated database under a name, as the application role's URL and the owner's.
+
+    For a module whose committed rows, such as a token the governance log points
+    at and so can never be deleted, must not reach the tests in any other.
+    """
+
+    def make(name: str) -> tuple[str, str]:
+        url = _migrated_database(database_url, app_role, name)
+        return url, _as_owner(url, database_url)
+
+    return make
 
 
 @pytest.fixture(scope="session")

@@ -70,11 +70,13 @@ def record_query(
     target: str | None = None,
     results: Sequence[Returned] = (),
     redaction_patterns: Mapping[str, str] | None = None,
+    scope: str | None = None,
 ) -> uuid.UUID:
     """Store what was asked, redacted, with what it returned.
 
     The raw question is redacted here and nowhere else, so there is no path by
-    which it reaches storage unredacted.
+    which it reaches storage unredacted. `scope` says whether a search stayed
+    inside the selected laws.
     """
     hidden = redact(query, redaction_patterns) if query else redact("")
     now = datetime.now(UTC)
@@ -90,6 +92,7 @@ def record_query(
         redaction_count=hidden.count,
         redaction_types=list(hidden.types),
         status=status,
+        scope=scope,
     )
     session.add(entry)
     session.flush()

@@ -20,6 +20,11 @@ First version of the API. Everything below is new rather than changed.
   `lang` is `en` or `ar`, and left out it is read from the letters the question is
   written in. A language the instance cannot search in is refused with `422` and the
   type `/problems/unsupported-language`, whose `languages` field lists the ones it can
+- A search covers the organisation's selected laws, or every loaded law until it has
+  chosen, and its own policies. `laws` names others to search instead; a clause from
+  a law outside the selection has `in_selected_laws` false. The response's `laws`
+  lists what was searched. A law that is not loaded is refused with `422` and the type
+  `/problems/unknown-law`, whose `laws` field lists the loaded ones
 - `GET /v1/clauses/{key}` and `GET /v1/clauses/{key}/subtree` read one clause and
   its branch
 - `GET /v1/documents` and `GET /v1/documents/{slug}` list what can be cited and

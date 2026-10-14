@@ -68,6 +68,8 @@ PAT_REVOKED = "pat.revoked"
 # entry here: it has no owner, so there is nobody for the entry to be about.
 PAT_REJECTED = "pat.rejected"
 GOVERNANCE_EXPORTED = "governance_log.exported"
+LAWS_SELECTED = "laws.selected"
+LAWS_SELECTION_CLEARED = "laws.selection_cleared"
 
 
 @dataclass(frozen=True)

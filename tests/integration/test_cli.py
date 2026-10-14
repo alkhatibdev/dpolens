@@ -145,3 +145,25 @@ def test_an_eval_run_naming_a_modifier_nothing_reads_stops_before_it_starts() ->
 
     assert result.exit_code == 2
     assert "+ligth" in result.output
+
+
+def test_every_law_is_searched_until_one_is_chosen(loaded: None) -> None:
+    listed = runner.invoke(app, ["laws", "list"])
+    chosen = runner.invoke(app, ["laws", "select", "gdpr"])
+    after = runner.invoke(app, ["laws", "list"])
+    cleared = runner.invoke(app, ["laws", "clear"])
+
+    assert listed.exit_code == 0
+    assert "every search covers every loaded law" in listed.output
+    assert chosen.exit_code == 0, chosen.output
+    assert "Selected: gdpr" in chosen.output
+    assert "every search covers every loaded law" not in after.output
+    assert cleared.exit_code == 0
+    assert "every search covers every loaded law" in cleared.output
+
+
+def test_choosing_a_law_that_is_not_loaded_fails_naming_the_loaded_ones(loaded: None) -> None:
+    result = runner.invoke(app, ["laws", "select", "uae-pdpl"])
+
+    assert result.exit_code == 1
+    assert "The loaded laws are: gdpr" in result.output
