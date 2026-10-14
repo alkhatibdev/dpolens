@@ -71,12 +71,14 @@ class TestWhatTheToolsSayAboutThemselves:
         assert "before writing or changing code" in search.description
 
     async def test_the_search_tool_says_what_it_searches(self, connected: Client) -> None:
-        """Every loaded pack, which is worth saying while an organisation cannot choose."""
+        """The selected laws, and what happens before an organisation has chosen."""
         listed = await connected.list_tools()
 
         search = next(tool for tool in listed.tools if tool.name == "search_policies")
         assert search.description is not None
-        assert "every pack loaded on this instance" in search.description
+        described = " ".join(search.description.split())
+        assert "the laws this organisation has selected" in described
+        assert "every loaded law until it has chosen" in described
 
     async def test_nothing_here_writes(self, connected: Client) -> None:
         """A client may show the difference, and there is nothing to show but reads."""

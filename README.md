@@ -12,8 +12,8 @@ with exact, versioned citations. A self-hosted MCP server.**
 > GDPR and the UAE's data protection law loaded and the embedding model inside the image,
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
 > its official English translation, and a question can be asked in either language. Arabic
-> search has no published score yet, and choosing which laws apply to an organisation is not
-> built yet, so every search covers both.
+> search has no published score yet. An administrator chooses which laws apply with
+> `dpolens laws select`, and until then every search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -188,6 +188,18 @@ dpolens clause show uae-pdpl:art-23 --lang en
 The text follows the official PDFs from the UAE Legislations portal, and every article was
 checked against them, the English word by word and the Arabic letter by letter.
 [packs/uae-pdpl/SOURCE.md](packs/uae-pdpl/SOURCE.md) says how, and gives each PDF's checksum.
+
+An administrator chooses which laws apply to the organisation. A search covers those and
+the organisation's own policies, so a company in Dubai with no EU customers is not answered
+from GDPR. Another law is searched only when a search names it, and its clauses come back
+marked as outside the choice. Every change to the choice is written to the governance log,
+and until somebody chooses, every loaded law is searched:
+
+```bash
+dpolens laws list
+dpolens laws select uae-pdpl
+dpolens search "can we send customer data abroad" --law gdpr
+```
 
 Users, roles and the governance log are what every surface authenticates and records
 against:

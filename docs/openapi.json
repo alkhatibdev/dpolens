@@ -1380,6 +1380,11 @@
             ],
             "title": "Ranks",
             "description": "Where each retriever placed this clause, when the request asked to explain. A debugging aid whose meaning changes when the fusion rule does"
+          },
+          "in_selected_laws": {
+            "type": "boolean",
+            "title": "In Selected Laws",
+            "description": "False for a clause from a law the organisation has not selected, which a search reaches only when its laws name it. Always true for the organisation's own policies"
           }
         },
         "type": "object",
@@ -1387,12 +1392,21 @@
           "clause",
           "score",
           "breadcrumb",
-          "cross_references"
+          "cross_references",
+          "in_selected_laws"
         ],
         "title": "Result"
       },
       "Results": {
         "properties": {
+          "laws": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Laws",
+            "description": "The laws this search covered, by slug, besides the organisation's policies"
+          },
           "results": {
             "items": {
               "$ref": "#/components/schemas/Result"
@@ -1403,6 +1417,7 @@
         },
         "type": "object",
         "required": [
+          "laws",
           "results"
         ],
         "title": "Results"
@@ -1435,6 +1450,23 @@
             ],
             "title": "Lang",
             "description": "The language of the question, en or ar. Left out, it is read from the letters the question is written in. Each clause comes back in it where the clause has text in it, and otherwise in the language that prevails"
+          },
+          "laws": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "type": "array",
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Laws",
+            "description": "The laws to search, by slug, such as gdpr or uae-pdpl. Left out, the organisation's selected laws, or every loaded law until it has chosen. A law outside the selection comes back with in_selected_laws false"
           },
           "expand": {
             "type": "string",

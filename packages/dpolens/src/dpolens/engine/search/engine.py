@@ -22,6 +22,7 @@ from dpolens.engine.documents.read import (
     get_subtree,
 )
 from dpolens.engine.embedding.encode import Embedder
+from dpolens.engine.packs.selection import Scope, scope_for
 from dpolens.engine.search.fuse import RRF, Fusion, fuse
 from dpolens.engine.search.keyword import KeywordIndex, keyword_search
 from dpolens.engine.search.language import language_of
@@ -48,6 +49,9 @@ class SearchResult:
     breadcrumb: tuple[ClauseView, ...]
     cross_references: tuple[tuple[str, str], ...]
     expanded: tuple[ClauseView, ...] = ()
+    in_selected_laws: bool = True
+    """False for a law the organisation has not selected, which a search reaches
+    only when it names that law."""
 
 
 def search(
@@ -61,13 +65,19 @@ def search(
     as_of: date | None = None,
     normative_only: bool = False,
     keyword_indexes: Mapping[str, KeywordIndex] | None = None,
+    scope: Scope | None = None,
 ) -> list[SearchResult]:
     """The clauses that answer a question, best first.
 
     Without `lang`, the question's own letters say which language it is in.
     `keyword_indexes` swaps a language's keyword index for another, for the evals.
+    Without `scope`, the search covers the organisation's selected laws.
     """
     lang = lang or language_of(query)
+    scope = scope or scope_for(session)
+    # Nothing is filtered when no loaded law is left out, so the default on an
+    # instance where nobody has chosen runs exactly the search it always did.
+    packs = list(scope.laws) if scope.narrowed else None
     lists = {
         "keyword": keyword_search(
             session,
@@ -76,9 +86,15 @@ def search(
             limit=CANDIDATE_DEPTH,
             normative_only=normative_only,
             indexes=keyword_indexes,
+            packs=packs,
         ),
         "meaning": vector_search(
-            session, embedder, query, limit=CANDIDATE_DEPTH, normative_only=normative_only
+            session,
+            embedder,
+            query,
+            limit=CANDIDATE_DEPTH,
+            normative_only=normative_only,
+            packs=packs,
         ),
     }
     fused = fuse(lists, fusion)[: limit + TIE_MARGIN]
@@ -110,6 +126,7 @@ def search(
             breadcrumb=detail.breadcrumb,
             cross_references=detail.cross_references,
             expanded=_expanded(session, detail, expand, lang, as_of),
+            in_selected_laws=scope.is_selected(detail.clause.pack_slug),
         )
         for candidate, detail in resolved[:limit]
     ]

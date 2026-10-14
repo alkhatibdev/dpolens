@@ -83,6 +83,13 @@ class Result(BaseModel):
             "A debugging aid whose meaning changes when the fusion rule does"
         ),
     )
+    in_selected_laws: bool = Field(
+        description=(
+            "False for a clause from a law the organisation has not selected, which a "
+            "search reaches only when its laws name it. Always true for the organisation's "
+            "own policies"
+        ),
+    )
 
     @classmethod
     def of(cls, found: SearchResult, *, explain: bool) -> Result:
@@ -95,10 +102,14 @@ class Result(BaseModel):
             ],
             expanded=[Clause.of(view) for view in found.expanded],
             ranks=dict(found.ranks) if explain else None,
+            in_selected_laws=found.in_selected_laws,
         )
 
 
 class Results(BaseModel):
+    laws: list[str] = Field(
+        description="The laws this search covered, by slug, besides the organisation's policies"
+    )
     results: list[Result]
 
 

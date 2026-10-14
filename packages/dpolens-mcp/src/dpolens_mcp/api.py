@@ -110,6 +110,7 @@ class Api:
         lang: str | None,
         as_of: date | None,
         include_explanatory: bool,
+        laws: list[str] | None = None,
     ) -> dict[str, Any]:
         found: dict[str, Any] = await self.call(
             "POST",
@@ -122,6 +123,7 @@ class Api:
                 "lang": lang,
                 "as_of": as_of.isoformat() if as_of else None,
                 "include_explanatory": include_explanatory,
+                "laws": laws,
             },
         )
         return found

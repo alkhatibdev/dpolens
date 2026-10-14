@@ -9,12 +9,15 @@ import typer
 
 from dpolens.cli.clause import print_clause
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
+from dpolens.engine.packs.selection import scope_for
 from dpolens.engine.search import Fusion, search
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
 SNIPPET = 400
 """Search shows enough to judge a result. `dpolens clause show` gives the rest."""
+
+OUTSIDE = "not in your organisation's selected laws"
 
 
 def run(
@@ -25,6 +28,10 @@ def run(
     model: Annotated[str, typer.Option(help="Embedding model")] = DEFAULT_MODEL,
     cache_dir: Annotated[Path | None, typer.Option(help="Where model files are kept")] = None,
     explain: Annotated[bool, typer.Option(help="Show which retriever found what")] = False,
+    law: Annotated[
+        list[str] | None,
+        typer.Option(help="A law to search instead of the selected ones, by slug, repeatable"),
+    ] = None,
 ) -> None:
     """Search the loaded law packs and policies."""
     with (
@@ -38,6 +45,7 @@ def run(
             limit=limit,
             expand=expand,  # type: ignore[arg-type]
             fusion=Fusion.parse(fusion),
+            scope=scope_for(session, law),
         )
 
         if not results:
@@ -53,6 +61,8 @@ def run(
                 f"{position}. {result.clause.document_slug}  {trail}".rstrip(),
                 fg=typer.colors.BRIGHT_BLACK,
             )
+            if not result.in_selected_laws:
+                typer.secho(f"   {OUTSIDE}", fg=typer.colors.YELLOW)
             print_clause(result.clause, indent=0, snippet=SNIPPET)
             if explain:
                 found = ", ".join(f"{name} #{rank}" for name, rank in sorted(result.ranks.items()))

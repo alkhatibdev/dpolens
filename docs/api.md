@@ -68,6 +68,7 @@ beside it.
 | `/problems/not-found` | 404 | No such clause or document in the version in force |
 | `/problems/invalid-request` | 400, 422 | The request does not make sense. `errors` names the fields |
 | `/problems/unsupported-language` | 422 | The instance cannot search in that `lang`. `languages` lists the ones it can |
+| `/problems/unknown-law` | 422 | A law in `laws` is not loaded here. `laws` lists the ones that are |
 | `/problems/too-many-requests` | 429 | The quota for the minute is spent. `Retry-After` says when |
 | `/problems/not-ready` | 503 | The database is not reachable |
 
@@ -90,6 +91,7 @@ does not reach the access log of a proxy in front of the instance.
 | `query` | required | The question, in words. At most 1000 characters |
 | `limit` | 10 | How many clauses to return, at most 50 |
 | `lang` | from the question | The language of the question, `en` or `ar`. Left out, it is read from the letters the question is written in |
+| `laws` | the selected laws | The laws to search instead, by slug, such as `gdpr` or `uae-pdpl` |
 | `expand` | `none` | Also return each hit's `siblings` or its `parent` |
 | `as_of` | today | Read the corpus as it stood on this date |
 | `include_explanatory` | false | Include text that explains without obliging, such as a recital |
@@ -108,6 +110,13 @@ Arabic and English, has both texts under the same key: an English search returns
 its English text, with `is_authoritative` false, `authoritative_language` saying
 that the Arabic prevails, and `authoritative_text` holding the Arabic, word for word,
 so the two can be read side by side.
+
+A search covers the laws the organisation has selected, and its own policies. Until
+an administrator chooses, with `dpolens laws select`, every loaded law counts as
+selected. `laws` searches others instead, and a clause from a law outside the
+selection has `in_selected_laws` false, so a reader can tell it does not apply. The
+response's `laws` lists what was searched, and the query log records whether a search
+reached outside the selection.
 
 The fusion rule is not a parameter. It is chosen by measurement, and
 [retrieval.md](retrieval.md) publishes the measurement.
@@ -152,7 +161,8 @@ model, refuses to serve at all.
 
 Every call writes one row to the query log: the operation, the outcome, the
 developer and the token they used, what was returned, and the question with
-personal data taken out. Rows expire on the instance's retention, which defaults
+personal data taken out. A search also records whether it stayed inside the
+selected laws. Rows expire on the instance's retention, which defaults
 to 365 days, and the instance deletes them itself.
 
 Telemetry, the JSON the process writes to stdout, never carries the text of a

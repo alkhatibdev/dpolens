@@ -18,11 +18,13 @@ date that version took effect, and for a law the jurisdiction, the trust tier an
 the text was taken from. A clause shown in translation also carries the text that prevails,
 in `prevailing_text`, and its citation says which language that is.
 
-`search_policies` searches every pack loaded on the instance and the organisation's own
-policies. It takes `query`, `limit`, `lang`, `as_of` and `include_explanatory`. `lang` can be
+`search_policies` searches the laws the organisation has selected, or every loaded law until
+an administrator has chosen with `dpolens laws select`, and the organisation's own policies.
+It takes `query`, `limit`, `lang`, `as_of`, `include_explanatory` and `laws`. `lang` can be
 left out: a question in Arabic letters is searched in Arabic, and any other in English. A date
 in `as_of` reads the documents as they stood then, which is how to answer a question about
-code written two years ago.
+code written two years ago. `laws` searches other laws by slug, and a clause from a law
+outside the selection comes back with `in_selected_laws` false.
 
 Two prompts arrive as commands in the clients that show them:
 

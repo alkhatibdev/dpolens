@@ -74,9 +74,18 @@ class TestWhatASearchHandsBack:
         result = await search(connected)
 
         assert structured(result)["searched"] == (
-            "every pack loaded on this instance, and the organisation's own policies, "
-            "as they stand today"
+            "testlaw, and the organisation's own policies, as they stand today"
         )
+
+    async def test_a_law_outside_the_selection_is_labelled(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        stub.results[0]["in_selected_laws"] = False
+
+        found = structured(await search(connected))
+
+        assert found["results"][0]["in_selected_laws"] is False
+        assert "not in your organisation's selected laws" in found["searched"]
 
     async def test_a_date_is_reflected_in_what_was_searched(self, connected: Client) -> None:
         result = await search(connected, as_of="2019-06-01")
@@ -171,7 +180,14 @@ class TestArgumentsThatCannotBeSent:
             "lang": None,
             "as_of": None,
             "include_explanatory": False,
+            "laws": None,
         }
+
+    async def test_the_laws_asked_for_reach_the_api(self, connected: Client, stub: Stub) -> None:
+        await search(connected, laws=["gdpr", "uae-pdpl"])
+
+        sent = json.loads(stub.calls("/v1/search")[0].content)
+        assert sent["laws"] == ["gdpr", "uae-pdpl"]
 
 
 class TestActingForSomebody:

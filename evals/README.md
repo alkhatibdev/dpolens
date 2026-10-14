@@ -80,6 +80,10 @@ Article 13(1). A sibling paragraph is not, because Article 13(2) is a different 
 `recall@5` is the reported number, with a bootstrap confidence interval, and CI fails on a
 regression beyond that interval. `recall@10` and MRR are reported and never gated.
 
+A run searches only the law its pack holds, whatever else is loaded or selected, so a score
+means that law. Keyword statistics are kept across every loaded law, so a run on an instance
+holding other laws can differ slightly from one holding that law alone; CI loads one.
+
 ## Running them
 
 ```bash

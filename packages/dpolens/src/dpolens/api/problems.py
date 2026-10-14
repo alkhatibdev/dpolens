@@ -126,6 +126,21 @@ def unsupported_language(lang: str, languages: Sequence[str]) -> Problem:
     )
 
 
+def unknown_law(unknown: Sequence[str], laws: Sequence[str]) -> Problem:
+    """A law that is not loaded, refused with the ones that are, so the caller can
+    ask again with one of them."""
+    return Problem(
+        kind="unknown-law",
+        title="Unknown law",
+        status=422,
+        detail=(
+            f"no law loaded here is called {', '.join(unknown)}. "
+            f"The loaded laws are: {', '.join(laws) or 'none'}"
+        ),
+        laws=list(laws),
+    )
+
+
 def too_many_requests(retry_after: int) -> Problem:
     """`Retry-After` is the standard field, and the only one a client should learn.
 

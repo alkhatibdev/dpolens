@@ -37,6 +37,7 @@ from dpolens.engine.documents.read import (
     list_documents,
 )
 from dpolens.engine.logs.queries import Returned
+from dpolens.engine.packs.selection import UnknownLaw, scope_for
 from dpolens.engine.search import SEARCHABLE_LANGUAGES
 from dpolens.engine.search.engine import search
 
@@ -62,6 +63,15 @@ class SearchRequest(BaseModel):
             "The language of the question, en or ar. Left out, it is read from the letters the "
             "question is written in. Each clause comes back in it where the clause has text in "
             "it, and otherwise in the language that prevails"
+        ),
+    )
+    laws: list[Annotated[str, Field(max_length=100)]] | None = Field(
+        default=None,
+        max_length=20,
+        description=(
+            "The laws to search, by slug, such as gdpr or uae-pdpl. Left out, the "
+            "organisation's selected laws, or every loaded law until it has chosen. A law "
+            "outside the selection comes back with in_selected_laws false"
         ),
     )
     expand: Literal["none", "siblings", "parent"] = Field(
@@ -96,6 +106,10 @@ def run_search(
     # Refused before the log, like any other request this instance cannot read.
     if body.lang is not None and body.lang not in SEARCHABLE_LANGUAGES:
         raise problems.unsupported_language(body.lang, SEARCHABLE_LANGUAGES)
+    try:
+        scope = scope_for(opened, body.laws)
+    except UnknownLaw as unknown:
+        raise problems.unknown_law(unknown.unknown, unknown.loaded) from unknown
 
     with logged(
         request,
@@ -105,6 +119,7 @@ def run_search(
         surface=surface_of(delegated),
         query=body.query,
     ) as asked:
+        asked.scope = "other" if scope.outside_selection else "selected"
         found = search(
             opened,
             embedder,
@@ -114,10 +129,14 @@ def run_search(
             expand=body.expand,
             as_of=body.as_of,
             normative_only=not body.include_explanatory,
+            scope=scope,
         )
         asked.found([Returned.of(result.clause) for result in found])
 
-    return Results(results=[Result.of(result, explain=body.explain) for result in found])
+    return Results(
+        laws=list(scope.laws),
+        results=[Result.of(result, explain=body.explain) for result in found],
+    )
 
 
 @router.get(
