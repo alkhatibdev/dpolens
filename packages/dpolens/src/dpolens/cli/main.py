@@ -46,10 +46,11 @@ from dpolens.engine.instance import MissingInstanceRow
 from dpolens.engine.logs.export import ExportRefused, MalformedExport
 from dpolens.engine.packs.format import PackFormatError
 from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
-from dpolens.engine.session import MissingExtension, NotMigrated
+from dpolens.engine.session import DatabaseUnavailable, MissingExtension, NotMigrated
 
 # Problems a person can act on: printed as one line, without a traceback.
 EXPECTED = (
+    DatabaseUnavailable,
     MissingExtension,
     NotMigrated,
     MissingInstanceRow,

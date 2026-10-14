@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-from sqlalchemy import Connection, Engine, create_engine, text
+from sqlalchemy import URL, Connection, Engine, create_engine, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from dpolens.settings import Settings
@@ -32,6 +33,10 @@ class NotMigrated(Exception):
     """The extensions are available, but this database has not been set up yet."""
 
 
+class DatabaseUnavailable(Exception):
+    """The database would not take a connection, for a reason a person can fix."""
+
+
 class WritableGovernanceLog(Exception):
     """This connection could rewrite the governance log, so its promise is empty."""
 
@@ -46,7 +51,7 @@ def check_extensions(engine: Engine) -> None:
     different problem with a different fix, so the two are reported separately:
     one needs a better image, the other needs the migrations.
     """
-    with engine.connect() as connection:
+    with connect(engine) as connection:
         created = set(connection.scalars(text("SELECT extname FROM pg_extension")).all())
         available = set(connection.scalars(text("SELECT name FROM pg_available_extensions")).all())
 
@@ -65,6 +70,50 @@ def check_extensions(engine: Engine) -> None:
             f"this database has not created {', '.join(uncreated)} yet. "
             "Run `alembic upgrade head` to set it up."
         )
+
+
+def connect(engine: Engine) -> Connection:
+    """A connection, or the reason there is none in words a person can act on.
+
+    The driver names the address it tried and what the server said, and nothing
+    about why a password that worked once stops working, which is the usual case.
+    PostgreSQL sends no error code before a connection is established, so the
+    cause is read from the server's message, and a message not recognised here is
+    passed on as it is.
+    """
+    try:
+        return engine.connect()
+    except OperationalError as failed:
+        raise DatabaseUnavailable(_why_not(str(failed.orig or failed), engine.url)) from failed
+
+
+def _why_not(said: str, url: URL) -> str:
+    where = f"{url.host}:{url.port or 5432}"
+    if "password authentication failed" in said:
+        return (
+            f"the database at {where} refused the password for {url.username}. The "
+            "database stores each role's password when it creates the role, and changing "
+            "the configured password afterwards, for example by writing a new .env, does "
+            "not change the stored one. Configure the password the database was created "
+            "with, or set the new one in the database with ALTER ROLE. PostgreSQL refuses "
+            "a role that does not exist the same way."
+        )
+    if 'database "' in said and "does not exist" in said:
+        return (
+            f'the server at {where} has no database named "{url.database}". Create it, '
+            "or point the database URL at one that exists."
+        )
+    if "resolve host" in said or "translate host name" in said:
+        return (
+            f'the database host "{url.host}" has no address. Check the host in the '
+            "database URL, and that the database is on the same network."
+        )
+    if any(sign in said for sign in ("Connection refused", "timed out", "timeout", "No route")):
+        return (
+            f"nothing answered at {where}. Check that the database is running and that "
+            "the host and port in the database URL are right."
+        )
+    return f"could not connect to the database at {where} as {url.username}: {said}"
 
 
 def create_db_engine(settings: Settings, verify: bool = True) -> Engine:
