@@ -72,6 +72,215 @@
         }
       }
     },
+    "/v1/sessions": {
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Sign in to the dashboard",
+        "operationId": "start_v1_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/current": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Who is signed in",
+        "operationId": "current_v1_sessions_current_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Sign out",
+        "operationId": "end_v1_sessions_current_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tokens/introspect": {
       "post": {
         "tags": [
@@ -131,7 +340,7 @@
             }
           },
           "429": {
-            "description": "The token has spent its quota for the minute",
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -217,7 +426,7 @@
             }
           },
           "429": {
-            "description": "The token has spent its quota for the minute",
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -340,7 +549,7 @@
             }
           },
           "429": {
-            "description": "The token has spent its quota for the minute",
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -483,7 +692,7 @@
             }
           },
           "429": {
-            "description": "The token has spent its quota for the minute",
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -616,7 +825,7 @@
             }
           },
           "429": {
-            "description": "The token has spent its quota for the minute",
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -678,6 +887,24 @@
               ],
               "title": "As Of"
             }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Name the outline's clauses in this language where they have text in it",
+              "title": "Lang"
+            },
+            "description": "Name the outline's clauses in this language where they have text in it"
           }
         ],
         "responses": {
@@ -722,7 +949,7 @@
             }
           },
           "429": {
-            "description": "The token has spent its quota for the minute",
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -767,6 +994,32 @@
   },
   "components": {
     "schemas": {
+      "Account": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Roles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "display_name",
+          "roles"
+        ],
+        "title": "Account"
+      },
       "Clause": {
         "properties": {
           "key": {
@@ -1081,6 +1334,23 @@
               }
             ],
             "title": "Source Url"
+          },
+          "authoritative_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authoritative Language",
+            "description": "For a law, the language whose text prevails where its texts disagree"
+          },
+          "in_selected_laws": {
+            "type": "boolean",
+            "title": "In Selected Laws",
+            "description": "False for a law the organisation has not selected. Always true for the organisation's own policies"
           }
         },
         "type": "object",
@@ -1095,7 +1365,9 @@
           "pack_slug",
           "jurisdiction",
           "trust_tier",
-          "source_url"
+          "source_url",
+          "authoritative_language",
+          "in_selected_laws"
         ],
         "title": "Document"
       },
@@ -1510,6 +1782,61 @@
           "query"
         ],
         "title": "SearchRequest"
+      },
+      "SignIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 1024,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "SignIn"
+      },
+      "SignedIn": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/Account"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "What this session may do right now"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At",
+            "description": "When the session ends however much it is used"
+          },
+          "idle_minutes": {
+            "type": "integer",
+            "title": "Idle Minutes",
+            "description": "Minutes without a request after which it ends sooner"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account",
+          "permissions",
+          "expires_at",
+          "idle_minutes"
+        ],
+        "title": "SignedIn",
+        "description": "Who is signed in, what they may do, and when the session ends."
       },
       "ValidationError": {
         "properties": {

@@ -1,0 +1,126 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * The look, in one place (ADR-0081 in the project's decisions): a soft grey
+ * ground, white cards, one brand colour and the tints made from it. Change the
+ * brand here and every screen follows.
+ */
+@theme {
+  --font-sans: "Readex Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ground: #eceeec;
+  --color-panel: #f7f8f7;
+  --color-field: #f3f5f3;
+  --color-line: #e3e7e4;
+  --color-line-strong: #d5dad6;
+  --color-ink: #111613;
+  --color-ink-2: #3a423d;
+  --color-muted: #5b635e;
+
+  --color-brand: #0f7a4d;
+  --color-brand-dark: #094c30;
+  --color-brand-mid: #9ac7b4;
+  --color-brand-deep: #4b9b7a;
+  --color-brand-soft: #e2efea;
+
+  --color-warn-soft: #fdebd3;
+  --color-warn-ink: #7a3e00;
+  --color-danger-soft: #fbe2e0;
+  --color-danger-ink: #8a1c13;
+
+  --radius-panel: 24px;
+  --radius-card: 20px;
+  --radius-control: 14px;
+}
+
+/* The names shadcn/ui components read, pointed at the tokens above. */
+:root {
+  --background: var(--color-ground);
+  --foreground: var(--color-ink);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-field);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-field);
+  --muted-foreground: var(--color-muted);
+  --accent: var(--color-brand-soft);
+  --accent-foreground: var(--color-brand-dark);
+  --destructive: var(--color-danger-ink);
+  --border: var(--color-line-strong);
+  --input: var(--color-line-strong);
+  --ring: var(--color-ink);
+  --radius: 14px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  /* shadcn's "muted" is a background, and ours is secondary text, so only its
+     foreground is mapped; components here use bg-field for the background. */
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-ground text-ink font-sans antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  /* Arabic sits a little taller than Latin at the same size. */
+  :lang(ar) {
+    line-height: 1.85;
+  }
+}
+
+/* The striped fill for a chart's secondary series. */
+@utility stripes {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-brand-mid) 0 6px,
+    var(--color-brand-soft) 6px 12px
+  );
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-drift {
+  animation: drift var(--drift-duration, 24s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift {
+    animation: none;
+  }
+}

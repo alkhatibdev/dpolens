@@ -132,3 +132,25 @@ class PersonalAccessToken(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     owner: Mapped[User] = relationship(lazy="joined")
+
+
+class DashboardSession(Base):
+    """A signed-in browser, held by the API rather than by the browser.
+
+    The cookie carries a 256-bit random value and only its SHA-256 is stored, as
+    with a token. A session ends at `expires_at` whatever happens, and earlier
+    when `last_seen_at` falls further behind than the idle timeout.
+    """
+
+    __tablename__ = "dashboard_sessions"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    user: Mapped[User] = relationship(lazy="joined")

@@ -70,6 +70,12 @@ PAT_REJECTED = "pat.rejected"
 GOVERNANCE_EXPORTED = "governance_log.exported"
 LAWS_SELECTED = "laws.selected"
 LAWS_SELECTION_CLEARED = "laws.selection_cleared"
+USER_PASSWORD_SET = "user.password_set"
+SESSION_STARTED = "session.started"
+SESSION_ENDED = "session.ended"
+# A wrong password for an account that exists. An unknown email is not an entry,
+# for the same reason an unknown token is not one: there is nobody it is about.
+SESSION_REFUSED = "session.refused"
 
 
 @dataclass(frozen=True)

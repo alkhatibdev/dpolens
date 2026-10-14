@@ -147,6 +147,12 @@ A revocable credential a user creates for a surface that is not the dashboard. I
 permissions are chosen at creation and can never exceed its owner's current permissions.
 _Avoid_: API key, secret, credential
 
+**Session**:
+A person signed in to the dashboard with their email and password, held by the API and
+carried by a cookie the dashboard's pages cannot read. It ends when it has gone unused for
+the idle timeout, or reached its lifetime, whichever comes first.
+_Avoid_: Login (that is the act of starting one), token (a session is not one)
+
 **Trusted surface**:
 A token marked as allowed to say which user it is acting for, which the MCP server needs and
 a person never does. It is not a permission, and it is set from the command line only.

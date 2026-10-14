@@ -72,7 +72,9 @@ class TestFirstRun:
         assert done.path == path
         written = path.read_text(encoding="utf-8").strip()
         assert written.startswith("dpol_")
-        assert authenticate(ready, written).token.id == done.token.id
+        presented = authenticate(ready, written).token
+        assert presented is not None
+        assert presented.id == done.token.id
 
     def test_the_credential_may_delegate_and_may_do_nothing_else(
         self, ready: Session, path: Path, unique: str
@@ -219,9 +221,9 @@ class TestAFileThatCannotBeUsed:
         done = ensure_surface(ready, path=path, actor=ACTOR, email=surface_email(unique))
 
         assert done.minted is True
-        assert (
-            authenticate(ready, path.read_text(encoding="utf-8").strip()).token.id == done.token.id
-        )
+        presented = authenticate(ready, path.read_text(encoding="utf-8").strip()).token
+        assert presented is not None
+        assert presented.id == done.token.id
 
     def test_a_revoked_credential_is_replaced(
         self, ready: Session, path: Path, unique: str
@@ -259,7 +261,9 @@ class TestAFileThatCannotBeUsed:
         assert done.minted is True
         assert done.token.id != theirs.id
         assert theirs.revoked_at is None
-        assert authenticate(ready, secret).token.id == theirs.id
+        presented = authenticate(ready, secret).token
+        assert presented is not None
+        assert presented.id == theirs.id
 
 
 class TestRefusals:

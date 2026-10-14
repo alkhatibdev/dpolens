@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dpolens.engine.documents.models import Document, DocumentVersion
-from dpolens.engine.documents.read import ClauseNotFound, get_clause, get_subtree
+from dpolens.engine.documents.read import ClauseNotFound, get_clause, get_document, get_subtree
 from dpolens.engine.packs.load import load_pack
 
 pytestmark = pytest.mark.integration
@@ -111,3 +111,19 @@ def test_a_scheduled_version_does_not_replace_the_one_in_force(loaded: Session) 
 
     # Today, the 2018 text still applies.
     assert get_clause(loaded, "gdpr:art-17").clause.effective_date == date(2018, 5, 25)
+
+
+def test_an_outline_is_named_in_the_language_asked_for(
+    session: Session, bilingual_pack: Path
+) -> None:
+    """A reader of the English translation finds Article (1) under its English
+    name, and anyone who names no language gets the text that prevails."""
+    load_pack(session, bilingual_pack)
+    session.commit()
+
+    english = get_document(session, "bilingual", lang="en").outline[0]
+    prevailing = get_document(session, "bilingual").outline[0]
+
+    assert (english.label, english.heading) == ("Article (1)", "Definitions")
+    assert (prevailing.label, prevailing.heading) == ("المادة (1)", "التعاريف")
+    assert get_document(session, "bilingual").summary.authoritative_language == "ar"

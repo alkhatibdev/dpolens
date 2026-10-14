@@ -116,7 +116,7 @@ def run_search(
         who,
         settings,
         operation="search",
-        surface=surface_of(delegated),
+        surface=surface_of(delegated, who),
         query=body.query,
     ) as asked:
         asked.scope = "other" if scope.outside_selection else "selected"
@@ -159,7 +159,7 @@ def read_clause(
         who,
         settings,
         operation="get_clause",
-        surface=surface_of(delegated),
+        surface=surface_of(delegated, who),
         target=key,
     ) as asked:
         try:
@@ -193,7 +193,7 @@ def read_subtree(
         who,
         settings,
         operation="get_subtree",
-        surface=surface_of(delegated),
+        surface=surface_of(delegated, who),
         target=key,
     ) as asked:
         try:
@@ -218,13 +218,17 @@ def list_corpus(
     as_of: Annotated[date | None, Query()] = None,
 ) -> Documents:
     with logged(
-        request, who, settings, operation="list_documents", surface=surface_of(delegated)
+        request, who, settings, operation="list_documents", surface=surface_of(delegated, who)
     ) as asked:
         documents, total = list_documents(opened, limit=limit, offset=offset, as_of=as_of)
+        scope = scope_for(opened)
         asked.status = "ok" if documents else "no_match"
 
     return Documents(
-        documents=[Document.of(summary) for summary in documents],
+        documents=[
+            Document.of(summary, in_selected_laws=scope.is_selected(summary.pack_slug))
+            for summary in documents
+        ],
         total=total,
         limit=limit,
         offset=offset,
@@ -244,20 +248,25 @@ def read_document(
     delegated: Delegated,
     slug: Annotated[str, Path(description="The document's slug, such as gdpr")],
     as_of: Annotated[date | None, Query()] = None,
+    lang: Annotated[
+        str | None,
+        Query(description="Name the outline's clauses in this language where they have text in it"),
+    ] = None,
 ) -> DocumentInDetail:
     with logged(
         request,
         who,
         settings,
         operation="get_document",
-        surface=surface_of(delegated),
+        surface=surface_of(delegated, who),
         target=slug,
     ) as asked:
         try:
-            detail = get_document(opened, slug, as_of=as_of)
+            detail = get_document(opened, slug, as_of=as_of, lang=lang)
         except ClauseNotFound as missing:
             asked.status = "no_match"
             raise problems.not_found(str(missing)) from missing
         asked.status = "ok"
 
-    return DocumentInDetail.of(detail)
+    selected = scope_for(opened).is_selected(detail.summary.pack_slug)
+    return DocumentInDetail.of(detail, in_selected_laws=selected)

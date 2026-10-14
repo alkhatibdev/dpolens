@@ -131,7 +131,7 @@ def _usable_surface(session: Session, presented: str) -> PersonalAccessToken | N
         who = authenticate(session, presented)
     except UnknownToken, TokenRejected:
         return None
-    return who.token if who.token.trusted_surface else None
+    return who.token if who.token is not None and who.token.trusted_surface else None
 
 
 def _service_account(session: Session, *, email: str, actor: Actor) -> User:

@@ -1,17 +1,20 @@
-# A whole DPOLens instance: a database, a one off setup, the HTTP API and the
-# MCP server your editor connects to.
+# A whole DPOLens instance: a database, a one off setup, the HTTP API, the
+# dashboard and the MCP server your editor connects to.
 #
 #   printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
 #     "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
 #   docker compose up -d
 #
-# Then create yourself a user and a token, which is the only way in until the
-# dashboard exists:
+# Then create yourself a user, give them a password for the dashboard, and a
+# token for your editor:
 #
 #   docker compose exec api dpolens user create --email you@example.com \
 #     --name "Your Name" --role Developer
+#   docker compose exec api dpolens user set-password you@example.com
 #   docker compose exec api dpolens token create --email you@example.com \
 #     --name laptop --permission documents.read
+#
+# The dashboard is at http://localhost:8080.
 
 name: dpolens
 
@@ -79,6 +82,19 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+    restart: unless-stopped
+
+  # The dashboard's files, and a forward from /v1 to the API, so the browser
+  # sees one origin and the session cookie never crosses sites.
+  dashboard:
+    build:
+      context: .
+      dockerfile: deploy/dashboard/Dockerfile
+    ports:
+      - "${DPOLENS_DASHBOARD_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
     restart: unless-stopped
 
   mcp:

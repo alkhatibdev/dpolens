@@ -23,6 +23,7 @@ from dpolens.cli import (
     user,
 )
 from dpolens.engine.auth.catalog import StalePermission
+from dpolens.engine.auth.passwords import NoPasswordAllowed, WeakPassword
 from dpolens.engine.auth.roles import DuplicateRole, RoleInUse, UnknownPermission
 from dpolens.engine.auth.surface import SurfaceOwnerIsAPerson
 from dpolens.engine.auth.tokens import (
@@ -73,6 +74,8 @@ EXPECTED = (
     UnknownToken,
     SurfaceOwnerIsAPerson,
     UnknownLaw,
+    WeakPassword,
+    NoPasswordAllowed,
     EmptySelection,
 )
 

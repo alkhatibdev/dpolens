@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 license = "Apache-2.0"
 dependencies = [
     "alembic>=1.14",
+    "argon2-cffi>=25.1",
     "fastapi>=0.120",
     # Imported directly to find and fetch model files. It also arrives with
     # tokenizers, which is not a reason to leave it undeclared.

@@ -151,8 +151,51 @@ def too_many_requests(retry_after: int) -> Problem:
         kind="too-many-requests",
         title="Too many requests",
         status=429,
-        detail=f"this token has spent its quota for the minute. Try again in {retry_after}s",
+        detail=f"this credential has spent its quota for the minute. Try again in {retry_after}s",
         headers={"Retry-After": str(retry_after)},
+    )
+
+
+def sign_in_refused() -> Problem:
+    """One answer for a wrong password and an unknown address, so it names neither."""
+    return Problem(
+        kind="sign-in-refused",
+        title="Sign-in refused",
+        status=401,
+        detail="that email and password do not match an account",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def too_many_attempts(retry_after: int) -> Problem:
+    return Problem(
+        kind="too-many-attempts",
+        title="Too many attempts",
+        status=429,
+        detail=f"too many failed sign-ins for that address. Try again in {retry_after}s",
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
+def session_ended(reason: str) -> Problem:
+    """A dashboard session that no longer works. `reason` lets the page say why:
+    `expired`, `idle`, `owner_inactive` or `unknown`."""
+    return Problem(
+        kind="session-ended",
+        title="Signed out",
+        status=401,
+        detail="the session has ended, so sign in again",
+        headers={"WWW-Authenticate": "Bearer"},
+        reason=reason,
+    )
+
+
+def cross_site_request() -> Problem:
+    return Problem(
+        kind="cross-site-request",
+        title="Not from the dashboard",
+        status=403,
+        detail="a request carrying the session cookie has to come from the dashboard's own pages",
     )
 
 
@@ -181,7 +224,7 @@ TITLES = {
     403: "The credential may not do this",
     404: "No such clause or document",
     422: "The request body or parameters are not valid",
-    429: "The token has spent its quota for the minute",
+    429: "The credential has spent its quota for the minute, or too many sign-ins failed",
     503: "The instance is not ready",
 }
 

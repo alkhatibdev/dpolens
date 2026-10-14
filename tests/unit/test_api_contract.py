@@ -47,6 +47,8 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/documents",
         "/v1/documents/{slug}",
         "/v1/tokens/introspect",
+        "/v1/sessions",
+        "/v1/sessions/current",
     }
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 
-from dpolens.api.limits import RateLimiter
+from dpolens.api.limits import RateLimiter, SignInThrottle
 
 
 def test_spends_the_quota_then_says_when_to_return() -> None:
@@ -86,3 +86,47 @@ def test_it_counts_correctly_when_several_threads_share_a_key() -> None:
     assert len(refused) == 100
     assert refused.count(None) == 100
     assert limiter.consume("shared") is not None
+
+
+class TestSignInThrottle:
+    """Five wrong passwords for one address, then a wait, whatever the address."""
+
+    def throttle(self, now: list[float]) -> SignInThrottle:
+        return SignInThrottle(failures=5, window=900, capacity=3, clock=lambda: now[0])
+
+    def test_five_failures_make_an_address_wait_until_the_first_is_old(self) -> None:
+        now = [1000.0]
+        throttle = self.throttle(now)
+        for _ in range(5):
+            assert throttle.wait("a@example.com") is None
+            throttle.failed("a@example.com")
+            now[0] += 10
+
+        wait = throttle.wait("a@example.com")
+        assert wait is not None
+        assert 850 <= wait <= 901
+        assert throttle.wait("b@example.com") is None
+
+        now[0] = 1000.0 + 901
+        assert throttle.wait("a@example.com") is None
+
+    def test_a_success_clears_the_count(self) -> None:
+        now = [0.0]
+        throttle = self.throttle(now)
+        for _ in range(4):
+            throttle.failed("a@example.com")
+        throttle.succeeded("a@example.com")
+        throttle.failed("a@example.com")
+
+        assert throttle.wait("a@example.com") is None
+
+    def test_what_it_remembers_is_bounded(self) -> None:
+        """The keys are whatever a caller types, so the oldest are forgotten."""
+        now = [0.0]
+        throttle = self.throttle(now)
+        for address in ("a", "b", "c", "d"):
+            for _ in range(5):
+                throttle.failed(address)
+
+        assert throttle.wait("a") is None
+        assert throttle.wait("d") is not None
