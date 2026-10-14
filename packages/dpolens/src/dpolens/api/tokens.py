@@ -52,6 +52,8 @@ def introspect(body: IntrospectionRequest, surface: Surface, opened: Opened) -> 
         who = authenticate(opened, body.token)
     except UnknownToken, TokenRejected:
         return Introspection(active=False)
+    if who.token is None:
+        return Introspection(active=False)
 
     return Introspection(
         active=True,

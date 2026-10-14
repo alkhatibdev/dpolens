@@ -80,7 +80,7 @@ def _write(
         entry_id = record_query(
             own,
             user_id=who.user.id,
-            pat_id=who.token.id,
+            pat_id=who.token.id if who.token else None,
             surface=surface,
             operation=operation,
             status=asked.status,
@@ -102,13 +102,16 @@ def _write(
     )
 
 
-def surface_of(delegated: bool) -> str:
+def surface_of(delegated: bool, who: Authenticated) -> str:
     """Which surface a call came through.
 
-    A delegated call is the MCP server, because in this release that is the only
-    thing a trusted surface credential is issued for. When a second surface
-    exists it will have to say which it is rather than being inferred.
+    A signed-in session is the dashboard, the only thing that has one. A delegated
+    call is the MCP server, because in this release that is the only thing a
+    trusted surface credential is issued for. When another trusted surface exists
+    it will have to say which it is rather than being inferred.
     """
+    if who.session is not None:
+        return "dashboard"
     return "mcp" if delegated else "api"
 
 

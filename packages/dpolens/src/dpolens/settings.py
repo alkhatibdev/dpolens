@@ -74,6 +74,19 @@ class Settings(BaseSettings):
         ),
     )
 
+    session_idle_minutes: int = Field(
+        default=30,
+        ge=1,
+        description="How long a dashboard session may go unused before it ends",
+    )
+
+    session_lifetime_hours: int = Field(
+        default=8,
+        ge=1,
+        le=168,
+        description="How long a dashboard session lasts at most, however much it is used",
+    )
+
     redaction_patterns: dict[str, str] = Field(
         default_factory=dict,
         description=(

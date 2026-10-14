@@ -19,10 +19,11 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 
 from dpolens import __version__
-from dpolens.api import corpus, health, problems, tokens
-from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER
-from dpolens.api.limits import RateLimiter
+from dpolens.api import corpus, health, problems, sessions, tokens
+from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER, lifetimes_of
+from dpolens.api.limits import RateLimiter, SignInThrottle
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.sessions import purge_ended
 from dpolens.engine.embedding import DEFAULT_MODEL, get_model
 from dpolens.engine.embedding.encode import Embedder, ensure_cached
 from dpolens.engine.logs.governance import Actor
@@ -70,6 +71,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.engine = engine
     app.state.embedder = embedder
     app.state.limiter = RateLimiter(settings.rate_limit_per_minute)
+    app.state.sign_in_throttle = SignInThrottle()
     purge = asyncio.create_task(_purge_daily(app))
     telemetry.info(
         "api.started",
@@ -108,6 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.middleware("http")(_request_id)
 
     app.include_router(health.router)
+    app.include_router(sessions.router)
     app.include_router(tokens.router)
     app.include_router(corpus.router)
     return app
@@ -119,7 +122,7 @@ not matter, and a missed day costs nothing."""
 
 
 async def _purge_daily(app: FastAPI) -> None:
-    """Delete questions whose retention has run out, for as long as this runs.
+    """Delete questions whose retention has run out, and ended sessions, for as long as this runs.
 
     The instance does this itself because a retention promise that depends on the
     operator having set up cron is a promise most instances quietly break. The
@@ -139,7 +142,9 @@ async def _purge_daily(app: FastAPI) -> None:
 
 
 def _purge_now(app: FastAPI) -> int:
+    """Expired questions, and the sessions nobody can use any more."""
     with session_from(app.state.engine) as opened:
+        purge_ended(opened, lifetimes=lifetimes_of(app.state.settings))
         return purge_expired(opened, actor=Actor(via="api"))
 
 

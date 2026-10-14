@@ -28,7 +28,10 @@ First version of the API. Everything below is new rather than changed.
 - `GET /v1/clauses/{key}` and `GET /v1/clauses/{key}/subtree` read one clause and
   its branch
 - `GET /v1/documents` and `GET /v1/documents/{slug}` list what can be cited and
-  return one document's outline. The outline carries no text
+  return one document's outline. The outline carries no text, and names each clause
+  in `lang` where it has text in that language. A document says whether it is in the
+  organisation's selected laws, `in_selected_laws`, and for a law which language
+  prevails, `authoritative_language`
 - Every clause carries `authoritative_language`: for a law, the language whose text
   prevails where its texts disagree. A clause returned in an official translation has
   `is_authoritative` false, this field says which text to rely on instead, and
@@ -40,4 +43,10 @@ First version of the API. Everything below is new rather than changed.
 - Authentication is a personal access token as a bearer credential. A trusted
   surface may name the caller with `DPOLens-On-Behalf-Of-User` and
   `DPOLens-On-Behalf-Of-Token`
+- `POST /v1/sessions` signs a person in to the dashboard with an email and a password
+  and sets a session cookie, which every route accepts in place of a token, from the
+  dashboard's own pages only (`Sec-Fetch-Site: same-origin`). `GET /v1/sessions/current`
+  says who is signed in, and `DELETE /v1/sessions/current` signs out. The problems are
+  `/problems/sign-in-refused`, `/problems/too-many-attempts`, `/problems/session-ended`,
+  whose `reason` says why, and `/problems/cross-site-request`
 - Sixty requests a minute per token, answered with `429` and `Retry-After`

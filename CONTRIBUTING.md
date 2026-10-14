@@ -49,6 +49,23 @@ tested against anything else.
 
 You do **not** need an API key for anything. DPOLens uses no LLM in v0.1.
 
+The dashboard needs Node 24. With the API running on port 8000, the development server
+forwards `/v1` to it, so the browser sees one origin as it does in production:
+
+```bash
+cd dashboard
+npm ci
+npm run dev             # http://localhost:5173
+npm run lint
+npm run typecheck
+npm test
+npm run format:check
+```
+
+The dashboard's API client is typed from `docs/openapi.json`. After changing a route, run
+`uv run python scripts/api_contract.py --write`, then `npm run api` in `dashboard/`, and
+commit both files: CI fails when either is stale.
+
 ## How the code is organised
 
 Two Python packages in a uv workspace:

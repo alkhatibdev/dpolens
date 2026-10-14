@@ -263,6 +263,8 @@ class DocumentSummary:
     jurisdiction: str | None
     trust_tier: str | None
     source_url: str | None
+    authoritative_language: str | None = None
+    """For a law, the language whose text prevails where its texts disagree."""
 
 
 @dataclass(frozen=True)
@@ -322,6 +324,7 @@ def _summary(session: Session, document: Document, version: DocumentVersion) -> 
         jurisdiction=document.pack.jurisdiction if document.pack else None,
         trust_tier=document.pack.trust_tier if document.pack else None,
         source_url=document.pack.source_url if document.pack else None,
+        authoritative_language=document.pack.authoritative_language if document.pack else None,
     )
 
 
@@ -346,8 +349,10 @@ def list_documents(
     return summaries[offset : offset + limit], len(summaries)
 
 
-def get_document(session: Session, slug: str, *, as_of: date | None = None) -> DocumentDetail:
-    """One document, with its top-level structure."""
+def get_document(
+    session: Session, slug: str, *, as_of: date | None = None, lang: str | None = None
+) -> DocumentDetail:
+    """One document, with its top-level structure, named in `lang` where it can be."""
     moment = as_of or date.today()
     document = session.scalar(select(Document).where(Document.slug == slug))
     if document is None:
@@ -368,23 +373,29 @@ def get_document(session: Session, slug: str, *, as_of: date | None = None) -> D
 
     return DocumentDetail(
         summary=_summary(session, document, version),
-        outline=_outline(session, top),
+        outline=_outline(session, top, lang),
     )
 
 
-def _outline(session: Session, top: Sequence[DocumentNode]) -> tuple[OutlineItem, ...]:
-    """Build the outline in two queries rather than two per clause."""
+def _outline(
+    session: Session, top: Sequence[DocumentNode], lang: str | None = None
+) -> tuple[OutlineItem, ...]:
+    """Build the outline in two queries rather than two per clause.
+
+    Each clause is named in `lang` where it has text in that language, and
+    otherwise in the language that prevails, as a clause is when it is read.
+    """
     ids = [node.id for node in top]
     if not ids:
         return ()
 
-    headings: dict[uuid.UUID, str | None] = {}
+    names: dict[uuid.UUID, tuple[str | None, str | None]] = {}
     for row in session.execute(
-        select(NodeText.node_id, NodeText.heading)
+        select(NodeText.node_id, NodeText.heading, NodeText.label)
         .where(NodeText.node_id.in_(ids))
-        .order_by(NodeText.is_authoritative.desc())
+        .order_by((NodeText.lang == (lang or "")).desc(), NodeText.is_authoritative.desc())
     ):
-        headings.setdefault(row.node_id, row.heading)
+        names.setdefault(row.node_id, (row.heading, row.label))
 
     counts = {
         parent: total
@@ -399,8 +410,8 @@ def _outline(session: Session, top: Sequence[DocumentNode]) -> tuple[OutlineItem
         OutlineItem(
             key=node.canonical_key,
             clause_type=node.node_type,
-            label=node.label,
-            heading=headings.get(node.id),
+            label=(names.get(node.id, (None, None))[1] or node.label),
+            heading=names.get(node.id, (None, None))[0],
             is_normative=node.is_normative,
             children=int(counts.get(node.id, 0)),
         )

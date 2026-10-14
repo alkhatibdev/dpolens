@@ -11,7 +11,8 @@ run somewhere the database is not.
 
 ## Authentication
 
-Send a personal access token as a bearer credential:
+Send a personal access token as a bearer credential, or, from the dashboard, the session
+cookie it signs in for:
 
 ```bash
 curl -X POST http://localhost:8000/v1/search \
@@ -39,6 +40,36 @@ credential and names the caller with two headers,
 only for a token created with `--trusted-surface`, and the pair is checked rather
 than believed: the named token has to exist, still be usable, and belong to the
 named user. A surface never passes a caller's token upstream.
+
+### Signing in to the dashboard
+
+The dashboard signs a person in at `POST /v1/sessions` with an email and a password, and
+the API answers with a session cookie. Every route accepts the cookie as well as a token;
+a call that carries both is taken as the token's.
+
+- The cookie is `HttpOnly`, so the page's scripts cannot read it, and `SameSite=Strict`, so
+  no other site's request carries it. A browser on HTTPS gets it as
+  `__Host-dpolens_session` and `Secure`. On plain HTTP, where `Secure` protects nothing
+  and Safari would not keep the cookie, it is `dpolens_session` without it. The API reads
+  which from the page's `Origin`, which no page can change.
+- A call made with the cookie must carry the browser's own `Sec-Fetch-Site: same-origin`,
+  so another site cannot borrow a signed-in browser.
+- A session ends after 30 minutes without a call (`DPOLENS_SESSION_IDLE_MINUTES`) and after
+  8 hours however much it is used (`DPOLENS_SESSION_LIFETIME_HOURS`). Deactivating a person
+  ends their sessions on their next call, and setting a new password ends them at once.
+- A wrong password and an unknown address get the same answer. Five failures for one
+  address in fifteen minutes make that address wait, counted inside each worker like the
+  rate limit.
+- `GET /v1/sessions/current` says who is signed in, with their roles and permissions.
+  `DELETE /v1/sessions/current` signs out.
+
+Signing in, signing out and a wrong password for an account that exists are written to the
+[governance log](governance-log.md). A password is set, and reset, on the command line,
+because v0.1 sends no email:
+
+```bash
+dpolens user set-password you@example.com
+```
 
 ## Errors
 
@@ -70,6 +101,10 @@ beside it.
 | `/problems/unsupported-language` | 422 | The instance cannot search in that `lang`. `languages` lists the ones it can |
 | `/problems/unknown-law` | 422 | A law in `laws` is not loaded here. `laws` lists the ones that are |
 | `/problems/too-many-requests` | 429 | The quota for the minute is spent. `Retry-After` says when |
+| `/problems/sign-in-refused` | 401 | That email and password do not match an account |
+| `/problems/too-many-attempts` | 429 | Too many failed sign-ins for that address. `Retry-After` says when |
+| `/problems/session-ended` | 401 | The session cookie no longer works. `reason` is `expired`, `idle`, `owner_inactive` or `unknown` |
+| `/problems/cross-site-request` | 403 | A call made with the session cookie did not come from the dashboard's own pages |
 | `/problems/not-ready` | 503 | The database is not reachable |
 
 ## Rate limit
@@ -135,8 +170,13 @@ text in, a clause comes back in the language that prevails.
 
 `GET /v1/documents` lists what can be cited today, with `limit` (at most 100),
 `offset` and `as_of`. `GET /v1/documents/{slug}` returns one document and its
-outline: the top level, without the text. The words come from the clause routes,
-because a document of a thousand clauses does not belong in one response.
+outline: the top level, without the text, each clause named in `lang` where it has text
+in that language. The words come from the clause routes, because a document of a
+thousand clauses does not belong in one response.
+
+A document says whether it is one of the organisation's selected laws,
+`in_selected_laws`, which is always true for the organisation's own policies, and for a
+law which language prevails, `authoritative_language`.
 
 ### Introspection
 

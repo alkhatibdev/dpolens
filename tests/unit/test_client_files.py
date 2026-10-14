@@ -22,6 +22,7 @@ from dpolens_mcp.settings import Settings
 REPO = Path(__file__).resolve().parents[2]
 CLIENTS = REPO / "clients"
 COMPOSE = REPO / "compose.yaml"
+DASHBOARD_SERVER = REPO / "deploy" / "dashboard" / "nginx.conf"
 MARKETPLACE = REPO / ".claude-plugin" / "marketplace.json"
 PLUGIN = CLIENTS / "claude-code" / ".claude-plugin" / "plugin.json"
 
@@ -171,8 +172,15 @@ class TestThePluginAndItsMarketplace:
 
 
 class TestTheComposeFile:
-    def test_it_starts_the_four_things_an_instance_is(self) -> None:
-        assert set(compose()["services"]) == {"db", "setup", "api", "mcp"}
+    def test_it_starts_the_five_things_an_instance_is(self) -> None:
+        assert set(compose()["services"]) == {"db", "setup", "api", "dashboard", "mcp"}
+
+    def test_the_dashboard_waits_for_the_api_it_forwards_to(self) -> None:
+        """The browser sees one origin: the dashboard's server passes /v1 to the API."""
+        dashboard = compose()["services"]["dashboard"]
+
+        assert dashboard["depends_on"]["api"]["condition"] == "service_healthy"
+        assert "proxy_pass http://api:8000;" in DASHBOARD_SERVER.read_text(encoding="utf-8")
 
     def test_the_api_waits_for_the_setup_to_finish(self) -> None:
         """Migrations, the packs and the index all have to exist before a request."""

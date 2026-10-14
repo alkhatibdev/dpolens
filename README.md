@@ -7,13 +7,14 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 > ### Status: pre-release
 >
-> There is no published image yet, and no dashboard. What runs today is a whole instance
-> from source: `docker compose up` starts Postgres, the HTTP API and the MCP server, with
+> There is no published image yet. What runs today is a whole instance from source:
+> `docker compose up` starts Postgres, the HTTP API, the dashboard and the MCP server, with
 > GDPR and the UAE's data protection law loaded and the embedding model inside the image,
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
-> its official English translation, and a question can be asked in either language. An
-> administrator chooses which laws apply with `dpolens laws select`, and until then every
-> search covers both.
+> its official English translation, and a question can be asked in either language. In the
+> dashboard you sign in and read the library; uploading your own policies there, and
+> managing users, roles and tokens, are planned for v0.1. An administrator chooses which
+> laws apply with `dpolens laws select`, and until then every search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -36,21 +37,28 @@ docker compose up -d
 ```
 
 The first `up` builds the images and loads GDPR and the UAE law, which takes a few minutes.
-After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api` and
-`mcp` as healthy.
+After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
+`dashboard` and `mcp` as healthy.
 
-**2. Create yourself a user and a token**
+**2. Create yourself a user, a password and a token**
 
 ```bash
 docker compose exec api dpolens user create --email you@example.com \
   --name "Your Name" --role Developer
+docker compose exec api dpolens user set-password you@example.com
 docker compose exec api dpolens token create --email you@example.com \
   --name laptop --permission documents.read
 ```
 
 The token starts with `dpol_` and is shown once, so copy it now.
 
-**3. Connect your assistant**
+**3. Open the dashboard**
+
+Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
+password. The library holds every law loaded, clause by clause and in each of its
+languages, with a search box for asking it in your own words.
+
+**4. Connect your assistant**
 
 For Claude Code, install the plugin:
 
@@ -66,7 +74,7 @@ file. Restart Claude Code, and `/mcp` lists `dpolens` as connected.
 
 For Cursor and VS Code, [clients/](clients/) has the configuration.
 
-**4. Ask a question**
+**5. Ask a question**
 
 Ask your assistant how long you may keep a deleted account, or whether you need consent to
 log an IP address. The answer quotes the clause it relies on and cites it.
@@ -211,6 +219,7 @@ against:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Admin
+dpolens user set-password you@example.com
 dpolens token create --email you@example.com --name laptop --permission documents.read
 dpolens role list
 dpolens governance verify
@@ -261,8 +270,16 @@ personal data. It never receives your token as its own credential. It asks the A
 token it is, then acts with its own and names you, so the query log records the question as
 yours. [docs/mcp.md](docs/mcp.md) covers the tools, the prompts and what each call records.
 
-There is no login yet, so a token is the only credential, and there is no published image:
-`docker compose up` builds from source. The dashboard is coming.
+The dashboard is a client of the same API. A person signs in with an email and a password,
+and the session lives in a cookie the page's scripts cannot read and no other site can
+send. It ends after 30 minutes idle or 8 hours in all, and the governance log records every
+sign-in. The library lists each document with the version in force and which of its
+languages prevails, and reads a law article by article, its official translation beside the
+text that prevails with the key between them. Every key copies the clause with the same
+citation the MCP server gives an assistant. Search covers the selected laws, with another
+law, a date or the recitals a click away. The interface is English, built so an Arabic one
+can follow, and it works on a phone. There is no published image: `docker compose up`
+builds from source.
 
 ## Contributing
 

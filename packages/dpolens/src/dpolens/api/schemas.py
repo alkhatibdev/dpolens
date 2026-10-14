@@ -143,10 +143,22 @@ class Document(BaseModel):
     jurisdiction: str | None
     trust_tier: str | None
     source_url: str | None
+    authoritative_language: str | None = Field(
+        description="For a law, the language whose text prevails where its texts disagree"
+    )
+    in_selected_laws: bool = Field(
+        description=(
+            "False for a law the organisation has not selected. Always true for the "
+            "organisation's own policies"
+        )
+    )
 
     @classmethod
-    def of(cls, summary: DocumentSummary) -> Document:
-        return cls(**{**vars(summary), "languages": list(summary.languages)})
+    def of(cls, summary: DocumentSummary, *, in_selected_laws: bool) -> Document:
+        return cls(
+            **{**vars(summary), "languages": list(summary.languages)},
+            in_selected_laws=in_selected_laws,
+        )
 
 
 class Documents(BaseModel):
@@ -183,8 +195,8 @@ class DocumentInDetail(BaseModel):
     )
 
     @classmethod
-    def of(cls, detail: DocumentDetail) -> DocumentInDetail:
+    def of(cls, detail: DocumentDetail, *, in_selected_laws: bool) -> DocumentInDetail:
         return cls(
-            document=Document.of(detail.summary),
+            document=Document.of(detail.summary, in_selected_laws=in_selected_laws),
             outline=[OutlineEntry.of(item) for item in detail.outline],
         )

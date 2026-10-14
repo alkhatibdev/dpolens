@@ -11,10 +11,11 @@ is not evidence of anything.
 
 ## What is recorded
 
-Creating a user, assigning or removing a role, deactivating an account, creating
-or changing a role's permissions, publishing a document version, creating or
-revoking a token, viewing who asked a question in the query log, and exporting
-this log.
+Creating a user, assigning or removing a role, deactivating an account, setting a
+password, creating or changing a role's permissions, publishing a document version,
+creating or revoking a token, signing in to the dashboard and out of it, a wrong
+password for an account that exists, viewing who asked a question in the query log,
+and exporting this log.
 
 The governance log is not the query log, and neither is telemetry. The query log
 holds redacted questions and expires on a retention schedule. Telemetry is the

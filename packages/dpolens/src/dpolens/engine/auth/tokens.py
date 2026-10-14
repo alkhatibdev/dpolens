@@ -23,7 +23,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from dpolens.engine.auth.models import PersonalAccessToken, User
+from dpolens.engine.auth.models import DashboardSession, PersonalAccessToken, User
 from dpolens.engine.auth.roles import check_known
 from dpolens.engine.auth.users import get_user
 from dpolens.engine.logs.governance import PAT_CREATED, PAT_REVOKED, Actor, record
@@ -88,14 +88,27 @@ class TokenRejected(Exception):
 
 @dataclass(frozen=True)
 class Authenticated:
-    """Who is calling, and what they may do on this request."""
+    """Who is calling, and what they may do on this request.
 
-    token: PersonalAccessToken
+    A call carries a token, or, from the dashboard, a signed-in session: one or
+    the other, never both.
+    """
+
+    token: PersonalAccessToken | None
     user: User
     permissions: frozenset[str]
+    session: DashboardSession | None = None
 
     def may(self, permission: str) -> bool:
         return permission in self.permissions
+
+    @property
+    def credential_id(self) -> str:
+        """The token or the session, which is what a rate limit counts."""
+        credential = self.token or self.session
+        if credential is None:
+            raise ValueError("a caller holds a token or a session")
+        return str(credential.id)
 
 
 def digest_of(token: str) -> str:

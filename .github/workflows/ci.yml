@@ -73,6 +73,51 @@ jobs:
         # own Postgres via testcontainers, built from deploy/postgres.
         run: uv run pytest
 
+  dashboard:
+    name: dashboard
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        # From the lock file, for the same reason as the Python packages.
+        run: npm ci --no-audit --no-fund
+
+      - name: Client matches the contract
+        # The typed client is generated from docs/openapi.json, which the check
+        # job keeps true to the routes, so a stale one is a diff here.
+        run: |
+          npm run api
+          git diff --exit-code -- src/api/schema.d.ts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Image
+        working-directory: .
+        run: docker build --file deploy/dashboard/Dockerfile .
+
   contract:
     name: breaking API changes
     runs-on: ubuntu-latest

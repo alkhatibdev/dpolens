@@ -182,3 +182,32 @@ def test_an_export_will_not_overwrite_an_existing_one(instance: None, tmp_path: 
     result = runner.invoke(app, ["governance", "export", str(out)])
     assert result.exit_code == 1
     assert "not empty" in result.output
+
+
+def test_a_password_is_set_from_the_command_line_and_never_echoed(
+    instance: None, unique: str
+) -> None:
+    email = f"cli-password-{unique}@example.com"
+    run("user", "create", "--email", email, "--name", "Signs In")
+
+    result = runner.invoke(
+        app,
+        ["user", "set-password", email, "--password-stdin"],
+        input="correct horse battery staple\n",
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Set a new password" in result.output
+    assert "correct horse" not in result.output
+
+
+def test_a_short_password_is_refused_with_the_rule(instance: None, unique: str) -> None:
+    email = f"cli-short-{unique}@example.com"
+    run("user", "create", "--email", email, "--name", "Short")
+
+    result = runner.invoke(
+        app, ["user", "set-password", email, "--password-stdin"], input="too short\n"
+    )
+
+    assert result.exit_code == 1
+    assert "at least 12 characters" in result.output

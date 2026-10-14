@@ -1,17 +1,19 @@
 """User commands.
 
-Creating the first user is the second thing an operator does, after
-`docker compose up`, because until the dashboard exists a personal access token
-is the only way in.
+Creating the first user, and giving them a password, is the second thing an
+operator does after `docker compose up`. With no email in this release, setting
+a forgotten password is a command too.
 """
 
 from __future__ import annotations
 
+import sys
 from typing import Annotated
 
 import typer
 
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.passwords import MIN_LENGTH, set_password
 from dpolens.engine.auth.users import (
     activate,
     create_user,
@@ -57,6 +59,31 @@ def create(
             typer.echo(f"  roles: {', '.join(held.name for held in user.roles)}")
         else:
             typer.echo("  roles: none yet, so this user can do nothing. Use `dpolens user grant`.")
+
+
+@app.command(name="set-password")
+def set_password_(
+    email: Annotated[str, typer.Argument(help="Whose password to set")],
+    stdin: Annotated[
+        bool,
+        typer.Option("--password-stdin", help="Read the password from standard input"),
+    ] = False,
+) -> None:
+    """Set a person's password for the dashboard, and sign them out everywhere."""
+    if stdin:
+        password = sys.stdin.readline().rstrip("\n")
+    else:
+        password = typer.prompt(
+            f"New password (at least {MIN_LENGTH} characters)",
+            hide_input=True,
+            confirmation_prompt=True,
+        )
+    settings = load_settings()
+    actor = cli_actor()
+    with session_scope(settings) as session:
+        bootstrap(session, actor=actor)
+        user = set_password(session, email=email, password=password, actor=actor)
+        typer.echo(f"Set a new password for {user.email}. Any session they had has ended.")
 
 
 @app.command(name="list")
