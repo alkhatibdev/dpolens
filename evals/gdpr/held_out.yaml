@@ -88,7 +88,7 @@ questions:
     source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
 
   - id: breach-tell-users
-    question: When do we have to tell the affected users about a breach?
+    question: When do we have to tell the affected users about a breach on our system?
     lang: en
     expected_keys: [gdpr:art-34:para-1]
     source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
@@ -97,7 +97,7 @@ questions:
       and the duty to tell individuals where the risk is high is Article 34(1).
 
   - id: encrypt-at-rest
-    question: Do we have to encrypt personal data at rest?
+    question: Do we have to encrypt all personal data at rest?
     lang: en
     expected_keys: [gdpr:art-32:para-1]
     source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/

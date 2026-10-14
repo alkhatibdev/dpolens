@@ -1,7 +1,7 @@
 {
   "pack": "gdpr",
-  "measured_at": "2026-09-26",
-  "commit": "c6dc64d",
+  "measured_at": "2026-10-14",
+  "commit": "bebbf5f",
   "runs": [
     {
       "question_set": "held_out",
@@ -11,7 +11,7 @@
       "questions": 30,
       "recall_at_5": 0.7667,
       "recall_at_10": 0.8333,
-      "mrr": 0.5386,
+      "mrr": 0.5358,
       "interval": [
         0.6,
         0.9
@@ -32,12 +32,12 @@
       "model": "e5-small",
       "context_recipe": "v1",
       "questions": 30,
-      "recall_at_5": 0.3,
-      "recall_at_10": 0.5667,
-      "mrr": 0.2554,
+      "recall_at_5": 0.3333,
+      "recall_at_10": 0.5333,
+      "mrr": 0.2657,
       "interval": [
-        0.1333,
-        0.4667
+        0.1667,
+        0.5
       ],
       "misses": [
         "fix-wrong-address",
@@ -51,7 +51,6 @@
         "breach-tell-users",
         "send-data-to-competitor",
         "small-company-records",
-        "charge-for-access",
         "plain-language",
         "signup-form-notice",
         "bought-a-list",
@@ -70,8 +69,8 @@
       "context_recipe": "v1",
       "questions": 30,
       "recall_at_5": 0.4333,
-      "recall_at_10": 0.5667,
-      "mrr": 0.281,
+      "recall_at_10": 0.6,
+      "mrr": 0.2866,
       "interval": [
         0.2667,
         0.6
@@ -91,6 +90,127 @@
         "signup-form-notice",
         "bought-a-list",
         "human-review-of-automation",
+        "two-companies-sharing",
+        "us-hosting",
+        "legitimate-interests-test"
+      ]
+    },
+    {
+      "question_set": "held_out.ar",
+      "configuration": "convex:0.5+normative",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 30,
+      "recall_at_5": 0.3,
+      "recall_at_10": 0.3667,
+      "mrr": 0.1892,
+      "interval": [
+        0.1333,
+        0.4667
+      ],
+      "misses": [
+        "fix-wrong-address",
+        "stop-marketing",
+        "health-data",
+        "log-retention",
+        "consent-not-forced",
+        "unsubscribe-easy",
+        "dpo-duties",
+        "breach-internal-record",
+        "breach-tell-users",
+        "encrypt-at-rest",
+        "send-data-to-competitor",
+        "access-deadline",
+        "plain-language",
+        "signup-form-notice",
+        "bought-a-list",
+        "human-review-of-automation",
+        "what-counts-as-personal-data",
+        "vendor-contract",
+        "two-companies-sharing",
+        "us-hosting",
+        "legitimate-interests-test"
+      ]
+    },
+    {
+      "question_set": "held_out.ar",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 30,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "interval": [
+        0.0,
+        0.0
+      ],
+      "misses": [
+        "fix-wrong-address",
+        "stop-marketing",
+        "pause-processing",
+        "health-data",
+        "log-retention",
+        "consent-not-forced",
+        "unsubscribe-easy",
+        "teen-signup",
+        "dpia-large-scale",
+        "dpo-duties",
+        "publish-dpo-contact",
+        "breach-report-contents",
+        "breach-internal-record",
+        "breach-tell-users",
+        "encrypt-at-rest",
+        "send-data-to-competitor",
+        "small-company-records",
+        "access-deadline",
+        "charge-for-access",
+        "plain-language",
+        "signup-form-notice",
+        "bought-a-list",
+        "human-review-of-automation",
+        "what-counts-as-personal-data",
+        "pseudonymisation-meaning",
+        "profiling-meaning",
+        "vendor-contract",
+        "two-companies-sharing",
+        "us-hosting",
+        "legitimate-interests-test"
+      ]
+    },
+    {
+      "question_set": "held_out.ar",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 30,
+      "recall_at_5": 0.2667,
+      "recall_at_10": 0.3333,
+      "mrr": 0.1687,
+      "interval": [
+        0.1333,
+        0.4333
+      ],
+      "misses": [
+        "fix-wrong-address",
+        "stop-marketing",
+        "pause-processing",
+        "health-data",
+        "log-retention",
+        "consent-not-forced",
+        "unsubscribe-easy",
+        "dpo-duties",
+        "breach-internal-record",
+        "breach-tell-users",
+        "encrypt-at-rest",
+        "send-data-to-competitor",
+        "access-deadline",
+        "plain-language",
+        "signup-form-notice",
+        "bought-a-list",
+        "human-review-of-automation",
+        "what-counts-as-personal-data",
+        "vendor-contract",
         "two-companies-sharing",
         "us-hosting",
         "legitimate-interests-test"

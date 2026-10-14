@@ -138,10 +138,13 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-${{ hashFiles('packages/dpolens/src/dpolens/engine/embedding/models.py') }}
 
-      - name: Load the pack and build the index
+      - name: Load the packs and build the index
+        # Both laws, as an instance holds them. Each eval run searches only its own,
+        # so a score means that law whatever else is loaded.
         run: |
           uv run alembic upgrade head
           uv run dpolens pack load packs/gdpr
+          uv run dpolens pack load packs/uae-pdpl
           uv run dpolens index build
 
       - name: Score retrieval against the published result

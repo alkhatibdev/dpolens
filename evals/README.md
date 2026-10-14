@@ -10,7 +10,8 @@ packs themselves.
 evals/<pack>/tuning.yaml      used while improving retrieval
 evals/<pack>/held_out.yaml    produces the published score, and nothing else
 evals/<pack>/tuning.ar.yaml   the same questions, asked in another language
-evals/results/<pack>.json     the published held-out score, committed
+evals/<pack>/held_out.en.yaml the held-out questions, asked in another language
+evals/results/<pack>.json     the published held-out scores, committed
 ```
 
 A set without a language suffix is asked in the language the pack's text prevails in:
@@ -20,14 +21,17 @@ same ids, labels and sources, so the two can be compared question by question. I
 written the way people ask in that language, not translated word for word.
 
 `evals/results` is committed, because CI compares every change against it and because it
-is the evidence behind any number in the README. It holds **held-out runs only**:
-`--write` refuses a tuning run, since a score measured on the set used for tuning does not
-belong in a file people will read as the published result. Tuning numbers print to the
-terminal and stay there.
+is the evidence behind any number in the README. It holds **held-out runs only**, in any
+language: `--write` refuses a tuning run, since a score measured on the set used for tuning
+does not belong in a file people will read as the published result. Tuning numbers print to
+the terminal and stay there. A pack's file holds every set it publishes, written together,
+and CI checks each of them against its own interval.
 
 A pack needs at least 20 tuning and 30 held-out questions before any score of it is
 published. Fifty is not arbitrary: on thirty questions one question is more than three
-points of recall, and a smaller set produces a number too wide to defend.
+points of recall, and a smaller set produces a number too wide to defend. The same topics
+asked in two languages can be published as one score with `--together`, which counts each
+topic once in the interval, so nineteen topics asked twice are as wide as nineteen.
 
 ## A question
 
@@ -82,19 +86,26 @@ regression beyond that interval. `recall@10` and MRR are reported and never gate
 
 A run searches only the law its pack holds, whatever else is loaded or selected, so a score
 means that law. Keyword statistics are kept across every loaded law, so a run on an instance
-holding other laws can differ slightly from one holding that law alone; CI loads one.
+holding other laws can differ slightly from one holding that law alone. The published scores
+are measured with every pack loaded, and so is CI's gate.
 
 ## Running them
 
 ```bash
 uv run dpolens evals run --pack gdpr --set tuning
 uv run dpolens evals run --pack gdpr --set tuning.ar
-uv run dpolens evals run --pack gdpr --set held_out --baselines --write
+uv run dpolens evals run --pack gdpr --set held_out --set held_out.ar --baselines --write
+uv run dpolens evals run --pack uae-pdpl --set held_out --set held_out.en --together \
+  --baselines --write
 ```
+
+`--set` can be given more than once, and each set is scored on its own; `--together` adds
+the sets scored as one.
 
 `--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`), a single
 retriever (`keyword`, `meaning`), and a `+normative` suffix on any of them to exclude text
-that explains without obliging. For Arabic questions, `+light`, `+snowball` or
+that explains without obliging. Left out, it is `convex:0.5+normative`, which is what search
+runs and what the published scores measure. For Arabic questions, `+light`, `+snowball` or
 `+folded-snowball` picks one of the three Arabic keyword indexes; the last is the default.
 `--baselines` adds the two single retrievers to the run, so a fusion rule can never be
 adopted while being worse than half the system.

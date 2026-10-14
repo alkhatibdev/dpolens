@@ -11,9 +11,9 @@ with exact, versioned citations. A self-hosted MCP server.**
 > from source: `docker compose up` starts Postgres, the HTTP API and the MCP server, with
 > GDPR and the UAE's data protection law loaded and the embedding model inside the image,
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
-> its official English translation, and a question can be asked in either language. Arabic
-> search has no published score yet. An administrator chooses which laws apply with
-> `dpolens laws select`, and until then every search covers both.
+> its official English translation, and a question can be asked in either language. An
+> administrator chooses which laws apply with `dpolens laws select`, and until then every
+> search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -137,14 +137,19 @@ launch pack.
 
 ## Does it actually find the right clause
 
-GDPR: **recall@5 of 0.77** (95% confidence interval 0.60 to 0.90), on 30 held-out questions
-drawn from ICO and EDPB guidance, using multilingual-e5-small and convex fusion, measured
-26 September 2026.
+| Law | Held-out questions | recall@5 | 95% interval |
+| --- | --- | --- | --- |
+| GDPR | 30, from ICO and EDPB guidance | **0.77** | 0.60 to 0.90 |
+| The UAE's data protection law | 19 topics, each asked in Arabic and in English | **0.55** | 0.37 to 0.74 |
+| GDPR asked in Arabic | the same 30, in Arabic | **0.30** | 0.13 to 0.47 |
 
-That means the clause the guidance points at was among the top five answers 77% of the
-time. It does not mean DPOLens answers 77% of privacy questions correctly.
-[docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and
-the commands to reproduce the number yourself.
+With multilingual-e5-small and convex fusion, measured 14 October 2026. That means that for
+GDPR, the clause the guidance points at was among the top five answers 77% of the time. It does
+not mean DPOLens answers 77% of privacy questions correctly. Asked in Arabic alone, the UAE law
+scores 0.42, and in English 0.68. GDPR has no Arabic text, so an Arabic question about it has to
+cross languages, and finds its clause far less often.
+[docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and the
+commands to reproduce the numbers yourself.
 
 ## Does an assistant actually use it
 

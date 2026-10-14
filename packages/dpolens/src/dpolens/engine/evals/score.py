@@ -9,7 +9,7 @@ than it has earned. On thirty questions, one question is more than three points.
 from __future__ import annotations
 
 import random
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 CONFIDENCE = 0.95
@@ -129,12 +129,22 @@ def grouped_interval(
     return Interval(low=low, high=high)
 
 
-def score(outcomes: Sequence[Outcome]) -> Score:
+def score(outcomes: Sequence[Outcome], group_of: Callable[[Outcome], str] | None = None) -> Score:
+    """`group_of` names the item each outcome measures, when several measure one,
+    such as one topic asked in Arabic and in English: the interval resamples the
+    items, so the same question asked twice is not counted as two."""
+    if group_of is None:
+        interval = bootstrap_interval(outcomes, k=5)
+    else:
+        groups: dict[str, list[bool]] = {}
+        for outcome in outcomes:
+            groups.setdefault(group_of(outcome), []).append(outcome.hit_at(5))
+        interval = grouped_interval(list(groups.values()))
     return Score(
         questions=len(outcomes),
         recall_at_5=recall_at(outcomes, 5),
         recall_at_10=recall_at(outcomes, 10),
         mrr=mean_reciprocal_rank(outcomes),
-        interval=bootstrap_interval(outcomes, k=5),
+        interval=interval,
         misses=tuple(outcome.question_id for outcome in outcomes if not outcome.hit_at(5)),
     )

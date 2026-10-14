@@ -88,34 +88,67 @@ a few points on its own and a bare number invites more confidence than it has ea
 fails a change that drops below the published interval. The pack, the questions and the
 model are all fixed, so a drop has exactly one possible cause.
 
-## The published score
+## The published scores
 
-**GDPR: recall@5 of 0.77, 95% confidence interval 0.60 to 0.90.** Thirty held-out
-questions, multilingual-e5-small, context recipe v1, convex combination at 0.5 with text
-that only explains excluded. Measured 26 September 2026.
+Three scores, each on held-out questions that were never used to tune search, with
+multilingual-e5-small, context recipe v1, and convex combination at 0.5 with text that only
+explains excluded. Each was measured with both laws loaded and the run kept to its own law,
+which is what an organisation that has selected that law searches. Measured 14 October 2026.
 
-`evals/results/gdpr.json` carries the same numbers in machine-readable form, with the
-commit that produced them, and CI compares every change against it.
+| Score | Questions | recall@5 | 95% interval | MRR |
+| --- | --- | --- | --- | --- |
+| **GDPR** | 30 in English | **0.77** | 0.60 to 0.90 | 0.54 |
+| **The UAE law** | 19 topics, each asked in Arabic and in English | **0.55** | 0.37 to 0.74 | 0.35 |
+| **GDPR asked in Arabic** | 30 in Arabic | **0.30** | 0.13 to 0.47 | 0.19 |
 
-Read that sentence strictly. It says that on thirty questions drawn from regulator
-guidance, the clause the guidance points at was in the top five answers 77% of the time.
-It does not say that DPOLens answers 77% of privacy questions correctly.
+The UAE law's score counts each topic once. Its 19 topics are asked in Arabic, the language that
+prevails, and in the official English, and the interval resamples the topics rather than the 38
+questions, so it is as wide as nineteen items make it. Asked in Arabic alone it reaches 0.42
+(0.21 to 0.63), and in English alone 0.68 (0.47 to 0.89). GDPR has no Arabic text, so an Arabic
+question about it has to cross languages to find its clause, which only meaning search can do.
 
-### Every configuration, on the held-out set
+`evals/results/gdpr.json` and `evals/results/uae-pdpl.json` carry the same numbers in
+machine-readable form, with the commit that produced them, and CI compares every change against
+each of them.
 
-| Configuration | recall@5 | 95% interval | recall@10 | MRR | s/query |
-| --- | --- | --- | --- | --- | --- |
-| Keyword only (BM25) | 0.30 | 0.13 to 0.47 | 0.57 | 0.26 | |
-| Meaning only | 0.43 | 0.27 to 0.60 | 0.57 | 0.28 | |
-| Meaning, explaining text excluded | 0.60 | 0.40 to 0.77 | 0.73 | 0.41 | |
-| Reciprocal rank fusion, k=10 | 0.77 | 0.60 to 0.90 | 0.83 | 0.45 | |
-| **Convex combination, 0.5** | **0.77** | 0.60 to 0.90 | 0.83 | **0.54** | 0.11 |
-| Convex combination, e5-base | 0.80 | 0.63 to 0.93 | 0.83 | 0.57 | 0.12 |
+Read those numbers strictly. The first says that on thirty questions drawn from regulator
+guidance, the clause the guidance points at was in the top five answers 77% of the time. It does
+not say that DPOLens answers 77% of privacy questions correctly.
 
-Both fusion rules reach the same recall and convex combination ranks the right clause
-higher, so it is the default. e5-base scores three points better, which on thirty
-questions is one question. It costs three times the first-start indexing, 108 seconds against
-33, and a 1.1 GB download against 470 MB. It is available as a setting rather than the default.
+GDPR's score was first published on 26 September 2026, at the same 0.77. Two of its questions
+were reworded on 14 October 2026: "a breach" became "a breach on our system", and "personal data
+at rest" became "all personal data at rest". The set was measured again, and the score and its
+seven misses stayed the same; the reworded breach question is still one of them.
+
+### Every configuration, on GDPR's held-out set
+
+| Configuration | recall@5 | 95% interval | recall@10 | MRR |
+| --- | --- | --- | --- | --- |
+| Keyword only (BM25) | 0.33 | 0.17 to 0.50 | 0.53 | 0.27 |
+| Meaning only | 0.43 | 0.27 to 0.60 | 0.60 | 0.29 |
+| Meaning, explaining text excluded | 0.60 | 0.40 to 0.77 | 0.73 | 0.42 |
+| Reciprocal rank fusion, k=10 | 0.77 | 0.60 to 0.90 | 0.83 | 0.43 |
+| **Convex combination, 0.5** | **0.77** | 0.60 to 0.90 | 0.83 | **0.54** |
+| Convex combination, e5-base | 0.77 | 0.60 to 0.90 | 0.83 | 0.57 |
+
+Both fusion rules exclude text that only explains, reach the same recall, and convex combination
+ranks the right clause higher, so it is the default. e5-base reaches the same recall and ranks the
+right clause a little higher still. It costs three times the first-start indexing, 108 seconds
+against 33 on GDPR alone, and a 1.1 GB download against 470 MB, so it is available as a setting
+rather than the default.
+
+### The UAE law, by configuration
+
+| Configuration | In Arabic (19) | In English (19) | Both (38) |
+| --- | --- | --- | --- |
+| Keyword only (BM25) | 0.32 | 0.42 | 0.37 |
+| Meaning only | 0.53 | 0.58 | 0.55 |
+| **Convex combination, 0.5** | **0.42** | **0.68** | **0.55** |
+
+In Arabic, meaning search alone finds more of these nineteen than the published configuration
+does, and in English the published configuration finds more. The configuration was chosen on
+GDPR's English practice questions and stays as it is: changing it on a held-out result would fit
+it to these questions.
 
 ### Why the default is not quantised
 
@@ -123,7 +156,8 @@ The int8 build of multilingual-e5-small is a quarter of the size, 118 MB against
 indexes GDPR in half the time on an Apple M series CPU. It is not the default because its score
 depends on the processor it runs on, and the published number has to be one you can reproduce.
 
-The published configuration, on the held-out set, measured 4 October 2026:
+The published configuration, on GDPR's held-out set as it stood before two of its questions
+were reworded, with GDPR loaded alone, measured 4 October 2026:
 
 | Model | CPU | recall@5 | 95% interval | MRR |
 | --- | --- | --- | --- | --- |
@@ -141,7 +175,8 @@ not available to measure. The command line still accepts it with `--model e5-sma
 ### Reranking made it worse
 
 The standard next step is to rescore the top candidates with a cross-encoder. It was
-measured rather than assumed, with `jina-reranker-v2-base-multilingual`:
+measured rather than assumed, with `jina-reranker-v2-base-multilingual`, on GDPR's
+held-out set as it stood on 26 September 2026, with GDPR loaded alone:
 
 | Rerank window | e5-small | e5-base | s/query |
 | --- | --- | --- | --- |
@@ -177,16 +212,19 @@ docker run -d --name dpolens-db -p 5432:5432 \
 export DPOLENS_DATABASE_URL=postgresql+psycopg://dpolens:dpolens@localhost:5432/dpolens
 uv run alembic upgrade head
 uv run dpolens pack load packs/gdpr
+uv run dpolens pack load packs/uae-pdpl
 uv run dpolens index build
 
-uv run dpolens evals run --pack gdpr --set held_out \
+uv run dpolens evals run --pack gdpr --set held_out --set held_out.ar \
+  --config "convex:0.5+normative" --baselines
+uv run dpolens evals run --pack uae-pdpl --set held_out --set held_out.en --together \
   --config "convex:0.5+normative" --baselines
 ```
 
-The first `index build` downloads the model, roughly 470 MB, and takes about half a minute
-on a laptop CPU after that. The eval run takes a few seconds. You should see the numbers
-above; the bootstrap interval is seeded, so it is identical run to run, while timings
-depend on your machine.
+The first `index build` downloads the model, roughly 470 MB, and takes under a minute on a
+laptop CPU after that. Each eval run takes a few seconds. You should see the numbers above;
+the bootstrap interval is seeded, so it is identical run to run, while timings depend on your
+machine.
 
 To check the question labels rather than the scores:
 

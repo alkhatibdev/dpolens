@@ -1,0 +1,267 @@
+{
+  "pack": "uae-pdpl",
+  "measured_at": "2026-10-14",
+  "commit": "bebbf5f",
+  "runs": [
+    {
+      "question_set": "held_out",
+      "configuration": "convex:0.5+normative",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 19,
+      "recall_at_5": 0.4211,
+      "recall_at_10": 0.5263,
+      "mrr": 0.2944,
+      "interval": [
+        0.2105,
+        0.6316
+      ],
+      "misses": [
+        "access-request",
+        "accuracy",
+        "breach-tell-users",
+        "controller-or-processor",
+        "minimisation",
+        "penalties",
+        "portability",
+        "processor-end-of-contract",
+        "restriction",
+        "scope-outside-uae",
+        "stop-marketing"
+      ]
+    },
+    {
+      "question_set": "held_out",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 19,
+      "recall_at_5": 0.3158,
+      "recall_at_10": 0.3158,
+      "mrr": 0.2281,
+      "interval": [
+        0.1053,
+        0.5263
+      ],
+      "misses": [
+        "access-request",
+        "accuracy",
+        "breach-report",
+        "breach-tell-users",
+        "controller-or-processor",
+        "correction",
+        "minimisation",
+        "penalties",
+        "portability",
+        "processor-end-of-contract",
+        "restriction",
+        "scope-outside-uae",
+        "stop-marketing"
+      ]
+    },
+    {
+      "question_set": "held_out",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 19,
+      "recall_at_5": 0.5263,
+      "recall_at_10": 0.5789,
+      "mrr": 0.3268,
+      "interval": [
+        0.3158,
+        0.7368
+      ],
+      "misses": [
+        "access-request",
+        "accuracy",
+        "breach-tell-users",
+        "controller-or-processor",
+        "minimisation",
+        "penalties",
+        "processor-end-of-contract",
+        "restriction",
+        "scope-outside-uae"
+      ]
+    },
+    {
+      "question_set": "held_out.en",
+      "configuration": "convex:0.5+normative",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 19,
+      "recall_at_5": 0.6842,
+      "recall_at_10": 0.7368,
+      "mrr": 0.3974,
+      "interval": [
+        0.4737,
+        0.8947
+      ],
+      "misses": [
+        "accuracy",
+        "controller-or-processor",
+        "minimisation",
+        "penalties",
+        "processor-end-of-contract",
+        "scope-outside-uae"
+      ]
+    },
+    {
+      "question_set": "held_out.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 19,
+      "recall_at_5": 0.4211,
+      "recall_at_10": 0.5263,
+      "mrr": 0.3484,
+      "interval": [
+        0.2105,
+        0.6316
+      ],
+      "misses": [
+        "access-request",
+        "accuracy",
+        "breach-tell-users",
+        "controller-or-processor",
+        "correction",
+        "minimisation",
+        "penalties",
+        "portability",
+        "processor-end-of-contract",
+        "scope-outside-uae",
+        "stop-marketing"
+      ]
+    },
+    {
+      "question_set": "held_out.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 19,
+      "recall_at_5": 0.5789,
+      "recall_at_10": 0.6842,
+      "mrr": 0.3974,
+      "interval": [
+        0.3684,
+        0.7895
+      ],
+      "misses": [
+        "accuracy",
+        "controller-or-processor",
+        "minimisation",
+        "penalties",
+        "processor-end-of-contract",
+        "records-of-processing",
+        "restriction",
+        "scope-outside-uae"
+      ]
+    },
+    {
+      "question_set": "held_out+held_out.en",
+      "configuration": "convex:0.5+normative",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 38,
+      "recall_at_5": 0.5526,
+      "recall_at_10": 0.6316,
+      "mrr": 0.3459,
+      "interval": [
+        0.3684,
+        0.7368
+      ],
+      "misses": [
+        "held_out/access-request",
+        "held_out/accuracy",
+        "held_out/breach-tell-users",
+        "held_out/controller-or-processor",
+        "held_out/minimisation",
+        "held_out/penalties",
+        "held_out/portability",
+        "held_out/processor-end-of-contract",
+        "held_out/restriction",
+        "held_out/scope-outside-uae",
+        "held_out/stop-marketing",
+        "held_out.en/accuracy",
+        "held_out.en/controller-or-processor",
+        "held_out.en/minimisation",
+        "held_out.en/penalties",
+        "held_out.en/processor-end-of-contract",
+        "held_out.en/scope-outside-uae"
+      ]
+    },
+    {
+      "question_set": "held_out+held_out.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 38,
+      "recall_at_5": 0.3684,
+      "recall_at_10": 0.4211,
+      "mrr": 0.2882,
+      "interval": [
+        0.1579,
+        0.5789
+      ],
+      "misses": [
+        "held_out/access-request",
+        "held_out/accuracy",
+        "held_out/breach-report",
+        "held_out/breach-tell-users",
+        "held_out/controller-or-processor",
+        "held_out/correction",
+        "held_out/minimisation",
+        "held_out/penalties",
+        "held_out/portability",
+        "held_out/processor-end-of-contract",
+        "held_out/restriction",
+        "held_out/scope-outside-uae",
+        "held_out/stop-marketing",
+        "held_out.en/access-request",
+        "held_out.en/accuracy",
+        "held_out.en/breach-tell-users",
+        "held_out.en/controller-or-processor",
+        "held_out.en/correction",
+        "held_out.en/minimisation",
+        "held_out.en/penalties",
+        "held_out.en/portability",
+        "held_out.en/processor-end-of-contract",
+        "held_out.en/scope-outside-uae",
+        "held_out.en/stop-marketing"
+      ]
+    },
+    {
+      "question_set": "held_out+held_out.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v1",
+      "questions": 38,
+      "recall_at_5": 0.5526,
+      "recall_at_10": 0.6316,
+      "mrr": 0.3621,
+      "interval": [
+        0.3421,
+        0.7632
+      ],
+      "misses": [
+        "held_out/access-request",
+        "held_out/accuracy",
+        "held_out/breach-tell-users",
+        "held_out/controller-or-processor",
+        "held_out/minimisation",
+        "held_out/penalties",
+        "held_out/processor-end-of-contract",
+        "held_out/restriction",
+        "held_out/scope-outside-uae",
+        "held_out.en/accuracy",
+        "held_out.en/controller-or-processor",
+        "held_out.en/minimisation",
+        "held_out.en/penalties",
+        "held_out.en/processor-end-of-contract",
+        "held_out.en/records-of-processing",
+        "held_out.en/restriction",
+        "held_out.en/scope-outside-uae"
+      ]
+    }
+  ]
+}

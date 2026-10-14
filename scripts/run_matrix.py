@@ -72,7 +72,14 @@ def main() -> int:
                 indexed = time.time() - started
 
                 for configuration in configs:
-                    run = run_set(session, embedder, questions, configuration)
+                    run = run_set(
+                        session,
+                        embedder,
+                        questions,
+                        configuration,
+                        pack=args.pack,
+                        question_set=args.question_set,
+                    )
                     found = run.score
                     print(
                         f"| {name:18} | {configuration:22} | {found.recall_at_5:8.2f} "
