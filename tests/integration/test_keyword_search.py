@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
 from dpolens.engine.packs.load import load_pack
@@ -48,6 +48,19 @@ def test_scores_descend(loaded: Session) -> None:
 
     assert scores == sorted(scores, reverse=True)
     assert all(score > 0 for score in scores), "scores are flipped to higher is better"
+
+
+def test_a_question_ranks_the_same_whichever_plan_the_database_picks(loaded: Session) -> None:
+    """Postgres sorts the rows itself until a table has statistics, then lets the BM25
+    index order them, and autovacuum gathers statistics whenever it likes. Tied scores
+    come back in a different order each way, so without an order of its own a question
+    would rank differently from one run to the next."""
+    loaded.execute(text("ANALYZE node_texts"))
+    by_the_index = keyword_search(loaded, "consent", limit=40)
+    loaded.execute(text("SET LOCAL enable_indexscan = off"))
+    sorted_by_postgres = keyword_search(loaded, "consent", limit=40)
+
+    assert keys(by_the_index) == keys(sorted_by_postgres)
 
 
 def test_ranks_are_positions(loaded: Session) -> None:
