@@ -8,8 +8,9 @@ from __future__ import annotations
 from collections.abc import Iterator
 from pathlib import Path
 
+import click
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from dpolens.cli.main import app
 
@@ -17,6 +18,16 @@ pytestmark = pytest.mark.integration
 
 GDPR_PACK = Path(__file__).parents[2] / "packs" / "gdpr"
 runner = CliRunner()
+BORDERS = str.maketrans(dict.fromkeys("│╭╮╰╯─", " "))
+
+
+def said(result: Result) -> str:
+    """The output as the words a person reads, on one line.
+
+    On CI, Typer draws a usage error in a coloured box wrapped at the terminal's
+    width, so a sentence can arrive split by colour codes, borders and line breaks.
+    """
+    return " ".join(click.unstyle(result.output).translate(BORDERS).split())
 
 
 @pytest.fixture
@@ -144,7 +155,7 @@ def test_an_eval_run_naming_a_modifier_nothing_reads_stops_before_it_starts() ->
     )
 
     assert result.exit_code == 2
-    assert "+ligth" in result.output
+    assert "+ligth" in said(result)
 
 
 def test_every_law_is_searched_until_one_is_chosen(loaded: None) -> None:
@@ -176,7 +187,7 @@ def test_only_a_held_out_set_is_written_and_before_anything_runs() -> None:
     )
 
     assert result.exit_code == 2
-    assert "--write is for held-out sets, not 'tuning.ar'" in result.output
+    assert "--write is for held-out sets, not 'tuning.ar'" in said(result)
 
 
 def test_scoring_together_needs_two_sets() -> None:
@@ -185,4 +196,4 @@ def test_scoring_together_needs_two_sets() -> None:
     )
 
     assert result.exit_code == 2
-    assert "at least two sets" in result.output
+    assert "at least two sets" in said(result)

@@ -144,7 +144,12 @@ def keyword_search(
         },
     ).all()
 
+    # The rows arrive in whichever order the plan gives. Postgres sorts them itself
+    # until the table has statistics, then lets the BM25 index order them, and the
+    # two orders can disagree, so the order is set here from each row's own score,
+    # with the key settling a tie.
+    ordered = sorted(rows, key=lambda row: (-row.score, row.key))
     return [
         Candidate(key=row.key, lang=row.lang, score=float(row.score), rank=position)
-        for position, row in enumerate(rows, start=1)
+        for position, row in enumerate(ordered, start=1)
     ]
