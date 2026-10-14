@@ -135,6 +135,40 @@ def run_set(
     )
 
 
+def run_together(runs: Sequence[Run]) -> Run:
+    """Several sets scored as one, such as a law's topics asked in Arabic and in English.
+
+    A question id names one topic in every set, so its outcomes are resampled
+    together: nineteen topics asked twice are nineteen items, not thirty-eight,
+    and the interval is as wide as nineteen items make it.
+    """
+    first = runs[0]
+    if any(
+        (run.pack, run.configuration, run.model) != (first.pack, first.configuration, first.model)
+        for run in runs
+    ):
+        raise ValueError("only runs of one pack, configuration and model are scored together")
+
+    outcomes = tuple(
+        Outcome(
+            question_id=f"{run.question_set}/{outcome.question_id}",
+            expected=outcome.expected,
+            returned=outcome.returned,
+        )
+        for run in runs
+        for outcome in run.outcomes
+    )
+    return Run(
+        pack=first.pack,
+        question_set="+".join(run.question_set for run in runs),
+        configuration=first.configuration,
+        model=first.model,
+        recipe=first.recipe,
+        score=score(outcomes, group_of=lambda outcome: outcome.question_id.split("/", 1)[1]),
+        outcomes=outcomes,
+    )
+
+
 def _retrieve(
     session: Session,
     embedder: Embedder,

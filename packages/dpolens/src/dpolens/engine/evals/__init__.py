@@ -8,6 +8,7 @@ from dpolens.engine.evals.run import (
     check_configuration,
     read_questions,
     run_set,
+    run_together,
 )
 from dpolens.engine.evals.score import (
     Interval,
@@ -33,4 +34,5 @@ __all__ = [
     "read_questions",
     "recall_at",
     "run_set",
+    "run_together",
 ]

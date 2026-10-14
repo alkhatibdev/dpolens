@@ -167,3 +167,22 @@ def test_choosing_a_law_that_is_not_loaded_fails_naming_the_loaded_ones(loaded: 
 
     assert result.exit_code == 1
     assert "The loaded laws are: gdpr" in result.output
+
+
+def test_only_a_held_out_set_is_written_and_before_anything_runs() -> None:
+    result = runner.invoke(
+        app,
+        ["evals", "run", "--pack", "gdpr", "--set", "held_out", "--set", "tuning.ar", "--write"],
+    )
+
+    assert result.exit_code == 2
+    assert "--write is for held-out sets, not 'tuning.ar'" in result.output
+
+
+def test_scoring_together_needs_two_sets() -> None:
+    result = runner.invoke(
+        app, ["evals", "run", "--pack", "gdpr", "--set", "held_out", "--together"]
+    )
+
+    assert result.exit_code == 2
+    assert "at least two sets" in result.output
