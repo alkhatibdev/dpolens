@@ -94,6 +94,19 @@ def permission_required(permission: str) -> Problem:
     )
 
 
+def permission_required_any(permissions: Sequence[str]) -> Problem:
+    """For a route more than one permission opens. `permission` is the first, so a
+    client that reads only that field still gets a key it knows."""
+    return Problem(
+        kind="permission-required",
+        title="Permission required",
+        status=403,
+        detail=f"this needs one of {', '.join(permissions)}",
+        permission=permissions[0],
+        permissions=list(permissions),
+    )
+
+
 def delegation_not_permitted() -> Problem:
     return Problem(
         kind="delegation-not-permitted",
@@ -203,6 +216,83 @@ def not_ready(detail: str) -> Problem:
     return Problem(kind="not-ready", title="Not ready", status=503, detail=detail)
 
 
+def session_required() -> Problem:
+    """For what only a person at the dashboard may do, such as making a token."""
+    return Problem(
+        kind="session-required",
+        title="Dashboard only",
+        status=403,
+        detail="this is done from a dashboard session, not with a token",
+    )
+
+
+def already_exists(detail: str) -> Problem:
+    return Problem(kind="already-exists", title="Already exists", status=409, detail=detail)
+
+
+def lockout_refused(detail: str) -> Problem:
+    """The change would leave nobody able to manage roles, so it is not made."""
+    return Problem(
+        kind="lockout-refused", title="Somebody must keep this", status=409, detail=detail
+    )
+
+
+def role_in_use(holders: Sequence[str]) -> Problem:
+    """A role people hold, which they must lose before it can go. `holders` names them."""
+    return Problem(
+        kind="role-in-use",
+        title="Role in use",
+        status=409,
+        detail="the role is held, so take it from everyone first",
+        holders=list(holders),
+    )
+
+
+def edit_conflict(*, revision: int, updated_at: str, updated_by: str | None) -> Problem:
+    """A save made against a revision somebody else has since changed.
+
+    It names who changed it and when, so the page can say so in words rather
+    than asking the person to reload and guess what moved.
+    """
+    return Problem(
+        kind="edit-conflict",
+        title="Changed by someone else",
+        status=412,
+        detail="this changed after it was read, so the change was not saved",
+        revision=revision,
+        updated_at=updated_at,
+        updated_by=updated_by,
+    )
+
+
+def sign_in_link_unusable() -> Problem:
+    """One answer for a link that never existed, was used, or ran out."""
+    return Problem(
+        kind="sign-in-link-unusable",
+        title="Link no longer works",
+        status=410,
+        detail="this sign-in link has been used or has run out",
+    )
+
+
+def weak_password(detail: str) -> Problem:
+    return Problem(kind="weak-password", title="Password not accepted", status=422, detail=detail)
+
+
+def wrong_password() -> Problem:
+    """The current password, given to change it, does not match.
+
+    Not a 401: the session is fine, and a page that signs out on every 401 would
+    throw its person out for a typo.
+    """
+    return Problem(
+        kind="wrong-password",
+        title="Wrong password",
+        status=403,
+        detail="that is not the current password",
+    )
+
+
 class ProblemDocument(BaseModel):
     """The error shape, declared so the specification carries it.
 
@@ -223,6 +313,9 @@ TITLES = {
     401: "No usable credential",
     403: "The credential may not do this",
     404: "No such clause or document",
+    409: "The change conflicts with what is there",
+    410: "The link has been used or has run out",
+    412: "Somebody changed it after it was read",
     422: "The request body or parameters are not valid",
     429: "The credential has spent its quota for the minute, or too many sign-ins failed",
     503: "The instance is not ready",

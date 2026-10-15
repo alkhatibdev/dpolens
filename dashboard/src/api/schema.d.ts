@@ -73,6 +73,51 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/sessions/from-link": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Choose a password with a sign-in link, and sign in
+     * @description The link is the credential, so nothing else is asked for, and it is spent here.
+     *
+     *     No throttle: the link's secret is 256 random bits, which nobody guesses.
+     */
+    post: operations["from_link_v1_sessions_from_link_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/sessions/current/password": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Change your own password
+     * @description Every other session of the person's ends; this one stays.
+     *
+     *     A wrong current password counts against the same throttle as a wrong password
+     *     at sign-in, so this form cannot be used to guess it faster.
+     */
+    put: operations["change_password_v1_sessions_current_password_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/tokens/introspect": {
     parameters: {
       query?: never;
@@ -85,6 +130,41 @@ export interface paths {
     /** Ask about a token a caller presented */
     post: operations["introspect_v1_tokens_introspect_post"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/tokens": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List your tokens, or everyone's */
+    get: operations["list_tokens_v1_tokens_get"];
+    put?: never;
+    /** Make a token for yourself */
+    post: operations["make_token_v1_tokens_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/tokens/{token_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Revoke a token */
+    delete: operations["revoke_v1_tokens__token_id__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -178,18 +258,185 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List everyone who can sign in or hold a token */
+    get: operations["list_people_v1_users_get"];
+    put?: never;
+    /** Add a person */
+    post: operations["add_person_v1_users_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/users/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Deactivate or reactivate someone */
+    patch: operations["change_status_v1_users__user_id__patch"];
+    trace?: never;
+  };
+  "/v1/users/{user_id}/roles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Set someone's roles */
+    put: operations["change_roles_v1_users__user_id__roles_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/users/{user_id}/sign-in-links": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Make a one-time link for someone to choose a password */
+    post: operations["make_sign_in_link_v1_users__user_id__sign_in_links_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/permissions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List the permissions roles are made from */
+    get: operations["list_permissions_v1_permissions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/roles": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List the roles, with who holds each */
+    get: operations["list_roles_v1_roles_get"];
+    put?: never;
+    /** Create a role */
+    post: operations["add_role_v1_roles_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/roles/{role_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read one role */
+    get: operations["read_role_v1_roles__role_id__get"];
+    put?: never;
+    post?: never;
+    /** Delete a role nobody holds */
+    delete: operations["remove_role_v1_roles__role_id__delete"];
+    options?: never;
+    head?: never;
+    /** Rename a role or change what it allows */
+    patch: operations["change_role_v1_roles__role_id__patch"];
+    trace?: never;
+  };
+  "/v1/instance": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The version, and where assistants connect */
+    get: operations["describe_v1_instance_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/sign-in-links/lookup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Who a sign-in link is for, without spending it */
+    post: operations["look_up_link_v1_sign_in_links_lookup_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /** Account */
     Account: {
+      /** Id */
+      id: string;
       /** Email */
       email: string;
       /** Display Name */
       display_name: string;
       /** Roles */
       roles: string[];
+    };
+    /**
+     * Catalog
+     * @description Every permission this build defines. Roles are made from these and nothing else.
+     */
+    Catalog: {
+      /** Permissions */
+      permissions: components["schemas"]["Permission"][];
     };
     /** Clause */
     Clause: {
@@ -346,10 +593,47 @@ export interface components {
       /** Offset */
       offset: number;
     };
+    /** FromLink */
+    FromLink: {
+      /**
+       * Secret
+       * @description What follows `#` in the link
+       */
+      secret: string;
+      /** Password */
+      password: string;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
+    };
+    /** Holder */
+    Holder: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "person" | "service_account";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "deactivated" | "erased";
+    };
+    /** Instance */
+    Instance: {
+      /** Version */
+      version: string;
+      /**
+       * Mcp Url
+       * @description The MCP server's address, for an assistant's configuration
+       */
+      mcp_url: string;
     };
     /**
      * Introspection
@@ -382,6 +666,62 @@ export interface components {
       token: string;
     };
     /**
+     * LinkDetails
+     * @description Who a sign-in link is for, so the page can greet them before they choose a password.
+     */
+    LinkDetails: {
+      /** Email */
+      email: string;
+      /** Display Name */
+      display_name: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+    };
+    /** LinkSecret */
+    LinkSecret: {
+      /**
+       * Secret
+       * @description What follows `#` in the link
+       */
+      secret: string;
+    };
+    /** NewPerson */
+    NewPerson: {
+      /** Email */
+      email: string;
+      /** Display Name */
+      display_name: string;
+      /** Roles */
+      roles?: string[];
+    };
+    /** NewRole */
+    NewRole: {
+      /** Name */
+      name: string;
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /** Permissions */
+      permissions?: string[];
+    };
+    /** NewToken */
+    NewToken: {
+      /** Name */
+      name: string;
+      /** Permissions */
+      permissions: string[];
+      /**
+       * Expires At
+       * @description Left out, it does not expire
+       */
+      expires_at?: string | null;
+    };
+    /**
      * OutlineEntry
      * @description What a top-level clause is, without what it says.
      *
@@ -405,6 +745,88 @@ export interface components {
        * @description How many clauses sit directly beneath this one
        */
       children: number;
+    };
+    /** Owner */
+    Owner: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "person" | "service_account";
+    };
+    /** PasswordChange */
+    PasswordChange: {
+      /** Current */
+      current: string;
+      /** New */
+      new: string;
+    };
+    /** People */
+    People: {
+      /** People */
+      people: components["schemas"]["Person"][];
+    };
+    /** Permission */
+    Permission: {
+      /** Key */
+      key: string;
+      /** Description */
+      description: string;
+    };
+    /**
+     * Person
+     * @description Someone who can sign in, or a service account that holds tokens.
+     */
+    Person: {
+      /** Id */
+      id: string;
+      /** Email */
+      email: string;
+      /** Display Name */
+      display_name: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "person" | "service_account";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "deactivated" | "erased";
+      /** Roles */
+      roles: string[];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Deactivated At */
+      deactivated_at: string | null;
+      /**
+       * Has Password
+       * @description Whether they can sign in with a password today
+       */
+      has_password: boolean;
+      /**
+       * Sign In Link Expires At
+       * @description When their unused sign-in link runs out, if they have one
+       */
+      sign_in_link_expires_at: string | null;
+      /**
+       * Working Tokens
+       * @description Tokens not revoked and not expired
+       */
+      working_tokens: number;
+      /**
+       * Acts For Others
+       * @description Holds a token trusted to act for others, as the MCP server's account does
+       */
+      acts_for_others: boolean;
     };
     /**
      * ProblemDocument
@@ -472,6 +894,66 @@ export interface components {
       /** Results */
       results: components["schemas"]["Result"][];
     };
+    /**
+     * RoleChange
+     * @description Any of the three. Permissions, when sent, are the whole new set.
+     */
+    RoleChange: {
+      /** Name */
+      name?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Permissions */
+      permissions?: string[] | null;
+    };
+    /** RoleDocument */
+    RoleDocument: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Description */
+      description: string;
+      /**
+       * Is Seeded
+       * @description Created with the instance. It is an ordinary role
+       */
+      is_seeded: boolean;
+      /** Permissions */
+      permissions: string[];
+      /** Holders */
+      holders: components["schemas"]["Holder"][];
+      /**
+       * Revision
+       * @description Goes up with every change. Send it back in `If-Match`
+       */
+      revision: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Updated By
+       * @description Who changed it last, or null for a change made on the command line
+       */
+      updated_by: string | null;
+    };
+    /** RoleSet */
+    RoleSet: {
+      /** Roles */
+      roles: string[];
+    };
+    /** Roles */
+    Roles: {
+      /** Roles */
+      roles: components["schemas"]["RoleDocument"][];
+    };
     /** SearchRequest */
     SearchRequest: {
       /**
@@ -527,6 +1009,19 @@ export interface components {
       password: string;
     };
     /**
+     * SignInLinkMade
+     * @description A link's secret, shown once. The dashboard's page for it is `/welcome#<secret>`.
+     */
+    SignInLinkMade: {
+      /** Secret */
+      secret: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+    };
+    /**
      * SignedIn
      * @description Who is signed in, what they may do, and when the session ends.
      */
@@ -548,6 +1043,115 @@ export interface components {
        * @description Minutes without a request after which it ends sooner
        */
       idle_minutes: number;
+    };
+    /** StatusChange */
+    StatusChange: {
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "deactivated";
+    };
+    /**
+     * TokenDocument
+     * @description A token as its list shows it. The secret is never here, except once at creation.
+     */
+    TokenDocument: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /**
+       * Prefix
+       * @description The first characters, to tell tokens apart
+       */
+      prefix: string;
+      owner: components["schemas"]["Owner"];
+      /**
+       * Permissions
+       * @description What it was given when it was made
+       */
+      permissions: string[];
+      /**
+       * Effective Permissions
+       * @description What it may do now: the above, narrowed by what its owner holds today
+       */
+      effective_permissions: string[];
+      /**
+       * Trusted Surface
+       * @description May say which person it is acting for
+       */
+      trusted_surface: boolean;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "revoked" | "expired" | "owner_inactive";
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Last Used At */
+      last_used_at: string | null;
+      /** Expires At */
+      expires_at: string | null;
+      /** Revoked At */
+      revoked_at: string | null;
+    };
+    /** TokenMade */
+    TokenMade: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /**
+       * Prefix
+       * @description The first characters, to tell tokens apart
+       */
+      prefix: string;
+      owner: components["schemas"]["Owner"];
+      /**
+       * Permissions
+       * @description What it was given when it was made
+       */
+      permissions: string[];
+      /**
+       * Effective Permissions
+       * @description What it may do now: the above, narrowed by what its owner holds today
+       */
+      effective_permissions: string[];
+      /**
+       * Trusted Surface
+       * @description May say which person it is acting for
+       */
+      trusted_surface: boolean;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "revoked" | "expired" | "owner_inactive";
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Last Used At */
+      last_used_at: string | null;
+      /** Expires At */
+      expires_at: string | null;
+      /** Revoked At */
+      revoked_at: string | null;
+      /**
+       * Secret
+       * @description The token itself, shown this once
+       */
+      secret: string;
+    };
+    /** Tokens */
+    Tokens: {
+      /** Tokens */
+      tokens: components["schemas"]["TokenDocument"][];
     };
     /** ValidationError */
     ValidationError: {
@@ -786,6 +1390,122 @@ export interface operations {
       };
     };
   };
+  from_link_v1_sessions_from_link_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FromLink"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SignedIn"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The link has been used or has run out */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The request body or parameters are not valid */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  change_password_v1_sessions_current_password_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PasswordChange"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The request body or parameters are not valid */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
   introspect_v1_tokens_introspect_post: {
     parameters: {
       query?: never;
@@ -820,6 +1540,210 @@ export interface operations {
       };
       /** @description The credential may not do this */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_tokens_v1_tokens_get: {
+    parameters: {
+      query?: {
+        /** @description Everyone's, which needs users.manage */
+        everyone?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Tokens"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  make_token_v1_tokens_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewToken"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TokenMade"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  revoke_v1_tokens__token_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -1197,6 +2121,973 @@ export interface operations {
         content: {
           "application/problem+json": components["schemas"]["ProblemDocument"];
           "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_people_v1_users_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["People"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  add_person_v1_users_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewPerson"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Person"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  change_status_v1_users__user_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatusChange"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Person"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  change_roles_v1_users__user_id__roles_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RoleSet"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Person"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  make_sign_in_link_v1_users__user_id__sign_in_links_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SignInLinkMade"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_permissions_v1_permissions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Catalog"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_roles_v1_roles_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Roles"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  add_role_v1_roles_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewRole"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleDocument"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  read_role_v1_roles__role_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  remove_role_v1_roles__role_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  change_role_v1_roles__role_id__patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        "if-match"?: string | null;
+      };
+      path: {
+        role_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RoleChange"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RoleDocument"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  describe_v1_instance_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Instance"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  look_up_link_v1_sign_in_links_lookup_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LinkSecret"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LinkDetails"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The link has been used or has run out */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

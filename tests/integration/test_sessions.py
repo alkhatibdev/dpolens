@@ -123,7 +123,7 @@ def entries(owner: Engine, action: str, target_id: str) -> list[GovernanceEntry]
 
 class TestSigningIn:
     def test_a_right_password_opens_a_session_the_pages_scripts_cannot_read(
-        self, browser: TestClient, person: str
+        self, browser: TestClient, person: str, owner: Engine
     ) -> None:
         response = browser.post(
             "/v1/sessions", json={"email": person, "password": PASSWORD}, headers=SAME_ORIGIN
@@ -139,6 +139,7 @@ class TestSigningIn:
 
         body = response.json()
         assert body["account"] == {
+            "id": user_id(owner, person),
             "email": person,
             "display_name": "Signed In",
             "roles": [catalog.DEVELOPER],

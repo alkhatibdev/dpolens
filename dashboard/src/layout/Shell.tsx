@@ -1,8 +1,9 @@
-import { BookOpen, LogOut, Menu, Search, X } from "lucide-react";
+import { BookOpen, KeyRound, LogOut, Menu, Search, Users, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { Wordmark } from "@/components/Wordmark";
 import {
   DropdownMenu,
@@ -13,17 +14,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { initialsOf } from "@/lib/names";
+import { DOCUMENTS_READ, ROLES_MANAGE, USERS_MANAGE } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-import { useSession, useSignOut } from "@/session";
+import { usePermitted, useSession, useSignOut } from "@/session";
 
-/** The sections this release has. Each later slice adds its own here. */
-const SECTIONS = [{ to: "/library", label: "nav.library", icon: BookOpen }] as const;
+/**
+ * The sections this release has, each shown to whoever it is for. Tokens shows to
+ * everyone signed in: anyone may revoke their own, even without making new ones.
+ */
+const SECTIONS = [
+  {
+    to: "/library",
+    label: "nav.library",
+    icon: BookOpen,
+    shows: (can: ReadonlySet<string>) => can.has(DOCUMENTS_READ),
+  },
+  {
+    to: "/users",
+    label: "nav.users",
+    icon: Users,
+    shows: (can: ReadonlySet<string>) => can.has(USERS_MANAGE) || can.has(ROLES_MANAGE),
+  },
+  { to: "/tokens", label: "nav.tokens", icon: KeyRound, shows: () => true },
+] as const;
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
+  const can = usePermitted();
   return (
     <ul className="flex flex-col gap-1.5">
-      {SECTIONS.map(({ to, label, icon: Icon }) => (
+      {SECTIONS.filter((section) => section.shows(can)).map(({ to, label, icon: Icon }) => (
         <li key={to}>
           <NavLink
             to={to}
@@ -44,48 +65,51 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-  return (first + last).toUpperCase() || "?";
-}
-
 function AccountMenu() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const session = useSession();
   const signOut = useSignOut();
+  const [changing, setChanging] = useState(false);
   const account = session.data?.account;
   if (!account) {
     return null;
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={t("account.open")}
-        className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-soft text-[15px] font-semibold text-brand-dark hover:bg-brand-mid/40"
-      >
-        {initialsOf(account.display_name)}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>
-          <div className="text-[15px] font-semibold">{account.display_name}</div>
-          <div className="text-[13px] text-muted">{account.roles.join(", ")}</div>
-          <div className="mt-1 text-[13px] break-all text-muted">{account.email}</div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() =>
-            signOut.mutate(undefined, { onSettled: () => navigate("/sign-in", { replace: true }) })
-          }
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          aria-label={t("account.open")}
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-soft text-[15px] font-semibold text-brand-dark hover:bg-brand-mid/40"
         >
-          <LogOut aria-hidden />
-          {t("account.signOut")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {initialsOf(account.display_name)}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>
+            <div className="text-[15px] font-semibold">{account.display_name}</div>
+            <div className="text-[13px] text-muted">{account.roles.join(", ")}</div>
+            <div className="mt-1 text-[13px] break-all text-muted">{account.email}</div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setChanging(true)}>
+            <KeyRound aria-hidden />
+            {t("account.changePassword")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() =>
+              signOut.mutate(undefined, {
+                onSettled: () => navigate("/sign-in", { replace: true }),
+              })
+            }
+          >
+            <LogOut aria-hidden />
+            {t("account.signOut")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ChangePasswordDialog open={changing} onClose={() => setChanging(false)} />
+    </>
   );
 }
 

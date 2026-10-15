@@ -12,7 +12,8 @@ is not evidence of anything.
 ## What is recorded
 
 Creating a user, assigning or removing a role, deactivating an account, setting a
-password, creating or changing a role's permissions, publishing a document version,
+password and how it was set, making a sign-in link, creating a role, changing its
+permissions, renaming it or changing its description, publishing a document version,
 creating or revoking a token, signing in to the dashboard and out of it, a wrong
 password for an account that exists, viewing who asked a question in the query log,
 and exporting this log.

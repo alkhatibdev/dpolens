@@ -19,10 +19,11 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 
 from dpolens import __version__
-from dpolens.api import corpus, health, problems, sessions, tokens
+from dpolens.api import corpus, health, instance, people, problems, roles, sessions, tokens
 from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER, lifetimes_of
 from dpolens.api.limits import RateLimiter, SignInThrottle
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.links import purge_expired_links
 from dpolens.engine.auth.sessions import purge_ended
 from dpolens.engine.embedding import DEFAULT_MODEL, get_model
 from dpolens.engine.embedding.encode import Embedder, ensure_cached
@@ -113,6 +114,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(sessions.router)
     app.include_router(tokens.router)
     app.include_router(corpus.router)
+    app.include_router(people.router)
+    app.include_router(roles.router)
+    app.include_router(instance.router)
+    app.include_router(sessions.links)
     return app
 
 
@@ -142,9 +147,10 @@ async def _purge_daily(app: FastAPI) -> None:
 
 
 def _purge_now(app: FastAPI) -> int:
-    """Expired questions, and the sessions nobody can use any more."""
+    """Expired questions, and the sessions and sign-in links nobody can use any more."""
     with session_from(app.state.engine) as opened:
         purge_ended(opened, lifetimes=lifetimes_of(app.state.settings))
+        purge_expired_links(opened)
         return purge_expired(opened, actor=Actor(via="api"))
 
 

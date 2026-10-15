@@ -15,6 +15,8 @@ const buttonVariants = cva(
         quiet: "bg-field text-ink hover:bg-line",
         ghost: "text-ink-2 hover:bg-field",
         pill: "rounded-full border border-line-strong bg-white text-ink font-medium hover:bg-field",
+        danger: "bg-danger-ink text-white hover:bg-danger-ink/90",
+        "danger-outline": "border-[1.5px] border-danger-soft text-danger-ink hover:bg-danger-soft",
       },
       size: {
         md: "h-12 rounded-[14px] px-5 text-[15px]",

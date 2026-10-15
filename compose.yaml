@@ -63,6 +63,9 @@ services:
     environment:
       <<: *database
       DPOLENS_SURFACE_TOKEN_FILE: /run/dpolens/surface-token
+      # Shown next to a new token. Set it to the address assistants really use
+      # when the MCP server sits behind a proxy or on another host.
+      DPOLENS_PUBLIC_MCP_URL: ${DPOLENS_PUBLIC_MCP_URL:-http://localhost:${DPOLENS_MCP_PORT:-8765}/mcp}
     volumes:
       # The credential the API provisions for the MCP server. Both containers
       # run as the same user, because the file is readable by its owner alone.

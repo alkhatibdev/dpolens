@@ -87,6 +87,15 @@ class Settings(BaseSettings):
         description="How long a dashboard session lasts at most, however much it is used",
     )
 
+    public_mcp_url: str = Field(
+        default="http://localhost:8765/mcp",
+        max_length=500,
+        description=(
+            "The MCP server's address as people's assistants reach it, which the dashboard "
+            "shows next to a new token. The default is the quickstart's"
+        ),
+    )
+
     redaction_patterns: dict[str, str] = Field(
         default_factory=dict,
         description=(

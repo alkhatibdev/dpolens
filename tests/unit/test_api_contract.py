@@ -46,9 +46,22 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/clauses/{key}/subtree",
         "/v1/documents",
         "/v1/documents/{slug}",
+        "/v1/tokens",
+        "/v1/tokens/{token_id}",
         "/v1/tokens/introspect",
         "/v1/sessions",
         "/v1/sessions/current",
+        "/v1/sessions/current/password",
+        "/v1/sessions/from-link",
+        "/v1/users",
+        "/v1/users/{user_id}",
+        "/v1/users/{user_id}/roles",
+        "/v1/users/{user_id}/sign-in-links",
+        "/v1/permissions",
+        "/v1/roles",
+        "/v1/roles/{role_id}",
+        "/v1/instance",
+        "/v1/sign-in-links/lookup",
     }
 
 

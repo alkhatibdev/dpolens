@@ -96,6 +96,14 @@ def sign_in(
     if needs_rehash(stored):
         user.password_hash = rehash(password)
 
+    return open_session(session, user=user, lifetimes=lifetimes, now=now)
+
+
+def open_session(
+    session: Session, *, user: User, lifetimes: Lifetimes, now: datetime | None = None
+) -> tuple[DashboardSession, str]:
+    """Start a session for somebody already proven to be who they are, returning its secret once."""
+    now = now or datetime.now(UTC)
     secret = secrets.token_urlsafe(SECRET_BYTES)
     row = DashboardSession(
         user_id=user.id,

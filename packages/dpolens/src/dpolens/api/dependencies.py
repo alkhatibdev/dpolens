@@ -231,6 +231,26 @@ def requires(permission: str) -> Callable[[Authenticated], Authenticated]:
     return guard
 
 
+def requires_any(*permissions: str) -> Callable[[Authenticated], Authenticated]:
+    """Like `requires`, for a page more than one permission opens."""
+
+    def guard(who: Caller) -> Authenticated:
+        if not any(who.may(permission) for permission in permissions):
+            raise problems.permission_required_any(permissions)
+        return who
+
+    return guard
+
+
+def actor_of(who: Authenticated) -> Actor:
+    """Who a governance entry names for this caller, and through which door."""
+    return Actor(
+        user_id=who.user.id,
+        pat_id=who.token.id if who.token is not None else None,
+        via="dashboard" if who.session is not None else "api",
+    )
+
+
 def trusted_surface_only(who: Caller) -> Authenticated:
     """For the endpoints only a surface has any business calling."""
     if who.token is None or not who.token.trusted_surface:

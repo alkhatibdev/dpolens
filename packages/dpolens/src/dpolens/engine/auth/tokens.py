@@ -257,6 +257,13 @@ def find(session: Session, prefix: str) -> PersonalAccessToken:
     return rows[0]
 
 
+def get_token(session: Session, token_id: uuid.UUID) -> PersonalAccessToken:
+    row = session.get(PersonalAccessToken, token_id)
+    if row is None:
+        raise TokenNotFound(f"no token with the id {token_id}")
+    return row
+
+
 def revoke(session: Session, *, prefix: str, actor: Actor) -> PersonalAccessToken:
     """Stop the token a prefix names from working."""
     return revoke_token(session, find(session, prefix), actor=actor)

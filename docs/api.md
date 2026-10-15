@@ -21,7 +21,8 @@ curl -X POST http://localhost:8000/v1/search \
   -d '{"query": "how long can we keep a deleted user'"'"'s data"}'
 ```
 
-A token is created on the command line and shown once:
+A token is made in the dashboard, under Tokens, or on the command line, and is shown
+once:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Developer
@@ -64,8 +65,12 @@ a call that carries both is taken as the token's.
   `DELETE /v1/sessions/current` signs out.
 
 Signing in, signing out and a wrong password for an account that exists are written to the
-[governance log](governance-log.md). A password is set, and reset, on the command line,
-because v0.1 sends no email:
+[governance log](governance-log.md).
+
+There is no email, so a person chooses a password from a sign-in link instead: someone who
+manages people makes one for them, and it works once, for 72 hours. The same link resets a
+forgotten password. Anyone signed in can change their own password by giving the current one.
+The first administrator's password is set on the command line:
 
 ```bash
 dpolens user set-password you@example.com
@@ -94,7 +99,7 @@ beside it.
 | --- | --- | --- |
 | `/problems/unauthenticated` | 401 | No usable credential, or one this instance does not know |
 | `/problems/token-refused` | 401 | A token that exists and may not be used. `reason` says why |
-| `/problems/permission-required` | 403 | The token does not carry the permission in `permission` |
+| `/problems/permission-required` | 403 | The token does not carry the permission in `permission`. Where any of several would do, `permissions` lists them |
 | `/problems/delegation-not-permitted` | 403 | This token may not say who it is acting for |
 | `/problems/not-found` | 404 | No such clause or document in the version in force |
 | `/problems/invalid-request` | 400, 422 | The request does not make sense. `errors` names the fields |
@@ -105,6 +110,14 @@ beside it.
 | `/problems/too-many-attempts` | 429 | Too many failed sign-ins for that address. `Retry-After` says when |
 | `/problems/session-ended` | 401 | The session cookie no longer works. `reason` is `expired`, `idle`, `owner_inactive` or `unknown` |
 | `/problems/cross-site-request` | 403 | A call made with the session cookie did not come from the dashboard's own pages |
+| `/problems/session-required` | 403 | Only a dashboard session may do this, such as making a token |
+| `/problems/wrong-password` | 403 | The current password, given to change it, does not match |
+| `/problems/already-exists` | 409 | That address or role name is taken |
+| `/problems/lockout-refused` | 409 | The change would leave nobody able to manage roles |
+| `/problems/role-in-use` | 409 | Somebody holds the role. `holders` names them |
+| `/problems/sign-in-link-unusable` | 410 | The sign-in link was used, ran out, or never existed |
+| `/problems/edit-conflict` | 412 | Somebody changed it after it was read. `updated_by`, `updated_at` and `revision` say who, when and where it is now |
+| `/problems/weak-password` | 422 | The new password is shorter than 12 characters or longer than 1,024 |
 | `/problems/not-ready` | 503 | The database is not reachable |
 
 ## Rate limit
@@ -177,6 +190,77 @@ thousand clauses does not belong in one response.
 A document says whether it is one of the organisation's selected laws,
 `in_selected_laws`, which is always true for the organisation's own policies, and for a
 law which language prevails, `authoritative_language`.
+
+### People
+
+Everything here needs `users.manage`.
+
+`GET /v1/users` lists everyone who can sign in or hold a token: their roles, whether they
+are active, whether they have a password yet, when an unused sign-in link of theirs runs
+out, how many tokens of theirs still work, and whether they act for other people, as the
+MCP server's own account does. `POST /v1/users` adds a person with a name,
+an address and roles. `PATCH /v1/users/{id}` deactivates someone or brings them back, and
+`PUT /v1/users/{id}/roles` sets exactly which roles they hold.
+
+`POST /v1/users/{id}/sign-in-links` makes a sign-in link and returns its secret, once. The
+dashboard's page for it is `/welcome#<secret>`: the secret travels after `#`, so it reaches
+no server log. A newer link ends an older one, and until a link is used the person's old
+password keeps working. `POST /v1/sessions/from-link`, with the secret and a new password,
+spends the link, sets the password, ends the person's other sessions and signs them in.
+`POST /v1/sign-in-links/lookup`, with the secret, says who the link is for and when it runs
+out without spending it, so the page can greet the person first.
+
+Nobody gains, through somebody else, a permission they do not hold. Giving someone a role
+needs every permission the role carries, and making a sign-in link needs every permission
+its owner holds, because whoever uses the link has the account. Both are refused with
+`/problems/permission-required`, naming a permission that is missing.
+
+The lockout guard applies here as everywhere: the last active person who can manage roles
+cannot be deactivated or lose that ability.
+
+### Your own password
+
+`PUT /v1/sessions/current/password`, with `current` and `new`, changes the signed-in
+person's password. Their other sessions end and this one stays. A wrong current password
+counts against the same limit as a wrong password at sign-in.
+
+### Roles
+
+`GET /v1/permissions` lists the permission catalog, to anyone signed in. Roles are made
+from these and nothing else.
+
+`GET /v1/roles` and `GET /v1/roles/{id}` need `roles.manage` or `users.manage`, because
+giving someone a role means knowing what it allows. Each role comes with who holds it, who
+changed it last and when, and its `revision`. `POST /v1/roles`, `PATCH /v1/roles/{id}` and
+`DELETE /v1/roles/{id}` need `roles.manage`. A role somebody holds cannot be deleted.
+
+A role is read with its revision as an `ETag`. Send it back in `If-Match` with a change, and
+a change made after somebody else's is refused with `412` and `/problems/edit-conflict`,
+which says who changed it and when, instead of quietly undoing their change. A change sent
+without `If-Match` is made, and the last one wins.
+
+`PATCH` takes any of `name`, `description` and `permissions`; permissions, when sent, are
+the whole new set.
+
+### Tokens
+
+`GET /v1/tokens` lists the caller's own tokens, and with `everyone=true`, for someone with
+`users.manage`, everybody's. Each shows what it was given, what it may do now, when it was
+last used and when it expires, but never the token itself.
+
+`POST /v1/tokens` makes a token for the person signed in, from a dashboard session only, so
+one token can never make another. It needs `tokens.create`, and it can only be given
+permissions its owner holds. The token is in the response, once.
+
+`DELETE /v1/tokens/{id}` revokes a token. Anyone can revoke their own, even after losing the
+permission to make new ones; `users.manage` can revoke anyone's.
+
+### The instance
+
+`GET /v1/instance` tells anyone signed in the version and the MCP server's address, which
+the dashboard shows next to a new token. The address is `DPOLENS_PUBLIC_MCP_URL`, by default
+`http://localhost:8765/mcp`: set it to the address assistants really use when the MCP server
+sits behind a proxy or on another host.
 
 ### Introspection
 

@@ -50,3 +50,26 @@ First version of the API. Everything below is new rather than changed.
   `/problems/sign-in-refused`, `/problems/too-many-attempts`, `/problems/session-ended`,
   whose `reason` says why, and `/problems/cross-site-request`
 - Sixty requests a minute per token, answered with `429` and `Retry-After`
+- `GET /v1/users`, `POST /v1/users`, `PATCH /v1/users/{id}` and `PUT /v1/users/{id}/roles`
+  list, add, deactivate and reactivate people, and set their roles, for `users.manage`. Giving
+  someone a role needs every permission it carries
+- `POST /v1/users/{id}/sign-in-links` makes a one-time link, valid 72 hours, for a person to
+  choose a password, and needs every permission its owner holds. `POST /v1/sessions/from-link`
+  spends it and signs the person in; a link that was used or ran out gets `410` and
+  `/problems/sign-in-link-unusable`, and a password too short gets `422` and
+  `/problems/weak-password`. `POST /v1/sign-in-links/lookup` says who a link is for without
+  spending it
+- `PUT /v1/sessions/current/password` changes the signed-in person's password, given the
+  current one. A wrong one gets `403` and `/problems/wrong-password`
+- `GET /v1/permissions` lists the permission catalog. `GET /v1/roles`, `POST /v1/roles`, and
+  `GET`, `PATCH` and `DELETE /v1/roles/{id}` read and change roles. A role carries its
+  revision as an `ETag`; a change with an older one in `If-Match` gets `412` and
+  `/problems/edit-conflict`. A held role cannot be deleted (`409`, `/problems/role-in-use`),
+  and a change that would leave nobody able to manage roles gets `409` and
+  `/problems/lockout-refused`
+- `GET /v1/tokens`, `POST /v1/tokens` and `DELETE /v1/tokens/{id}` list, make and revoke
+  tokens. A token is made from a dashboard session only (`403`, `/problems/session-required`)
+- `/problems/permission-required` carries `permissions` when any of several would do, and a
+  name or an address already taken gets `409` and `/problems/already-exists`
+- `GET /v1/instance` gives the version and the MCP server's address, `DPOLENS_PUBLIC_MCP_URL`
+- The signed-in account carries its `id`

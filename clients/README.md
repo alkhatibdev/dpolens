@@ -5,10 +5,10 @@ send a header can use it. The files here are the ready made configurations for t
 
 Every one of them needs two things: the URL of your instance's MCP server, which is
 `http://localhost:8765/mcp` for a local `docker compose up`, and your own personal access
-token:
+token. Make the token in the dashboard, under Tokens, which also shows these steps for each
+client, or on the command line:
 
 ```bash
-docker compose exec api dpolens user create --email you@example.com --name "Your Name" --role Developer
 docker compose exec api dpolens token create --email you@example.com --name laptop --permission documents.read
 ```
 

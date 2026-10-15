@@ -76,6 +76,9 @@ SESSION_ENDED = "session.ended"
 # A wrong password for an account that exists. An unknown email is not an entry,
 # for the same reason an unknown token is not one: there is nobody it is about.
 SESSION_REFUSED = "session.refused"
+USER_SIGN_IN_LINK_CREATED = "user.sign_in_link_created"
+ROLE_RENAMED = "role.renamed"
+ROLE_DESCRIBED = "role.described"
 
 
 @dataclass(frozen=True)
