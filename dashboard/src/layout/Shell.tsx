@@ -1,4 +1,14 @@
-import { BookOpen, KeyRound, LogOut, Menu, Search, Users, X } from "lucide-react";
+import {
+  BookOpen,
+  KeyRound,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  ScrollText,
+  Search,
+  Users,
+  X,
+} from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
@@ -15,53 +25,100 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { initialsOf } from "@/lib/names";
-import { DOCUMENTS_READ, ROLES_MANAGE, USERS_MANAGE } from "@/lib/permissions";
+import {
+  DOCUMENTS_READ,
+  GOVERNANCE_READ,
+  QUERIES_READ_ALL,
+  QUERIES_READ_OWN,
+  ROLES_MANAGE,
+  USERS_MANAGE,
+} from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { usePermitted, useSession, useSignOut } from "@/session";
 
 /**
- * The sections this release has, each shown to whoever it is for. Tokens shows to
- * everyone signed in: anyone may revoke their own, even without making new ones.
+ * The sections this release has, in two groups, each shown to whoever it is for.
+ * Tokens shows to everyone signed in: anyone may revoke their own, even without
+ * making new ones.
  */
-const SECTIONS = [
+const GROUPS = [
   {
-    to: "/library",
-    label: "nav.library",
-    icon: BookOpen,
-    shows: (can: ReadonlySet<string>) => can.has(DOCUMENTS_READ),
+    label: "nav.menu",
+    sections: [
+      {
+        to: "/overview",
+        label: "nav.overview",
+        icon: LayoutGrid,
+        shows: (can: ReadonlySet<string>) => can.has(QUERIES_READ_ALL),
+      },
+      {
+        to: "/library",
+        label: "nav.library",
+        icon: BookOpen,
+        shows: (can: ReadonlySet<string>) => can.has(DOCUMENTS_READ),
+      },
+      {
+        to: "/logs",
+        label: "nav.logs",
+        icon: ScrollText,
+        shows: (can: ReadonlySet<string>) =>
+          can.has(QUERIES_READ_ALL) || can.has(QUERIES_READ_OWN) || can.has(GOVERNANCE_READ),
+      },
+    ],
   },
   {
-    to: "/users",
-    label: "nav.users",
-    icon: Users,
-    shows: (can: ReadonlySet<string>) => can.has(USERS_MANAGE) || can.has(ROLES_MANAGE),
+    label: "nav.general",
+    sections: [
+      {
+        to: "/users",
+        label: "nav.users",
+        icon: Users,
+        shows: (can: ReadonlySet<string>) => can.has(USERS_MANAGE) || can.has(ROLES_MANAGE),
+      },
+      { to: "/tokens", label: "nav.tokens", icon: KeyRound, shows: () => true },
+    ],
   },
-  { to: "/tokens", label: "nav.tokens", icon: KeyRound, shows: () => true },
 ] as const;
 
 function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
   const can = usePermitted();
   return (
-    <ul className="flex flex-col gap-1.5">
-      {SECTIONS.filter((section) => section.shows(can)).map(({ to, label, icon: Icon }) => (
-        <li key={to}>
-          <NavLink
-            to={to}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                "flex min-h-12 items-center gap-3 rounded-[14px] px-3 text-base text-ink-2 hover:bg-field",
-                isActive && "bg-brand-soft font-semibold text-brand-dark hover:bg-brand-soft",
-              )
-            }
-          >
-            <Icon aria-hidden className="size-5" />
-            {t(label)}
-          </NavLink>
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-4">
+      {GROUPS.map((group) => {
+        const shown = group.sections.filter((section) => section.shows(can));
+        if (!shown.length) {
+          return null;
+        }
+        return (
+          <div key={group.label} className="flex flex-col gap-1.5">
+            <span className="px-3 pb-1 text-xs font-medium tracking-[0.1em] text-muted uppercase">
+              {t(group.label)}
+            </span>
+            <ul className="flex flex-col gap-1.5">
+              {shown.map(({ to, label, icon: Icon }) => (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      cn(
+                        "flex min-h-12 items-center gap-3 rounded-[14px] px-3 text-base text-ink-2 hover:bg-field",
+                        isActive &&
+                          "bg-brand-soft font-semibold text-brand-dark hover:bg-brand-soft",
+                      )
+                    }
+                  >
+                    <Icon aria-hidden className="size-5" />
+                    {t(label)}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

@@ -47,10 +47,12 @@ DEVELOPER = "Developer"
 
 SEEDED_ROLES: Mapping[str, frozenset[str]] = MappingProxyType(
     {
-        ADMIN: frozenset(PERMISSIONS),
+        # No seeded role holds `queries.read_identities`, Admin included: seeing who
+        # asked what starts off, so its first use is a grant somebody decided on,
+        # and the grant is itself a governance entry.
+        ADMIN: frozenset(PERMISSIONS) - {QUERIES_READ_IDENTITIES},
         # Everything the second user needs, without the two that belong to an
-        # administrator, and without `queries.read_identities`: seeing who asked
-        # what starts off, so its first use is a decision somebody made.
+        # administrator.
         DPO: frozenset(
             {
                 DOCUMENTS_READ,

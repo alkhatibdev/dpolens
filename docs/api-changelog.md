@@ -73,3 +73,11 @@ First version of the API. Everything below is new rather than changed.
   name or an address already taken gets `409` and `/problems/already-exists`
 - `GET /v1/instance` gives the version and the MCP server's address, `DPOLENS_PUBLIC_MCP_URL`
 - The signed-in account carries its `id`
+- `GET /v1/queries` and `GET /v1/queries/export` read the questions log, a page at a time or
+  as CSV, own questions only for `queries.read_own`. `identities=true` adds who asked, needs
+  `queries.read_identities`, and is recorded as `query_log.identities_viewed`
+- `GET /v1/governance/entries`, `GET /v1/governance/actors`, `GET /v1/governance/verification`
+  and `POST /v1/governance/exports` read, check and export the governance log, for
+  `governance.read`
+- `GET /v1/overview` and `GET /v1/clauses/{key}/activity` count what was asked and what was
+  cited, in the reader's time zone, for `queries.read_all`

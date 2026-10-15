@@ -36,20 +36,20 @@ def test_every_seeded_role_is_described(role: str) -> None:
     assert catalog.SEEDED_ROLE_DESCRIPTIONS[role].strip()
 
 
-def test_admin_holds_everything() -> None:
-    assert catalog.SEEDED_ROLES[catalog.ADMIN] == set(catalog.PERMISSIONS)
+def test_admin_holds_everything_but_seeing_who_asked() -> None:
+    assert catalog.SEEDED_ROLES[catalog.ADMIN] == set(catalog.PERMISSIONS) - {
+        catalog.QUERIES_READ_IDENTITIES
+    }
 
 
 def test_no_seeded_role_can_see_who_asked() -> None:
     """The promise this project makes to developers, asserted rather than described.
 
     Seeing who asked a logged question is the surveillance switch. It starts off
-    on every seeded role, so its first use is a grant somebody decided on, and
-    that grant is itself a governance entry.
+    on every seeded role, Admin included, so its first use is a grant somebody
+    decided on, and that grant is itself a governance entry.
     """
-    for role, held in catalog.SEEDED_ROLES.items():
-        if role == catalog.ADMIN:
-            continue
+    for held in catalog.SEEDED_ROLES.values():
         assert catalog.QUERIES_READ_IDENTITIES not in held
 
 

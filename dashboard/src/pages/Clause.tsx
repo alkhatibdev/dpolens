@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router";
 
 import { ApiError, type Clause, type SearchResult } from "@/api/client";
+import { CitedThisWeek } from "@/components/CitedThisWeek";
 import { useClause, useSubtrees } from "@/api/queries";
 import { CopyCitationButton } from "@/components/CopyCitation";
 import { Reading } from "@/components/Reading";
@@ -123,6 +124,7 @@ export function ClausePage() {
         </article>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 xl:max-w-[400px]">
+          <CitedThisWeek clauseKey={clause.key} />
           <section className="flex flex-col gap-3.5 rounded-[20px] bg-ink p-5 text-white sm:p-6">
             <h2 className="text-[19px] font-semibold">{t("clause.assistant")}</h2>
             <pre className="overflow-x-auto rounded-xl bg-[#222924] p-3.5 font-mono text-xs leading-7 whitespace-pre-wrap text-[#e4e9e5]">

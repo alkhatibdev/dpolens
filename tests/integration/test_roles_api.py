@@ -127,7 +127,7 @@ class TestReading:
         assert response.status_code == 200
         roles = {role["name"]: role for role in response.json()["roles"]}
         assert {catalog.ADMIN, catalog.DPO, catalog.DEVELOPER} <= set(roles)
-        assert roles[catalog.ADMIN]["permissions"] == sorted(catalog.PERMISSIONS)
+        assert roles[catalog.ADMIN]["permissions"] == sorted(catalog.SEEDED_ROLES[catalog.ADMIN])
         assert roles[catalog.ADMIN]["is_seeded"] is True
         assert [holder["display_name"] for holder in roles[catalog.DEVELOPER]["holders"]] == [
             "Omar Khalil"

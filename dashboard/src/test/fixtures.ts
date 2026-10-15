@@ -1,4 +1,15 @@
-import type { Clause, Document, Person, Role, SignedIn, Token } from "@/api/client";
+import type {
+  Clause,
+  Document,
+  Entry,
+  LoggedClause,
+  Overview,
+  Person,
+  Question,
+  Role,
+  SignedIn,
+  Token,
+} from "@/api/client";
 
 export const signedIn: SignedIn = {
   account: {
@@ -118,6 +129,21 @@ export const article13 = {
   ],
 };
 
+const everyPermission = [
+  "documents.publish",
+  "documents.read",
+  "documents.upload",
+  "governance.read",
+  "queries.read_all",
+  "queries.read_identities",
+  "queries.read_own",
+  "roles.manage",
+  "settings.manage",
+  "tokens.create",
+  "users.manage",
+];
+
+/** The seeded Admin: everything except seeing who asked, which nobody starts with. */
 export const admin: SignedIn = {
   account: {
     id: "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
@@ -125,19 +151,20 @@ export const admin: SignedIn = {
     display_name: "Yousef Haddad",
     roles: ["Admin"],
   },
-  permissions: [
-    "documents.publish",
-    "documents.read",
-    "documents.upload",
-    "governance.read",
-    "queries.read_all",
-    "queries.read_identities",
-    "queries.read_own",
-    "roles.manage",
-    "settings.manage",
-    "tokens.create",
-    "users.manage",
-  ],
+  permissions: everyPermission.filter((key) => key !== "queries.read_identities"),
+  expires_at: "2026-10-15T17:00:00Z",
+  idle_minutes: 30,
+};
+
+/** Somebody given the permission to see who asked, on purpose. */
+export const privacyLead: SignedIn = {
+  account: {
+    id: "4c2a9e1d-7f3b-4e8a-b6d5-2a9c8e7f6d5b",
+    email: "noura@example.com",
+    display_name: "Noura Saeed",
+    roles: ["Privacy lead"],
+  },
+  permissions: ["documents.read", "queries.read_all", "queries.read_identities"],
   expires_at: "2026-10-15T17:00:00Z",
   idle_minutes: 30,
 };
@@ -246,7 +273,7 @@ export const roles: Role[] = [
 ];
 
 export const catalog = {
-  permissions: admin.permissions.map((key) => ({ key, description: key })),
+  permissions: everyPermission.map((key) => ({ key, description: key })),
 };
 
 export function token(fields: Partial<Token> & Pick<Token, "id" | "name">): Token {
@@ -264,3 +291,110 @@ export function token(fields: Partial<Token> & Pick<Token, "id" | "name">): Toke
     ...fields,
   };
 }
+
+export const dpo: SignedIn = {
+  ...signedIn,
+  permissions: [
+    "documents.publish",
+    "documents.read",
+    "documents.upload",
+    "governance.read",
+    "queries.read_all",
+    "settings.manage",
+    "tokens.create",
+  ],
+};
+
+export function logged(key: string, trail: [string | null, string | null][]): LoggedClause {
+  return {
+    key,
+    document_title: "General Data Protection Regulation",
+    document_slug: "gdpr",
+    pack_slug: "gdpr",
+    version_label: "2026.1",
+    lang: "en",
+    trail: trail.map(([label, heading]) => ({ label, heading })),
+  };
+}
+
+export const erasure = logged("gdpr:art-17:para-1", [
+  ["Article 17", "Right to erasure ('right to be forgotten')"],
+  ["1.", null],
+]);
+
+export function question(fields: Partial<Question> & Pick<Question, "id" | "question">): Question {
+  return {
+    created_at: new Date().toISOString(),
+    expires_at: "2027-10-15T08:00:00Z",
+    surface: "mcp",
+    operation: "search",
+    target: null,
+    status: "ok",
+    scope: "selected",
+    redaction_count: 0,
+    redaction_types: [],
+    results: [{ rank: 1, clause: erasure }],
+    asker: null,
+    ...fields,
+  };
+}
+
+export const overview: Overview = {
+  days: 7,
+  since: "2026-10-09T00:00:00Z",
+  until: "2026-10-15T10:00:00Z",
+  questions: 1284,
+  previous_questions: 1088,
+  answered: 1207,
+  found_nothing: 77,
+  by_day: [
+    { day: "2026-10-09", assistants: 201, dashboard: 35, other: 0 },
+    { day: "2026-10-10", assistants: 161, dashboard: 29, other: 0 },
+    { day: "2026-10-11", assistants: 37, dashboard: 7, other: 0 },
+    { day: "2026-10-12", assistants: 25, dashboard: 5, other: 0 },
+    { day: "2026-10-13", assistants: 257, dashboard: 45, other: 0 },
+    { day: "2026-10-14", assistants: 228, dashboard: 40, other: 0 },
+    { day: "2026-10-15", assistants: 182, dashboard: 32, other: 0 },
+  ],
+  most_cited: [{ clause: erasure, count: 148 }],
+  sources: [
+    { pack_slug: "gdpr", title: "General Data Protection Regulation", count: 868 },
+    { pack_slug: "uae-pdpl", title: uae.title, count: 339 },
+  ],
+  unanswered: [
+    {
+      id: "q-cctv",
+      created_at: new Date().toISOString(),
+      surface: "mcp",
+      question: "retention period for CCTV footage in the warehouse",
+    },
+  ],
+  laws: [
+    { slug: "gdpr", name: "General Data Protection Regulation" },
+    { slug: "uae-pdpl", name: uae.title },
+  ],
+};
+
+export function entry(fields: Partial<Entry> & Pick<Entry, "seq" | "action">): Entry {
+  return {
+    occurred_at: new Date().toISOString(),
+    target_type: "user",
+    target_id: "p-omar",
+    details: { via: "dashboard" },
+    entry_hash: "9f3a".padEnd(60, "0") + "c21e",
+    prev_hash: "3b1e".padEnd(60, "0") + "a90c",
+    actor: null,
+    actor_token: null,
+    target_user: null,
+    target_token: null,
+    ...fields,
+  };
+}
+
+export const yousef = {
+  id: admin.account.id,
+  display_name: "Yousef Haddad",
+  email: "yousef@example.com",
+  kind: "person" as const,
+  status: "active" as const,
+};

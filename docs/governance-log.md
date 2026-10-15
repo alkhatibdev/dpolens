@@ -15,8 +15,8 @@ Creating a user, assigning or removing a role, deactivating an account, setting 
 password and how it was set, making a sign-in link, creating a role, changing its
 permissions, renaming it or changing its description, publishing a document version,
 creating or revoking a token, signing in to the dashboard and out of it, a wrong
-password for an account that exists, viewing who asked a question in the query log,
-and exporting this log.
+password for an account that exists, viewing or exporting who asked a question in the
+query log, and exporting this log.
 
 The governance log is not the query log, and neither is telemetry. The query log
 holds redacted questions and expires on a retention schedule. Telemetry is the
@@ -84,7 +84,9 @@ dpolens governance verify
 ```
 
 This recomputes every entry's hash, checks that the links form one chain starting
-at the instance's first link, and reports the first entry that does not match.
+at the instance's first link, and reports the first entry that does not match. The
+dashboard's governance log runs the same check each time it is opened, and again on
+request.
 
 Two findings are reported separately, because they mean different things. An entry
 whose fields do not match its own hash has been edited. Entries whose links do not
@@ -122,6 +124,10 @@ entries, because a manifest is evidence too.
 
 The export itself is recorded in the log, after the rows were read, so an export
 never contains its own entry.
+
+Export for an auditor, on the dashboard's governance log, downloads the same three
+files in one zip and is recorded the same way. `POST /v1/governance/exports` is the
+route behind it.
 
 ## What the chain does and does not prove
 

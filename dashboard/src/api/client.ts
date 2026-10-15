@@ -14,6 +14,11 @@ export type Permission = components["schemas"]["Permission"];
 export type Token = components["schemas"]["TokenDocument"];
 export type TokenMade = components["schemas"]["TokenMade"];
 export type Instance = components["schemas"]["Instance"];
+export type Question = components["schemas"]["Question"];
+export type LoggedClause = components["schemas"]["ClauseName"];
+export type Entry = components["schemas"]["Entry"];
+export type Overview = components["schemas"]["Overview"];
+export type Verification = components["schemas"]["Verification"];
 
 /** An RFC 9457 problem, as the API reports every failure. */
 export interface Problem {

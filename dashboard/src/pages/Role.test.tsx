@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -28,6 +28,36 @@ describe("a role", () => {
     const saved = calls.find((call) => call.method === "PATCH")!;
     expect(saved.headers.get("If-Match")).toBe('"3"');
     expect((await saved.json()).permissions).toContain("queries.read_identities");
+  });
+
+  it("shows the role as saved at once, and saves again from the new revision", async () => {
+    const saved = {
+      ...dpo,
+      revision: 4,
+      permissions: [...dpo.permissions, "queries.read_identities"],
+    };
+    let reads = 0;
+    const { calls } = serve({
+      "GET /v1/sessions/current": { body: admin },
+      // The first read answers. The one after the save never does, as on a slow network.
+      "GET /v1/roles/r-dpo": () =>
+        reads++ === 0 ? { body: dpo } : new Promise<never>(() => undefined),
+      "GET /v1/permissions": { body: catalog },
+      "PATCH /v1/roles/r-dpo": { body: saved },
+    });
+    renderAt("/users/roles/r-dpo");
+
+    await userEvent.click(await screen.findByRole("switch", { name: "See who asked" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(screen.queryByText(/not saved/)).not.toBeInTheDocument());
+    expect(screen.getByRole("switch", { name: "See who asked" })).toBeChecked();
+
+    await userEvent.click(screen.getByRole("switch", { name: "Publish policies" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    const patches = () => calls.filter((call) => call.method === "PATCH");
+    await waitFor(() => expect(patches()).toHaveLength(2));
+    expect(patches()[1]!.headers.get("If-Match")).toBe('"4"');
   });
 
   it("says who saved first, and keeps both changes when asked", async () => {

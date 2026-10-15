@@ -279,6 +279,13 @@ The record of searches, clause lookups and (from v0.2) answers, with the query t
 PII-redacted and a retention period after which entries are deleted.
 _Avoid_: Q&A log, audit log, usage log, history
 
+**Cited** (as the dashboard counts it):
+A clause is cited once for each search that returned it first, and once for each time
+somebody read it by its key. The Overview's "Most cited" and a clause's "Cited this week"
+count this from the query log. It counts results, not the quotations in an answer, which
+are **citations**; reading a whole article in the library does not count.
+_Avoid_: Popular, most viewed, top results
+
 This glossary is kept by review rather than by a check in CI. A term used loosely in a pull
 request is a review comment, not a failed build.
 

@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { DropdownMenu as Menu } from "radix-ui";
 import type { ComponentProps } from "react";
 
@@ -46,4 +47,27 @@ export function DropdownMenuSeparator({
   ...props
 }: ComponentProps<typeof Menu.Separator>) {
   return <Menu.Separator className={cn("my-1 h-px bg-line", className)} {...props} />;
+}
+
+export const DropdownMenuRadioGroup = Menu.RadioGroup;
+
+export function DropdownMenuRadioItem({
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof Menu.RadioItem>) {
+  return (
+    <Menu.RadioItem
+      className={cn(
+        "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl ps-3 pe-9 text-[15px] text-ink outline-none select-none data-[highlighted]:bg-field data-[state=checked]:font-semibold relative",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      <Menu.ItemIndicator className="absolute end-3">
+        <Check aria-hidden className="size-4 text-brand" />
+      </Menu.ItemIndicator>
+    </Menu.RadioItem>
+  );
 }

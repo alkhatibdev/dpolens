@@ -109,3 +109,32 @@ export function daysUntil(iso: string, now: Date = new Date()): number {
 function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+const dayHeading = new Intl.DateTimeFormat("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+/** "Today, Wednesday 15 October", to head a day's rows in a log. */
+export function formatDayHeading(iso: string, now: Date = new Date()): string {
+  const when = new Date(iso);
+  const named = dayHeading.format(when);
+  if (sameDay(when, now)) {
+    return `Today, ${named}`;
+  }
+  if (sameDay(when, new Date(now.getTime() - DAY))) {
+    return `Yesterday, ${named}`;
+  }
+  return named;
+}
+
+/** "10:42", in the reader's time zone. */
+export function formatTime(iso: string): string {
+  return times.format(new Date(iso));
+}
+
+/** "1,204": a count as it reads in running text. */
+export function formatNumber(value: number): string {
+  return value.toLocaleString("en-GB");
+}

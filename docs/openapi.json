@@ -2818,6 +2818,1275 @@
           }
         }
       }
+    },
+    "/v1/queries": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Read the questions log",
+        "operationId": "list_questions_v1_queries_get",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "dashboard",
+                      "mcp",
+                      "api",
+                      "slack",
+                      "github_action"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Surface"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "ok",
+                      "no_match",
+                      "refused",
+                      "error"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "operation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "search",
+                      "get_clause",
+                      "get_subtree",
+                      "list_documents",
+                      "get_document",
+                      "ask"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Left out, searches only",
+              "title": "Operation"
+            },
+            "description": "Left out, searches only"
+          },
+          {
+            "name": "document",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Document"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Words in the question",
+              "title": "Q"
+            },
+            "description": "Words in the question"
+          },
+          {
+            "name": "asked_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Words in the asker's name or address",
+              "title": "Asked By"
+            },
+            "description": "Words in the asker's name or address"
+          },
+          {
+            "name": "identities",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include who asked. Needs queries.read_identities, and is logged",
+              "default": false,
+              "title": "Identities"
+            },
+            "description": "Include who asked. Needs queries.read_identities, and is logged"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Questions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/queries/export": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Download the questions the filter selects, as CSV",
+        "operationId": "export_questions_v1_queries_export_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "dashboard",
+                      "mcp",
+                      "api",
+                      "slack",
+                      "github_action"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Surface"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "ok",
+                      "no_match",
+                      "refused",
+                      "error"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "operation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "search",
+                      "get_clause",
+                      "get_subtree",
+                      "list_documents",
+                      "get_document",
+                      "ask"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Left out, searches only",
+              "title": "Operation"
+            },
+            "description": "Left out, searches only"
+          },
+          {
+            "name": "document",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Document"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Words in the question",
+              "title": "Q"
+            },
+            "description": "Words in the question"
+          },
+          {
+            "name": "asked_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Words in the asker's name or address",
+              "title": "Asked By"
+            },
+            "description": "Words in the asker's name or address"
+          },
+          {
+            "name": "identities",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include who asked. Needs queries.read_identities, and is logged",
+              "default": false,
+              "title": "Identities"
+            },
+            "description": "Include who asked. Needs queries.read_identities, and is logged"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/governance/entries": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Read the governance log",
+        "operationId": "list_entries_v1_governance_entries_get",
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "sign_ins",
+                      "people",
+                      "roles",
+                      "tokens",
+                      "laws",
+                      "questions",
+                      "exports"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Since"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entries"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/governance/actors": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Everyone who appears in the log as having acted",
+        "operationId": "list_actors_v1_governance_actors_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Actors"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/governance/verification": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Recompute the chain and say whether it holds",
+        "operationId": "check_chain_v1_governance_verification_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Verification"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/governance/exports": {
+      "post": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Export the log for an auditor, as a zip of three files",
+        "description": "The files `dpolens governance export` writes. The export is recorded in the log,\nin a session of its own, so the record is kept before the file is handed over.",
+        "operationId": "export_log_v1_governance_exports_post",
+        "parameters": [
+          {
+            "name": "from_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From Seq"
+            }
+          },
+          {
+            "name": "to_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To Seq"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/zip": {}
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/overview": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "What was asked, and what answered it",
+        "operationId": "describe_v1_overview_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 366,
+              "minimum": 1,
+              "description": "How many days, today the last",
+              "default": 7,
+              "title": "Days"
+            },
+            "description": "How many days, today the last"
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "The reader's time zone, such as Asia/Dubai",
+              "default": "UTC",
+              "title": "Tz"
+            },
+            "description": "The reader's time zone, such as Asia/Dubai"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clauses/{key}/activity": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "How often one clause was cited, day by day",
+        "operationId": "clause_activity_v1_clauses__key__activity_get",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "description": "A canonical key, such as gdpr:art-17:para-1",
+              "title": "Key"
+            },
+            "description": "A canonical key, such as gdpr:art-17:para-1"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 366,
+              "minimum": 1,
+              "description": "How many days, today the last",
+              "default": 7,
+              "title": "Days"
+            },
+            "description": "How many days, today the last"
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "The reader's time zone, such as Asia/Dubai",
+              "default": "UTC",
+              "title": "Tz"
+            },
+            "description": "The reader's time zone, such as Asia/Dubai"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Activity"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2853,6 +4122,85 @@
         ],
         "title": "Account"
       },
+      "Activity": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "by_day": {
+            "items": {
+              "$ref": "#/components/schemas/ClauseDay"
+            },
+            "type": "array",
+            "title": "By Day"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "days",
+          "total",
+          "by_day"
+        ],
+        "title": "Activity"
+      },
+      "Actors": {
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PersonRef"
+            },
+            "type": "array",
+            "title": "People"
+          }
+        },
+        "type": "object",
+        "required": [
+          "people"
+        ],
+        "title": "Actors"
+      },
+      "Asker": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "service_account"
+            ],
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "email",
+          "kind"
+        ],
+        "title": "Asker"
+      },
       "Catalog": {
         "properties": {
           "permissions": {
@@ -2869,6 +4217,23 @@
         ],
         "title": "Catalog",
         "description": "Every permission this build defines. Roles are made from these and nothing else."
+      },
+      "Cited": {
+        "properties": {
+          "clause": {
+            "$ref": "#/components/schemas/ClauseName"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clause",
+          "count"
+        ],
+        "title": "Cited"
       },
       "Clause": {
         "properties": {
@@ -3044,6 +4409,25 @@
         ],
         "title": "Clause"
       },
+      "ClauseDay": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "count"
+        ],
+        "title": "ClauseDay"
+      },
       "ClauseInContext": {
         "properties": {
           "clause": {
@@ -3080,6 +4464,69 @@
         ],
         "title": "ClauseInContext"
       },
+      "ClauseName": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "document_title": {
+            "type": "string",
+            "title": "Document Title"
+          },
+          "document_slug": {
+            "type": "string",
+            "title": "Document Slug"
+          },
+          "pack_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pack Slug",
+            "description": "The law's pack, or null for a policy"
+          },
+          "version_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Label"
+          },
+          "lang": {
+            "type": "string",
+            "title": "Lang"
+          },
+          "trail": {
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            },
+            "type": "array",
+            "title": "Trail",
+            "description": "Label and heading, outermost first, down to it"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "document_title",
+          "document_slug",
+          "pack_slug",
+          "version_label",
+          "lang",
+          "trail"
+        ],
+        "title": "ClauseName",
+        "description": "A clause as a citation names it, in the language it was returned in."
+      },
       "CrossReference": {
         "properties": {
           "key": {
@@ -3098,6 +4545,36 @@
           "text"
         ],
         "title": "CrossReference"
+      },
+      "DayCount": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "assistants": {
+            "type": "integer",
+            "title": "Assistants",
+            "description": "Asked through the MCP server"
+          },
+          "dashboard": {
+            "type": "integer",
+            "title": "Dashboard"
+          },
+          "other": {
+            "type": "integer",
+            "title": "Other"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "assistants",
+          "dashboard",
+          "other"
+        ],
+        "title": "DayCount"
       },
       "Document": {
         "properties": {
@@ -3274,6 +4751,136 @@
         ],
         "title": "Documents"
       },
+      "Entries": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next",
+            "description": "Send as `before` for the next page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "total",
+          "next"
+        ],
+        "title": "Entries"
+      },
+      "Entry": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "target_type": {
+            "type": "string",
+            "title": "Target Type"
+          },
+          "target_id": {
+            "type": "string",
+            "title": "Target Id"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details",
+            "description": "As stored, the before and after of the change"
+          },
+          "entry_hash": {
+            "type": "string",
+            "title": "Entry Hash"
+          },
+          "prev_hash": {
+            "type": "string",
+            "title": "Prev Hash"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who acted. Null for the command line or the instance"
+          },
+          "actor_token": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_token": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "occurred_at",
+          "action",
+          "target_type",
+          "target_id",
+          "details",
+          "entry_hash",
+          "prev_hash",
+          "actor",
+          "actor_token",
+          "target_user",
+          "target_token"
+        ],
+        "title": "Entry"
+      },
       "FromLink": {
         "properties": {
           "secret": {
@@ -3442,6 +5049,24 @@
           "token"
         ],
         "title": "IntrospectionRequest"
+      },
+      "Law": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "Law"
       },
       "LinkDetails": {
         "properties": {
@@ -3634,6 +5259,96 @@
         "title": "OutlineEntry",
         "description": "What a top-level clause is, without what it says.\n\nThe text is absent on purpose: an outline that carried it would return whole\ndocuments for anything whose top level holds real text, such as recitals.\nRead the words with the clause routes."
       },
+      "Overview": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Until"
+          },
+          "questions": {
+            "type": "integer",
+            "title": "Questions"
+          },
+          "previous_questions": {
+            "type": "integer",
+            "title": "Previous Questions",
+            "description": "In the same number of days just before"
+          },
+          "answered": {
+            "type": "integer",
+            "title": "Answered"
+          },
+          "found_nothing": {
+            "type": "integer",
+            "title": "Found Nothing"
+          },
+          "by_day": {
+            "items": {
+              "$ref": "#/components/schemas/DayCount"
+            },
+            "type": "array",
+            "title": "By Day"
+          },
+          "most_cited": {
+            "items": {
+              "$ref": "#/components/schemas/Cited"
+            },
+            "type": "array",
+            "title": "Most Cited",
+            "description": "First result of a search, or read by key"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Sources",
+            "description": "Where the first result of an answered search came from"
+          },
+          "unanswered": {
+            "items": {
+              "$ref": "#/components/schemas/Unanswered"
+            },
+            "type": "array",
+            "title": "Unanswered",
+            "description": "The latest searches that found nothing"
+          },
+          "laws": {
+            "items": {
+              "$ref": "#/components/schemas/Law"
+            },
+            "type": "array",
+            "title": "Laws",
+            "description": "The laws searches cover now"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "since",
+          "until",
+          "questions",
+          "previous_questions",
+          "answered",
+          "found_nothing",
+          "by_day",
+          "most_cited",
+          "sources",
+          "unanswered",
+          "laws"
+        ],
+        "title": "Overview"
+      },
       "Owner": {
         "properties": {
           "id": {
@@ -3817,6 +5532,48 @@
         "title": "Person",
         "description": "Someone who can sign in, or a service account that holds tokens."
       },
+      "PersonRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "person",
+              "service_account"
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "deactivated",
+              "erased"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "email",
+          "kind",
+          "status"
+        ],
+        "title": "PersonRef"
+      },
       "ProblemDocument": {
         "properties": {
           "type": {
@@ -3852,6 +5609,177 @@
         ],
         "title": "ProblemDocument",
         "description": "The error shape, declared so the specification carries it.\n\nA client branches on `type`. `title` and `status` say what class of failure it\nis, and `detail` is written for whoever has to fix it. Some problems add a\nfield of their own, such as the permission a token is missing."
+      },
+      "Question": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At",
+            "description": "When the instance deletes it"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "dashboard",
+              "mcp",
+              "api",
+              "slack",
+              "github_action"
+            ],
+            "title": "Surface"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "search",
+              "get_clause",
+              "get_subtree",
+              "list_documents",
+              "get_document",
+              "ask"
+            ],
+            "title": "Operation"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "As stored: personal data replaced by placeholders"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "The key or slug read, for a read rather than a search"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "no_match",
+              "refused",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "selected",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
+          },
+          "redaction_count": {
+            "type": "integer",
+            "title": "Redaction Count"
+          },
+          "redaction_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Redaction Types"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Returned"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "asker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Asker"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only when names were asked for, and allowed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "expires_at",
+          "surface",
+          "operation",
+          "question",
+          "target",
+          "status",
+          "scope",
+          "redaction_count",
+          "redaction_types",
+          "results",
+          "asker"
+        ],
+        "title": "Question"
+      },
+      "Questions": {
+        "properties": {
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "How many the filter selects in all"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next",
+            "description": "Send as `before` for the next page"
+          },
+          "identities": {
+            "type": "boolean",
+            "title": "Identities",
+            "description": "Whether names are in this answer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "questions",
+          "total",
+          "next",
+          "identities"
+        ],
+        "title": "Questions"
       },
       "Result": {
         "properties": {
@@ -3940,6 +5868,23 @@
           "results"
         ],
         "title": "Results"
+      },
+      "Returned": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "clause": {
+            "$ref": "#/components/schemas/ClauseName"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "clause"
+        ],
+        "title": "Returned"
       },
       "RoleChange": {
         "properties": {
@@ -4261,6 +6206,37 @@
         "title": "SignedIn",
         "description": "Who is signed in, what they may do, and when the session ends."
       },
+      "Source": {
+        "properties": {
+          "pack_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pack Slug",
+            "description": "The law's pack, or null for the organisation's policies"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pack_slug",
+          "title",
+          "count"
+        ],
+        "title": "Source"
+      },
       "StatusChange": {
         "properties": {
           "status": {
@@ -4277,6 +6253,38 @@
           "status"
         ],
         "title": "StatusChange"
+      },
+      "Step": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "heading"
+        ],
+        "title": "Step"
       },
       "TokenDocument": {
         "properties": {
@@ -4501,6 +6509,35 @@
         ],
         "title": "TokenMade"
       },
+      "TokenRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prefix": {
+            "type": "string",
+            "title": "Prefix"
+          },
+          "owner": {
+            "type": "string",
+            "title": "Owner",
+            "description": "The owner's name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "owner"
+        ],
+        "title": "TokenRef"
+      },
       "Tokens": {
         "properties": {
           "tokens": {
@@ -4516,6 +6553,42 @@
           "tokens"
         ],
         "title": "Tokens"
+      },
+      "Unanswered": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "dashboard",
+              "mcp",
+              "api",
+              "slack",
+              "github_action"
+            ],
+            "title": "Surface"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "surface",
+          "question"
+        ],
+        "title": "Unanswered"
       },
       "ValidationError": {
         "properties": {
@@ -4556,6 +6629,68 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Verification": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "entries": {
+            "type": "integer",
+            "title": "Entries"
+          },
+          "first_broken_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Broken Seq"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "out_of_order": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Out Of Order"
+          },
+          "anchored_to_genesis": {
+            "type": "boolean",
+            "title": "Anchored To Genesis"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "entries",
+          "first_broken_seq",
+          "reason",
+          "out_of_order",
+          "anchored_to_genesis",
+          "checked_at"
+        ],
+        "title": "Verification",
+        "description": "The chain, recomputed now."
       }
     }
   }

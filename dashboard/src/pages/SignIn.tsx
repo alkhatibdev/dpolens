@@ -30,7 +30,8 @@ export function SignInPage() {
   const [shown, setShown] = useState(false);
 
   const from = (location.state as { from?: { pathname: string; search: string } } | null)?.from;
-  const destination = from ? `${from.pathname}${from.search}` : "/library";
+  // Without a page to return to, the home route picks where this person starts.
+  const destination = from ? `${from.pathname}${from.search}` : "/";
 
   // Only a session the API has just confirmed counts: a failed check keeps the
   // answer from before it, which must not send anyone back to the page they left.

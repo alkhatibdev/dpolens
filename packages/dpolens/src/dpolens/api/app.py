@@ -19,7 +19,18 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 
 from dpolens import __version__
-from dpolens.api import corpus, health, instance, people, problems, roles, sessions, tokens
+from dpolens.api import (
+    corpus,
+    health,
+    instance,
+    logs,
+    overview,
+    people,
+    problems,
+    roles,
+    sessions,
+    tokens,
+)
 from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER, lifetimes_of
 from dpolens.api.limits import RateLimiter, SignInThrottle
 from dpolens.engine.auth.catalog import bootstrap
@@ -118,6 +129,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(roles.router)
     app.include_router(instance.router)
     app.include_router(sessions.links)
+    app.include_router(logs.router)
+    app.include_router(overview.router)
     return app
 
 

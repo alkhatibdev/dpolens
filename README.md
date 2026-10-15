@@ -13,9 +13,11 @@ with exact, versioned citations. A self-hosted MCP server.**
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
 > its official English translation, and a question can be asked in either language. In the
 > dashboard you sign in, read the library, add the people you work with, decide what each
-> role allows, and make the tokens your assistants use; uploading your own policies there is
-> planned for v0.1. An administrator chooses which laws apply with `dpolens laws select`, and
-> until then every search covers both.
+> role allows, and make the tokens your assistants use. A DPO sees what was asked this week
+> and what answered it, reads every question with the personal data taken out, and checks the
+> governance log and exports it for an auditor. Uploading your own policies there is planned
+> for v0.1. An administrator chooses which laws apply with `dpolens laws select`, and until
+> then every search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -60,7 +62,9 @@ shown once, so copy it now.
 
 The library holds every law loaded, clause by clause and in each of its languages, with a
 search box for asking it in your own words. Users and roles is where you add the people you
-work with and decide what each role allows.
+work with and decide what each role allows. Overview shows how much was asked, what answered
+it and what found nothing, and Logs holds every question asked and every change made to the
+instance.
 
 **4. Connect your assistant**
 
@@ -230,7 +234,8 @@ dpolens search "can we send customer data abroad" --law gdpr
 ```
 
 Users, roles and the governance log are what every surface authenticates and records
-against. The dashboard manages people, roles and tokens; the command line does too:
+against. The dashboard manages people, roles and tokens, and checks and exports the
+governance log; the command line does too:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Admin
@@ -243,8 +248,9 @@ dpolens governance export ./export-2026-09
 
 Permissions are a fixed list in code and roles are data, so an organisation can invent
 "Legal" without waiting for a release. Admin, DPO and Developer are seeded and editable,
-and no seeded role can see who asked a question: that permission has to be granted to
-somebody on purpose.
+and no seeded role can see who asked a question, Admin included: that permission has to be
+granted to somebody on purpose. An administrator grants it by switching it on for a role,
+and the governance log records who did and when.
 
 The governance log is append-only and hash-chained. The application's database role holds
 `INSERT` and `SELECT` on it and nothing else, triggers refuse an update, a delete or a
@@ -292,8 +298,17 @@ sign-in. The library lists each document with the version in force and which of 
 languages prevails, and reads a law article by article, its official translation beside the
 text that prevails with the key between them. Every key copies the clause with the same
 citation the MCP server gives an assistant. Search covers the selected laws, with another
-law, a date or the recitals a click away. The interface is English, built so an Arabic one
-can follow, and it works on a phone. There is no published image: `docker compose up`
+law, a date or the recitals a click away.
+
+Whoever may read every question starts on the Overview: how much was asked over the last 7
+or 30 days, how much of it found a clause in force, the clauses cited most, and the questions
+that found nothing, each of which may be a policy waiting to be written. The questions log
+shows every question as it was stored, with a mark where personal data was taken out. Names
+stay hidden unless you hold the permission to see who asked, and every look at them is
+written to the governance log. Somebody who may read only their own questions sees just
+those. The governance log reads as plain sentences, checks its hash chain each time it is
+opened, and exports the same files as `dpolens governance export`. The interface is English,
+built so an Arabic one can follow, and it works on a phone. There is no published image: `docker compose up`
 builds from source.
 
 ## Contributing

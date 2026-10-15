@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { renderAt } from "@/test/render";
 import { problem, serve } from "@/test/server";
-import { signedIn, uae } from "@/test/fixtures";
+import { dpo, overview, signedIn, uae } from "@/test/fixtures";
 
 async function fillAndSubmit() {
   const user = userEvent.setup();
@@ -59,6 +59,24 @@ describe("signing in", () => {
     await fillAndSubmit();
 
     expect(await screen.findByRole("heading", { name: "Library" })).toBeInTheDocument();
+  });
+
+  it("opens the overview for somebody who may read every question", async () => {
+    let signed = false;
+    serve({
+      "GET /v1/sessions/current": () => (signed ? { body: dpo } : problem("unauthenticated", 401)),
+      "POST /v1/sessions": () => {
+        signed = true;
+        return { status: 201, body: dpo };
+      },
+      "GET /v1/overview": { body: overview },
+    });
+    const { router } = renderAt("/sign-in");
+
+    await fillAndSubmit();
+
+    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/overview");
   });
 
   it("says why a session ended", async () => {

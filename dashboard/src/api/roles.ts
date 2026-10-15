@@ -52,6 +52,7 @@ export interface RoleEdit {
 }
 
 export function useEditRole() {
+  const client = useQueryClient();
   const refresh = useRefresh();
   return useMutation({
     mutationFn: ({ id, revision, ...body }: RoleEdit) =>
@@ -61,7 +62,13 @@ export function useEditRole() {
           body,
         }),
       ),
-    onSuccess: refresh,
+    // The answer is the role as saved. Shown at once, a save never flicks back to the
+    // version before it while the role is read again, and the next save carries the
+    // new revision rather than conflicting with this one.
+    onSuccess: (saved, { id }) => {
+      client.setQueryData(["roles", id], saved);
+      refresh();
+    },
   });
 }
 

@@ -415,6 +415,146 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/queries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read the questions log */
+    get: operations["list_questions_v1_queries_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/queries/export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Download the questions the filter selects, as CSV */
+    get: operations["export_questions_v1_queries_export_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/governance/entries": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read the governance log */
+    get: operations["list_entries_v1_governance_entries_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/governance/actors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Everyone who appears in the log as having acted */
+    get: operations["list_actors_v1_governance_actors_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/governance/verification": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Recompute the chain and say whether it holds */
+    get: operations["check_chain_v1_governance_verification_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/governance/exports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Export the log for an auditor, as a zip of three files
+     * @description The files `dpolens governance export` writes. The export is recorded in the log,
+     *     in a session of its own, so the record is kept before the file is handed over.
+     */
+    post: operations["export_log_v1_governance_exports_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/overview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** What was asked, and what answered it */
+    get: operations["describe_v1_overview_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/clauses/{key}/activity": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How often one clause was cited, day by day */
+    get: operations["clause_activity_v1_clauses__key__activity_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -430,6 +570,36 @@ export interface components {
       /** Roles */
       roles: string[];
     };
+    /** Activity */
+    Activity: {
+      /** Key */
+      key: string;
+      /** Days */
+      days: number;
+      /** Total */
+      total: number;
+      /** By Day */
+      by_day: components["schemas"]["ClauseDay"][];
+    };
+    /** Actors */
+    Actors: {
+      /** People */
+      people: components["schemas"]["PersonRef"][];
+    };
+    /** Asker */
+    Asker: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string;
+      /** Email */
+      email: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "person" | "service_account";
+    };
     /**
      * Catalog
      * @description Every permission this build defines. Roles are made from these and nothing else.
@@ -437,6 +607,12 @@ export interface components {
     Catalog: {
       /** Permissions */
       permissions: components["schemas"]["Permission"][];
+    };
+    /** Cited */
+    Cited: {
+      clause: components["schemas"]["ClauseName"];
+      /** Count */
+      count: number;
     };
     /** Clause */
     Clause: {
@@ -509,6 +685,16 @@ export interface components {
       /** Source Url */
       source_url: string | null;
     };
+    /** ClauseDay */
+    ClauseDay: {
+      /**
+       * Day
+       * Format: date
+       */
+      day: string;
+      /** Count */
+      count: number;
+    };
     /** ClauseInContext */
     ClauseInContext: {
       clause: components["schemas"]["Clause"];
@@ -519,6 +705,32 @@ export interface components {
       /** Cross References */
       cross_references: components["schemas"]["CrossReference"][];
     };
+    /**
+     * ClauseName
+     * @description A clause as a citation names it, in the language it was returned in.
+     */
+    ClauseName: {
+      /** Key */
+      key: string;
+      /** Document Title */
+      document_title: string;
+      /** Document Slug */
+      document_slug: string;
+      /**
+       * Pack Slug
+       * @description The law's pack, or null for a policy
+       */
+      pack_slug: string | null;
+      /** Version Label */
+      version_label: string | null;
+      /** Lang */
+      lang: string;
+      /**
+       * Trail
+       * @description Label and heading, outermost first, down to it
+       */
+      trail: components["schemas"]["Step"][];
+    };
     /** CrossReference */
     CrossReference: {
       /** Key */
@@ -528,6 +740,23 @@ export interface components {
        * @description The words in the clause that pointed at it
        */
       text: string;
+    };
+    /** DayCount */
+    DayCount: {
+      /**
+       * Day
+       * Format: date
+       */
+      day: string;
+      /**
+       * Assistants
+       * @description Asked through the MCP server
+       */
+      assistants: number;
+      /** Dashboard */
+      dashboard: number;
+      /** Other */
+      other: number;
     };
     /** Document */
     Document: {
@@ -592,6 +821,50 @@ export interface components {
       limit: number;
       /** Offset */
       offset: number;
+    };
+    /** Entries */
+    Entries: {
+      /** Entries */
+      entries: components["schemas"]["Entry"][];
+      /** Total */
+      total: number;
+      /**
+       * Next
+       * @description Send as `before` for the next page
+       */
+      next: number | null;
+    };
+    /** Entry */
+    Entry: {
+      /** Seq */
+      seq: number;
+      /**
+       * Occurred At
+       * Format: date-time
+       */
+      occurred_at: string;
+      /** Action */
+      action: string;
+      /** Target Type */
+      target_type: string;
+      /** Target Id */
+      target_id: string;
+      /**
+       * Details
+       * @description As stored, the before and after of the change
+       */
+      details: {
+        [key: string]: unknown;
+      };
+      /** Entry Hash */
+      entry_hash: string;
+      /** Prev Hash */
+      prev_hash: string;
+      /** @description Who acted. Null for the command line or the instance */
+      actor: components["schemas"]["PersonRef"] | null;
+      actor_token: components["schemas"]["TokenRef"] | null;
+      target_user: components["schemas"]["PersonRef"] | null;
+      target_token: components["schemas"]["TokenRef"] | null;
     };
     /** FromLink */
     FromLink: {
@@ -664,6 +937,13 @@ export interface components {
        * @description The token presented by the caller being asked about
        */
       token: string;
+    };
+    /** Law */
+    Law: {
+      /** Slug */
+      slug: string;
+      /** Name */
+      name: string;
     };
     /**
      * LinkDetails
@@ -745,6 +1025,54 @@ export interface components {
        * @description How many clauses sit directly beneath this one
        */
       children: number;
+    };
+    /** Overview */
+    Overview: {
+      /** Days */
+      days: number;
+      /**
+       * Since
+       * Format: date-time
+       */
+      since: string;
+      /**
+       * Until
+       * Format: date-time
+       */
+      until: string;
+      /** Questions */
+      questions: number;
+      /**
+       * Previous Questions
+       * @description In the same number of days just before
+       */
+      previous_questions: number;
+      /** Answered */
+      answered: number;
+      /** Found Nothing */
+      found_nothing: number;
+      /** By Day */
+      by_day: components["schemas"]["DayCount"][];
+      /**
+       * Most Cited
+       * @description First result of a search, or read by key
+       */
+      most_cited: components["schemas"]["Cited"][];
+      /**
+       * Sources
+       * @description Where the first result of an answered search came from
+       */
+      sources: components["schemas"]["Source"][];
+      /**
+       * Unanswered
+       * @description The latest searches that found nothing
+       */
+      unanswered: components["schemas"]["Unanswered"][];
+      /**
+       * Laws
+       * @description The laws searches cover now
+       */
+      laws: components["schemas"]["Law"][];
     };
     /** Owner */
     Owner: {
@@ -828,6 +1156,25 @@ export interface components {
        */
       acts_for_others: boolean;
     };
+    /** PersonRef */
+    PersonRef: {
+      /** Id */
+      id: string;
+      /** Display Name */
+      display_name: string;
+      /** Email */
+      email: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "person" | "service_account";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "deactivated" | "erased";
+    };
     /**
      * ProblemDocument
      * @description The error shape, declared so the specification carries it.
@@ -853,6 +1200,78 @@ export interface components {
        * @description The path that produced it
        */
       instance: string;
+    };
+    /** Question */
+    Question: {
+      /** Id */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Expires At
+       * Format: date-time
+       * @description When the instance deletes it
+       */
+      expires_at: string;
+      /**
+       * Surface
+       * @enum {string}
+       */
+      surface: "dashboard" | "mcp" | "api" | "slack" | "github_action";
+      /**
+       * Operation
+       * @enum {string}
+       */
+      operation:
+        "search" | "get_clause" | "get_subtree" | "list_documents" | "get_document" | "ask";
+      /**
+       * Question
+       * @description As stored: personal data replaced by placeholders
+       */
+      question: string;
+      /**
+       * Target
+       * @description The key or slug read, for a read rather than a search
+       */
+      target: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "ok" | "no_match" | "refused" | "error";
+      /** Scope */
+      scope: ("selected" | "other") | null;
+      /** Redaction Count */
+      redaction_count: number;
+      /** Redaction Types */
+      redaction_types: string[];
+      /** Results */
+      results: components["schemas"]["Returned"][];
+      /** @description Only when names were asked for, and allowed */
+      asker: components["schemas"]["Asker"] | null;
+    };
+    /** Questions */
+    Questions: {
+      /** Questions */
+      questions: components["schemas"]["Question"][];
+      /**
+       * Total
+       * @description How many the filter selects in all
+       */
+      total: number;
+      /**
+       * Next
+       * @description Send as `before` for the next page
+       */
+      next: string | null;
+      /**
+       * Identities
+       * @description Whether names are in this answer
+       */
+      identities: boolean;
     };
     /** Result */
     Result: {
@@ -893,6 +1312,12 @@ export interface components {
       laws: string[];
       /** Results */
       results: components["schemas"]["Result"][];
+    };
+    /** Returned */
+    Returned: {
+      /** Rank */
+      rank: number;
+      clause: components["schemas"]["ClauseName"];
     };
     /**
      * RoleChange
@@ -1044,6 +1469,18 @@ export interface components {
        */
       idle_minutes: number;
     };
+    /** Source */
+    Source: {
+      /**
+       * Pack Slug
+       * @description The law's pack, or null for the organisation's policies
+       */
+      pack_slug: string | null;
+      /** Title */
+      title: string;
+      /** Count */
+      count: number;
+    };
     /** StatusChange */
     StatusChange: {
       /**
@@ -1051,6 +1488,13 @@ export interface components {
        * @enum {string}
        */
       status: "active" | "deactivated";
+    };
+    /** Step */
+    Step: {
+      /** Label */
+      label: string | null;
+      /** Heading */
+      heading: string | null;
     };
     /**
      * TokenDocument
@@ -1148,10 +1592,41 @@ export interface components {
        */
       secret: string;
     };
+    /** TokenRef */
+    TokenRef: {
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Prefix */
+      prefix: string;
+      /**
+       * Owner
+       * @description The owner's name
+       */
+      owner: string;
+    };
     /** Tokens */
     Tokens: {
       /** Tokens */
       tokens: components["schemas"]["TokenDocument"][];
+    };
+    /** Unanswered */
+    Unanswered: {
+      /** Id */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Surface
+       * @enum {string}
+       */
+      surface: "dashboard" | "mcp" | "api" | "slack" | "github_action";
+      /** Question */
+      question: string;
     };
     /** ValidationError */
     ValidationError: {
@@ -1165,6 +1640,29 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /**
+     * Verification
+     * @description The chain, recomputed now.
+     */
+    Verification: {
+      /** Ok */
+      ok: boolean;
+      /** Entries */
+      entries: number;
+      /** First Broken Seq */
+      first_broken_seq: number | null;
+      /** Reason */
+      reason: string | null;
+      /** Out Of Order */
+      out_of_order: number[];
+      /** Anchored To Genesis */
+      anchored_to_genesis: boolean;
+      /**
+       * Checked At
+       * Format: date-time
+       */
+      checked_at: string;
     };
   };
   responses: never;
@@ -3088,6 +3586,559 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_questions_v1_queries_get: {
+    parameters: {
+      query?: {
+        before?: string | null;
+        limit?: number;
+        since?: string | null;
+        until?: string | null;
+        surface?: ("dashboard" | "mcp" | "api" | "slack" | "github_action")[] | null;
+        status?: ("ok" | "no_match" | "refused" | "error")[] | null;
+        /** @description Left out, searches only */
+        operation?:
+          | ("search" | "get_clause" | "get_subtree" | "list_documents" | "get_document" | "ask")[]
+          | null;
+        document?: string | null;
+        /** @description Words in the question */
+        q?: string | null;
+        /** @description Words in the asker's name or address */
+        asked_by?: string | null;
+        /** @description Include who asked. Needs queries.read_identities, and is logged */
+        identities?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Questions"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  export_questions_v1_queries_export_get: {
+    parameters: {
+      query?: {
+        since?: string | null;
+        until?: string | null;
+        surface?: ("dashboard" | "mcp" | "api" | "slack" | "github_action")[] | null;
+        status?: ("ok" | "no_match" | "refused" | "error")[] | null;
+        /** @description Left out, searches only */
+        operation?:
+          | ("search" | "get_clause" | "get_subtree" | "list_documents" | "get_document" | "ask")[]
+          | null;
+        document?: string | null;
+        /** @description Words in the question */
+        q?: string | null;
+        /** @description Words in the asker's name or address */
+        asked_by?: string | null;
+        /** @description Include who asked. Needs queries.read_identities, and is logged */
+        identities?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/csv": unknown;
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_entries_v1_governance_entries_get: {
+    parameters: {
+      query?: {
+        actor?: string | null;
+        category?:
+          ("sign_ins" | "people" | "roles" | "tokens" | "laws" | "questions" | "exports")[] | null;
+        since?: string | null;
+        until?: string | null;
+        q?: string | null;
+        before?: number | null;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Entries"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_actors_v1_governance_actors_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Actors"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  check_chain_v1_governance_verification_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Verification"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  export_log_v1_governance_exports_post: {
+    parameters: {
+      query?: {
+        from_seq?: number | null;
+        to_seq?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/zip": unknown;
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  describe_v1_overview_get: {
+    parameters: {
+      query?: {
+        /** @description How many days, today the last */
+        days?: number;
+        /** @description The reader's time zone, such as Asia/Dubai */
+        tz?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Overview"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  clause_activity_v1_clauses__key__activity_get: {
+    parameters: {
+      query?: {
+        /** @description How many days, today the last */
+        days?: number;
+        /** @description The reader's time zone, such as Asia/Dubai */
+        tz?: string;
+      };
+      header?: never;
+      path: {
+        /** @description A canonical key, such as gdpr:art-17:para-1 */
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Activity"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
         };
       };
     };

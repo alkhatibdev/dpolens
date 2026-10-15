@@ -62,6 +62,14 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/roles/{role_id}",
         "/v1/instance",
         "/v1/sign-in-links/lookup",
+        "/v1/queries",
+        "/v1/queries/export",
+        "/v1/governance/entries",
+        "/v1/governance/actors",
+        "/v1/governance/verification",
+        "/v1/governance/exports",
+        "/v1/overview",
+        "/v1/clauses/{key}/activity",
     }
 
 

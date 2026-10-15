@@ -9,6 +9,8 @@ export interface PermissionWords {
   label: string;
   short: string;
   description: string;
+  /** What the permission lets someone do, to follow "the permission to". */
+  verb: string;
 }
 
 /** A permission in the interface's words, or the API's own for one this build doesn't name. */
@@ -20,7 +22,8 @@ export function wordsFor(t: TFunction, key: string, fallback = ""): PermissionWo
       label: t(`permissions.${known}.label`),
       short: t(`permissions.${known}.short`),
       description: t(`permissions.${known}.description`),
+      verb: t(`permissions.${known}.verb`),
     };
   }
-  return { label: key, short: key, description: fallback };
+  return { label: key, short: key, description: fallback, verb: key };
 }

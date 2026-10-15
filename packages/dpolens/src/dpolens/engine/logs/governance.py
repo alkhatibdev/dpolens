@@ -77,6 +77,8 @@ SESSION_ENDED = "session.ended"
 # for the same reason an unknown token is not one: there is nobody it is about.
 SESSION_REFUSED = "session.refused"
 USER_SIGN_IN_LINK_CREATED = "user.sign_in_link_created"
+# Every look at who asked a question in the query log, with what was looked at.
+QUERY_LOG_IDENTITIES_VIEWED = "query_log.identities_viewed"
 ROLE_RENAMED = "role.renamed"
 ROLE_DESCRIBED = "role.described"
 

@@ -255,6 +255,52 @@ permissions its owner holds. The token is in the response, once.
 `DELETE /v1/tokens/{id}` revokes a token. Anyone can revoke their own, even after losing the
 permission to make new ones; `users.manage` can revoke anyone's.
 
+### The questions log
+
+`GET /v1/queries` reads the query log a page at a time, newest first. Someone with
+`queries.read_own` gets their own questions; `queries.read_all` gets everybody's, with
+nobody's name. Left to itself it lists searches; `operation` adds reads of a clause or a
+document. It narrows by `since` and `until`, `surface`, `status`, `document` (questions that
+returned anything from it) and `q`, words in the question. `limit` is at most 100, and `next`
+in an answer is what to send as `before` for the page after.
+
+Each question comes as it was stored, with personal data replaced by placeholders such as
+`[redacted:email]`, how many items were taken out, when the instance deletes it, and every
+clause it returned, named as a citation names it.
+
+`identities=true` adds who asked, and `asked_by` then narrows by their name or address. It
+needs `queries.read_identities`, and every such answer is written to the governance log
+first, as `query_log.identities_viewed`, with the filter and the questions it showed.
+
+`GET /v1/queries/export` takes the same filter and returns CSV. A cell that a spreadsheet
+would read as a formula starts with `'`. An export with names is recorded with how many
+questions it holds, and ends at the moment it was recorded, so a question asked while the
+file is being written is not in it.
+
+### The governance log
+
+`GET /v1/governance/entries` reads the log a page at a time, newest first, for
+`governance.read`. Each entry carries what the log stores, with the person and the token its
+ids stand for. It narrows by `actor`, `category` (`sign_ins`, `people`, `roles`, `tokens`,
+`laws`, `questions`, `exports`), `since`, `until` and `q`, words in a name, an address, a
+token, a role or what changed. `GET /v1/governance/actors` lists everyone who has acted.
+
+`GET /v1/governance/verification` recomputes the chain and says whether it holds, as
+`dpolens governance verify` does. `POST /v1/governance/exports` returns the export as a zip of
+the three files `dpolens governance export` writes, `from_seq` and `to_seq` choosing a range,
+and records the export in the log before the file is handed over.
+
+### The Overview
+
+`GET /v1/overview` adds up the questions of the last `days` (7 if left out), in the reader's
+time zone `tz`, for `queries.read_all`: how many, how many the same number of days before,
+how many were answered and how many found nothing, by day and by surface, the clauses most
+often cited, where answers came from, the latest questions that found nothing, and the laws
+searches cover. A clause counts as cited when a search returned it first or someone read it
+by its key. No name appears in it.
+
+`GET /v1/clauses/{key}/activity` counts one clause the same way, day by day.
+
 ### The instance
 
 `GET /v1/instance` tells anyone signed in the version and the MCP server's address, which

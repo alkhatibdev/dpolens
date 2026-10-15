@@ -58,28 +58,39 @@ def export(
     from_seq: int | None = None,
     to_seq: int | None = None,
 ) -> VerifyReport:
-    """Write an export, and return the verification of what was written.
-
-    The entry recording the export is appended after the rows are read, so an
-    export never contains its own entry and two exports of the same range are
-    byte-identical apart from the manifest's timestamp.
-    """
+    """Write an export to a directory, and return the verification of what was written."""
     if directory.exists() and any(directory.iterdir()):
         raise ExportRefused(
             f"{directory} is not empty. An export writes three files and will not "
             "overwrite what is already there; give it a new directory."
         )
     directory.mkdir(parents=True, exist_ok=True)
+    for name, content in export_files(
+        session, actor=actor, from_seq=from_seq, to_seq=to_seq
+    ).items():
+        (directory / name).write_bytes(content)
+    return verify_export(directory)
 
+
+def export_files(
+    session: Session,
+    *,
+    actor: Actor,
+    from_seq: int | None = None,
+    to_seq: int | None = None,
+) -> dict[str, bytes]:
+    """The three files of an export, by name, for a directory or for a download.
+
+    The entry recording the export is appended after the rows are read, so an
+    export never contains its own entry and two exports of the same range are
+    byte-identical apart from the manifest's timestamp.
+    """
     rows = read_entries(session, from_seq=from_seq, to_seq=to_seq)
     identifier = instance_id(session)
     genesis = genesis_for(identifier)
     anchored = bool(rows) and rows[0].prev_hash == genesis
 
-    with (directory / ENTRIES_FILE).open("w", encoding="utf-8") as handle:
-        for row in rows:
-            handle.write(json.dumps(_line(row), ensure_ascii=False) + "\n")
-
+    entries = "".join(json.dumps(_line(row), ensure_ascii=False) + "\n" for row in rows)
     manifest = {
         "format": EXPORT_FORMAT,
         "dpolens_version": __version__,
@@ -95,12 +106,13 @@ def export(
         "first_prev_hash": rows[0].prev_hash.hex() if rows else None,
         "final_entry_hash": rows[-1].entry_hash.hex() if rows else None,
     }
-    (directory / MANIFEST_FILE).write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    (directory / ACTORS_FILE).write_text(
-        json.dumps(_actors(session, rows), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    files = {
+        ENTRIES_FILE: entries.encode("utf-8"),
+        MANIFEST_FILE: (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8"),
+        ACTORS_FILE: (
+            json.dumps(_actors(session, rows), ensure_ascii=False, indent=2) + "\n"
+        ).encode("utf-8"),
+    }
 
     record(
         session,
@@ -115,7 +127,7 @@ def export(
             "anchored_to_genesis": anchored,
         },
     )
-    return verify_export(directory)
+    return files
 
 
 def _line(row: EntryRow) -> dict[str, Any]:
