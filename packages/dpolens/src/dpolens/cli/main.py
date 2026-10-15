@@ -16,6 +16,7 @@ from dpolens.cli import (
     laws,
     model,
     pack,
+    policy,
     queries,
     role,
     search,
@@ -46,6 +47,7 @@ from dpolens.engine.instance import MissingInstanceRow
 from dpolens.engine.logs.export import ExportRefused, MalformedExport
 from dpolens.engine.packs.format import PackFormatError
 from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
+from dpolens.engine.policies.blocks import UnreadablePolicy
 from dpolens.engine.session import DatabaseUnavailable, MissingExtension, NotMigrated
 
 # Problems a person can act on: printed as one line, without a traceback.
@@ -78,6 +80,7 @@ EXPECTED = (
     WeakPassword,
     NoPasswordAllowed,
     EmptySelection,
+    UnreadablePolicy,
 )
 
 
@@ -107,6 +110,7 @@ app = typer.Typer(
 
 app.add_typer(pack.app)
 app.add_typer(laws.app)
+app.add_typer(policy.app)
 app.add_typer(clause.app)
 app.add_typer(user.app)
 app.add_typer(role.app)

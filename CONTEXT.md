@@ -116,8 +116,8 @@ _Avoid_: Frozen, locked, held
 ### Upload and review
 
 **Check**:
-Something the parser verifies on every upload, such as whether every character of the
-source landed in exactly one clause, or whether numbering runs without gaps.
+Something the parser verifies every time it reads a file, such as whether every character
+of the source landed in exactly one clause, or whether numbering runs without gaps.
 _Avoid_: Validation, test, rule
 
 **Flag**:
@@ -129,6 +129,12 @@ _Avoid_: Confidence flag, flagged spot, warning, issue
 Which technique decided a clause's boundary and depth: the file's own structure,
 typography, numbering patterns, or a reviewer by hand.
 _Avoid_: Parse method, strategy, pass
+
+**Set aside**:
+Text in a file that belongs to no clause: a title, a cover, a contents page, a metadata or
+version table, a text box. It is kept with its reason and shown to the reviewer, so nothing
+goes missing quietly, and it is never searched.
+_Avoid_: Dropped, ignored, skipped, front matter (as the general word)
 
 ### People and access
 
