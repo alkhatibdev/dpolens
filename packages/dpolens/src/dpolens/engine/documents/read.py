@@ -23,6 +23,7 @@ from dpolens.engine.documents.models import (
     NodeReference,
     NodeText,
 )
+from dpolens.engine.packs.models import Pack
 
 
 @dataclass(frozen=True)
@@ -347,6 +348,81 @@ def list_documents(
         if (version := _version_in_force(session, document.id, moment)) is not None
     ]
     return summaries[offset : offset + limit], len(summaries)
+
+
+@dataclass(frozen=True)
+class LawSummary:
+    """A loaded law as somebody deciding whether it applies sees it."""
+
+    slug: str
+    name: str
+    jurisdiction: str
+    version: str
+    effective_date: date
+    trust_tier: str
+    authoritative_language: str
+    languages: tuple[str, ...]
+    articles: int
+    recitals: int
+    document: str | None
+    """The document that holds its articles, which is the one to read."""
+
+
+def list_laws(session: Session, *, as_of: date | None = None) -> list[LawSummary]:
+    """Every loaded law by slug, counted as it stands in force."""
+    moment = as_of or date.today()
+    laws = []
+    for pack in session.scalars(select(Pack).order_by(Pack.slug)).all():
+        documents = session.scalars(
+            select(Document)
+            .where(Document.pack_id == pack.id, Document.status == "active")
+            .order_by(Document.slug)
+        ).all()
+        versions = {
+            document.slug: version
+            for document in documents
+            if (version := _version_in_force(session, document.id, moment)) is not None
+        }
+        ids = [version.id for version in versions.values()]
+        counts: dict[tuple[uuid.UUID, str], int] = {}
+        languages: Sequence[str] = ()
+        if ids:
+            for version_id, node_type, total in session.execute(
+                select(DocumentNode.document_version_id, DocumentNode.node_type, func.count())
+                .where(
+                    DocumentNode.document_version_id.in_(ids),
+                    DocumentNode.node_type.in_(("article", "recital")),
+                )
+                .group_by(DocumentNode.document_version_id, DocumentNode.node_type)
+            ).tuples():
+                counts[(version_id, node_type)] = total
+            languages = session.scalars(
+                select(NodeText.lang)
+                .join(DocumentNode, DocumentNode.id == NodeText.node_id)
+                .where(DocumentNode.document_version_id.in_(ids))
+                .distinct()
+                .order_by(NodeText.lang)
+            ).all()
+
+        articles = {
+            slug: counts.get((version.id, "article"), 0) for slug, version in versions.items()
+        }
+        laws.append(
+            LawSummary(
+                slug=pack.slug,
+                name=pack.name,
+                jurisdiction=pack.jurisdiction,
+                version=pack.version,
+                effective_date=pack.effective_date,
+                trust_tier=pack.trust_tier,
+                authoritative_language=pack.authoritative_language,
+                languages=tuple(languages),
+                articles=sum(articles.values()),
+                recitals=sum(count for (_, kind), count in counts.items() if kind == "recital"),
+                document=max(articles, key=articles.__getitem__, default=None),
+            )
+        )
+    return laws
 
 
 def get_document(

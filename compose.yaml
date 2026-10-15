@@ -5,16 +5,14 @@
 #     "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
 #   docker compose up -d
 #
-# Then create yourself a user, give them a password for the dashboard, and a
-# token for your editor:
+# Then create yourself an administrator, with a password for the dashboard:
 #
 #   docker compose exec api dpolens user create --email you@example.com \
-#     --name "Your Name" --role Developer
+#     --name "Your Name" --role Admin
 #   docker compose exec api dpolens user set-password you@example.com
-#   docker compose exec api dpolens token create --email you@example.com \
-#     --name laptop --permission documents.read
 #
-# The dashboard is at http://localhost:8080.
+# The dashboard is at http://localhost:8080. Signing in the first time asks
+# which laws apply, and Tokens makes the token for your editor.
 
 name: dpolens
 
@@ -66,6 +64,14 @@ services:
       # Shown next to a new token. Set it to the address assistants really use
       # when the MCP server sits behind a proxy or on another host.
       DPOLENS_PUBLIC_MCP_URL: ${DPOLENS_PUBLIC_MCP_URL:-http://localhost:${DPOLENS_MCP_PORT:-8765}/mcp}
+      # Passed on from .env when set there, and otherwise left to the defaults in
+      # docs/configuration.md, which says what each one does.
+      DPOLENS_QUERY_LOG_RETENTION_DAYS:
+      DPOLENS_REDACTION_PATTERNS:
+      DPOLENS_SESSION_IDLE_MINUTES:
+      DPOLENS_SESSION_LIFETIME_HOURS:
+      DPOLENS_RATE_LIMIT_PER_MINUTE:
+      DPOLENS_INTRA_OP_NUM_THREADS:
     volumes:
       # The credential the API provisions for the MCP server. Both containers
       # run as the same user, because the file is readable by its owner alone.

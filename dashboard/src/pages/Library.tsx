@@ -6,14 +6,14 @@ import { Link } from "react-router";
 import type { Document } from "@/api/client";
 import { useDocuments } from "@/api/queries";
 import { FilterButton } from "@/components/Filters";
+import { LanguageChips } from "@/components/LanguageChips";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
-import { formatDate, languageName, nativeLanguageName } from "@/lib/format";
+import { formatDate, nativeLanguageName } from "@/lib/format";
 
 type Kind = "all" | "law" | "org_policy";
 
 function DocumentCard({ document }: { document: Document }) {
   const { t } = useTranslation();
-  const prevailing = document.languages.length > 1 ? document.authoritative_language : null;
   return (
     <Link
       to={`/library/${document.slug}`}
@@ -39,20 +39,10 @@ function DocumentCard({ document }: { document: Document }) {
           {document.title}
         </h2>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {document.languages.map((lang) =>
-          lang === prevailing ? (
-            <Chip key={lang} tone="brand" lang={lang}>
-              {nativeLanguageName(lang)} · {t("library.prevails")}
-            </Chip>
-          ) : (
-            <Chip key={lang} tone="quiet">
-              {languageName(lang)}
-              {prevailing ? `, ${t("library.officialTranslation")}` : ""}
-            </Chip>
-          ),
-        )}
-      </div>
+      <LanguageChips
+        languages={document.languages}
+        authoritative={document.authoritative_language}
+      />
       <dl className="mt-auto grid grid-cols-[0.8fr_1.5fr_0.9fr] gap-3 border-t border-line pt-3.5">
         <div>
           <dt className="text-xs text-muted">{t("library.clauses")}</dt>

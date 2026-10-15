@@ -115,6 +115,16 @@ def _iban_spans(text: str) -> list[tuple[int, int]]:
     return spans
 
 
+BUILT_IN: tuple[tuple[str, Finder], ...] = (
+    ("card", _card_spans),
+    ("iban", _iban_spans),
+    ("emirates_id", _spans_of(EMIRATES_ID)),
+    ("email", _spans_of(EMAIL)),
+    ("phone", _phone_spans),
+)
+"""What every instance takes out, in the order it is looked for."""
+
+
 def redact(text: str, extra: Mapping[str, str] | None = None) -> Redacted:
     """Hide what looks like somebody's personal data, and say what was hidden.
 
@@ -130,13 +140,7 @@ def redact(text: str, extra: Mapping[str, str] | None = None) -> Redacted:
     finders: list[tuple[str, Finder]] = [
         (name, _added_finder(pattern)) for name, pattern in (extra or {}).items()
     ]
-    finders += [
-        ("card", _card_spans),
-        ("iban", _iban_spans),
-        ("emirates_id", _spans_of(EMIRATES_ID)),
-        ("email", _spans_of(EMAIL)),
-        ("phone", _phone_spans),
-    ]
+    finders += BUILT_IN
 
     for name, find in finders:
         spans = find(text)

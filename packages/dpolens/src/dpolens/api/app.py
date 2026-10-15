@@ -23,6 +23,7 @@ from dpolens.api import (
     corpus,
     health,
     instance,
+    laws,
     logs,
     overview,
     people,
@@ -131,6 +132,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(sessions.links)
     app.include_router(logs.router)
     app.include_router(overview.router)
+    app.include_router(laws.router)
     return app
 
 

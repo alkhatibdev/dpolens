@@ -203,6 +203,12 @@ def page_of_entries(
     )
 
 
+def latest_of(session: Session, actions: Sequence[str]) -> EntryView | None:
+    """The newest entry with one of these actions, with the names its ids stand for."""
+    page = page_of_entries(session, EntryFilter(actions=tuple(actions)), limit=1)
+    return page.entries[0] if page.entries else None
+
+
 def actors(session: Session) -> list[User]:
     """Everyone who appears in the log as having acted, for choosing whose entries to show."""
     return list(

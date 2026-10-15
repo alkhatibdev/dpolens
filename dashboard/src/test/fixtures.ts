@@ -2,6 +2,9 @@ import type {
   Clause,
   Document,
   Entry,
+  InstanceSettings,
+  Laws,
+  LoadedLaw,
   LoggedClause,
   Overview,
   Person,
@@ -397,4 +400,65 @@ export const yousef = {
   email: "yousef@example.com",
   kind: "person" as const,
   status: "active" as const,
+};
+
+export const gdprLaw: LoadedLaw = {
+  slug: "gdpr",
+  name: "General Data Protection Regulation",
+  jurisdiction: "European Union",
+  version: "2026.1",
+  effective_date: "2018-05-25",
+  trust_tier: "community",
+  authoritative_language: "en",
+  languages: ["en"],
+  articles: 99,
+  recitals: 173,
+  document: "gdpr",
+  searched: true,
+};
+
+export const uaeLaw: LoadedLaw = {
+  slug: "uae-pdpl",
+  name: uae.title,
+  jurisdiction: "United Arab Emirates",
+  version: "2026.1",
+  effective_date: "2022-01-02",
+  trust_tier: "community",
+  authoritative_language: "ar",
+  languages: ["ar", "en"],
+  articles: 31,
+  recitals: 0,
+  document: "uae-pdpl",
+  searched: true,
+};
+
+/** A new instance: nobody has chosen, so every law is searched. */
+export const lawsUnchosen: Laws = { laws: [gdprLaw, uaeLaw], selected: null, changed: null };
+
+/** The UAE law alone, chosen in the dashboard. */
+export const lawsChosen: Laws = {
+  laws: [{ ...gdprLaw, searched: false }, uaeLaw],
+  selected: ["uae-pdpl"],
+  changed: { at: "2026-10-14T12:20:00Z", cleared: false, by: "Yousef Haddad", via: "dashboard" },
+};
+
+export const settings: InstanceSettings = {
+  questions_log: {
+    retention_days: 365,
+    redacted: ["card", "iban", "emirates_id", "email", "phone"],
+    added_patterns: [],
+  },
+  sign_in: {
+    idle_minutes: 30,
+    lifetime_hours: 8,
+    wrong_passwords: 5,
+    wrong_password_window_minutes: 15,
+  },
+  assistants: { mcp_url: "https://dpolens.example.com/mcp", requests_per_minute: 60 },
+  ai_provider: null,
+  instance: {
+    version: "0.1.0",
+    id: "3f6c2a91-7d04-4b8e-a5c1-90e2d7b36f18",
+    created_at: "2026-09-02T08:00:00Z",
+  },
 };

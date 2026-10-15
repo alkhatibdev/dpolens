@@ -32,12 +32,17 @@ class Instance(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
-def instance_id(session: Session) -> uuid.UUID:
-    """The id of this instance, written once by the migration that created it."""
-    found = session.scalars(select(Instance.id)).all()
+def this_instance(session: Session) -> Instance:
+    """The instance row, written once by the migration that created it."""
+    found = session.scalars(select(Instance)).all()
     if len(found) != 1:
         raise MissingInstanceRow(
             f"expected exactly one row in `instance`, found {len(found)}. "
             "Run `alembic upgrade head` against this database."
         )
     return found[0]
+
+
+def instance_id(session: Session) -> uuid.UUID:
+    """The id of this instance."""
+    return this_instance(session).id

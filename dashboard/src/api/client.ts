@@ -19,6 +19,9 @@ export type LoggedClause = components["schemas"]["ClauseName"];
 export type Entry = components["schemas"]["Entry"];
 export type Overview = components["schemas"]["Overview"];
 export type Verification = components["schemas"]["Verification"];
+export type Laws = components["schemas"]["Laws"];
+export type LoadedLaw = components["schemas"]["LoadedLaw"];
+export type InstanceSettings = components["schemas"]["InstanceSettings"];
 
 /** An RFC 9457 problem, as the API reports every failure. */
 export interface Problem {

@@ -62,9 +62,10 @@ export function useActors() {
 }
 
 /** Recomputed on every visit: the point is that it was checked now, not a minute ago. */
-export function useVerification() {
+export function useVerification(enabled = true) {
   return useQuery({
     queryKey: ["governance", "verification"],
+    enabled,
     staleTime: 0,
     queryFn: () => unwrap(api.GET("/v1/governance/verification")),
   });

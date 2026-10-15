@@ -1,14 +1,17 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
 
-import { ApiError } from "@/api/client";
+import { ApiError, type SignedIn } from "@/api/client";
+import { lawsQuery, neverChosen } from "@/api/laws";
 import { Waves } from "@/components/Waves";
 import { Wordmark } from "@/components/Wordmark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SETTINGS_MANAGE } from "@/lib/permissions";
 import { useSession, useSignIn } from "@/session";
 
 const ENDINGS = ["expired", "idle", "owner_inactive"] as const;
@@ -23,11 +26,13 @@ export function SignInPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
+  const client = useQueryClient();
   const session = useSession();
   const signIn = useSignIn();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [shown, setShown] = useState(false);
+  const [arriving, setArriving] = useState(false);
 
   const from = (location.state as { from?: { pathname: string; search: string } } | null)?.from;
   // Without a page to return to, the home route picks where this person starts.
@@ -35,16 +40,30 @@ export function SignInPage() {
 
   // Only a session the API has just confirmed counts: a failed check keeps the
   // answer from before it, which must not send anyone back to the page they left.
-  if (session.status === "success") {
+  // A sign-in made on this page decides for itself where it goes next.
+  if (session.status === "success" && signIn.isIdle) {
     return <Navigate to={destination} replace />;
+  }
+
+  /** Until somebody has chosen which laws apply, whoever may choose is asked first. */
+  async function arrive(signedIn: SignedIn) {
+    setArriving(true);
+    if (signedIn.permissions.includes(SETTINGS_MANAGE)) {
+      try {
+        if (neverChosen(await client.fetchQuery({ ...lawsQuery, retry: false }))) {
+          void navigate("/setup", { replace: true, state: { then: destination } });
+          return;
+        }
+      } catch {
+        // The question can wait for the next sign-in rather than stand in the way.
+      }
+    }
+    void navigate(destination, { replace: true });
   }
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    signIn.mutate(
-      { email, password },
-      { onSuccess: () => navigate(destination, { replace: true }) },
-    );
+    signIn.mutate({ email, password }, { onSuccess: (signedIn) => void arrive(signedIn) });
   }
 
   const reason = params.get("reason");
@@ -139,8 +158,12 @@ export function SignInPage() {
             </p>
           ) : null}
 
-          <Button type="submit" className="h-[54px] text-base" disabled={signIn.isPending}>
-            {signIn.isPending ? t("signIn.submitting") : t("signIn.submit")}
+          <Button
+            type="submit"
+            className="h-[54px] text-base"
+            disabled={signIn.isPending || arriving}
+          >
+            {signIn.isPending || arriving ? t("signIn.submitting") : t("signIn.submit")}
           </Button>
         </form>
       </main>

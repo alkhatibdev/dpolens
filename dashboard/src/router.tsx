@@ -13,6 +13,9 @@ import { QuestionsPage } from "@/pages/Questions";
 import { RolePage } from "@/pages/Role";
 import { RolesPage } from "@/pages/Roles";
 import { SearchPage } from "@/pages/Search";
+import { SelectedLawsPage } from "@/pages/SelectedLaws";
+import { SettingsPage } from "@/pages/Settings";
+import { SetupPage } from "@/pages/Setup";
 import { SignInPage } from "@/pages/SignIn";
 import { TokensPage } from "@/pages/Tokens";
 import { WelcomePage } from "@/pages/Welcome";
@@ -21,6 +24,14 @@ import { RequireSession } from "@/RequireSession";
 export const routes = [
   { path: "/sign-in", element: <SignInPage /> },
   { path: "/welcome", element: <WelcomePage /> },
+  {
+    path: "/setup",
+    element: (
+      <RequireSession>
+        <SetupPage />
+      </RequireSession>
+    ),
+  },
   {
     path: "/",
     element: (
@@ -37,10 +48,12 @@ export const routes = [
       { path: "library/:slug", element: <DocumentPage /> },
       { path: "clauses/:key", element: <ClausePage /> },
       { path: "search", element: <SearchPage /> },
+      { path: "laws", element: <SelectedLawsPage /> },
       { path: "users", element: <PeoplePage /> },
       { path: "users/roles", element: <RolesPage /> },
       { path: "users/roles/:id", element: <RolePage /> },
       { path: "tokens", element: <TokensPage /> },
+      { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

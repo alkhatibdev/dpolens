@@ -4,8 +4,10 @@ import {
   LayoutGrid,
   LogOut,
   Menu,
+  Scale,
   ScrollText,
   Search,
+  Settings,
   Users,
   X,
 } from "lucide-react";
@@ -31,6 +33,7 @@ import {
   QUERIES_READ_ALL,
   QUERIES_READ_OWN,
   ROLES_MANAGE,
+  SETTINGS_MANAGE,
   USERS_MANAGE,
 } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -64,6 +67,12 @@ const GROUPS = [
         shows: (can: ReadonlySet<string>) =>
           can.has(QUERIES_READ_ALL) || can.has(QUERIES_READ_OWN) || can.has(GOVERNANCE_READ),
       },
+      {
+        to: "/laws",
+        label: "nav.laws",
+        icon: Scale,
+        shows: (can: ReadonlySet<string>) => can.has(SETTINGS_MANAGE),
+      },
     ],
   },
   {
@@ -76,6 +85,12 @@ const GROUPS = [
         shows: (can: ReadonlySet<string>) => can.has(USERS_MANAGE) || can.has(ROLES_MANAGE),
       },
       { to: "/tokens", label: "nav.tokens", icon: KeyRound, shows: () => true },
+      {
+        to: "/settings",
+        label: "nav.settings",
+        icon: Settings,
+        shows: (can: ReadonlySet<string>) => can.has(SETTINGS_MANAGE),
+      },
     ],
   },
 ] as const;
@@ -122,7 +137,7 @@ function Navigation({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function AccountMenu() {
+export function AccountMenu() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const session = useSession();

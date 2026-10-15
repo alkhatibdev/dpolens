@@ -398,6 +398,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** How this instance is set up */
+    get: operations["read_settings_v1_settings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/sign-in-links/lookup": {
     parameters: {
       query?: never;
@@ -555,6 +572,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/laws": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The loaded laws, and which of them a search covers */
+    get: operations["list_loaded_v1_laws_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/laws/selection": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Choose which laws apply */
+    put: operations["choose_v1_laws_selection_put"];
+    post?: never;
+    /** Go back to searching every loaded law */
+    delete: operations["clear_v1_laws_selection_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -599,6 +651,19 @@ export interface components {
        * @enum {string}
        */
       kind: "person" | "service_account";
+    };
+    /** AssistantSettings */
+    AssistantSettings: {
+      /**
+       * Mcp Url
+       * @description The MCP server's address as assistants reach it
+       */
+      mcp_url: string;
+      /**
+       * Requests Per Minute
+       * @description Requests one token may make each minute, counted in each API worker
+       */
+      requests_per_minute: number;
     };
     /**
      * Catalog
@@ -908,6 +973,31 @@ export interface components {
        */
       mcp_url: string;
     };
+    /** InstanceFacts */
+    InstanceFacts: {
+      /** Version */
+      version: string;
+      /** Id */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       * @description When the instance was set up
+       */
+      created_at: string;
+    };
+    /** InstanceSettings */
+    InstanceSettings: {
+      questions_log: components["schemas"]["QuestionsLogSettings"];
+      sign_in: components["schemas"]["SignInSettings"];
+      assistants: components["schemas"]["AssistantSettings"];
+      /**
+       * Ai Provider
+       * @description The service an answer is written with. Null: none is used, search runs on this instance's own model, and nothing anybody asks is sent elsewhere
+       */
+      ai_provider: string | null;
+      instance: components["schemas"]["InstanceFacts"];
+    };
     /**
      * Introspection
      * @description Who a token belongs to, and what it may do right now.
@@ -945,6 +1035,49 @@ export interface components {
       /** Name */
       name: string;
     };
+    /** LawSelection */
+    LawSelection: {
+      /**
+       * Laws
+       * @description The laws that apply, by slug. Going back to every law is a DELETE
+       */
+      laws: string[];
+    };
+    /** Laws */
+    Laws: {
+      /** Laws */
+      laws: components["schemas"]["LoadedLaw"][];
+      /**
+       * Selected
+       * @description The selected laws by slug, or null while nobody has chosen
+       */
+      selected: string[] | null;
+      /** @description The latest change to the selection, or null when there has never been one */
+      changed: components["schemas"]["LawsChange"] | null;
+    };
+    /** LawsChange */
+    LawsChange: {
+      /**
+       * At
+       * Format: date-time
+       */
+      at: string;
+      /**
+       * Cleared
+       * @description Whether the change went back to every law
+       */
+      cleared: boolean;
+      /**
+       * By
+       * @description Who made it, or null for the command line
+       */
+      by: string | null;
+      /**
+       * Via
+       * @enum {string}
+       */
+      via: "dashboard" | "api" | "cli";
+    };
     /**
      * LinkDetails
      * @description Who a sign-in link is for, so the page can greet them before they choose a password.
@@ -967,6 +1100,49 @@ export interface components {
        * @description What follows `#` in the link
        */
       secret: string;
+    };
+    /** LoadedLaw */
+    LoadedLaw: {
+      /** Slug */
+      slug: string;
+      /** Name */
+      name: string;
+      /** Jurisdiction */
+      jurisdiction: string;
+      /** Version */
+      version: string;
+      /**
+       * Effective Date
+       * Format: date
+       * @description The day the law took effect
+       */
+      effective_date: string;
+      /**
+       * Trust Tier
+       * @enum {string}
+       */
+      trust_tier: "verified" | "community";
+      /**
+       * Authoritative Language
+       * @description The language whose text prevails
+       */
+      authoritative_language: string;
+      /** Languages */
+      languages: string[];
+      /** Articles */
+      articles: number;
+      /** Recitals */
+      recitals: number;
+      /**
+       * Document
+       * @description The document that holds its articles, by slug
+       */
+      document: string | null;
+      /**
+       * Searched
+       * @description Whether a search covers it without naming it: it is selected, or nobody has chosen and every law is searched
+       */
+      searched: boolean;
     };
     /** NewPerson */
     NewPerson: {
@@ -1273,6 +1449,24 @@ export interface components {
        */
       identities: boolean;
     };
+    /** QuestionsLogSettings */
+    QuestionsLogSettings: {
+      /**
+       * Retention Days
+       * @description How long a question is kept before it is deleted
+       */
+      retention_days: number;
+      /**
+       * Redacted
+       * @description What every instance takes out of a question before storing it
+       */
+      redacted: string[];
+      /**
+       * Added Patterns
+       * @description The names of the patterns this instance takes out as well
+       */
+      added_patterns: string[];
+    };
     /** Result */
     Result: {
       clause: components["schemas"]["Clause"];
@@ -1445,6 +1639,26 @@ export interface components {
        * Format: date-time
        */
       expires_at: string;
+    };
+    /** SignInSettings */
+    SignInSettings: {
+      /**
+       * Idle Minutes
+       * @description How long a session may go unused before it ends
+       */
+      idle_minutes: number;
+      /**
+       * Lifetime Hours
+       * @description How long a session lasts at most
+       */
+      lifetime_hours: number;
+      /**
+       * Wrong Passwords
+       * @description Wrong passwords for one address before it has to wait
+       */
+      wrong_passwords: number;
+      /** Wrong Password Window Minutes */
+      wrong_password_window_minutes: number;
     };
     /**
      * SignedIn
@@ -3537,6 +3751,56 @@ export interface operations {
       };
     };
   };
+  read_settings_v1_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InstanceSettings"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
   look_up_link_v1_sign_in_links_lookup_post: {
     parameters: {
       query?: never;
@@ -4129,6 +4393,170 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_loaded_v1_laws_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Laws"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  choose_v1_laws_selection_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LawSelection"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Laws"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The request body or parameters are not valid */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  clear_v1_laws_selection_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Laws"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
         };
       };
       /** @description The credential has spent its quota for the minute, or too many sign-ins failed */

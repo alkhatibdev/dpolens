@@ -12,12 +12,12 @@ with exact, versioned citations. A self-hosted MCP server.**
 > GDPR and the UAE's data protection law loaded and the embedding model inside the image,
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
 > its official English translation, and a question can be asked in either language. In the
-> dashboard you sign in, read the library, add the people you work with, decide what each
-> role allows, and make the tokens your assistants use. A DPO sees what was asked this week
-> and what answered it, reads every question with the personal data taken out, and checks the
-> governance log and exports it for an auditor. Uploading your own policies there is planned
-> for v0.1. An administrator chooses which laws apply with `dpolens laws select`, and until
-> then every search covers both.
+> dashboard you sign in, choose which laws apply to your organisation, read the library, add
+> the people you work with, decide what each role allows, and make the tokens your assistants
+> use. Until somebody chooses, every search covers both laws. A DPO sees what was asked this
+> week and what answered it, reads every question with the personal data taken out, checks
+> the governance log and exports it for an auditor, and sees how the instance is set up.
+> Uploading your own policies in the dashboard is planned for v0.1.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -57,14 +57,17 @@ dashboard, and gets a one-time link to choose their own password.
 **3. Open the dashboard and make a token**
 
 Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
-password. Under Tokens, create a token for your assistant. It starts with `dpol_` and is
-shown once, so copy it now.
+password. The first time, it asks which laws apply to your organisation: tick them, or decide
+later, and until somebody chooses every search covers both. Under Tokens, create a token for
+your assistant. It starts with `dpol_` and is shown once, so copy it now.
 
 The library holds every law loaded, clause by clause and in each of its languages, with a
 search box for asking it in your own words. Users and roles is where you add the people you
 work with and decide what each role allows. Overview shows how much was asked, what answered
 it and what found nothing, and Logs holds every question asked and every change made to the
-instance.
+instance. Selected laws changes which laws a search covers, and Settings shows how the
+instance is set up, with [docs/configuration.md](docs/configuration.md) saying how to change
+it.
 
 **4. Connect your assistant**
 
@@ -225,7 +228,9 @@ An administrator chooses which laws apply to the organisation. A search covers t
 the organisation's own policies, so a company in Dubai with no EU customers is not answered
 from GDPR. Another law is searched only when a search names it, and its clauses come back
 marked as outside the choice. Every change to the choice is written to the governance log,
-and until somebody chooses, every loaded law is searched:
+and until somebody chooses, every loaded law is searched. The dashboard asks whoever may
+choose as they sign in, until somebody has, and Selected laws changes the choice later; the
+command line does it too:
 
 ```bash
 dpolens laws list
@@ -307,9 +312,12 @@ shows every question as it was stored, with a mark where personal data was taken
 stay hidden unless you hold the permission to see who asked, and every look at them is
 written to the governance log. Somebody who may read only their own questions sees just
 those. The governance log reads as plain sentences, checks its hash chain each time it is
-opened, and exports the same files as `dpolens governance export`. The interface is English,
-built so an Arabic one can follow, and it works on a phone. There is no published image: `docker compose up`
-builds from source.
+opened, and exports the same files as `dpolens governance export`. Settings shows how the
+instance is set up: how long a question is kept and what is taken out of it, when a session
+ends, where assistants connect, and that no AI provider is used.
+[docs/configuration.md](docs/configuration.md) lists every setting and how to change it. The
+interface is English, built so an Arabic one can follow, and it works on a phone. There is no
+published image: `docker compose up` builds from source.
 
 ## Contributing
 

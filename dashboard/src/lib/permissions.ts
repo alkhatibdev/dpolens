@@ -23,6 +23,7 @@ export const QUERIES_READ_ALL = "queries.read_all";
 export const QUERIES_READ_OWN = "queries.read_own";
 export const QUERIES_READ_IDENTITIES = "queries.read_identities";
 export const GOVERNANCE_READ = "governance.read";
+export const SETTINGS_MANAGE = "settings.manage";
 
 /** The translation key for a permission's words, which has no dots of its own. */
 export function permissionKey(key: string): string {
