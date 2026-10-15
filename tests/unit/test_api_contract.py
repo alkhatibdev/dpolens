@@ -70,6 +70,9 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/governance/exports",
         "/v1/overview",
         "/v1/clauses/{key}/activity",
+        "/v1/laws",
+        "/v1/laws/selection",
+        "/v1/settings",
     }
 
 

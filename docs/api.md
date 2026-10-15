@@ -301,12 +301,34 @@ by its key. No name appears in it.
 
 `GET /v1/clauses/{key}/activity` counts one clause the same way, day by day.
 
+### Selected laws
+
+`GET /v1/laws` lists the laws loaded on the instance, for `settings.manage`: what each one is,
+its languages and which of them prevails, how many articles and recitals it holds, the
+document to read it by, and whether a search covers it without naming it. `selected` is the
+selection by slug, or null while nobody has chosen, when every loaded law is searched.
+`changed` is the latest change to the selection, who made it and when, or null if there has
+never been one.
+
+`PUT /v1/laws/selection` makes the laws in `laws` exactly the ones that apply, and
+`DELETE /v1/laws/selection` goes back to every law. Both answer as `GET` does, and each
+change is written to the governance log, as `laws.selected` or `laws.selection_cleared`. A
+selection names at least one law, and a law that is not loaded gets `422` and
+`/problems/unknown-law`.
+
 ### The instance
 
 `GET /v1/instance` tells anyone signed in the version and the MCP server's address, which
 the dashboard shows next to a new token. The address is `DPOLENS_PUBLIC_MCP_URL`, by default
 `http://localhost:8765/mcp`: set it to the address assistants really use when the MCP server
 sits behind a proxy or on another host.
+
+`GET /v1/settings` says how the instance is set up, for `settings.manage`: how long a question
+is kept and what is taken out of it before it is stored, when a dashboard session ends and how
+many wrong passwords mean a wait, the MCP server's address and how many requests a token may
+make, the AI provider in use, which is none, and the instance's version, id and when it was
+set up. Each setting is fixed when the instance starts, so none of them changes through the
+API. [configuration.md](configuration.md) lists them, with how to change each one.
 
 ### Introspection
 

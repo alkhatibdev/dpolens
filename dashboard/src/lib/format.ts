@@ -138,3 +138,10 @@ export function formatTime(iso: string): string {
 export function formatNumber(value: number): string {
   return value.toLocaleString("en-GB");
 }
+
+const lists = new Intl.ListFormat("en-GB", { type: "conjunction" });
+
+/** "GDPR and UAE PDPL", or "A, B and C". */
+export function formatList(items: readonly string[]): string {
+  return lists.format(items);
+}

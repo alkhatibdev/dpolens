@@ -2748,6 +2748,72 @@
         }
       }
     },
+    "/v1/settings": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "How this instance is set up",
+        "operationId": "read_settings_v1_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sign-in-links/lookup": {
       "post": {
         "tags": [
@@ -4087,6 +4153,227 @@
           }
         }
       }
+    },
+    "/v1/laws": {
+      "get": {
+        "tags": [
+          "laws"
+        ],
+        "summary": "The loaded laws, and which of them a search covers",
+        "operationId": "list_loaded_v1_laws_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Laws"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/laws/selection": {
+      "put": {
+        "tags": [
+          "laws"
+        ],
+        "summary": "Choose which laws apply",
+        "operationId": "choose_v1_laws_selection_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LawSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Laws"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request body or parameters are not valid",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "laws"
+        ],
+        "summary": "Go back to searching every loaded law",
+        "operationId": "clear_v1_laws_selection_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Laws"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4200,6 +4487,26 @@
           "kind"
         ],
         "title": "Asker"
+      },
+      "AssistantSettings": {
+        "properties": {
+          "mcp_url": {
+            "type": "string",
+            "title": "Mcp Url",
+            "description": "The MCP server's address as assistants reach it"
+          },
+          "requests_per_minute": {
+            "type": "integer",
+            "title": "Requests Per Minute",
+            "description": "Requests one token may make each minute, counted in each API worker"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mcp_url",
+          "requests_per_minute"
+        ],
+        "title": "AssistantSettings"
       },
       "Catalog": {
         "properties": {
@@ -4971,6 +5278,68 @@
         ],
         "title": "Instance"
       },
+      "InstanceFacts": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "When the instance was set up"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "id",
+          "created_at"
+        ],
+        "title": "InstanceFacts"
+      },
+      "InstanceSettings": {
+        "properties": {
+          "questions_log": {
+            "$ref": "#/components/schemas/QuestionsLogSettings"
+          },
+          "sign_in": {
+            "$ref": "#/components/schemas/SignInSettings"
+          },
+          "assistants": {
+            "$ref": "#/components/schemas/AssistantSettings"
+          },
+          "ai_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Provider",
+            "description": "The service an answer is written with. Null: none is used, search runs on this instance's own model, and nothing anybody asks is sent elsewhere"
+          },
+          "instance": {
+            "$ref": "#/components/schemas/InstanceFacts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "questions_log",
+          "sign_in",
+          "assistants",
+          "ai_provider",
+          "instance"
+        ],
+        "title": "InstanceSettings"
+      },
       "Introspection": {
         "properties": {
           "active": {
@@ -5068,6 +5437,113 @@
         ],
         "title": "Law"
       },
+      "LawSelection": {
+        "properties": {
+          "laws": {
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Laws",
+            "description": "The laws that apply, by slug. Going back to every law is a DELETE"
+          }
+        },
+        "type": "object",
+        "required": [
+          "laws"
+        ],
+        "title": "LawSelection"
+      },
+      "Laws": {
+        "properties": {
+          "laws": {
+            "items": {
+              "$ref": "#/components/schemas/LoadedLaw"
+            },
+            "type": "array",
+            "title": "Laws"
+          },
+          "selected": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected",
+            "description": "The selected laws by slug, or null while nobody has chosen"
+          },
+          "changed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LawsChange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The latest change to the selection, or null when there has never been one"
+          }
+        },
+        "type": "object",
+        "required": [
+          "laws",
+          "selected",
+          "changed"
+        ],
+        "title": "Laws"
+      },
+      "LawsChange": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "cleared": {
+            "type": "boolean",
+            "title": "Cleared",
+            "description": "Whether the change went back to every law"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By",
+            "description": "Who made it, or null for the command line"
+          },
+          "via": {
+            "type": "string",
+            "enum": [
+              "dashboard",
+              "api",
+              "cli"
+            ],
+            "title": "Via"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "cleared",
+          "by",
+          "via"
+        ],
+        "title": "LawsChange"
+      },
       "LinkDetails": {
         "properties": {
           "email": {
@@ -5107,6 +5583,93 @@
           "secret"
         ],
         "title": "LinkSecret"
+      },
+      "LoadedLaw": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "jurisdiction": {
+            "type": "string",
+            "title": "Jurisdiction"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective Date",
+            "description": "The day the law took effect"
+          },
+          "trust_tier": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "community"
+            ],
+            "title": "Trust Tier"
+          },
+          "authoritative_language": {
+            "type": "string",
+            "title": "Authoritative Language",
+            "description": "The language whose text prevails"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Languages"
+          },
+          "articles": {
+            "type": "integer",
+            "title": "Articles"
+          },
+          "recitals": {
+            "type": "integer",
+            "title": "Recitals"
+          },
+          "document": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document",
+            "description": "The document that holds its articles, by slug"
+          },
+          "searched": {
+            "type": "boolean",
+            "title": "Searched",
+            "description": "Whether a search covers it without naming it: it is selected, or nobody has chosen and every law is searched"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "jurisdiction",
+          "version",
+          "effective_date",
+          "trust_tier",
+          "authoritative_language",
+          "languages",
+          "articles",
+          "recitals",
+          "document",
+          "searched"
+        ],
+        "title": "LoadedLaw"
       },
       "NewPerson": {
         "properties": {
@@ -5781,6 +6344,38 @@
         ],
         "title": "Questions"
       },
+      "QuestionsLogSettings": {
+        "properties": {
+          "retention_days": {
+            "type": "integer",
+            "title": "Retention Days",
+            "description": "How long a question is kept before it is deleted"
+          },
+          "redacted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Redacted",
+            "description": "What every instance takes out of a question before storing it"
+          },
+          "added_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Added Patterns",
+            "description": "The names of the patterns this instance takes out as well"
+          }
+        },
+        "type": "object",
+        "required": [
+          "retention_days",
+          "redacted",
+          "added_patterns"
+        ],
+        "title": "QuestionsLogSettings"
+      },
       "Result": {
         "properties": {
           "clause": {
@@ -6170,6 +6765,37 @@
         ],
         "title": "SignInLinkMade",
         "description": "A link's secret, shown once. The dashboard's page for it is `/welcome#<secret>`."
+      },
+      "SignInSettings": {
+        "properties": {
+          "idle_minutes": {
+            "type": "integer",
+            "title": "Idle Minutes",
+            "description": "How long a session may go unused before it ends"
+          },
+          "lifetime_hours": {
+            "type": "integer",
+            "title": "Lifetime Hours",
+            "description": "How long a session lasts at most"
+          },
+          "wrong_passwords": {
+            "type": "integer",
+            "title": "Wrong Passwords",
+            "description": "Wrong passwords for one address before it has to wait"
+          },
+          "wrong_password_window_minutes": {
+            "type": "integer",
+            "title": "Wrong Password Window Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "idle_minutes",
+          "lifetime_hours",
+          "wrong_passwords",
+          "wrong_password_window_minutes"
+        ],
+        "title": "SignInSettings"
       },
       "SignedIn": {
         "properties": {

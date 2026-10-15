@@ -81,3 +81,9 @@ First version of the API. Everything below is new rather than changed.
   `governance.read`
 - `GET /v1/overview` and `GET /v1/clauses/{key}/activity` count what was asked and what was
   cited, in the reader's time zone, for `queries.read_all`
+- `GET /v1/laws` lists the loaded laws, which of them a search covers, and the latest change
+  to the selection. `PUT /v1/laws/selection` chooses which laws apply and
+  `DELETE /v1/laws/selection` goes back to every law, each written to the governance log, for
+  `settings.manage`. A law that is not loaded gets `422` and `/problems/unknown-law`
+- `GET /v1/settings` says how the instance is set up, for `settings.manage`. No route changes
+  a setting: each is fixed when the instance starts

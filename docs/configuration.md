@@ -1,0 +1,68 @@
+# Configuring an instance
+
+An instance reads the settings on this page from its environment when it starts, and nothing
+changes them while it runs. How long questions are kept, and what is taken out of them, are
+promises made to the people asking, so changing one takes somebody with access to the
+machine, and a restart. The dashboard's Settings page shows the values the instance is
+running with.
+
+Which laws apply is not one of them. It is chosen in the dashboard, under Selected laws, and
+every change is written to the governance log.
+
+## Changing a setting
+
+With Compose, add the setting to `.env`, next to `compose.yaml`, and start the instance again:
+
+```bash
+echo 'DPOLENS_QUERY_LOG_RETENTION_DAYS=180' >> .env
+docker compose up -d
+```
+
+Compose recreates the services whose settings changed and leaves the others running. A
+setting missing from `.env` keeps its default, and [.env.example](../.env.example) lists them
+all. Running the API another way, set the same variables in its environment. A value out of
+range stops the instance at startup, with a message naming the setting.
+
+## The settings
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `DPOLENS_QUERY_LOG_RETENTION_DAYS` | `365` | How long a question is kept before the instance deletes it. A question's deletion date is fixed when it is stored, so a new value applies to questions asked from then on |
+| `DPOLENS_REDACTION_PATTERNS` | none | More to take out of a question before it is stored, as names and regular expressions. See below |
+| `DPOLENS_SESSION_IDLE_MINUTES` | `30` | How long a dashboard session may go unused before it ends |
+| `DPOLENS_SESSION_LIFETIME_HOURS` | `8` | How long a dashboard session lasts at most, however much it is used. At most 168 |
+| `DPOLENS_RATE_LIMIT_PER_MINUTE` | `60` | Requests one token may make each minute. Each API worker counts on its own, so an instance running four workers allows four times as many |
+| `DPOLENS_INTRA_OP_NUM_THREADS` | `2` | Processor threads one embedding call may use |
+| `DPOLENS_PUBLIC_MCP_URL` | `http://localhost:8765/mcp` | The MCP server's address as assistants reach it, shown next to a new token. Set it when the server sits behind a proxy or on another host |
+
+These are read by Compose itself:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `DPOLENS_OWNER_PASSWORD`, `DPOLENS_APP_PASSWORD` | none | The two database passwords. The database keeps the ones it was created with |
+| `DPOLENS_API_PORT`, `DPOLENS_DASHBOARD_PORT`, `DPOLENS_MCP_PORT` | `8000`, `8080`, `8765` | Where the API, the dashboard and the MCP server are published on the machine |
+| `DPOLENS_MCP_ALLOWED_HOSTS` | `[]` | The host names the MCP server answers to, as a JSON list. Empty means this machine only, and a shared instance names itself here |
+
+Two things are not settings. Five wrong passwords for one address within fifteen minutes
+mean a wait before the next try. And every instance takes email addresses, phone numbers,
+card numbers, IBANs and Emirates ID numbers out of a question before storing it, which
+nothing can switch off.
+
+## Taking more out of a question
+
+`DPOLENS_REDACTION_PATTERNS` adds patterns of your own to the ones every instance has, such
+as the format of a staff number:
+
+```bash
+DPOLENS_REDACTION_PATTERNS='{"staff_id": "EMP-\\d{6}"}'
+```
+
+Keep the single quotes in `.env`, so the backslashes, and any `$`, reach the instance as
+written. The name is letters, digits and underscores, and it is what the questions log shows
+where the pattern took something out, as in `[redacted:staff_id]`. Your patterns run before
+the built-in ones, so a format of your own is named as itself rather than as a phone number.
+
+A pattern that is longer than 200 characters, matches empty text or is not a regular
+expression at all stops the instance at startup. Each pattern has a tenth of a second for
+each question, and one that runs out of time leaves that question as the other patterns
+left it, without its name on the row.
