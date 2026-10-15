@@ -1,0 +1,91 @@
+"""A parsed policy: its clauses, what was set aside, and what a reviewer must look at."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Literal
+
+Layer = Literal["native_structure", "typography", "numbering"]
+"""Which layer decided where a clause begins and how deep it sits."""
+
+FlagKind = Literal["coverage_gap", "numbering_gap", "low_confidence_boundary"]
+Reason = Literal["title", "front matter", "contents", "text box", "repeated table"]
+
+
+@dataclass(frozen=True)
+class Clause:
+    key: str
+    kind: str
+    """section, paragraph, list, table or row."""
+
+    layer: Layer
+    label: str | None
+    """The number the document shows for it, such as "4.2." or "(a)"."""
+
+    heading: str | None
+    text: str
+    """Verbatim, paragraph by paragraph, with a bullet before each item of a list."""
+
+    lang: str
+    positions: tuple[int, ...]
+    """Where its paragraphs sit in the file."""
+
+    children: tuple[Clause, ...] = ()
+
+    def walk(self) -> list[Clause]:
+        """This clause and everything beneath it, depth first."""
+        found = [self]
+        for child in self.children:
+            found.extend(child.walk())
+        return found
+
+
+@dataclass(frozen=True)
+class SetAside:
+    """Text that is in the file but in no clause, and why: never dropped, never searched."""
+
+    reason: Reason
+    text: str
+    positions: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class Flag:
+    """Something the layers could not settle, for the reviewer to resolve or accept."""
+
+    kind: FlagKind
+    detail: str
+    key: str | None = None
+    position: int | None = None
+
+
+@dataclass(frozen=True)
+class Coverage:
+    """Where every character of the file went."""
+
+    characters: int
+    in_clauses: int
+    set_aside: int
+    missed: int
+
+    @property
+    def complete(self) -> bool:
+        return self.missed == 0 and self.in_clauses + self.set_aside == self.characters
+
+
+@dataclass(frozen=True)
+class ParsedPolicy:
+    slug: str
+    format: Literal["docx", "markdown"]
+    title: str | None
+    clauses: tuple[Clause, ...]
+    set_aside: tuple[SetAside, ...]
+    flags: tuple[Flag, ...]
+    coverage: Coverage
+    notices: tuple[str, ...]
+
+    def walk(self) -> list[Clause]:
+        found: list[Clause] = []
+        for clause in self.clauses:
+            found.extend(clause.walk())
+        return found

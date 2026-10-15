@@ -17,7 +17,9 @@ with exact, versioned citations. A self-hosted MCP server.**
 > use. Until somebody chooses, every search covers both laws. A DPO sees what was asked this
 > week and what answered it, reads every question with the personal data taken out, checks
 > the governance log and exports it for an auditor, and sees how the instance is set up.
-> Uploading your own policies in the dashboard is planned for v0.1.
+> The command line reads your own policies, Word or Markdown, into clauses with keys, and
+> shows what a reviewer would need to settle. Uploading them in the dashboard is planned
+> for v0.1.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -237,6 +239,20 @@ dpolens laws list
 dpolens laws select uae-pdpl
 dpolens search "can we send customer data abroad" --law gdpr
 ```
+
+An organisation's own policy, a Word or Markdown file, is read into clauses too, each with a
+key and its text word for word. No AI model builds the tree: it comes from the file's heading
+styles, automatic numbering and lists, then its type, then the numbers written into its
+text, and anything those disagree about is flagged for a reviewer rather than guessed.
+Tables become a clause for each row, and a cover page, a contents page or a version table is
+set aside rather than searched. The command line shows the result for a file on your
+computer, without storing anything:
+
+```bash
+dpolens policy parse retention-policy.docx --slug acme-retention
+```
+
+[docs/policies.md](docs/policies.md) explains how clauses, keys and flags are decided.
 
 Users, roles and the governance log are what every surface authenticates and records
 against. The dashboard manages people, roles and tokens, and checks and exports the
