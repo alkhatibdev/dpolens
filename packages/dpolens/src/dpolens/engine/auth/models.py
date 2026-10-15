@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, Text, func
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Table, Text, func
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -55,6 +55,13 @@ class Permission(Base):
 
 
 class Role(Base):
+    """A name for a set of permissions.
+
+    `revision` goes up with every change, whoever makes it and from wherever, so
+    a page that read an older revision can be told its save is stale rather than
+    silently overwriting someone else's.
+    """
+
     __tablename__ = "roles"
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -62,10 +69,19 @@ class Role(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     is_seeded: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Empty for a change made on the command line, which names nobody.
+    updated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
 
     permissions: Mapped[list[Permission]] = relationship(
         secondary=role_permissions, lazy="selectin", order_by=Permission.key
     )
+    # Loaded only when a page asks who changed the role, so loading a user's roles
+    # does not load more users.
+    updated_by: Mapped[User | None] = relationship(foreign_keys=[updated_by_user_id])
 
     def permission_keys(self) -> frozenset[str]:
         return frozenset(permission.key for permission in self.permissions)
@@ -154,3 +170,27 @@ class DashboardSession(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     user: Mapped[User] = relationship(lazy="joined")
+
+
+class SignInLink(Base):
+    """A one-time way in for a person who has no password yet, or has forgotten it.
+
+    Only the SHA-256 of the secret is kept, as for a session. The row is deleted
+    when the link is used, so a spent link cannot be used twice, and a newer link
+    for the same person deletes the older one.
+    """
+
+    __tablename__ = "sign_in_links"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+
+    user: Mapped[User] = relationship(foreign_keys=[user_id], lazy="joined")

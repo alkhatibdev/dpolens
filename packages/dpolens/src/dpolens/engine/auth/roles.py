@@ -2,22 +2,31 @@
 
 Seeded roles are ordinary roles. They can be renamed, re-permissioned or
 deleted, and the only thing stopping a delete is somebody still holding it.
+
+Every change raises the role's revision, from the command line too. A page that
+saves against the revision it read is refused when somebody changed the role in
+between, which is how two people editing one role learn of each other instead of
+one silently undoing the other.
 """
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Iterable
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dpolens.engine.auth.models import Permission, Role, User, user_roles
 from dpolens.engine.auth.permissions import PERMISSIONS, unknown
-from dpolens.engine.auth.users import get_role, lockout_guard
+from dpolens.engine.auth.users import RoleNotFound, get_role, lockout_guard
 from dpolens.engine.logs.governance import (
     ROLE_CREATED,
     ROLE_DELETED,
+    ROLE_DESCRIBED,
     ROLE_PERMISSIONS_CHANGED,
+    ROLE_RENAMED,
     Actor,
     record,
 )
@@ -28,11 +37,47 @@ class DuplicateRole(Exception):
 
 
 class RoleInUse(Exception):
-    """Users still hold this role, so it cannot be deleted."""
+    """Users still hold this role, so it cannot be deleted. `holders` names them."""
+
+    def __init__(self, message: str, holders: list[User]) -> None:
+        super().__init__(message)
+        self.holders = holders
 
 
 class UnknownPermission(Exception):
     """That permission is not in the catalog."""
+
+
+class StaleRole(Exception):
+    """The role changed after the caller read it, so their change would undo another."""
+
+    def __init__(self, role: Role) -> None:
+        super().__init__(
+            f"{role.name} changed after it was read: it is at revision {role.revision}"
+        )
+        self.role = role
+
+
+def get_role_by_id(session: Session, role_id: uuid.UUID, *, for_update: bool = False) -> Role:
+    """A role by id, locked against concurrent changes when it is about to be changed."""
+    query = select(Role).where(Role.id == role_id)
+    if for_update:
+        query = query.with_for_update().execution_options(populate_existing=True)
+    role = session.scalars(query).first()
+    if role is None:
+        raise RoleNotFound(f"no role with the id {role_id}")
+    return role
+
+
+def _check_revision(role: Role, expected: int | None) -> None:
+    if expected is not None and role.revision != expected:
+        raise StaleRole(role)
+
+
+def _changed(role: Role, actor: Actor) -> None:
+    role.revision += 1
+    role.updated_at = datetime.now(UTC)
+    role.updated_by_user_id = actor.user_id
 
 
 def list_roles(session: Session) -> list[Role]:
@@ -78,6 +123,7 @@ def create_role(
         permissions=list(
             session.scalars(select(Permission).where(Permission.key.in_(permissions))).all()
         ),
+        updated_by_user_id=actor.user_id,
     )
     session.add(role)
     session.flush()
@@ -92,14 +138,29 @@ def create_role(
     return role
 
 
-def grant_permission(session: Session, *, role_name: str, permission: str, actor: Actor) -> Role:
-    check_known((permission,))
-    role = get_role(session, role_name)
+def set_permissions(
+    session: Session,
+    *,
+    role: Role,
+    permissions: Iterable[str],
+    actor: Actor,
+    expected_revision: int | None = None,
+) -> Role:
+    """Make these exactly the role's permissions, in one change and one entry."""
+    wanted = frozenset(permissions)
+    check_known(wanted)
+    _check_revision(role, expected_revision)
     before = role.permission_keys()
-    if permission in before:
+    if wanted == before:
         return role
 
-    role.permissions.append(session.get_one(Permission, permission))
+    with lockout_guard(session, f"changing what {role.name} allows"):
+        role.permissions = list(
+            session.scalars(
+                select(Permission).where(Permission.key.in_(wanted)).order_by(Permission.key)
+            ).all()
+        )
+    _changed(role, actor)
     session.flush()
     record(
         session,
@@ -108,35 +169,94 @@ def grant_permission(session: Session, *, role_name: str, permission: str, actor
         target_type="role",
         target_id=role.name,
         details={
-            "granted": permission,
+            "granted": sorted(wanted - before),
+            "revoked": sorted(before - wanted),
             "before": sorted(before),
-            "after": sorted(role.permission_keys()),
+            "after": sorted(wanted),
         },
     )
     return role
 
 
+def grant_permission(session: Session, *, role_name: str, permission: str, actor: Actor) -> Role:
+    check_known((permission,))
+    role = get_role(session, role_name)
+    return set_permissions(
+        session, role=role, permissions=role.permission_keys() | {permission}, actor=actor
+    )
+
+
 def revoke_permission(session: Session, *, role_name: str, permission: str, actor: Actor) -> Role:
     check_known((permission,))
     role = get_role(session, role_name)
-    before = role.permission_keys()
-    if permission not in before:
-        return role
+    return set_permissions(
+        session, role=role, permissions=role.permission_keys() - {permission}, actor=actor
+    )
 
-    with lockout_guard(session, f"taking {permission} from {role.name}"):
-        role.permissions = [row for row in role.permissions if row.key != permission]
+
+def rename_role(
+    session: Session,
+    *,
+    role: Role,
+    name: str,
+    description: str,
+    actor: Actor,
+    expected_revision: int | None = None,
+) -> Role:
+    """Give a role a new name or description.
+
+    Earlier entries in the governance log name the role as it was called then, so
+    the entry for a rename carries both names and a reader can follow it.
+    """
+    _check_revision(role, expected_revision)
+    before = {"name": role.name, "description": role.description}
+    after = {"name": name, "description": description}
+    if before == after:
+        return role
+    if name != role.name and session.scalars(select(Role).where(Role.name == name)).first():
+        raise DuplicateRole(f"a role named {name!r} already exists")
+
+    role.name = name
+    role.description = description
+    _changed(role, actor)
+    session.flush()
     record(
         session,
         actor=actor,
-        action=ROLE_PERMISSIONS_CHANGED,
+        action=ROLE_RENAMED if before["name"] != name else ROLE_DESCRIBED,
         target_type="role",
-        target_id=role.name,
-        details={
-            "revoked": permission,
-            "before": sorted(before),
-            "after": sorted(role.permission_keys()),
-        },
+        target_id=name,
+        details={"before": before, "after": after},
     )
+    return role
+
+
+def edit_role(
+    session: Session,
+    *,
+    role: Role,
+    actor: Actor,
+    expected_revision: int | None = None,
+    name: str | None = None,
+    description: str | None = None,
+    permissions: Iterable[str] | None = None,
+) -> Role:
+    """Change any of a role's name, description and permissions, against one revision.
+
+    The revision is checked once, before anything changes: a save that renames and
+    re-permissions a role is one decision, made against what its author saw.
+    """
+    _check_revision(role, expected_revision)
+    if name is not None or description is not None:
+        rename_role(
+            session,
+            role=role,
+            name=role.name if name is None else name,
+            description=role.description if description is None else description,
+            actor=actor,
+        )
+    if permissions is not None:
+        set_permissions(session, role=role, permissions=permissions, actor=actor)
     return role
 
 
@@ -148,7 +268,8 @@ def delete_role(session: Session, *, role_name: str, actor: Actor) -> None:
         listed = ", ".join(user.email for user in held_by)
         raise RoleInUse(
             f"{role.name} is held by {listed}. Take the role away from them first, so "
-            "nobody loses access without somebody deciding to."
+            "nobody loses access without somebody deciding to.",
+            held_by,
         )
 
     keys = sorted(role.permission_keys())

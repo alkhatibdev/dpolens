@@ -12,9 +12,10 @@ with exact, versioned citations. A self-hosted MCP server.**
 > GDPR and the UAE's data protection law loaded and the embedding model inside the image,
 > and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
 > its official English translation, and a question can be asked in either language. In the
-> dashboard you sign in and read the library; uploading your own policies there, and
-> managing users, roles and tokens, are planned for v0.1. An administrator chooses which
-> laws apply with `dpolens laws select`, and until then every search covers both.
+> dashboard you sign in, read the library, add the people you work with, decide what each
+> role allows, and make the tokens your assistants use; uploading your own policies there is
+> planned for v0.1. An administrator chooses which laws apply with `dpolens laws select`, and
+> until then every search covers both.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -40,23 +41,26 @@ The first `up` builds the images and loads GDPR and the UAE law, which takes a f
 After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
 `dashboard` and `mcp` as healthy.
 
-**2. Create yourself a user, a password and a token**
+**2. Create yourself an administrator**
 
 ```bash
 docker compose exec api dpolens user create --email you@example.com \
-  --name "Your Name" --role Developer
+  --name "Your Name" --role Admin
 docker compose exec api dpolens user set-password you@example.com
-docker compose exec api dpolens token create --email you@example.com \
-  --name laptop --permission documents.read
 ```
 
-The token starts with `dpol_` and is shown once, so copy it now.
+This is the only account made on the command line. Everyone else is added in the
+dashboard, and gets a one-time link to choose their own password.
 
-**3. Open the dashboard**
+**3. Open the dashboard and make a token**
 
 Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
-password. The library holds every law loaded, clause by clause and in each of its
-languages, with a search box for asking it in your own words.
+password. Under Tokens, create a token for your assistant. It starts with `dpol_` and is
+shown once, so copy it now.
+
+The library holds every law loaded, clause by clause and in each of its languages, with a
+search box for asking it in your own words. Users and roles is where you add the people you
+work with and decide what each role allows.
 
 **4. Connect your assistant**
 
@@ -226,7 +230,7 @@ dpolens search "can we send customer data abroad" --law gdpr
 ```
 
 Users, roles and the governance log are what every surface authenticates and records
-against:
+against. The dashboard manages people, roles and tokens; the command line does too:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Admin

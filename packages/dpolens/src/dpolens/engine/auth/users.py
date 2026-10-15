@@ -12,7 +12,8 @@ question "would this leave nobody able to manage roles" has a true answer.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+import uuid
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 
@@ -61,6 +62,13 @@ def get_user(session: Session, email: str) -> User:
     user = session.scalars(select(User).where(User.email == normalise_email(email))).first()
     if user is None:
         raise UserNotFound(f"no user with the email {normalise_email(email)}")
+    return user
+
+
+def get_user_by_id(session: Session, user_id: uuid.UUID) -> User:
+    user = session.get(User, user_id)
+    if user is None:
+        raise UserNotFound(f"no user with the id {user_id}")
     return user
 
 
@@ -160,6 +168,36 @@ def grant_role(session: Session, *, email: str, role_name: str, actor: Actor) ->
         target_id=str(user.id),
         details={"role": role.name},
     )
+    return user
+
+
+def set_roles(session: Session, *, user: User, role_names: Iterable[str], actor: Actor) -> User:
+    """Make these exactly someone's roles, with one entry for each role given or taken."""
+    wanted = {name: get_role(session, name) for name in set(role_names)}
+    before = {role.name for role in user.roles}
+    if set(wanted) == before:
+        return user
+
+    with lockout_guard(session, f"changing the roles of {user.email}"):
+        user.roles = [wanted[name] for name in sorted(wanted)]
+    for name in sorted(set(wanted) - before):
+        record(
+            session,
+            actor=actor,
+            action=USER_ROLE_GRANTED,
+            target_type="user",
+            target_id=str(user.id),
+            details={"role": name},
+        )
+    for name in sorted(before - set(wanted)):
+        record(
+            session,
+            actor=actor,
+            action=USER_ROLE_REVOKED,
+            target_type="user",
+            target_id=str(user.id),
+            details={"role": name},
+        )
     return user
 
 

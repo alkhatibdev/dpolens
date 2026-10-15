@@ -38,6 +38,10 @@ class NoPasswordAllowed(Exception):
     """A service account or an erased account cannot be given a password."""
 
 
+class WrongPassword(Exception):
+    """The current password someone gave to change it does not match."""
+
+
 @cache
 def _decoy() -> str:
     """A hash to check against when there is no real one, made once per process."""
@@ -87,21 +91,63 @@ def set_password(session: Session, *, email: str, password: str, actor: Actor) -
     Ending their sessions is the point of a reset: whoever knew the old password
     may be signed in with it.
     """
-    user = get_user(session, email)
+    return give_password(session, user=get_user(session, email), password=password, actor=actor)
+
+
+def give_password(
+    session: Session,
+    *,
+    user: User,
+    password: str,
+    actor: Actor,
+    keep: DashboardSession | None = None,
+    method: str | None = None,
+) -> User:
+    """Set a person's password and end their sessions, all but `keep` when one is named.
+
+    `method` says how it was set, for the governance log: from a sign-in link, or
+    by its owner giving the current one. The command line sets none.
+    """
     if user.kind != "person":
         raise NoPasswordAllowed(f"{user.email} is a service account, which signs in with tokens")
     if user.status == "erased":
         raise NoPasswordAllowed("an erased account cannot be given a password")
 
     user.password_hash = hash_password(password)
-    ended = session.execute(delete(DashboardSession).where(DashboardSession.user_id == user.id))
+    ending = delete(DashboardSession).where(DashboardSession.user_id == user.id)
+    if keep is not None:
+        ending = ending.where(DashboardSession.id != keep.id)
+    ended = session.execute(ending)
     session.flush()
+    details: dict[str, object] = {"sessions_ended": ended.rowcount}  # type: ignore[attr-defined]
+    if method is not None:
+        details["method"] = method
     record(
         session,
         actor=actor,
         action=USER_PASSWORD_SET,
         target_type="user",
         target_id=str(user.id),
-        details={"sessions_ended": ended.rowcount},  # type: ignore[attr-defined]
+        details=details,
     )
     return user
+
+
+def change_own_password(
+    session: Session, *, user: User, current: str, new: str, keep: DashboardSession
+) -> User:
+    """A signed-in person's own change, which needs the password it replaces.
+
+    The session it is made from stays, because ending it would sign them out in
+    the middle of the change; every other session of theirs ends.
+    """
+    if not verify(user.password_hash, current):
+        raise WrongPassword("that is not the current password")
+    return give_password(
+        session,
+        user=user,
+        password=new,
+        actor=Actor(user_id=user.id, via="dashboard"),
+        keep=keep,
+        method="current_password",
+    )

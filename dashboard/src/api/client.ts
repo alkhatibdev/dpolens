@@ -8,6 +8,12 @@ export type DocumentInDetail = components["schemas"]["DocumentInDetail"];
 export type OutlineEntry = components["schemas"]["OutlineEntry"];
 export type SearchResult = components["schemas"]["Result"];
 export type SignedIn = components["schemas"]["SignedIn"];
+export type Person = components["schemas"]["Person"];
+export type Role = components["schemas"]["RoleDocument"];
+export type Permission = components["schemas"]["Permission"];
+export type Token = components["schemas"]["TokenDocument"];
+export type TokenMade = components["schemas"]["TokenMade"];
+export type Instance = components["schemas"]["Instance"];
 
 /** An RFC 9457 problem, as the API reports every failure. */
 export interface Problem {
@@ -16,6 +22,15 @@ export interface Problem {
   status: number;
   detail: string;
   reason?: string;
+  /** The permission a refusal names, and every one that would have done. */
+  permission?: string;
+  permissions?: string[];
+  /** Who changed something after it was read, and when, on an edit conflict. */
+  updated_by?: string | null;
+  updated_at?: string;
+  revision?: number;
+  /** Who holds a role that cannot be deleted. */
+  holders?: string[];
 }
 
 export class ApiError extends Error {

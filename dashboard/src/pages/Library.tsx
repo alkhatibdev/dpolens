@@ -5,9 +5,9 @@ import { Link } from "react-router";
 
 import type { Document } from "@/api/client";
 import { useDocuments } from "@/api/queries";
+import { FilterButton } from "@/components/Filters";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
 import { formatDate, languageName, nativeLanguageName } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 type Kind = "all" | "law" | "org_policy";
 
@@ -70,33 +70,6 @@ function DocumentCard({ document }: { document: Document }) {
         </div>
       </dl>
     </Link>
-  );
-}
-
-function FilterButton({
-  pressed,
-  onClick,
-  children,
-  lang,
-}: {
-  pressed: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  lang?: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={onClick}
-      lang={lang}
-      className={cn(
-        "h-11 rounded-full px-4 text-sm font-medium",
-        pressed ? "bg-ink text-white" : "border border-line-strong bg-white hover:bg-field",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 import { ApiError, api, unwrap, type SignedIn } from "@/api/client";
 
@@ -38,4 +39,28 @@ export function endedBecause(error: unknown): string | null {
     return error.problem?.reason ?? "unknown";
   }
   return null;
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (body: { current: string; new: string }) =>
+      unwrap(api.PUT("/v1/sessions/current/password", { body })),
+  });
+}
+
+/** Spend a sign-in link: the password is set and the person is signed in. */
+export function useSpendLink() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { secret: string; password: string }) =>
+      unwrap(api.POST("/v1/sessions/from-link", { body })),
+    onSuccess: (signedIn: SignedIn) => client.setQueryData(SESSION, signedIn),
+  });
+}
+
+/** What the signed-in person may do, for showing only what they can use. */
+export function usePermitted(): ReadonlySet<string> {
+  const session = useSession();
+  const permissions = session.data?.permissions;
+  return useMemo(() => new Set(permissions ?? []), [permissions]);
 }

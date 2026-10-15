@@ -153,6 +153,12 @@ carried by a cookie the dashboard's pages cannot read. It ends when it has gone 
 the idle timeout, or reached its lifetime, whichever comes first.
 _Avoid_: Login (that is the act of starting one), token (a session is not one)
 
+**Sign-in link**:
+A one-time link that lets a person choose a password, made for them by someone who manages
+people. It works once, for three days, and a newer one ends an older one. It is how a person
+added in the dashboard first signs in, and how a forgotten password is reset, with no email.
+_Avoid_: Invitation, magic link, reset link (it does both jobs)
+
 **Trusted surface**:
 A token marked as allowed to say which user it is acting for, which the MCP server needs and
 a person never does. It is not a permission, and it is set from the command line only.
@@ -173,6 +179,12 @@ _Avoid_: Scope, right, capability, privilege (which is what PostgreSQL grants)
 A named bundle of permissions, created and edited in the running instance. Admin, DPO and
 Developer are seeded on first use and are ordinary roles afterwards.
 _Avoid_: Group, profile, permission set
+
+**Revision**:
+The number a role carries that goes up with every change. A change made against an older
+revision is refused, and the page says who changed the role and when, so nobody's change is
+undone without them knowing.
+_Avoid_: Version (that is a published document's), ETag (that is how the API carries it)
 
 **Lockout guard**:
 The rule that refuses any change leaving no active person able to manage roles. It lives
