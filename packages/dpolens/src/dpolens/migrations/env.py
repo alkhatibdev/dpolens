@@ -11,6 +11,7 @@ from __future__ import annotations
 from logging.config import fileConfig
 
 from alembic import context
+from alembic.util import CommandError
 from sqlalchemy import engine_from_config, pool
 
 # The model modules are imported for their side effect: every one of them has to
@@ -20,6 +21,7 @@ from dpolens.engine.auth import models as auth_models  # noqa: F401
 from dpolens.engine.base import Base
 from dpolens.engine.documents import models as document_models  # noqa: F401
 from dpolens.engine.logs import models as log_models  # noqa: F401
+from dpolens.engine.session import DatabaseUnavailable, connect
 from dpolens.settings import load_settings
 
 config = context.config
@@ -57,10 +59,40 @@ def run_migrations_online() -> None:
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-    with connectable.connect() as connection:
+    # Alembic prints a CommandError as one line, where anything else is a
+    # traceback, and this is the first thing an instance does when it starts.
+    try:
+        connection = connect(connectable)
+    except DatabaseUnavailable as unavailable:
+        raise CommandError(str(unavailable)) from unavailable
+    with connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
-            context.run_migrations()
+            try:
+                context.run_migrations()
+            except CommandError as failed:
+                ahead = ahead_of_the_code()
+                if ahead is None:
+                    raise
+                raise ahead from failed
+
+
+def ahead_of_the_code() -> CommandError | None:
+    """Say so when a later version of DPOLens has migrated this database.
+
+    Alembic's own words for it are that it cannot locate a revision, which reads
+    like a broken install rather than a database that is ahead of the code. Only
+    asked once a command has failed, so `alembic stamp --purge` still works.
+    """
+    known = {script.revision for script in context.script.walk_revisions()}
+    ahead = sorted(set(context.get_context().get_current_heads()) - known)
+    if not ahead:
+        return None
+    return CommandError(
+        f"this database's schema is at revision {', '.join(ahead)}, which this version "
+        "of DPOLens does not have, so a later version set it up. Run that version or a "
+        "newer one: an older one cannot use this database."
+    )
 
 
 if context.is_offline_mode():

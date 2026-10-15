@@ -79,16 +79,27 @@ For Cursor and VS Code, [clients/](clients/) has the configuration.
 Ask your assistant how long you may keep a deleted account, or whether you need consent to
 log an IP address. The answer quotes the clause it relies on and cites it.
 
-**If `setup` fails with "password authentication failed"**
+**If `docker compose up` stops**
 
-The passwords in `.env` are fixed when the database is first created, so a new `.env` does
-not reach a database that already exists. To start over, delete the local database and bring
-the instance up again:
+`docker compose ps -a` shows which service stopped, and the end of its log says why, in one
+line that names the cause and what to do about it:
+
+```bash
+docker compose logs setup
+```
+
+The usual cause is a password the database refuses. The database keeps the passwords that
+were in `.env` when it was first created, so writing a new `.env` afterwards does not change
+them. Put that `.env` back if you still have it. If you don't, starting over deletes the local
+database, and with it every user, token and log entry on the instance:
 
 ```bash
 docker compose down -v
 docker compose up -d
 ```
+
+After pulling a newer version, start it with `docker compose up -d --build`. Without
+`--build`, Compose runs the images it built from the old code.
 
 ## Why this exists
 
