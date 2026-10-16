@@ -46,8 +46,10 @@ ARABIC_WORDED = re.compile(
     rf"^(?P<label>(?:ال)?(?P<word>{'|'.join(ARABIC_WORDS)}){SPACE}*"
     rf"(?P<inner>\(?{DIGITS}\)?|(?:ال)?(?:{'|'.join(ORDINAL_WORDS)})[ةى]?)[:.\-\u2013]?){AFTER}"
 )
+# A word such as "أولاً" is a number when punctuation follows it, or when it stands alone, as a
+# label read back from a clause does; at the start of a sentence it is only a word.
 ORDINAL = re.compile(
-    rf"^(?P<label>(?P<inner>{'|'.join(ORDINAL_WORDS)})[اً]*{SPACE}*[:.\-\u2013]){SPACE}*"
+    rf"^(?P<label>(?P<inner>{'|'.join(ORDINAL_WORDS)})[اً]*{SPACE}*(?:[:.\-\u2013]|$)){SPACE}*"
 )
 SEPARATOR = re.compile(rf"^{SPACE}*[:\-\u2013\u2014]{SPACE}+")
 BULLET = re.compile(rf"^(?P<label>[•▪◦●■□➢✓➤○·\-\u2013\u2014*o]){SPACE}+")
