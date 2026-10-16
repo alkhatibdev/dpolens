@@ -82,12 +82,13 @@ QUERY_LOG_IDENTITIES_VIEWED = "query_log.identities_viewed"
 ROLE_RENAMED = "role.renamed"
 ROLE_DESCRIBED = "role.described"
 # A policy's life: a draft from an upload, each flag a reviewer accepts, its details changed,
-# a match to the version before said to be wrong, then published or discarded, and the
-# document archived when it no longer applies.
+# a match to the version before said to be wrong, how a clause was read fixed, then published
+# or discarded, and the document archived when it no longer applies.
 DOCUMENT_DRAFTED = "document.drafted"
 DOCUMENT_FLAG_ACCEPTED = "document.flag_accepted"
 DOCUMENT_DRAFT_EDITED = "document.draft_edited"
 DOCUMENT_MATCH_REJECTED = "document.match_rejected"
+DOCUMENT_CLAUSE_FIXED = "document.clause_fixed"
 DOCUMENT_PUBLISHED = "document.published"
 DOCUMENT_DRAFT_DISCARDED = "document.draft_discarded"
 DOCUMENT_ARCHIVED = "document.archived"

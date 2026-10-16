@@ -180,3 +180,119 @@ describe("a draft under review", () => {
     expect(router.state.location.pathname).toBe("/policies");
   });
 });
+
+describe("fixing what was read", () => {
+  const FIXED_AT = new Date().toISOString();
+
+  it("moves a heading under the one before when its flag suggests it", async () => {
+    const [three, personalUse, ...rest] = acceptableUseDraft.clauses;
+    const moved: PolicyDraft & { clause: string } = {
+      ...acceptableUseDraft,
+      revision: 2,
+      clauses: [
+        {
+          ...three!,
+          children: [
+            ...three!.children,
+            {
+              ...personalUse!,
+              key: "acceptable-use:3:personal-use",
+              layer: "reviewer",
+              fixed: "moved-under",
+              children: personalUse!.children.map((child) => ({
+                ...child,
+                key: "acceptable-use:3:personal-use:p1",
+              })),
+            },
+          ],
+        },
+        ...rest,
+      ],
+      flags: acceptableUseDraft.flags.map((found) =>
+        found.position === 1
+          ? {
+              ...found,
+              key: "acceptable-use:3:personal-use",
+              suggestion: null,
+              resolved_by: "Mariam Al Amiri",
+              resolved_at: FIXED_AT,
+              resolution: "moved-under",
+              resolution_key: "acceptable-use:3",
+            }
+          : found,
+      ),
+      clause: "acceptable-use:3:personal-use",
+    };
+    const { calls } = serve({
+      ...reviewing,
+      "GET /v1/policies/acceptable-use/draft": { body: acceptableUseDraft },
+      "POST /v1/policies/acceptable-use/draft/edits": { body: moved },
+    });
+    renderAt("/policies/acceptable-use/draft");
+
+    const boundary = (await screen.findByText(/^"Personal use:" has no number/)).closest(
+      "div.flex-col",
+    )! as HTMLElement;
+    await userEvent.click(within(boundary).getByRole("button", { name: "Move it under 3" }));
+
+    expect(await screen.findByText(/^Fixed: moved under 3 by Mariam Al Amiri/)).toBeInTheDocument();
+    const sent = calls.find((call) => call.method === "POST")!;
+    expect(sent.headers.get("If-Match")).toBe('"1"');
+    expect(await sent.json()).toEqual({ edit: "move-under", key: "acceptable-use:personal-use" });
+    // The clause stays chosen under its new key, saying what was done to it.
+    expect(screen.getByText("acceptable-use:3:personal-use")).toBeInTheDocument();
+    expect(screen.getByText(/^A reviewer moved it under 3\./)).toBeInTheDocument();
+    expect(screen.getByText("Moved under 3")).toBeInTheDocument();
+  });
+
+  it("splits a clause where the second rule begins", async () => {
+    const { calls } = serve({
+      ...reviewing,
+      "GET /v1/policies/acceptable-use/draft": { body: acceptableUseDraft },
+      "POST /v1/policies/acceptable-use/draft/edits": {
+        body: { ...acceptableUseDraft, revision: 2, clause: "acceptable-use:4.1" },
+      },
+    });
+    renderAt("/policies/acceptable-use/draft");
+
+    await userEvent.click(await screen.findByRole("button", { name: /^4\.1\s*Acme records/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Split" }));
+
+    const split = screen.getByRole("group", { name: "Split 4.1 where the second rule begins" });
+    expect(split).toHaveTextContent("Split here");
+    expect(split).toHaveTextContent("The second starts with a number, so its key is that number.");
+    expect(within(split).getByText("The records are kept for 90 days.")).toBeInTheDocument();
+    await userEvent.click(within(split).getByRole("button", { name: "Split it" }));
+
+    const sent = calls.find((call) => call.method === "POST")!;
+    expect(await sent.json()).toEqual({ edit: "split", key: "acceptable-use:4.1", at: 74 });
+  });
+
+  it("offers only the fixes a clause can take, and says why one was refused", async () => {
+    serve({
+      ...reviewing,
+      "GET /v1/policies/acceptable-use/draft": { body: acceptableUseDraft },
+      "POST /v1/policies/acceptable-use/draft/edits": problem("fix-refused", 409, {
+        detail: "The clause before it is a heading: move this one under it instead.",
+      }),
+    });
+    renderAt("/policies/acceptable-use/draft");
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /^personal-use\s*Personal use:/ }),
+    );
+    const tools = screen.getByRole("toolbar", { name: "Fix this clause" });
+    expect(within(tools).getByRole("button", { name: "Split" })).toBeDisabled();
+    expect(within(tools).getByRole("button", { name: "Move out a level" })).toBeDisabled();
+    expect(within(tools).getByRole("button", { name: "Move under 3" })).toBeEnabled();
+    expect(screen.getByRole("heading", { name: "Fixing what was read" })).toBeInTheDocument();
+
+    await userEvent.click(within(tools).getByRole("button", { name: "Merge with the one before" }));
+
+    expect(
+      await screen.findByText(
+        "That fix couldn't be made. The clause before it is a heading: move this one under it instead.",
+      ),
+    ).toBeInTheDocument();
+  });
+});

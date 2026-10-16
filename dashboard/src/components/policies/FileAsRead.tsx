@@ -49,13 +49,18 @@ export interface Marks {
   flaggedParagraphs: ReadonlySet<number>;
 }
 
+/** Every clause that holds part of a paragraph: two, once a clause is split inside it. */
+function holders(line: FileParagraph): string[] {
+  return line.clauses?.length ? line.clauses : line.clause ? [line.clause] : [];
+}
+
 function isLit(line: FileParagraph, marks: Marks): boolean {
-  return line.clause !== null && marks.lit.has(line.clause);
+  return holders(line).some((key) => marks.lit.has(key));
 }
 
 function isFlagged(line: FileParagraph, marks: Marks): boolean {
   return (
-    (line.clause !== null && marks.flagged.has(line.clause)) ||
+    holders(line).some((key) => marks.flagged.has(key)) ||
     marks.flaggedParagraphs.has(line.position)
   );
 }

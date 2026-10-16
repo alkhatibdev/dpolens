@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import PurePath
 
 from dpolens.engine.policies.blocks import ReadFile, UnreadablePolicy
@@ -70,7 +71,5 @@ def located(flag: Flag, clauses: tuple[Clause, ...]) -> Flag:
     for root in clauses:
         for clause in root.walk():
             if flag.position in clause.positions:
-                return Flag(
-                    kind=flag.kind, detail=flag.detail, key=clause.key, position=flag.position
-                )
+                return replace(flag, key=clause.key)
     return flag

@@ -1,4 +1,4 @@
-import { Check, Pencil } from "lucide-react";
+import { ArrowLeftRight, Check, Heading, ListIndentIncrease, Pencil } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
@@ -7,16 +7,19 @@ import { ApiError } from "@/api/client";
 import {
   useAcceptFlags,
   useDraft,
+  useFixClause,
   usePolicies,
   usePolicyFile,
   type DraftClause,
   type DraftFlag,
+  type Edit,
+  type FlagSuggestion,
   type PolicyDraft,
 } from "@/api/policies";
 import { Notice } from "@/components/Notice";
 import { SegmentedChoice } from "@/components/Segmented";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
-import { ClauseTree } from "@/components/policies/ClauseTree";
+import { ClauseTree, Toolbox, type Splitting } from "@/components/policies/ClauseTree";
 import {
   ConflictDialog,
   DetailsDialog,
@@ -30,7 +33,16 @@ import { WhatChanged } from "@/components/policies/WhatChanged";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatNumber, formatWhen, isRightToLeft } from "@/lib/format";
 import { DOCUMENTS_PUBLISH, DOCUMENTS_UPLOAD } from "@/lib/permissions";
-import { conflictOf, isolate, isSettled, openCount, walk, type Conflict } from "@/lib/policies";
+import {
+  conflictOf,
+  isolate,
+  isSettled,
+  openCount,
+  placeOf,
+  shortKey,
+  walk,
+  type Conflict,
+} from "@/lib/policies";
 import { cn } from "@/lib/utils";
 import type { Published } from "@/pages/Policies";
 import { usePermitted } from "@/session";
@@ -71,8 +83,8 @@ function Checks({ draft }: { draft: PolicyDraft }) {
   const coverage = draft.coverage;
   const clauses = walk(draft.clauses);
   const open = openCount(draft);
-  const layers = (["native_structure", "typography", "numbering"] as const).filter((layer) =>
-    clauses.some((clause) => (clause.layer ?? "native_structure") === layer),
+  const layers = (["native_structure", "typography", "numbering", "reviewer"] as const).filter(
+    (layer) => clauses.some((clause) => (clause.layer ?? "native_structure") === layer),
   );
   const complete = coverage.missed === 0;
   return (
@@ -141,7 +153,9 @@ export function PolicyDraftPage() {
   const policies = usePolicies(canUpload || canPublish);
   const file = usePolicyFile(slug, draft.data?.version.number);
   const accept = useAcceptFlags(slug);
+  const fixer = useFixClause(slug);
   const [selected, setSelected] = useState<string | null>(null);
+  const [splitting, setSplitting] = useState<Splitting | null>(null);
   const [tab, setTab] = useState<Tab>("changes");
   const [dialog, setDialog] = useState<"publish" | "details" | "discard" | null>(null);
   const [rejecting, setRejecting] = useState<DraftClause | null>(null);
@@ -205,6 +219,71 @@ export function PolicyDraftPage() {
 
   function acceptFlag(flag: DraftFlag) {
     accept.mutate({ revision: current.revision, positions: [flag.position] }, { onError: failed });
+  }
+
+  function fix(edit: Edit, key: string, at?: number) {
+    fixer.mutate(
+      { revision: current.revision, edit, key, at },
+      {
+        onSuccess: (fixed) => {
+          setSelected(fixed.clause);
+          setSplitting(null);
+        },
+        onError: failed,
+      },
+    );
+  }
+
+  const suggested = new Map<string, Edit[]>();
+  for (const flag of current.flags) {
+    if (flag.suggestion && !isSettled(flag)) {
+      const { key, edit } = flag.suggestion;
+      suggested.set(key, [...(suggested.get(key) ?? []), edit]);
+    }
+  }
+
+  /** The fix a flag suggests, on a button that names what it does. */
+  function suggestion(found: FlagSuggestion) {
+    const target = clauses.find((clause) => clause.key === found.key);
+    const before = placeOf(current.clauses, found.key)?.before;
+    let label: string;
+    let icon: ReactNode;
+    if (found.edit === "split") {
+      const place = target?.splits?.find((split) => split.at === found.at);
+      label = t("review.suggestedSplit", {
+        key: isolate(shortKey(found.key, slug)),
+        label: isolate(place?.label ?? ""),
+      });
+      icon = <ArrowLeftRight aria-hidden className="size-4" />;
+    } else if (found.edit === "move-under" && before) {
+      label = t("review.suggestedMoveUnder", { key: isolate(shortKey(before.key, slug)) });
+      icon = <ListIndentIncrease aria-hidden className="size-4" />;
+    } else if (found.edit === "make-heading") {
+      label = t("review.makeHeading");
+      icon = <Heading aria-hidden className="size-4" />;
+    } else {
+      return null;
+    }
+    return (
+      <Button
+        size="sm"
+        className={small}
+        disabled={fixer.isPending}
+        onClick={() => {
+          if (found.edit === "split") {
+            setSelected(found.key);
+            setSplitting({ key: found.key, at: found.at });
+            setTab("file");
+            columns.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+          } else {
+            fix(found.edit, found.key);
+          }
+        }}
+      >
+        {icon}
+        {label}
+      </Button>
+    );
   }
 
   function show(flag: DraftFlag) {
@@ -289,6 +368,13 @@ export function PolicyDraftPage() {
       {accept.error && !conflictOf(accept.error) ? (
         <Notice tone="danger">{t("common.failed")}</Notice>
       ) : null}
+      {fixer.error && !conflictOf(fixer.error) ? (
+        <Notice tone="danger">
+          {fixer.error instanceof ApiError && fixer.error.kind === "fix-refused"
+            ? t("review.fixRefused", { detail: fixer.error.problem?.detail ?? "" })
+            : t("common.failed")}
+        </Notice>
+      ) : null}
 
       {shown === "changes" ? (
         <WhatChanged
@@ -325,6 +411,7 @@ export function PolicyDraftPage() {
                     slug={slug}
                     actions={
                       <>
+                        {canUpload && flag.suggestion ? suggestion(flag.suggestion) : null}
                         {canUpload ? (
                           <Button
                             size="sm"
@@ -379,15 +466,38 @@ export function PolicyDraftPage() {
                 onSelect={setSelected}
               />
             </div>
-            <div className="min-w-0 flex-[1.15_1_480px] rounded-[20px] bg-white p-[22px]">
-              <ClauseTree
-                clauses={current.clauses}
-                slug={slug}
-                selected={selected}
-                flags={openByKey}
-                rtl={rtl}
-                onSelect={setSelected}
-              />
+            <div className="flex min-w-0 flex-[1.15_1_480px] flex-col gap-4">
+              <div className="rounded-[20px] bg-white p-[22px]">
+                <ClauseTree
+                  clauses={current.clauses}
+                  slug={slug}
+                  selected={selected}
+                  flags={openByKey}
+                  rtl={rtl}
+                  onSelect={(key) => {
+                    setSelected(key);
+                    if (splitting?.key !== key) {
+                      setSplitting(null);
+                    }
+                  }}
+                  fixing={
+                    canUpload
+                      ? {
+                          busy: fixer.isPending,
+                          suggested,
+                          splitting,
+                          onSplitting: setSplitting,
+                          onFix: fix,
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+              {canUpload ? (
+                <div className="rounded-[20px] bg-white p-[22px]">
+                  <Toolbox />
+                </div>
+              ) : null}
             </div>
           </div>
         </>

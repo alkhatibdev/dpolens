@@ -19,9 +19,9 @@ with exact, versioned citations. A self-hosted MCP server.**
 > data taken out, checks the governance log and exports it for an auditor, and sees how the
 > instance is set up. Your own policies, Word or Markdown, are uploaded in the dashboard, the
 > HTTP API or the command line, read into clauses with keys, reviewed as drafts beside the file
-> as it was read, and published as versions your assistant searches and cites. A new version
-> shows what changed against the one before, and a new instance starts with a made-up sample
-> policy.
+> as it was read, fixed where a clause was read wrongly, and published as versions your
+> assistant searches and cites. A new version shows what changed against the one before, and a
+> new instance starts with a made-up sample policy.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -255,9 +255,11 @@ dpolens policy parse retention-policy.docx --slug acme-retention
 ```
 
 Uploaded, a policy becomes a draft that nothing searches. Somebody checks its flags against
-the file, which the dashboard shows beside the clauses as it was read, and settles them, and
-publishing it fixes the version for good: searches find it from the day it
-takes effect, by its words at once and by meaning once the worker has embedded it. A new
+the file, which the dashboard shows beside the clauses as it was read, and settles them. Where
+the parser read a clause wrongly, they fix it without changing a word: split it, merge it with
+the one before, make it a heading or text, or move it a level. Once published, the version
+never changes: searches find it from the day it takes effect, by its words at once and by
+meaning once the worker has embedded it. A new
 version is matched to the one before it clause by clause, and every match a person should
 confirm, such as a clause whose number changed, is a flag for the reviewer, who can say a
 match is wrong as well as confirm it. Keys follow the
@@ -270,6 +272,7 @@ written to the governance log:
 ```bash
 dpolens policy upload retention-policy.docx --slug acme-retention --effective-date 2026-01-01
 dpolens policy draft acme-retention
+dpolens policy fix acme-retention 4.1 split --before "4.2"
 dpolens policy accept acme-retention --all
 dpolens policy publish acme-retention
 dpolens policy revise acme-retention retention-policy-v2.docx --effective-date 2026-07-01

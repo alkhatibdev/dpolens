@@ -118,6 +118,14 @@ First version of the API. Everything below is new rather than changed.
   match is resolved. A key with no match gets `404` and `/problems/no-match`. A flag is settled
   once it is accepted (`accepted_by`, `accepted_at`) or resolved by a change (`resolved_by`,
   `resolved_at` and `resolution`); `paragraph` names the paragraph of the file a flag is about
+- `POST /v1/policies/{slug}/draft/edits` fixes how a clause was read without changing a word:
+  `split` (at `at`), `merge`, `make-text`, `make-heading`, `move-under` or `move-out`. Keys follow
+  from where each clause ends up, and the answer is the draft with `clause`, the key the clause
+  has now. A clause carries `fixes`, the fixes it can take, `splits`, where it can be split, and
+  once fixed the layer `reviewer` and `fixed`. A flag carries `suggestion`, the fix the parser
+  would make, and once a fix settles it `resolution_key`, the clause the fix named. A key the
+  draft does not have gets `404` and `/problems/no-clause`, and a fix that cannot be made `409`
+  and `/problems/fix-refused`
 - `POST /v1/policies/{slug}/draft/publish` publishes a draft, for `documents.publish`. It waits
   until every flag is settled (`409`, `/problems/flags-open`, whose `flags` lists the open ones), takes effect
   after the version published before it (`409`, `/problems/effective-date-too-early`), and needs
@@ -129,12 +137,14 @@ First version of the API. Everything below is new rather than changed.
   checked against the hash it was stored with. A file that is missing or has changed gets `500`
   and `/problems/original-unavailable` instead of a download
 - `GET /v1/policies/{slug}/versions/{number}/file` returns the file as it was read: every
-  paragraph in order, with what it looked like, the clause it went to, or why it was set aside.
-  A published version's file and original need `documents.read`; a draft's, or a discarded
-  one's, need `documents.upload` or `documents.publish`
+  paragraph in order, with what it looked like, the clause it went to, or why it was set aside,
+  and `clauses`, every clause that holds part of it. A published version's file and original need
+  `documents.read`; a draft's, or a discarded one's, need `documents.upload` or
+  `documents.publish`
 - `GET /v1/clauses/{key}` carries `now` for a policy's clause read in a version no longer in
   force: where the same rule is today, and whether its number or its words changed. It carries
   `formerly` when the key named a different rule in the version before
 - A request body larger than 25 MB gets `413` and `/problems/too-large`, before it is read
 - `GET /v1/governance/entries` takes the category `policies`: uploads, flags accepted, matches
-  said to be wrong, drafts changed and discarded, versions published, and policies archived
+  said to be wrong, clauses fixed, drafts changed and discarded, versions published, and policies
+  archived

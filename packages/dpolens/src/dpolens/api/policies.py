@@ -10,6 +10,10 @@ list of policies and their drafts.
 A draft is read with its revision as an `ETag`, and every change may send it back in `If-Match`.
 A change made against an older revision is refused with `412`, naming who changed the draft and
 when, so two people reviewing one draft never undo each other. A change without it is made.
+
+How a clause was read can be fixed without changing a word: split where a second rule begins,
+merged with the clause before it, made text or a heading, moved under the clause before it or out
+a level. Keys follow from where each clause ends up, by the rules a parse uses.
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.originals import Directory, OriginalUnavailable
 from dpolens.engine.policies import store
 from dpolens.engine.policies.blocks import UnreadablePolicy
+from dpolens.engine.policies.fixing import CannotFix
 
 router = APIRouter(
     prefix="/v1/policies", tags=["policies"], responses=problems.responses(401, 403, 429)
@@ -51,7 +56,12 @@ IfMatch = Annotated[
     str | None,
     Header(description="The draft's revision, as its ETag gave it. A change made since is refused"),
 ]
-Layer = Literal["native_structure", "typography", "numbering"]
+Layer = Literal["native_structure", "typography", "numbering", "reviewer"]
+Edit = Literal["split", "merge", "make-text", "make-heading", "move-under", "move-out"]
+Fixed = Literal["split", "merged", "made-text", "made-heading", "moved-under", "moved-out"]
+Resolution = Literal[
+    "match-rejected", "split", "merged", "made-text", "made-heading", "moved-under", "moved-out"
+]
 Change = Literal["added", "modified", "moved", "unchanged"]
 Status = Literal["draft", "published", "discarded"]
 Indexing = Literal["todo", "doing", "succeeded", "failed"]
@@ -109,6 +119,11 @@ class EarlierClause(BaseModel):
     text: str
 
 
+class SplitPlace(BaseModel):
+    at: int = Field(description="Where the second part begins, as a split's `at` names it")
+    label: str | None = Field(description="The number the second part starts with, its label")
+
+
 class DraftClause(BaseModel):
     key: str
     kind: str = Field(description="section, paragraph, list, table or row")
@@ -119,7 +134,7 @@ class DraftClause(BaseModel):
     layer: Layer | None = Field(
         description=(
             "What decided where it begins and how deep it sits: the file's own structure, "
-            "its typography, or a number written into its text"
+            "its typography, a number written into its text, or a reviewer who fixed it"
         )
     )
     change: Change | None = Field(
@@ -130,7 +145,27 @@ class DraftClause(BaseModel):
         description="That clause as the version before has it, when this one is renumbered or "
         "reworded"
     )
+    fixed: Fixed | None = Field(
+        default=None,
+        description="What a reviewer last did to where it begins or how deep it sits",
+    )
+    fixes: list[Edit] = Field(
+        default_factory=list, description="The fixes that can be made to it where it sits"
+    )
+    splits: list[SplitPlace] = Field(
+        default_factory=list, description="Where in its text it can be split"
+    )
     children: list[DraftClause]
+
+
+class FlagSuggestion(BaseModel):
+    """The fix the parser would make, which `POST /draft/edits` makes when sent back."""
+
+    edit: Edit
+    key: str = Field(description="The clause it applies to, which may not be the flag's own")
+    at: int | None = Field(
+        description="For a split, where in that clause's text the second part begins"
+    )
 
 
 class FlagOut(BaseModel):
@@ -142,12 +177,21 @@ class FlagOut(BaseModel):
     accepted_at: datetime | None
     resolved_by: str | None = Field(description="Who made the change that settled it")
     resolved_at: datetime | None
-    resolution: str | None = Field(
+    resolution: Resolution | None = Field(
         description="The change that settled it: match-rejected, when the clause was said to be "
-        "a different rule from the one it was matched to"
+        "a different rule from the one it was matched to, or the fix a reviewer made to it"
+    )
+    resolution_key: str | None = Field(
+        default=None,
+        description="The clause the fix named: what it went under or into, or a split's second "
+        "part",
     )
     paragraph: int | None = Field(
         description="The paragraph of the file it is about, as the file view numbers them"
+    )
+    suggestion: FlagSuggestion | None = Field(
+        default=None,
+        description="The fix the parser would make, while the flag is open and it can be made",
     )
 
 
@@ -188,6 +232,12 @@ class PolicyDraft(BaseModel):
     )
     next_label: str = Field(
         description="The label it is published with: the one given, or the next number free"
+    )
+
+
+class DraftFixed(PolicyDraft):
+    clause: str = Field(
+        description="The key the clause has now: its own, or for a merge the clause it went into"
     )
 
 
@@ -252,6 +302,10 @@ class FileParagraph(BaseModel):
     cell: int | None
     header: bool = Field(description="Its row is the table's header")
     clause: str | None = Field(description="The key of the clause it went to")
+    clauses: list[str] = Field(
+        default_factory=list,
+        description="Every clause that holds part of it: two once a clause is split inside it",
+    )
     set_aside: Reason | None = Field(description="Why it is in no clause, when it is in none")
 
 
@@ -275,6 +329,24 @@ class DraftDetails(BaseModel):
 
 class FlagsToAccept(BaseModel):
     positions: list[int] = Field(min_length=1, max_length=1000)
+
+
+class Fix(BaseModel):
+    edit: Edit = Field(
+        description=(
+            "split it where a second rule begins, merge it with the clause before it, make a "
+            "heading text or text a heading, or move it under the clause before it or out a level"
+        )
+    )
+    key: str = Field(min_length=1, max_length=200, description="The clause to fix")
+    at: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "For a split, where in the clause's text the second part begins: where a sentence "
+            "or a paragraph does, or a number after a semicolon or a colon"
+        ),
+    )
 
 
 def originals_of(settings: Configured) -> Directory:
@@ -314,6 +386,9 @@ def _clause(clause: store.DraftClause) -> DraftClause:
         layer=cast(Layer | None, clause.layer),
         change=cast(Change | None, clause.change),
         continues=clause.continues,
+        fixed=cast(Fixed | None, clause.fixed),
+        fixes=list(clause.fixes),
+        splits=[SplitPlace(at=at, label=label) for at, label in clause.splits],
         earlier=(
             EarlierClause(
                 key=clause.earlier.key,
@@ -343,8 +418,16 @@ def _draft(view: store.DraftView) -> PolicyDraft:
                 accepted_at=flag.accepted_at,
                 resolved_by=flag.resolved_by,
                 resolved_at=flag.resolved_at,
-                resolution=flag.resolution,
+                resolution=cast(Resolution | None, flag.resolution),
+                resolution_key=flag.resolution_key,
                 paragraph=flag.paragraph,
+                suggestion=(
+                    FlagSuggestion(
+                        edit=flag.suggestion.edit, key=flag.suggestion.key, at=flag.suggestion.at
+                    )
+                    if flag.suggestion
+                    else None
+                ),
             )
             for flag in view.flags
         ],
@@ -452,6 +535,10 @@ def _refused(failure: Exception) -> problems.Problem:
             return problems.flag_not_found(detail)
         case store.NoMatch():
             return problems.no_match(detail)
+        case store.NoClause():
+            return problems.no_clause(detail)
+        case CannotFix():
+            return problems.fix_refused(detail)
         case store.StaleDraft():
             return problems.edit_conflict(
                 revision=failure.revision,
@@ -479,6 +566,8 @@ REFUSALS = (
     store.FlagsOpen,
     store.FlagNotFound,
     store.NoMatch,
+    store.NoClause,
+    CannotFix,
     store.StaleDraft,
     store.EffectiveDateTooEarly,
     store.LabelTaken,
@@ -668,6 +757,43 @@ def reject_match(
 
 
 @router.post(
+    "/{slug}/draft/edits",
+    summary="Fix how a clause was read, without changing a word",
+    description=(
+        "Split a clause where a second rule begins, merge it with the clause before it, make a "
+        "heading text or text a heading, or move it under the clause before it or out a level. "
+        "Keys follow from where each clause ends up, by the rules a parse uses, and each clause "
+        "the fix moved or reshaped takes the layer `reviewer`. An open flag on the clause is "
+        "resolved by the fix. The numbering checks run again, so a numbering flag the fix makes "
+        "untrue is resolved and a new finding is a new flag; for a new version, the clauses the "
+        "fix rewords are matched again."
+    ),
+    responses=problems.responses(400, 404, 409, 412),
+)
+def fix(
+    slug: str,
+    body: Fix,
+    who: Uploader,
+    opened: Opened,
+    response: Response,
+    if_match: IfMatch = None,
+) -> DraftFixed:
+    try:
+        fixed = store.fix_clause(
+            opened,
+            slug,
+            body.edit,
+            body.key,
+            actor=actor_of(who),
+            at=body.at,
+            expected_revision=expected_revision(if_match, "draft"),
+        )
+    except REFUSALS as failure:
+        raise _refused(failure) from failure
+    return DraftFixed(**_reviewed(fixed.draft, response).model_dump(), clause=fixed.clause)
+
+
+@router.post(
     "/{slug}/draft/publish",
     summary="Publish the draft once every flag is settled",
     responses=problems.responses(400, 404, 409, 412),
@@ -756,6 +882,7 @@ def read_as_read(
                 cell=found.line.cell,
                 header=found.line.header,
                 clause=found.clause,
+                clauses=list(found.clauses),
                 set_aside=cast(Reason | None, found.set_aside),
             )
             for found in view.lines

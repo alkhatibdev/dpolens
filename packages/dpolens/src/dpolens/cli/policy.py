@@ -17,8 +17,9 @@ import typer
 from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.originals import Directory
 from dpolens.engine.policies import store
+from dpolens.engine.policies.fixing import boundaries
 from dpolens.engine.policies.parse import parse_policy
-from dpolens.engine.policies.tree import Clause, ParsedPolicy
+from dpolens.engine.policies.tree import Clause, Edit, ParsedPolicy
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -28,8 +29,14 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-LAYERS = {"native_structure": "file", "typography": "type", "numbering": "number"}
-"""What decided a clause: the file's own structure, its type, or a number in its text."""
+LAYERS = {
+    "native_structure": "file",
+    "typography": "type",
+    "numbering": "number",
+    "reviewer": "you",
+}
+"""What decided a clause: the file's own structure, its type, a number in its text, or a
+reviewer who fixed it."""
 
 FLAGS = {
     "coverage_gap": "text",
@@ -228,6 +235,67 @@ def reject_match(
     typer.echo(f"{key} is new in the draft, and version {found.previous}'s {gone} is removed.")
 
 
+@app.command(name="fix")
+def fix(
+    slug: Slug,
+    key: Annotated[str, typer.Argument(help="The clause in the draft, such as 4.1")],
+    how: Annotated[
+        Edit,
+        typer.Argument(
+            help="split, merge, make-text, make-heading, move-under or move-out",
+            show_default=False,
+        ),
+    ],
+    before: Annotated[
+        str | None,
+        typer.Option(
+            "--before",
+            help='For split: the words the second part starts with, such as "4.2 The"',
+        ),
+    ] = None,
+) -> None:
+    """Fix how a clause of a draft was read, without changing a word.
+
+    Split it where a second rule begins (--before), merge it with the clause before it, make a
+    heading text or text a heading, or move it under the clause before it or out a level. Keys
+    follow from where each clause ends up, and a flag on the clause is settled by the fix.
+    """
+    full = key if key.startswith(slug + ":") else f"{slug}:{key}"
+    with session_scope(load_settings()) as session:
+        at: int | None = None
+        if how == "split":
+            if not before:
+                raise typer.BadParameter("Say where to split it, with --before WORDS.")
+            clauses = {
+                clause.key: clause for clause in _walk(store.read_draft(session, slug).clauses)
+            }
+            text = clauses[full].text if full in clauses else ""
+            at = next(
+                (found for found in boundaries(text) if text[found:].startswith(before)), None
+            )
+            if at is None:
+                raise typer.BadParameter(
+                    f"No sentence or paragraph of {key} starts with {before!r}."
+                )
+        fixed = store.fix_clause(session, slug, how, full, actor=cli_actor(), at=at)
+    now = fixed.clause.removeprefix(slug + ":")
+    said = {
+        "split": f"Split {key}.",
+        "merge": f"Merged {key} into {now}.",
+        "make-text": f"{key} is text now, as {now}.",
+        "make-heading": f"{key} is a heading now, as {now}.",
+        "move-under": f"Moved {key} under the clause before it. Its key is {now}.",
+        "move-out": f"Moved {key} out a level. Its key is {now}.",
+    }
+    typer.echo(said[how])
+    left = [flag.position for flag in fixed.draft.flags if _open(flag)]
+    typer.echo(
+        f"Still open: {', '.join(str(position) for position in left)}."
+        if left
+        else f"Every flag is settled. Publish with: dpolens policy publish {slug}"
+    )
+
+
 @app.command()
 def edit(
     slug: Slug,
@@ -314,7 +382,15 @@ def sample() -> None:
 
 
 CHANGES = {"added": "new", "modified": "reworded", "unchanged": "same"}
-RESOLVED = {"match-rejected": "said to be a different rule"}
+RESOLVED = {
+    "match-rejected": "said to be a different rule",
+    "split": "split",
+    "merged": "merged",
+    "made-text": "made text",
+    "made-heading": "made a heading",
+    "moved-under": "moved under the clause before",
+    "moved-out": "moved out a level",
+}
 
 
 def _open(flag: store.FlagView) -> bool:

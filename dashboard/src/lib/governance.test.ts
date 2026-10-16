@@ -59,6 +59,25 @@ describe("a policy's entries in the governance log", () => {
     ).toBe("Said 4.3 in the draft of Retention policy is a different rule from version 2's 4.2");
   });
 
+  it("say how a clause was fixed", () => {
+    expect(
+      sentence("document.clause_fixed", {
+        ...retention,
+        edit: "move-under",
+        key: "retention:personal-use",
+        with: "retention:3",
+      }),
+    ).toBe("Moved personal-use under 3 in the draft of Retention policy");
+    expect(
+      sentence("document.clause_fixed", {
+        ...retention,
+        edit: "split",
+        key: "retention:4.1",
+        with: "retention:4.2",
+      }),
+    ).toBe("Split 4.1 in the draft of Retention policy, making 4.2");
+  });
+
   it("fall back to the slug when an entry has no title", () => {
     expect(sentence("document.archived", { document: "retention" })).toBe("Archived retention");
   });

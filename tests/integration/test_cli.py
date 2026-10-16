@@ -260,6 +260,31 @@ def test_a_match_can_be_said_to_be_a_different_rule(
     assert "2 new, 1 reworded, 1 renumbered, 3 the same, 1 removed." in said(shown)
 
 
+def test_how_a_clause_was_read_is_fixed_from_the_shell(
+    instance: None, clean_tables: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DPOLENS_ORIGINALS_DIR", str(tmp_path))
+    runner.invoke(app, ["policy", "upload", str(POLICIES / "acceptable-use.md"), "--slug", "aup"])
+
+    moved = runner.invoke(app, ["policy", "fix", "aup", "personal-use", "move-under"])
+    split = runner.invoke(app, ["policy", "fix", "aup", "3.1", "split", "--before", "3.2 The"])
+    refused = runner.invoke(app, ["policy", "fix", "aup", "1", "move-under"])
+    nowhere = runner.invoke(app, ["policy", "fix", "aup", "2.1", "split", "--before", "never"])
+
+    assert moved.exit_code == 0, moved.output
+    assert "Moved personal-use under the clause before it. Its key is 2:personal-use." in said(
+        moved
+    )
+    assert "Split 3.1. Still open: 2." in said(split)
+    assert refused.exit_code == 1
+    assert "no clause before it to move it under" in said(refused)
+    assert nowhere.exit_code == 2
+    assert "No sentence or paragraph of 2.1 starts with 'never'." in said(nowhere)
+    shown = said(runner.invoke(app, ["policy", "draft", "aup"]))
+    assert "(moved under the clause before by the command line)" in shown
+    assert "3.2 The records are kept for 90 days. you" in shown
+
+
 def test_a_policy_without_a_draft_says_so(instance: None, clean_tables: None) -> None:
     result = runner.invoke(app, ["policy", "publish", "nothing-here"])
 

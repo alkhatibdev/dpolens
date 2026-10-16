@@ -78,6 +78,7 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/policies/{slug}/draft",
         "/v1/policies/{slug}/draft/flags/accept",
         "/v1/policies/{slug}/draft/matches/{key}/reject",
+        "/v1/policies/{slug}/draft/edits",
         "/v1/policies/{slug}/draft/publish",
         "/v1/policies/{slug}/archive",
         "/v1/policies/{slug}/versions/{number}/file",
