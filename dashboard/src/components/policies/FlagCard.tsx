@@ -43,7 +43,7 @@ export function FlagCard({
   compact?: boolean;
 }) {
   const { t } = useTranslation();
-  const settledLine = useSettledLine();
+  const settledLine = useSettledLine(slug);
   const settled = isSettled(flag);
   return (
     <div

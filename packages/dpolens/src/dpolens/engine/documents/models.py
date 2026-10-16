@@ -158,6 +158,8 @@ class DocumentNode(Base):
     """The clause this one continues in the previous version, matched by key and by text."""
     change_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     """added, modified, moved or unchanged against the previous version; empty for the first."""
+    fixed: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    """What a reviewer last did to where it begins or how deep it sits, such as moved-under."""
 
     version: Mapped[DocumentVersion] = relationship(back_populates="nodes")
     texts: Mapped[list[NodeText]] = relationship(back_populates="node")
@@ -252,5 +254,10 @@ class ParseFlag(Base):
     resolution: Mapped[str | None] = mapped_column(String(40), nullable=True)
     """What a reviewer changed that settled it, such as match-rejected. A flag is settled once
     it is accepted as read or resolved by a change."""
+    resolution_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    """The clause the change named: what it went under or into, or a split's second part."""
+    suggestion: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    """The fix the parser would make: the edit, the clause it applies to, and for a split
+    where."""
 
     version: Mapped[DocumentVersion] = relationship(back_populates="flags")

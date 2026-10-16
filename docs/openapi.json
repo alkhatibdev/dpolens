@@ -5554,6 +5554,182 @@
         }
       }
     },
+    "/v1/policies/{slug}/draft/edits": {
+      "post": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "Fix how a clause was read, without changing a word",
+        "description": "Split a clause where a second rule begins, merge it with the clause before it, make a heading text or text a heading, or move it under the clause before it or out a level. Keys follow from where each clause ends up, by the rules a parse uses, and each clause the fix moved or reshaped takes the layer `reviewer`. An open flag on the clause is resolved by the fix. The numbering checks run again, so a numbering flag the fix makes untrue is resolved and a new finding is a new flag; for a new version, the clauses the fix rewords are matched again.",
+        "operationId": "fix_v1_policies__slug__draft_edits_post",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The draft's revision, as its ETag gave it. A change made since is refused",
+              "title": "If-Match"
+            },
+            "description": "The draft's revision, as its ETag gave it. A change made since is refused"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Fix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DraftFixed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The change conflicts with what is there",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Somebody changed it after it was read",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/policies/{slug}/draft/publish": {
       "post": {
         "tags": [
@@ -6854,7 +7030,8 @@
                 "enum": [
                   "native_structure",
                   "typography",
-                  "numbering"
+                  "numbering",
+                  "reviewer"
                 ]
               },
               {
@@ -6862,7 +7039,7 @@
               }
             ],
             "title": "Layer",
-            "description": "What decided where it begins and how deep it sits: the file's own structure, its typography, or a number written into its text"
+            "description": "What decided where it begins and how deep it sits: the file's own structure, its typography, a number written into its text, or a reviewer who fixed it"
           },
           "change": {
             "anyOf": [
@@ -6904,6 +7081,50 @@
               }
             ],
             "description": "That clause as the version before has it, when this one is renumbered or reworded"
+          },
+          "fixed": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "split",
+                  "merged",
+                  "made-text",
+                  "made-heading",
+                  "moved-under",
+                  "moved-out"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed",
+            "description": "What a reviewer last did to where it begins or how deep it sits"
+          },
+          "fixes": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "split",
+                "merge",
+                "make-text",
+                "make-heading",
+                "move-under",
+                "move-out"
+              ]
+            },
+            "type": "array",
+            "title": "Fixes",
+            "description": "The fixes that can be made to it where it sits"
+          },
+          "splits": {
+            "items": {
+              "$ref": "#/components/schemas/SplitPlace"
+            },
+            "type": "array",
+            "title": "Splits",
+            "description": "Where in its text it can be split"
           },
           "children": {
             "items": {
@@ -6970,6 +7191,131 @@
         },
         "type": "object",
         "title": "DraftDetails"
+      },
+      "DraftFixed": {
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/PolicyVersion"
+          },
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/DraftClause"
+            },
+            "type": "array",
+            "title": "Clauses"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/FlagOut"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "set_aside": {
+            "items": {
+              "$ref": "#/components/schemas/SetAside"
+            },
+            "type": "array",
+            "title": "Set Aside",
+            "description": "Text kept but in no clause, never searched"
+          },
+          "notices": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notices",
+            "description": "What the file itself said, such as tracked changes"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous",
+            "description": "The label of the version it was matched to"
+          },
+          "removed": {
+            "items": {
+              "$ref": "#/components/schemas/Removed"
+            },
+            "type": "array",
+            "title": "Removed",
+            "description": "Clauses of that version nothing continues"
+          },
+          "changes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Changes",
+            "description": "How many clauses were added, modified, moved, unchanged and removed"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision",
+            "description": "Goes up with every change. Send it back in `If-Match`"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By",
+            "description": "Who changed it last, or null for a change made on the command line"
+          },
+          "next_label": {
+            "type": "string",
+            "title": "Next Label",
+            "description": "The label it is published with: the one given, or the next number free"
+          },
+          "clause": {
+            "type": "string",
+            "title": "Clause",
+            "description": "The key the clause has now: its own, or for a merge the clause it went into"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "clauses",
+          "flags",
+          "coverage",
+          "set_aside",
+          "notices",
+          "previous",
+          "removed",
+          "changes",
+          "revision",
+          "updated_at",
+          "updated_by",
+          "next_label",
+          "clause"
+        ],
+        "title": "DraftFixed"
       },
       "DraftReview": {
         "properties": {
@@ -7293,6 +7639,14 @@
             "title": "Clause",
             "description": "The key of the clause it went to"
           },
+          "clauses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Clauses",
+            "description": "Every clause that holds part of it: two once a clause is split inside it"
+          },
           "set_aside": {
             "anyOf": [
               {
@@ -7330,6 +7684,49 @@
           "set_aside"
         ],
         "title": "FileParagraph"
+      },
+      "Fix": {
+        "properties": {
+          "edit": {
+            "type": "string",
+            "enum": [
+              "split",
+              "merge",
+              "make-text",
+              "make-heading",
+              "move-under",
+              "move-out"
+            ],
+            "title": "Edit",
+            "description": "split it where a second rule begins, merge it with the clause before it, make a heading text or text a heading, or move it under the clause before it or out a level"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Key",
+            "description": "The clause to fix"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "For a split, where in the clause's text the second part begins: where a sentence or a paragraph does, or a number after a semicolon or a colon"
+          }
+        },
+        "type": "object",
+        "required": [
+          "edit",
+          "key"
+        ],
+        "title": "Fix"
       },
       "FlagOut": {
         "properties": {
@@ -7415,14 +7812,35 @@
           "resolution": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "match-rejected",
+                  "split",
+                  "merged",
+                  "made-text",
+                  "made-heading",
+                  "moved-under",
+                  "moved-out"
+                ]
               },
               {
                 "type": "null"
               }
             ],
             "title": "Resolution",
-            "description": "The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to"
+            "description": "The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to, or the fix a reviewer made to it"
+          },
+          "resolution_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Key",
+            "description": "The clause the fix named: what it went under or into, or a split's second part"
           },
           "paragraph": {
             "anyOf": [
@@ -7435,6 +7853,17 @@
             ],
             "title": "Paragraph",
             "description": "The paragraph of the file it is about, as the file view numbers them"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FlagSuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The fix the parser would make, while the flag is open and it can be made"
           }
         },
         "type": "object",
@@ -7451,6 +7880,47 @@
           "paragraph"
         ],
         "title": "FlagOut"
+      },
+      "FlagSuggestion": {
+        "properties": {
+          "edit": {
+            "type": "string",
+            "enum": [
+              "split",
+              "merge",
+              "make-text",
+              "make-heading",
+              "move-under",
+              "move-out"
+            ],
+            "title": "Edit"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The clause it applies to, which may not be the flag's own"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "For a split, where in that clause's text the second part begins"
+          }
+        },
+        "type": "object",
+        "required": [
+          "edit",
+          "key",
+          "at"
+        ],
+        "title": "FlagSuggestion",
+        "description": "The fix the parser would make, which `POST /draft/edits` makes when sent back."
       },
       "FlagsToAccept": {
         "properties": {
@@ -9777,6 +10247,33 @@
           "count"
         ],
         "title": "Source"
+      },
+      "SplitPlace": {
+        "properties": {
+          "at": {
+            "type": "integer",
+            "title": "At",
+            "description": "Where the second part begins, as a split's `at` names it"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "The number the second part starts with, its label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "label"
+        ],
+        "title": "SplitPlace"
       },
       "StatusChange": {
         "properties": {

@@ -127,6 +127,25 @@ export function describeEntry(t: TFunction, entry: Entry): string {
         earlier: own(details.earlier),
       });
     }
+    case "document.clause_fixed": {
+      const own = (key: unknown) => text(key).replace(`${text(details.document)}:`, "");
+      const edits = {
+        split: "split",
+        merge: "merge",
+        "make-text": "makeText",
+        "make-heading": "makeHeading",
+        "move-under": "moveUnder",
+        "move-out": "moveOut",
+      } as const;
+      const edit = edits[text(details.edit) as keyof typeof edits] ?? null;
+      return edit
+        ? t(`entries.document_clause_fixed.${edit}`, {
+            key: own(details.key),
+            with: own(details.with),
+            policy: policy(details),
+          })
+        : t("entries.document_draft_edited", { policy: policy(details) });
+    }
     case "document.published": {
       const date = text(details.effective_date);
       return t(details.restored ? "entries.document_restored" : "entries.document_published", {

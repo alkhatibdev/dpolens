@@ -698,6 +698,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/policies/{slug}/draft/edits": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Fix how a clause was read, without changing a word
+     * @description Split a clause where a second rule begins, merge it with the clause before it, make a heading text or text a heading, or move it under the clause before it or out a level. Keys follow from where each clause ends up, by the rules a parse uses, and each clause the fix moved or reshaped takes the layer `reviewer`. An open flag on the clause is resolved by the fix. The numbering checks run again, so a numbering flag the fix makes untrue is resolved and a new finding is a new flag; for a new version, the clauses the fix rewords are matched again.
+     */
+    post: operations["fix_v1_policies__slug__draft_edits_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/policies/{slug}/draft/publish": {
     parameters: {
       query?: never;
@@ -1101,9 +1121,9 @@ export interface components {
       lang: string;
       /**
        * Layer
-       * @description What decided where it begins and how deep it sits: the file's own structure, its typography, or a number written into its text
+       * @description What decided where it begins and how deep it sits: the file's own structure, its typography, a number written into its text, or a reviewer who fixed it
        */
-      layer: ("native_structure" | "typography" | "numbering") | null;
+      layer: ("native_structure" | "typography" | "numbering" | "reviewer") | null;
       /**
        * Change
        * @description Against the version before: added, modified, moved or unchanged
@@ -1116,6 +1136,22 @@ export interface components {
       continues: string | null;
       /** @description That clause as the version before has it, when this one is renumbered or reworded */
       earlier: components["schemas"]["EarlierClause"] | null;
+      /**
+       * Fixed
+       * @description What a reviewer last did to where it begins or how deep it sits
+       */
+      fixed?:
+        ("split" | "merged" | "made-text" | "made-heading" | "moved-under" | "moved-out") | null;
+      /**
+       * Fixes
+       * @description The fixes that can be made to it where it sits
+       */
+      fixes?: ("split" | "merge" | "make-text" | "make-heading" | "move-under" | "move-out")[];
+      /**
+       * Splits
+       * @description Where in its text it can be split
+       */
+      splits?: components["schemas"]["SplitPlace"][];
       /** Children */
       children: components["schemas"]["DraftClause"][];
     };
@@ -1127,6 +1163,64 @@ export interface components {
       effective_date?: string | null;
       /** Version Label */
       version_label?: string | null;
+    };
+    /** DraftFixed */
+    DraftFixed: {
+      version: components["schemas"]["PolicyVersion"];
+      /** Clauses */
+      clauses: components["schemas"]["DraftClause"][];
+      /** Flags */
+      flags: components["schemas"]["FlagOut"][];
+      coverage: components["schemas"]["Coverage"];
+      /**
+       * Set Aside
+       * @description Text kept but in no clause, never searched
+       */
+      set_aside: components["schemas"]["SetAside"][];
+      /**
+       * Notices
+       * @description What the file itself said, such as tracked changes
+       */
+      notices: string[];
+      /**
+       * Previous
+       * @description The label of the version it was matched to
+       */
+      previous: string | null;
+      /**
+       * Removed
+       * @description Clauses of that version nothing continues
+       */
+      removed: components["schemas"]["Removed"][];
+      /**
+       * Changes
+       * @description How many clauses were added, modified, moved, unchanged and removed
+       */
+      changes: {
+        [key: string]: number;
+      };
+      /**
+       * Revision
+       * @description Goes up with every change. Send it back in `If-Match`
+       */
+      revision: number;
+      /** Updated At */
+      updated_at: string | null;
+      /**
+       * Updated By
+       * @description Who changed it last, or null for a change made on the command line
+       */
+      updated_by: string | null;
+      /**
+       * Next Label
+       * @description The label it is published with: the one given, or the next number free
+       */
+      next_label: string;
+      /**
+       * Clause
+       * @description The key the clause has now: its own, or for a merge the clause it went into
+       */
+      clause: string;
     };
     /** DraftReview */
     DraftReview: {
@@ -1259,10 +1353,34 @@ export interface components {
        */
       clause: string | null;
       /**
+       * Clauses
+       * @description Every clause that holds part of it: two once a clause is split inside it
+       */
+      clauses?: string[];
+      /**
        * Set Aside
        * @description Why it is in no clause, when it is in none
        */
       set_aside: ("title" | "front matter" | "contents" | "text box" | "repeated table") | null;
+    };
+    /** Fix */
+    Fix: {
+      /**
+       * Edit
+       * @description split it where a second rule begins, merge it with the clause before it, make a heading text or text a heading, or move it under the clause before it or out a level
+       * @enum {string}
+       */
+      edit: "split" | "merge" | "make-text" | "make-heading" | "move-under" | "move-out";
+      /**
+       * Key
+       * @description The clause to fix
+       */
+      key: string;
+      /**
+       * At
+       * @description For a split, where in the clause's text the second part begins: where a sentence or a paragraph does, or a number after a semicolon or a colon
+       */
+      at?: number | null;
     };
     /** FlagOut */
     FlagOut: {
@@ -1299,14 +1417,52 @@ export interface components {
       resolved_at: string | null;
       /**
        * Resolution
-       * @description The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to
+       * @description The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to, or the fix a reviewer made to it
        */
-      resolution: string | null;
+      resolution:
+        | (
+            | "match-rejected"
+            | "split"
+            | "merged"
+            | "made-text"
+            | "made-heading"
+            | "moved-under"
+            | "moved-out"
+          )
+        | null;
+      /**
+       * Resolution Key
+       * @description The clause the fix named: what it went under or into, or a split's second part
+       */
+      resolution_key?: string | null;
       /**
        * Paragraph
        * @description The paragraph of the file it is about, as the file view numbers them
        */
       paragraph: number | null;
+      /** @description The fix the parser would make, while the flag is open and it can be made */
+      suggestion?: components["schemas"]["FlagSuggestion"] | null;
+    };
+    /**
+     * FlagSuggestion
+     * @description The fix the parser would make, which `POST /draft/edits` makes when sent back.
+     */
+    FlagSuggestion: {
+      /**
+       * Edit
+       * @enum {string}
+       */
+      edit: "split" | "merge" | "make-text" | "make-heading" | "move-under" | "move-out";
+      /**
+       * Key
+       * @description The clause it applies to, which may not be the flag's own
+       */
+      key: string;
+      /**
+       * At
+       * @description For a split, where in that clause's text the second part begins
+       */
+      at: number | null;
     };
     /** FlagsToAccept */
     FlagsToAccept: {
@@ -2330,6 +2486,19 @@ export interface components {
       title: string;
       /** Count */
       count: number;
+    };
+    /** SplitPlace */
+    SplitPlace: {
+      /**
+       * At
+       * @description Where the second part begins, as a split's `at` names it
+       */
+      at: number;
+      /**
+       * Label
+       * @description The number the second part starts with, its label
+       */
+      label: string | null;
     };
     /** StatusChange */
     StatusChange: {
@@ -5886,6 +6055,114 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  fix_v1_policies__slug__draft_edits_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Fix"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DraftFixed"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
         headers: {
           [name: string]: unknown;
         };

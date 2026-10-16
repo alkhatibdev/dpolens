@@ -495,6 +495,194 @@ class TestReview:
         assert (later["review"], later["next_label"]) == (None, "2")
 
 
+def fixed(
+    client: TestClient, slug: str, edit: str, key: str, at: int | None = None, etag: str = ""
+) -> httpx2.Response:
+    return client.post(
+        f"/v1/policies/{slug}/draft/edits",
+        json={"edit": edit, "key": key, "at": at},
+        headers={**SAME_ORIGIN, **({"If-Match": etag} if etag else {})},
+    )
+
+
+def open_flags(draft: dict[str, Any]) -> list[dict[str, Any]]:
+    return [flag for flag in draft["flags"] if not flag["accepted_at"] and not flag["resolved_at"]]
+
+
+class TestFixing:
+    """Fixing what was read: a made-up acceptable use policy with a heading that has no number,
+    two numbers typed into the clause before them, and a rule cut in two by a stray line."""
+
+    def test_a_flag_suggests_the_fix_the_parser_knows(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+        made = upload(
+            client, "/v1/policies", "acceptable-use.md", slug="aup", effective_date="2026-01-01"
+        )
+        assert made.status_code == 201, made.text
+
+        flags = made.json()["flags"]
+        clauses = clauses_of(made.json())
+
+        assert clauses["aup:1"]["fixes"] == ["make-text"]
+        assert clauses["aup:2.2"]["fixes"] == [
+            "split",
+            "merge",
+            "make-heading",
+            "move-under",
+            "move-out",
+        ]
+        assert clauses["aup:2.2"]["splits"] == [{"at": 18, "label": "2.3"}]
+        assert clauses["aup:2.1"]["splits"] == []
+        assert [(flag["detail"][:16], flag["suggestion"]) for flag in flags] == [
+            ('"Personal use" h', {"edit": "move-under", "key": "aup:personal-use", "at": None}),
+            ("2.4 follows 2.2.", {"edit": "split", "key": "aup:2.2", "at": 18}),
+            ("3.3 follows 3.1.", {"edit": "split", "key": "aup:3.1", "at": 74}),
+        ]
+
+    def test_moving_a_heading_under_the_one_before_settles_its_flag(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        _, etag = draft_of(client, "aup")
+
+        response = fixed(client, "aup", "move-under", "aup:personal-use", etag=etag)
+
+        assert response.status_code == 200, response.text
+        assert response.headers["etag"] == f'"{int(etag.strip(chr(34))) + 1}"'
+        draft = response.json()
+        assert draft["clause"] == "aup:2:personal-use"
+        moved = clauses_of(draft)["aup:2:personal-use"]
+        assert (moved["layer"], moved["fixed"]) == ("reviewer", "moved-under")
+        assert "aup:2:personal-use:p1" in clauses_of(draft)
+        settled = draft["flags"][0]
+        assert (settled["key"], settled["resolution"], settled["resolution_key"]) == (
+            "aup:2:personal-use",
+            "moved-under",
+            "aup:2",
+        )
+        assert (settled["resolved_by"], settled["suggestion"]) == ("Yousef Haddad", None)
+
+    def test_splitting_where_a_missing_number_is_typed_settles_the_numbering_flag(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        draft, etag = draft_of(client, "aup")
+        suggestion = draft["flags"][1]["suggestion"]
+
+        response = fixed(client, "aup", **suggestion, etag=etag)
+
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        clauses = clauses_of(draft)
+        assert clauses["aup:2.2"]["text"] == "Lock your screen."
+        assert (clauses["aup:2.3"]["label"], clauses["aup:2.3"]["text"]) == (
+            "2.3",
+            "Clear your desk at the end of the day.",
+        )
+        gap = draft["flags"][1]
+        assert (gap["key"], gap["resolution"], gap["resolution_key"]) == (
+            "aup:2.4",
+            "split",
+            "aup:2.3",
+        )
+        read = client.get("/v1/policies/aup/versions/1/file", headers=SAME_ORIGIN).json()
+        both = next(line for line in read["paragraphs"] if line["text"].startswith("2.2 Lock"))
+        assert (both["clause"], both["clauses"]) == ("aup:2.2", ["aup:2.2", "aup:2.3"])
+
+    def test_a_rule_cut_in_two_is_merged_with_the_one_before(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+
+        response = fixed(client, "aup", "merge", "aup:3:p1")
+
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        assert draft["clause"] == "aup:3.3"
+        assert clauses_of(draft)["aup:3.3"]["text"] == (
+            "Records are read only by the security team, and only\nwhen misuse is suspected."
+        )
+        assert "aup:3:p1" not in clauses_of(draft)
+
+    def test_a_fix_that_cannot_be_made_is_refused_with_why(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+        _, etag = draft_of(client, "aup")
+
+        first = fixed(client, "aup", "move-under", "aup:1")
+        missing = fixed(client, "aup", "merge", "aup:9.9")
+        nowhere = fixed(client, "aup", "split", "aup:2.1")
+        stale = fixed(client, "aup", "move-out", "aup:2.1", etag='"1"')
+
+        assert (first.status_code, first.json()["type"]) == (409, "/problems/fix-refused")
+        assert "no clause before it" in first.json()["detail"]
+        assert (missing.status_code, missing.json()["type"]) == (404, "/problems/no-clause")
+        assert nowhere.status_code == 409
+        assert stale.status_code == 412
+        assert draft_of(client, "aup")[1] == etag
+        reader = signed_in(app_client, DEVELOPER)
+        assert fixed(reader, "aup", "move-out", "aup:2.1").status_code == 403
+
+    def test_heading_or_text_goes_both_ways(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+
+        as_text = fixed(client, "aup", "make-text", "aup:2:personal-use").json()
+        made = clauses_of(as_text)[as_text["clause"]]
+        assert (made["kind"], made["heading"], made["text"]) == ("paragraph", None, "Personal use")
+        as_heading = fixed(client, "aup", "make-heading", as_text["clause"]).json()
+        after = clauses_of(as_heading)[as_heading["clause"]]
+        assert (after["kind"], after["heading"], after["fixed"]) == (
+            "section",
+            "Personal use",
+            "made-heading",
+        )
+        # What followed it when it became text stays where it is; moving it back is a fix too.
+        assert "aup:2:p1" in clauses_of(as_heading)
+        back = fixed(client, "aup", "move-under", "aup:2:p1").json()
+        assert back["clause"] == "aup:2:personal-use:p1"
+
+    def test_with_every_flag_settled_the_fixed_draft_publishes(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        draft, _ = draft_of(client, "aup")
+        suggestion = draft["flags"][2]["suggestion"]
+        split = fixed(client, "aup", **suggestion).json()
+        assert open_flags(split) == []
+
+        published = client.post("/v1/policies/aup/draft/publish", headers=SAME_ORIGIN)
+
+        assert published.status_code == 200, published.text
+        cited = client.get("/v1/clauses/aup:3.2", headers=SAME_ORIGIN)
+        assert cited.json()["clause"]["text"] == "The records are kept for 90 days."
+
+    def test_a_new_version_fixed_the_same_way_is_matched_again_as_unchanged(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        uploaded = upload(
+            client, "/v1/policies/aup/versions", "acceptable-use.md", effective_date="2026-06-01"
+        ).json()
+        assert clauses_of(uploaded)["aup:personal-use"]["change"] == "moved"
+        assert [gone["key"] for gone in uploaded["removed"]] == ["aup:2.2", "aup:2.3", "aup:3.2"]
+        splits = [
+            flag["suggestion"]
+            for flag in uploaded["flags"]
+            if flag["suggestion"] and flag["suggestion"]["edit"] == "split"
+        ]
+
+        assert fixed(client, "aup", "move-under", "aup:personal-use").is_success
+        for suggestion in splits:
+            assert fixed(client, "aup", **suggestion).is_success
+        draft = fixed(client, "aup", "merge", "aup:3:p1").json()
+
+        assert draft["changes"] == {
+            "added": 0,
+            "modified": 0,
+            "moved": 0,
+            "unchanged": len(clauses_of(draft)),
+            "removed": 0,
+        }
+        assert open_flags(draft) == []
+
+
 class TestEndings:
     def test_a_draft_can_be_discarded(self, app_client: TestClient) -> None:
         client = signed_in(app_client, ADMIN)
@@ -536,6 +724,7 @@ class TestEndings:
         assert ("document.drafted", "dashboard") in actions
         assert ("document.flag_accepted", "dashboard") in actions
         assert ("document.match_rejected", "dashboard") in actions
+        assert ("document.clause_fixed", "dashboard") in actions
         assert ("document.published", "dashboard") in actions
         assert ("document.draft_discarded", "dashboard") in actions
         assert ("document.archived", "dashboard") in actions

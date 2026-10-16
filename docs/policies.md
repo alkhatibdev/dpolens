@@ -142,8 +142,9 @@ dpolens policy accept acme-retention 1 2
 dpolens policy publish acme-retention
 ```
 
-A reviewer checks each flag against the file and settles it: accepts it as read, or, for a new
-version, says a match is wrong. Publishing waits until every flag is settled. Uploading and
+A reviewer checks each flag against the file and settles it: fixes how the clause was read
+([Fixing what was read](#fixing-what-was-read)), accepts it as read, or, for a new version, says
+a match is wrong. Publishing waits until every flag is settled. Uploading and
 reviewing need the permission `documents.upload`; publishing and archiving need
 `documents.publish`, which the seeded Admin and DPO roles hold. A draft's title, effective
 date and version label can be changed until it is published (`dpolens policy edit`), and a
@@ -179,6 +180,50 @@ docker compose exec api dpolens policy upload /tmp/retention-policy.docx --slug 
 
 Every step, from the upload to the publication, is written to the governance log with who took
 it, and the upload's entry records the file's SHA-256.
+
+## Fixing what was read
+
+When the parser reads a clause wrongly, a reviewer fixes it in the draft, and no word changes.
+There are four tools:
+
+- **Split** a clause where a second rule begins: where a sentence or a paragraph does, or where
+  a number follows a semicolon or a colon. A number where the second part begins becomes its
+  key. A clause with clauses under it is split once they are moved out.
+- **Merge** a clause with the one before it, when a page break or a stray line cut one rule in
+  two. Text merges with text, a heading with a heading, a row with a row, and a merged clause's
+  number stays in its words.
+- **Make a heading text**, or **make text a heading**. What was under a heading made text
+  follows it at its level. A heading is one paragraph, so a longer clause is split first.
+- **Move a clause under the one before it**, or **out a level**. Moving out brings the clauses
+  after it at its old level along, in the file's order: a heading holds them, and any other
+  clause is followed by them.
+
+Keys follow from where each clause ends up, by the rules a parse uses: moving `personal-use`
+under section 3 makes it `acme-aup:3:personal-use`. Each clause a fix moved or reshaped says
+`you` where the others say `file`, `type` or `number`.
+
+A fix settles the flags it answers. An open flag on the clause fixed is settled by the fix, and
+the checks run again: a numbering flag the fix makes untrue is settled too, and a problem the
+fix makes, such as two clauses numbered 4.2, is a new flag. For a new version, a clause whose
+words a fix changes is matched again against the clauses of the version before that nothing
+continues, so a new file fixed the way the last one was matches it clause for clause.
+
+Where the parser knows the fix for a flag, the flag suggests it: moving a heading with no number
+under the heading before it, making a paragraph with a heading's style a heading, or splitting
+a clause where a missing number is typed into it, as when "3.4 follows 3.2" and "3.3" is inside
+3.2.
+
+In the dashboard, the tools are on the clause selected, and a flag's suggested fix is a button
+on the flag. On the command line:
+
+```bash
+dpolens policy fix acme-aup personal-use move-under
+dpolens policy fix acme-aup 3.2 split --before "3.3 Clear"
+dpolens policy fix acme-aup 4:p1 merge
+```
+
+The others are `make-text`, `make-heading` and `move-out`. Every fix is written to the
+governance log.
 
 ## A new version
 

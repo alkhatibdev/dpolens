@@ -19,7 +19,7 @@ from dataclasses import dataclass, field, replace
 
 from dpolens.engine.policies.blocks import Item, Number, Paragraph, ReadFile, Row, Table
 from dpolens.engine.policies.patterns import Label, parse_label, read_label
-from dpolens.engine.policies.tree import Flag, FlagKind, Layer, Reason, SetAside
+from dpolens.engine.policies.tree import Flag, FlagKind, Layer, Reason, SetAside, Suggestion
 
 HEADING_WORDS = 30
 """Past this many words a paragraph styled as a heading is text, and past eight so is one that
@@ -241,8 +241,14 @@ class Builder:
             )
         )
 
-    def flag(self, kind: FlagKind, detail: str, position: int | None = None) -> None:
-        self.flags.append(Flag(kind=kind, detail=detail, position=position))
+    def flag(
+        self,
+        kind: FlagKind,
+        detail: str,
+        position: int | None = None,
+        suggestion: Suggestion | None = None,
+    ) -> None:
+        self.flags.append(Flag(kind=kind, detail=detail, position=position, suggestion=suggestion))
 
     # The stack ---------------------------------------------------------------------------
 
@@ -333,6 +339,7 @@ class Builder:
                 "low_confidence_boundary",
                 "Styled as a heading but reads as a paragraph, so it was kept as text.",
                 paragraph.position,
+                Suggestion("make-heading"),
             )
         typed = signals.typed_number
         if typed is not None and typed[0].style.startswith("word-") and not signals.heading_like:
@@ -771,6 +778,7 @@ class Builder:
                     f'"{child.heading}" has no number, unlike the headings around it, '
                     "so it may belong under the one before it.",
                     child.positions[0] if child.positions else None,
+                    Suggestion("move-under"),
                 )
         for child in node.children:
             self.unnumbered_among_numbered(child)

@@ -146,6 +146,13 @@ The state of a flag a reviewer has accepted as read, or resolved with a change m
 it. Publishing waits until every flag is settled.
 _Avoid_: Closed, cleared, done
 
+**Fix**:
+A change a reviewer makes to how a draft was read: a clause split, merged with the one before
+it, made text or a heading, or moved a level. No word changes, keys follow from where each
+clause ends up, and a flag on the clause fixed is settled by it. A flag suggests one where the
+parser knows it.
+_Avoid_: Correction, override, edit (the API's name for the request that makes one)
+
 **Parse layer**:
 Which technique decided a clause's boundary and depth: the file's own structure,
 typography, numbering patterns, or a reviewer by hand.

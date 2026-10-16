@@ -10,6 +10,9 @@ export type DraftFlag = components["schemas"]["FlagOut"];
 export type PolicyFile = components["schemas"]["PolicyFile"];
 export type FileParagraph = components["schemas"]["FileParagraph"];
 export type PolicyVersion = components["schemas"]["PolicyVersion"];
+export type Edit = components["schemas"]["Fix"]["edit"];
+export type FlagSuggestion = components["schemas"]["FlagSuggestion"];
+export type SplitPlace = components["schemas"]["SplitPlace"];
 
 export function usePolicies(enabled = true) {
   return useQuery({
@@ -123,6 +126,30 @@ export function useAcceptFlags(slug: string) {
       }),
     ),
   );
+}
+
+export interface Fixing extends Change {
+  edit: Edit;
+  key: string;
+  at?: number;
+}
+
+/** A fix to how a clause was read. The answer names the key the clause has now. */
+export function useFixClause(slug: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ revision, ...body }: Fixing) =>
+      unwrap(
+        api.POST("/v1/policies/{slug}/draft/edits", {
+          params: { path: { slug }, header: ifMatch(revision) },
+          body,
+        }),
+      ),
+    onSuccess: (fixed) => {
+      client.setQueryData(draftKey(slug), fixed);
+      void client.invalidateQueries({ queryKey: ["policies"], exact: true });
+    },
+  });
 }
 
 export function useRejectMatch(slug: string) {

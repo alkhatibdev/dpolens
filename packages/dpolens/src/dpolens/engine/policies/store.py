@@ -20,7 +20,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path, PurePath
 from typing import Any, cast
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from dpolens.engine.auth.models import User
@@ -34,6 +34,7 @@ from dpolens.engine.documents.models import (
 from dpolens.engine.jobs import job_status, queue_indexing
 from dpolens.engine.logs.governance import (
     DOCUMENT_ARCHIVED,
+    DOCUMENT_CLAUSE_FIXED,
     DOCUMENT_DRAFT_DISCARDED,
     DOCUMENT_DRAFT_EDITED,
     DOCUMENT_DRAFTED,
@@ -46,11 +47,25 @@ from dpolens.engine.logs.governance import (
 from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.originals import Originals, Stored
 from dpolens.engine.policies.blocks import UnreadablePolicy
-from dpolens.engine.policies.checks import snippet
+from dpolens.engine.policies.checks import check_keys, check_numbering, snippet
+from dpolens.engine.policies.fixing import (
+    DONE,
+    CannotFix,
+    Part,
+    Result,
+    apply,
+    boundaries,
+    fixes,
+    keyed,
+    locate,
+    opening_number,
+    possible,
+)
+from dpolens.engine.policies.fixing import walk as walk_parts
 from dpolens.engine.policies.keys import slug_of
 from dpolens.engine.policies.parse import parse_policy, read_file
 from dpolens.engine.policies.reading import Line, as_rows, from_rows, lines_of
-from dpolens.engine.policies.tree import Clause, Flag, ParsedPolicy
+from dpolens.engine.policies.tree import Clause, Edit, Flag, Layer, ParsedPolicy
 from dpolens.engine.policies.versions import (
     MOVED_SIMILARITY,
     Change,
@@ -75,6 +90,7 @@ DOCUMENT_ACTIONS = (
     DOCUMENT_FLAG_ACCEPTED,
     DOCUMENT_DRAFT_EDITED,
     DOCUMENT_MATCH_REJECTED,
+    DOCUMENT_CLAUSE_FIXED,
     DOCUMENT_PUBLISHED,
     DOCUMENT_DRAFT_DISCARDED,
     DOCUMENT_ARCHIVED,
@@ -122,6 +138,10 @@ class FlagNotFound(Exception):
     """The draft has no flag in that place."""
 
 
+class NoClause(Exception):
+    """The draft has no clause by that key."""
+
+
 class NoMatch(Exception):
     """The draft has no clause by that key that continues one of the version before."""
 
@@ -152,6 +172,18 @@ class BadSlug(Exception):
 
 
 @dataclass(frozen=True)
+class FlagSuggestion:
+    """The fix the parser would make, while it can still be made."""
+
+    edit: Edit
+    key: str
+    """The clause it applies to."""
+
+    at: int | None
+    """For a split, where in that clause's text the second part begins."""
+
+
+@dataclass(frozen=True)
 class FlagView:
     position: int
     kind: str
@@ -167,6 +199,11 @@ class FlagView:
     resolved_at: datetime | None
     resolution: str | None
     paragraph: int | None
+    resolution_key: str | None = None
+    """The clause the change that settled it named: what it went under or into, or a split's
+    second part."""
+
+    suggestion: FlagSuggestion | None = None
 
 
 @dataclass(frozen=True)
@@ -198,6 +235,14 @@ class DraftClause:
     """That clause's words, when this one is renumbered or reworded."""
 
     children: tuple[DraftClause, ...]
+    fixed: str | None = None
+    """What a reviewer last did to where it begins or how deep it sits."""
+
+    fixes: tuple[Edit, ...] = ()
+    """The fixes that can be made to it where it sits, while it is a draft."""
+
+    splits: tuple[tuple[int, str | None], ...] = ()
+    """Where in its text it can be split, each with the number the second part would take."""
 
 
 @dataclass(frozen=True)
@@ -295,6 +340,17 @@ class FileLine:
     line: Line
     clause: str | None
     set_aside: str | None
+    clauses: tuple[str, ...] = ()
+    """Every clause that holds part of it: two, once a clause is split inside it."""
+
+
+@dataclass(frozen=True)
+class FixedDraft:
+    """A draft after a reviewer fixed how one of its clauses was read."""
+
+    draft: DraftView
+    clause: str
+    """The key the clause has now: its own, or for a merge the clause it went into."""
 
 
 @dataclass(frozen=True)
@@ -496,11 +552,16 @@ def _short(key: str, slug: str) -> str:
 
 
 def _matching_flags(
-    matching: Matching, later: dict[str, Later], slug: str, label: str
+    matching: Matching,
+    later: dict[str, Later],
+    slug: str,
+    label: str,
+    quiet: frozenset[str] = frozenset(),
 ) -> list[Flag]:
     """One flag for each clause whose match a reviewer should check: renumbered, reworded too
     far to be sure it is the same rule, or holding a number that named a different rule in the
-    version before."""
+    version before. A clause in `quiet` was renumbered by a reviewer's own change, which needs
+    no one to confirm it is the same rule when its words are."""
     flags: list[Flag] = []
     for key, found in matching.matches.items():
         said: list[str] = []
@@ -518,10 +579,11 @@ def _matching_flags(
             clause = later[key]
             same = (clause.heading, clause.text) == (found.earlier.heading, found.earlier.text)
             how = "renumbered" if same else "renumbered and reworded"
-            said.append(
-                f"{_short(key, slug)} continues {_short(found.earlier.key, slug)} from version "
-                f"{label}, {how}. Check that it is the same rule."
-            )
+            if not (same and key in quiet):
+                said.append(
+                    f"{_short(key, slug)} continues {_short(found.earlier.key, slug)} from "
+                    f"version {label}, {how}. Check that it is the same rule."
+                )
         if key in matching.reused:
             named, went = matching.reused[key]
             what = snippet(named.heading or named.text, 60)
@@ -532,6 +594,23 @@ def _matching_flags(
         if said:
             flags.append(Flag(kind="unmatched_key", detail=" ".join(said), key=key))
     return flags
+
+
+def _stored(flag: Flag, rows: dict[str, uuid.UUID]) -> dict[str, Any] | None:
+    """A flag's suggested fix as it is kept: the clause it applies to by its row, which stays
+    the same however its key changes, and none when that clause is not there."""
+    found = flag.suggestion
+    if found is None:
+        return None
+    target = rows.get(found.key) if found.key else None
+    if found.key and target is None:
+        return None
+    return {
+        "edit": found.edit,
+        "node": str(target) if target else None,
+        "at": found.at,
+        "label": found.label,
+    }
 
 
 def _write_draft(
@@ -645,6 +724,7 @@ def _write_draft(
                 detail=flag.detail,
                 position=position,
                 paragraph=flag.position,
+                suggestion=_stored(flag, {key: found.id for key, found in nodes.items()}),
             )
         )
     session.flush()
@@ -731,9 +811,12 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
     children: dict[uuid.UUID | None, list[tuple[DocumentNode, NodeText]]] = {}
     for node, text in rows:
         children.setdefault(node.parent_node_id, []).append((node, text))
+    roots = _parts_of([(node, text) for node, text in rows]) if version.status == "draft" else []
+    offered = fixes(roots)
 
     def clause(node: DocumentNode, text: NodeText) -> DraftClause:
         before = earlier.get(node.previous_node_id) if node.previous_node_id else None
+        can = tuple(offered.get(node.canonical_key, ()))
         return DraftClause(
             key=node.canonical_key,
             kind=node.node_type,
@@ -746,6 +829,9 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
             continues=before.key if before else None,
             earlier=before if node.change_type in ("modified", "moved") else None,
             children=build(node.id),
+            fixed=node.fixed,
+            fixes=can,
+            splits=_splits(text.body_text) if "split" in can else (),
         )
 
     def build(parent: uuid.UUID | None) -> tuple[DraftClause, ...]:
@@ -771,6 +857,7 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
             return names.get(user)
         return "the command line" if when else None
 
+    suggest = _suggestions(roots, flags)
     flag_views = tuple(
         FlagView(
             position=flag.position,
@@ -783,6 +870,8 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
             resolved_at=flag.resolved_at,
             resolution=flag.resolution,
             paragraph=flag.paragraph,
+            resolution_key=flag.resolution_key,
+            suggestion=suggest.get(flag.position),
         )
         for flag in flags
     )
@@ -806,6 +895,42 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
         updated_by=(names.get(version.updated_by_user_id) if version.updated_by_user_id else None),
         next_label=_label_for(version, _published_labels(session, document)),
     )
+
+
+def _splits(text: str) -> tuple[tuple[int, str | None], ...]:
+    found: list[tuple[int, str | None]] = []
+    for at in boundaries(text):
+        opening = opening_number(text[at:])
+        found.append((at, opening[0] if opening else None))
+    return tuple(found)
+
+
+def _suggestions(roots: list[Part], flags: Sequence[ParseFlag]) -> dict[int, FlagSuggestion]:
+    """The suggested fixes of the open flags, each while it can still be made."""
+    wanted = [
+        flag
+        for flag in flags
+        if flag.suggestion and flag.accepted_at is None and flag.resolved_at is None
+    ]
+    if not wanted:
+        return {}
+    rows = {part.row: part for part in walk_parts(roots)}
+    found: dict[int, FlagSuggestion] = {}
+    for flag in wanted:
+        stored: dict[str, Any] = dict(flag.suggestion or {})
+        named = stored.get("node")
+        part = rows.get(uuid.UUID(named) if named else flag.node_id)
+        edit = cast(Edit, stored.get("edit"))
+        at = stored.get("at")
+        if part is None or (at is not None and not isinstance(at, int)):
+            continue
+        if edit == "split":
+            opening = opening_number(part.text[at:]) if at is not None else None
+            if opening is None or opening[0] != stored.get("label"):
+                continue
+        if possible(roots, edit, part.key, at):
+            found[flag.position] = FlagSuggestion(edit=edit, key=part.key, at=at)
+    return found
 
 
 def accept_flags(
@@ -999,6 +1124,11 @@ def reject_match(
     checks["removed"] = sorted(
         [*checks.get("removed", []), gone], key=lambda clause: clause["key"] or ""
     )
+    # Kept, so that matching the clause again after a fix never pairs it with that rule again.
+    checks["rejected"] = [
+        *checks.get("rejected", []),
+        {"node": str(node.id), "earlier": str(earlier.id)},
+    ]
     draft.parse_checks = checks
     session.flush()
 
@@ -1078,6 +1208,343 @@ def _rewrite_matching_flags(
         key = flag.canonical_key
         if key is not None and key != keep and key in said:
             flag.detail = said[key]
+
+
+def _positions(node: DocumentNode) -> list[int]:
+    anchor: dict[str, Any] = dict(node.source_anchor or {})
+    return [int(at) for at in anchor.get("positions", [])]
+
+
+def _parts(session: Session, version: DocumentVersion) -> list[Part]:
+    """A version's clauses as the fixing tools reshape them."""
+    rows = session.execute(
+        select(DocumentNode, NodeText)
+        .join(NodeText, NodeText.node_id == DocumentNode.id)
+        .where(DocumentNode.document_version_id == version.id, NodeText.is_authoritative)
+    ).all()
+    return _parts_of([(node, text) for node, text in rows])
+
+
+def _parts_of(rows: Sequence[tuple[DocumentNode, NodeText]]) -> list[Part]:
+    children: dict[uuid.UUID | None, list[tuple[DocumentNode, NodeText]]] = {}
+    for node, text in rows:
+        children.setdefault(node.parent_node_id, []).append((node, text))
+
+    def build(parent: uuid.UUID | None) -> list[Part]:
+        found = sorted(children.get(parent, []), key=lambda pair: pair[0].order_index)
+        return [
+            Part(
+                kind=node.node_type,
+                layer=cast(Layer, node.parse_layer or "native_structure"),
+                label=node.label,
+                heading=text.heading,
+                lines=text.body_text.split("\n") if text.body_text else [],
+                positions=_positions(node),
+                children=build(node.id),
+                row=node.id,
+                previous=node.previous_node_id,
+                fixed=node.fixed,
+                change=node.change_type,
+                key=node.canonical_key,
+                lang=text.lang,
+            )
+            for node, text in found
+        ]
+
+    return build(None)
+
+
+def _change_of(new: Later, old: Earlier | None) -> Change:
+    """What a clause did to the earlier one it continues, as matching an upload says it."""
+    if old is None:
+        return "added"
+    if old.key != new.key:
+        return "moved"
+    return "unchanged" if words(new) == words(old) else "modified"
+
+
+def _match_again(
+    session: Session,
+    document: Document,
+    roots: list[Part],
+    result: Result,
+    checks: dict[str, Any],
+) -> tuple[Matching, dict[str, Later], str] | None:
+    """For a new version: the clauses a change reworded are matched again, by the rules an upload
+    uses, against the earlier clauses nothing continues, never to a rule a reviewer said is a
+    different one. Then every clause's change is worked out again from its key and its words."""
+    previous = _latest_published(session, document)
+    label = checks.get("previous")
+    if previous is None or not isinstance(label, str):
+        return None
+    earlier = _earlier(session, previous)
+    by_id = {clause.id: clause for clause in earlier}
+    parts = list(walk_parts(roots))
+    for part in result.reworded:
+        part.previous = None
+    taken = {part.previous for part in parts if part.previous}
+    free = [clause for clause in earlier if clause.id not in taken]
+    rejected = {(item["node"], item["earlier"]) for item in checks.get("rejected", [])}
+    if result.reworded and free:
+        reworded = {part.key: part for part in result.reworded}
+        again = match(free, [Later(p.key, p.label, p.heading, p.text) for p in result.reworded])
+        for key, found in again.matches.items():
+            part = reworded[key]
+            if found.earlier is not None and (str(part.row), str(found.earlier.id)) not in rejected:
+                part.previous = found.earlier.id
+    later: dict[str, Later] = {}
+    matches: dict[str, Match] = {}
+    for part in parts:
+        new = Later(part.key, part.label, part.heading, part.text)
+        old = by_id.get(part.previous) if part.previous else None
+        change = _change_of(new, old)
+        part.previous = old.id if old else None
+        part.change = change
+        later[part.key] = new
+        matches[part.key] = Match(
+            change=change, earlier=old, score=similarity(words(new), words(old)) if old else 1.0
+        )
+    continued = {part.previous for part in parts if part.previous}
+    removed = [clause for clause in earlier if clause.id not in continued]
+    checks["removed"] = [
+        {"key": gone.key, "heading": gone.heading, "text": gone.text}
+        for gone in sorted(removed, key=lambda clause: clause.key)
+    ]
+    matching = Matching(matches=matches, removed=removed, reused=reused(earlier, matches))
+    return matching, later, label
+
+
+def _store_parts(session: Session, draft: DocumentVersion, roots: list[Part]) -> None:
+    """Write the reshaped tree back. A key that changes goes through a name no key can have,
+    so two clauses trading keys never break the rule that a key names one clause."""
+    nodes = {
+        node.id: node
+        for node in session.scalars(
+            select(DocumentNode).where(DocumentNode.document_version_id == draft.id)
+        )
+    }
+    texts = {
+        text.node_id: text
+        for text in session.scalars(
+            select(NodeText).where(NodeText.node_id.in_(list(nodes)), NodeText.is_authoritative)
+        )
+    }
+    kept = {part.row: part for part in walk_parts(roots) if part.row is not None}
+    for row, node in nodes.items():
+        if row not in kept or kept[row].key != node.canonical_key:
+            node.canonical_key = f"~{row}"
+    session.flush()
+
+    def put(part: Part, parent: DocumentNode | None, order: int, depth: int) -> None:
+        node = nodes.get(part.row) if part.row else None
+        if node is None:
+            node = DocumentNode(document_version_id=draft.id, is_normative=True)
+            session.add(node)
+        node.canonical_key = part.key
+        node.parent_node_id = parent.id if parent else None
+        node.node_type = part.kind
+        node.label = part.label
+        node.order_index = order
+        node.depth = depth
+        node.parse_layer = part.layer
+        node.source_anchor = {"positions": list(part.positions)}
+        node.previous_node_id = part.previous
+        node.change_type = part.change
+        node.fixed = part.fixed
+        session.flush()
+        part.row = node.id
+        text = texts.get(node.id)
+        if text is None:
+            text = NodeText(node_id=node.id, is_authoritative=True, translation_status="original")
+            session.add(text)
+        text.lang = part.lang
+        text.heading = part.heading
+        text.label = part.label
+        text.body_text = part.text
+        for index, child in enumerate(part.children):
+            put(child, node, index, depth + 1)
+
+    for index, root in enumerate(roots):
+        put(root, None, index, 0)
+    session.flush()
+
+
+def _settle_flags(
+    session: Session,
+    document: Document,
+    draft: DocumentVersion,
+    roots: list[Part],
+    clauses: tuple[Clause, ...],
+    result: Result,
+    edit: Edit,
+    matched: tuple[Matching, dict[str, Later], str] | None,
+    actor: Actor,
+) -> tuple[list[int], list[int]]:
+    """Flags after a fix: each follows its clause to its new key; an open one on the fixed
+    clause, or one the change made untrue, is resolved by it; and what the checks and the
+    matching find now that no flag says is a new flag. Returns the flags settled and added."""
+    flags = list(
+        session.scalars(
+            select(ParseFlag)
+            .where(ParseFlag.document_version_id == draft.id)
+            .order_by(ParseFlag.position)
+        )
+    )
+    rows = {part.row: part for part in walk_parts(roots) if part.row is not None}
+    gone = {part.row for part in result.gone}
+    now = datetime.now(UTC)
+    settled: list[int] = []
+
+    def resolve(flag: ParseFlag) -> None:
+        flag.resolved_at = now
+        flag.resolved_by_user_id = actor.user_id
+        flag.resolution = DONE[edit]
+        flag.resolution_key = result.named.key if result.named else None
+        settled.append(flag.position)
+
+    def open_(flag: ParseFlag) -> bool:
+        return flag.accepted_at is None and flag.resolved_at is None
+
+    numbering = [*check_numbering(clauses), *check_keys(clauses)]
+    found_numbering = {(flag.detail, flag.key) for flag in numbering}
+    standing: dict[str, Flag] = {}
+    fresh: list[Flag] = []
+    if matched is not None:
+        matching, later, label = matched
+        standing = {
+            flag.key: flag
+            for flag in _matching_flags(matching, later, document.slug, label)
+            if flag.key
+        }
+        quiet = frozenset(part.key for part in result.marked if part not in result.reworded)
+        fresh = _matching_flags(matching, later, document.slug, label, quiet)
+
+    for flag in flags:
+        if flag.node_id in gone:
+            if open_(flag):
+                resolve(flag)
+            flag.node_id = None
+            continue
+        if flag.node_id in rows:
+            flag.canonical_key = rows[flag.node_id].key
+        if flag.kind == "unmatched_key" and flag.accepted_at is not None:
+            said = standing.get(flag.canonical_key or "")
+            if said is not None:
+                flag.detail = said.detail
+        if not open_(flag):
+            continue
+        if flag.node_id is not None and flag.node_id == result.subject.row:
+            resolve(flag)
+        elif flag.kind == "numbering_gap":
+            if (flag.detail, flag.canonical_key) not in found_numbering:
+                resolve(flag)
+        elif flag.kind == "unmatched_key" and matched is not None:
+            said = standing.get(flag.canonical_key or "")
+            if said is None:
+                resolve(flag)
+            else:
+                flag.detail = said.detail
+
+    held = {
+        (flag.kind, flag.detail, flag.canonical_key)
+        for flag in flags
+        if flag.resolved_at is None and flag.kind == "numbering_gap"
+    }
+    matched_keys = {
+        flag.canonical_key
+        for flag in flags
+        if flag.resolved_at is None and flag.kind == "unmatched_key"
+    }
+    order = {part.key: index for index, part in enumerate(walk_parts(roots))}
+    new = [
+        *(flag for flag in numbering if (flag.kind, flag.detail, flag.key) not in held),
+        *(flag for flag in fresh if flag.key not in matched_keys),
+    ]
+    by_key = {part.key: part.row for part in walk_parts(roots) if part.row is not None}
+    position = max((flag.position for flag in flags), default=0)
+    added: list[int] = []
+    for finding in sorted(new, key=lambda found: order.get(found.key or "", len(order))):
+        position += 1
+        session.add(
+            ParseFlag(
+                document_version_id=draft.id,
+                node_id=by_key.get(finding.key) if finding.key else None,
+                canonical_key=finding.key,
+                kind=finding.kind,
+                detail=finding.detail,
+                position=position,
+                suggestion=_stored(finding, by_key),
+            )
+        )
+        added.append(position)
+    session.flush()
+    return settled, added
+
+
+def fix_clause(
+    session: Session,
+    slug: str,
+    edit: Edit,
+    key: str,
+    *,
+    actor: Actor,
+    at: int | None = None,
+    expected_revision: int | None = None,
+) -> FixedDraft:
+    """Fix how a clause of the draft was read, without changing a word.
+
+    Keys are given again by the rules a parse uses. An open flag on the clause is resolved by
+    the change. The numbering checks run again, so a numbering flag the change makes untrue is
+    resolved and a new finding is a new flag. For a new version, the clauses the change rewords
+    are matched again, and every clause's change against the version before is worked out again.
+    """
+    document = _document(session, slug)
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
+    roots = _parts(session, draft)
+    part = locate(roots, key)
+    if part is None:
+        raise NoClause(f"{slug}'s draft has no clause {key}.")
+    texts = {int(row["position"]): str(row["text"]) for row in draft.reading or []}
+    result = apply(roots, edit, part, at, texts)
+    clauses = keyed(document.slug, roots)
+    for found in walk_parts(roots):
+        if len(found.key) > MAX_KEY:
+            raise CannotFix(
+                f"A clause's key would be longer than {MAX_KEY} characters "
+                f"({found.key[:60]}…), which nests it too deeply."
+            )
+    checks: dict[str, Any] = dict(draft.parse_checks or {})
+    matched = _match_again(session, document, roots, result, checks)
+    _store_parts(session, draft, roots)
+    settled, added = _settle_flags(
+        session, document, draft, roots, clauses, result, edit, matched, actor
+    )
+    for gone in result.gone:
+        if gone.row is not None:
+            session.execute(delete(NodeText).where(NodeText.node_id == gone.row))
+            session.execute(delete(DocumentNode).where(DocumentNode.id == gone.row))
+    draft.parse_checks = checks
+    _changed(draft, actor)
+    session.flush()
+    record(
+        session,
+        actor=actor,
+        action=DOCUMENT_CLAUSE_FIXED,
+        target_type="document_version",
+        target_id=str(draft.id),
+        details={
+            "document": slug,
+            "title": document.title,
+            "version": draft.version_number,
+            "edit": edit,
+            "key": key,
+            "now": result.after.key,
+            "with": result.named.key if result.named else None,
+            "settled": settled,
+            "flags": added,
+        },
+    )
+    return FixedDraft(draft=read_draft(session, slug, version=draft), clause=result.after.key)
 
 
 def _discard(
@@ -1242,15 +1709,15 @@ def file_as_read(session: Session, originals: Originals, slug: str, number: int)
         # Read before the file as read was kept with its version.
         data, name, _ = original(session, originals, slug, number)
         lines = lines_of(read_file(data, name))
-    clauses: dict[int, str] = {}
+    clauses: dict[int, list[str]] = {}
     for key, anchor in session.execute(
-        select(DocumentNode.canonical_key, DocumentNode.source_anchor).where(
-            DocumentNode.document_version_id == version.id
-        )
+        select(DocumentNode.canonical_key, DocumentNode.source_anchor)
+        .where(DocumentNode.document_version_id == version.id)
+        .order_by(DocumentNode.depth, DocumentNode.order_index)
     ).all():
         where: dict[str, Any] = dict(anchor or {})
         for position in where.get("positions", []):
-            clauses.setdefault(position, key)
+            clauses.setdefault(position, []).append(key)
     checks: dict[str, Any] = dict(version.parse_checks or {})
     set_aside = {
         position: block["reason"]
@@ -1266,7 +1733,10 @@ def file_as_read(session: Session, originals: Originals, slug: str, number: int)
         size=version.source_size,
         lines=tuple(
             FileLine(
-                line=line, clause=clauses.get(line.position), set_aside=set_aside.get(line.position)
+                line=line,
+                clause=next(iter(clauses.get(line.position, [])), None),
+                set_aside=set_aside.get(line.position),
+                clauses=tuple(clauses.get(line.position, [])),
             )
             for line in lines
             if line.text.strip()

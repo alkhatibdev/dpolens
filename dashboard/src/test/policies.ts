@@ -269,11 +269,13 @@ export const acceptableUseDraft: PolicyDraft = {
           key: "acceptable-use:3.2",
           label: "3.2",
           text: "Lock your screen whenever you leave your desk.",
+          fixes: ["make-heading", "move-out"],
         }),
         clause({
           key: "acceptable-use:3.4",
           label: "3.4",
           text: "Never copy customer data to a personal device or a personal email account.",
+          fixes: ["merge", "make-heading", "move-under", "move-out"],
         }),
       ],
     }),
@@ -283,11 +285,31 @@ export const acceptableUseDraft: PolicyDraft = {
       heading: "Personal use:",
       text: "",
       layer: "typography",
+      fixes: ["merge", "make-text", "move-under"],
       children: [
         clause({
           key: "acceptable-use:personal-use:p1",
           text: "Occasional personal use is allowed, as long as no customer data is involved.",
           layer: "native_structure",
+          fixes: ["make-heading", "move-out"],
+        }),
+      ],
+    }),
+    clause({
+      key: "acceptable-use:4",
+      kind: "section",
+      label: "4",
+      heading: "Monitoring",
+      text: "",
+      layer: "native_structure",
+      fixes: ["merge", "make-text", "move-under"],
+      children: [
+        clause({
+          key: "acceptable-use:4.1",
+          label: "4.1",
+          text: "Acme records who opens systems that hold personal data, to detect misuse. 4.2 The records are kept for 90 days.",
+          fixes: ["split", "make-heading", "move-out"],
+          splits: [{ at: 74, label: "4.2" }],
         }),
       ],
     }),
@@ -299,6 +321,7 @@ export const acceptableUseDraft: PolicyDraft = {
       key: "acceptable-use:personal-use",
       detail:
         '"Personal use:" has no number, unlike the headings around it, so it may belong under the one before it.',
+      suggestion: { edit: "move-under", key: "acceptable-use:personal-use", at: null },
     }),
     flag({
       position: 2,
@@ -365,6 +388,12 @@ export const acceptableUseFile: PolicyFile = {
       position: 6,
       text: "Occasional personal use is allowed, as long as no customer data is involved.",
       clause: "acceptable-use:personal-use:p1",
+    }),
+    line({ position: 7, text: "4. Monitoring", heading: 1, clause: "acceptable-use:4" }),
+    line({
+      position: 8,
+      text: "4.1 Acme records who opens systems that hold personal data, to detect misuse. 4.2 The records are kept for 90 days.",
+      clause: "acceptable-use:4.1",
     }),
   ],
 };

@@ -12,9 +12,10 @@ from collections import Counter
 from collections.abc import Sequence
 
 from dpolens.engine.policies.blocks import ReadFile
+from dpolens.engine.policies.fixing import boundaries, opening_number
 from dpolens.engine.policies.patterns import Label, follows, parse_label, starts
 from dpolens.engine.policies.structure import Built, Node
-from dpolens.engine.policies.tree import Clause, Coverage, Flag
+from dpolens.engine.policies.tree import Clause, Coverage, Flag, Suggestion
 
 
 def printed(text: str) -> int:
@@ -91,12 +92,14 @@ def check_numbering(clauses: Sequence[Clause]) -> list[Flag]:
             # A list that starts again at one after other text is a new list, not a slip.
             restarted = interrupted and starts(label)
             if earlier is not None and not follows(earlier[0], label) and not restarted:
-                what = "repeats" if earlier[0].values == label.values else "follows"
+                repeats = earlier[0].values == label.values
+                what = "repeats" if repeats else "follows"
                 flags.append(
                     Flag(
                         kind="numbering_gap",
                         detail=f"{label.text} {what} {earlier[0].text}.",
                         key=clause.key,
+                        suggestion=None if repeats else typed_inside(earlier[1], earlier[0]),
                     )
                 )
             for style, _ in label.readings():
@@ -104,6 +107,17 @@ def check_numbering(clauses: Sequence[Clause]) -> list[Flag]:
             interrupted = False
         flags.extend(check_numbering(clause.children))
     return flags
+
+
+def typed_inside(clause: Clause, label: Label) -> Suggestion | None:
+    """A number missing between two that is typed into the clause before, where a sentence or a
+    paragraph begins: "3.2 Lock your screen. 3.3 Clear your desk." Splitting it there is the fix."""
+    for at in boundaries(clause.text):
+        found = opening_number(clause.text[at:])
+        parsed = parse_label(found[0]) if found else None
+        if found is not None and parsed is not None and follows(label, parsed):
+            return Suggestion("split", key=clause.key, at=at, label=found[0])
+    return None
 
 
 def check_keys(clauses: Sequence[Clause]) -> list[Flag]:

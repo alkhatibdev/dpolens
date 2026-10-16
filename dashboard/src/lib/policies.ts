@@ -57,6 +57,40 @@ export function walk(clauses: readonly DraftClause[]): DraftClause[] {
   return clauses.flatMap((clause) => [clause, ...walk(clause.children)]);
 }
 
+/** Where a clause sits: the clause it is under, and the one before it at its level. */
+export interface Place {
+  parent: DraftClause | null;
+  before: DraftClause | null;
+}
+
+export function placeOf(clauses: readonly DraftClause[], key: string): Place | null {
+  const search = (siblings: readonly DraftClause[], parent: DraftClause | null): Place | null => {
+    for (const [index, clause] of siblings.entries()) {
+      if (clause.key === key) {
+        return { parent, before: siblings[index - 1] ?? null };
+      }
+      const found = search(clause.children, clause);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  };
+  return search(clauses, null);
+}
+
+type Fixed = NonNullable<DraftClause["fixed"]>;
+
+/** A fix as the dashboard's words name it. */
+export const FIX_WORDS = {
+  split: "split",
+  merged: "merged",
+  "made-text": "madeText",
+  "made-heading": "madeHeading",
+  "moved-under": "movedUnder",
+  "moved-out": "movedOut",
+} as const satisfies Record<Fixed, string>;
+
 export function isSettled(flag: DraftFlag): boolean {
   return flag.accepted_at !== null || flag.resolved_at !== null;
 }
