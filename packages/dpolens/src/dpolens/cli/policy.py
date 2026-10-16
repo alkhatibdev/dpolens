@@ -202,11 +202,30 @@ def accept(
         raise typer.BadParameter("Name the flags to accept by their number, or pass --all.")
     with session_scope(load_settings()) as session:
         found = store.accept_flags(session, slug, None if every else positions, actor=cli_actor())
-    left = [flag.position for flag in found.flags if flag.accepted_at is None]
+    left = [flag.position for flag in found.flags if _open(flag)]
     if left:
         typer.echo(f"Still open: {', '.join(str(position) for position in left)}.")
     else:
-        typer.echo(f"Every flag is accepted. Publish with: dpolens policy publish {slug}")
+        typer.echo(f"Every flag is settled. Publish with: dpolens policy publish {slug}")
+
+
+@app.command(name="reject-match")
+def reject_match(
+    slug: Slug,
+    key: Annotated[str, typer.Argument(help="The clause in the draft, such as 4.3")],
+) -> None:
+    """Say a clause of a new version is a different rule from the one it was matched to.
+
+    It becomes new, and the earlier clause it was matched to becomes removed, so that a citation
+    of the earlier clause says its rule was removed.
+    """
+    full = key if key.startswith(slug + ":") else f"{slug}:{key}"
+    with session_scope(load_settings()) as session:
+        before = {clause.key: clause for clause in _walk(store.read_draft(session, slug).clauses)}
+        earlier = before[full].continues if full in before else None
+        found = store.reject_match(session, slug, full, actor=cli_actor())
+    gone = (earlier or "").removeprefix(slug + ":")
+    typer.echo(f"{key} is new in the draft, and version {found.previous}'s {gone} is removed.")
 
 
 @app.command()
@@ -295,6 +314,11 @@ def sample() -> None:
 
 
 CHANGES = {"added": "new", "modified": "reworded", "unchanged": "same"}
+RESOLVED = {"match-rejected": "said to be a different rule"}
+
+
+def _open(flag: store.FlagView) -> bool:
+    return flag.accepted_at is None and flag.resolved_at is None
 
 
 def show_draft(found: store.DraftView) -> None:
@@ -334,12 +358,16 @@ def show_draft(found: store.DraftView) -> None:
     for notice in checks.get("notices", []):
         typer.secho(notice, fg=typer.colors.BRIGHT_BLACK)
     typer.echo("")
-    open_flags = [flag for flag in found.flags if flag.accepted_at is None]
+    open_flags = [flag for flag in found.flags if _open(flag)]
     for flag in found.flags:
         where = flag.key.removeprefix(version.slug + ":") if flag.key else "the file"
-        done = (
-            typer.style(f" (accepted by {flag.accepted_by})", dim=True) if flag.accepted_at else ""
-        )
+        done = ""
+        if flag.accepted_at:
+            done = typer.style(f" (accepted by {flag.accepted_by})", dim=True)
+        elif flag.resolved_at:
+            done = typer.style(
+                f" ({RESOLVED.get(flag.resolution or '', 'fixed')} by {flag.resolved_by})", dim=True
+            )
         typer.echo(f"  {flag.position:>3}  {FLAGS[flag.kind]:<10} {where}  {flag.detail}{done}")
     if open_flags:
         typer.secho(

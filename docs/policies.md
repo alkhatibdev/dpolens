@@ -131,6 +131,10 @@ Uploading a policy reads it at once, so a file that cannot be read is refused th
 with what to do about it. A file it can read becomes a **draft**: the clauses, the flags, how
 much of the file reached a clause, and what was set aside. Nothing searches a draft.
 
+In the dashboard, **Policies** takes each step: upload a file, review the draft with the file as
+it was read beside its clauses, settle each flag, and publish. The command line takes the same
+steps:
+
 ```bash
 dpolens policy upload retention-policy.docx --slug acme-retention --effective-date 2026-01-01
 dpolens policy draft acme-retention
@@ -138,11 +142,16 @@ dpolens policy accept acme-retention 1 2
 dpolens policy publish acme-retention
 ```
 
-A reviewer reads each flag and accepts it, and publishing waits until every flag is accepted.
-Uploading and reviewing need the permission `documents.upload`; publishing and archiving need
+A reviewer checks each flag against the file and settles it: accepts it as read, or, for a new
+version, says a match is wrong. Publishing waits until every flag is settled. Uploading and
+reviewing need the permission `documents.upload`; publishing and archiving need
 `documents.publish`, which the seeded Admin and DPO roles hold. A draft's title, effective
 date and version label can be changed until it is published (`dpolens policy edit`), and a
 draft can be discarded (`dpolens policy discard`).
+
+Two people can review one draft at once. A change made after somebody else's is refused, with
+who made the other change and when, so nobody's review is undone without them knowing; the
+draft reloads and the change can be made again.
 
 Once published, a version never changes. Searches find it from the day it takes effect: by its
 words straight away, and by meaning once the worker has embedded its clauses. The API reports
@@ -191,6 +200,17 @@ clause whose words changed so much that it may be a different rule (the flag quo
 said before), and a number that named a different rule in the version before. A policy has
 one draft at a time. Uploading another while one is open is refused, unless you ask for the new
 file to replace it (`--replace`).
+
+When a match is wrong, say so, with **It's a different rule** in the dashboard or on the
+command line:
+
+```bash
+dpolens policy reject-match acme-retention 4.3
+```
+
+The clause becomes new, and the clause of the version before that it was matched to becomes
+removed. A citation of that earlier clause then says its rule was removed, instead of pointing
+at a different rule that happened to share its words.
 
 ## Keys over time
 
@@ -243,9 +263,14 @@ dpolens policy archive acme-retention
 
 The file each version was read from is kept, under a name made from its SHA-256, and checked
 against that hash whenever it is read, so a file that went missing or changed is an error
-rather than a different download. Anyone who may read the policies can download it from the
-API. An upload writes the file before its draft, so a failure can leave a file that nothing
-points at, and the worker removes those once a day, after a day's grace.
+rather than a different download. Anyone who may read the library can download a published
+version's file; a draft's is for whoever uploads or publishes policies. An upload writes the
+file before its draft, so a failure can leave a file that nothing points at, and the worker
+removes those once a day, after a day's grace.
+
+What the reader found in the file is kept with each version too: every paragraph in order, what
+it looked like, and the clause it went to or why it was set aside. That is the file the review
+shows beside the clauses, and it stays the same for the life of the version.
 [configuration.md](configuration.md) says where the files are kept.
 
 ## The sample policy

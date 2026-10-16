@@ -65,6 +65,20 @@ export function formatWhen(iso: string, now: Date = new Date()): string {
   return sameDay(when, now) ? `today at ${times.format(when)}` : `on ${formatMoment(iso)}`;
 }
 
+/** "Today, 09:40", "Yesterday, 23:10", "2 Oct", or "18 Dec 2025" from another year. */
+export function formatDay(iso: string, now: Date = new Date()): string {
+  const when = new Date(iso);
+  if (sameDay(when, now)) {
+    return `Today, ${times.format(when)}`;
+  }
+  if (sameDay(when, new Date(now.getTime() - DAY))) {
+    return `Yesterday, ${times.format(when)}`;
+  }
+  return when.getFullYear() === now.getFullYear()
+    ? dayAndMonth.format(when)
+    : dates.short.format(when);
+}
+
 /** "Saturday 18 October at 09:05", for a deadline someone has to meet. */
 export function formatDeadline(iso: string): string {
   const when = new Date(iso);

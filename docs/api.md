@@ -121,9 +121,10 @@ beside it.
 | `/problems/policy-not-found` | 404 | No organisation policy has that slug, or it has no version with that number |
 | `/problems/no-draft` | 404 | The policy has no draft to read, change, publish or discard |
 | `/problems/flag-not-found` | 404 | The draft has no flag in that place |
+| `/problems/no-match` | 404 | The draft has no clause by that key, or the clause continues none of the version before |
 | `/problems/policy-exists` | 409 | A document has that slug already. Upload a new version of it instead |
 | `/problems/draft-exists` | 409 | The policy has a draft already. `version` names it |
-| `/problems/flags-open` | 409 | The draft has flags nobody has accepted. `flags` lists them |
+| `/problems/flags-open` | 409 | The draft has flags nobody has settled. `flags` lists them |
 | `/problems/effective-date-too-early` | 409 | A new version has to take effect after the version published before it |
 | `/problems/version-label-taken` | 409 | Another version of the policy has that label |
 | `/problems/too-large` | 413 | The request body is larger than 25 MB |
@@ -222,7 +223,8 @@ law which language prevails, `authoritative_language`.
 ### Policies
 
 An organisation's own policies arrive through these routes. Uploading, reviewing and discarding
-need `documents.upload`; publishing and archiving need `documents.publish`.
+need `documents.upload`; publishing and archiving need `documents.publish`. Either one lists the
+policies and reads a draft, so whoever publishes can see what they publish.
 
 `POST /v1/policies` uploads a new policy. The request body is the file itself, a Word (`.docx`)
 or Markdown (`.md`) file of at most 25 MB, sent as `application/octet-stream`, and `filename`
@@ -256,21 +258,42 @@ changed, whose words changed too much to be sure it is the same rule, or whose n
 different rule before, is a flag. A policy has one draft at a
 time; `replace=true` discards the open one and uses the upload instead.
 
+A renumbered or reworded clause carries `earlier`, the clause it continues as the version before
+has it, so the words that changed can be shown. When a match is wrong, because two rules share
+most of their words, `POST /v1/policies/{slug}/draft/matches/{key}/reject` says so: the clause
+becomes new, the clause it was matched to is removed, and a citation of that one then says its
+rule was removed instead of pointing at the wrong rule.
+
 `GET /v1/policies/{slug}/draft` reads the draft, `PATCH` changes its `title`, `effective_date`
 or `version_label`, and `DELETE` discards it. `POST /v1/policies/{slug}/draft/flags/accept`,
-with `positions`, accepts flags. `POST /v1/policies/{slug}/draft/publish` publishes the draft
-once every flag is accepted. Its version then never changes, it is searched from its effective
+with `positions`, accepts flags as read. A flag is settled once it is accepted, or resolved by a
+change made because of it, such as a rejected match. `POST /v1/policies/{slug}/draft/publish`
+publishes the draft once every flag is settled. Its version then never changes, it is searched from its effective
 date, and its clauses are embedded in the background, so searching by meaning finds them a
 little after searching by words does; `indexing` says how far that has got. A new version takes
 effect after the version published before it, and its label, `1`, `2` and so on unless one is
 given, is one no other version of the policy has, because a citation names its version by it.
 
+Two people can review one draft at once without undoing each other. A draft is read with its
+`revision`, also sent as the `ETag`, and every change to it may send that back in `If-Match`. A
+change made after somebody else's is refused with `412` and `/problems/edit-conflict`, which
+names who made the other change and when. A change sent without `If-Match` is made.
+
 `POST /v1/policies/{slug}/archive` takes a policy out of search and the library. Nothing is
 deleted, its clauses still read by key, and publishing a new version of it brings it back.
 
-`GET /v1/policies` lists the policies, archived ones included, with the version in force, any
-open draft, and whether the latest published version is embedded yet (`indexing`). `GET /v1/policies/{slug}/versions/{number}/original` returns the file a version
-was read from, for `documents.read`, after checking it against the hash it was stored with.
+`GET /v1/policies` lists the policies, archived ones included, with the version in force, a
+version that takes effect later (`scheduled`), the open draft and how far its review has got
+(`review`), who last changed the policy and when (`last_change`), the label a new version is
+published with unless it is given one (`next_label`), and whether the latest published version
+is embedded yet (`indexing`). A draft carries `next_label` too: the label it is published with.
+
+`GET /v1/policies/{slug}/versions/{number}/file` is the file as it was read: every paragraph in
+order, with what it looked like, the clause it went to, or why it was set aside. It is kept with
+the version when the file is read, so it always matches the clauses.
+`GET /v1/policies/{slug}/versions/{number}/original` returns the file itself, after checking it
+against the hash it was stored with. A published version's file and original need
+`documents.read`; a draft's, or a discarded one's, need `documents.upload` or `documents.publish`.
 
 Every step is written to the governance log, with who took it.
 

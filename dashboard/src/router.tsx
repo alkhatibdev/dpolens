@@ -9,6 +9,8 @@ import { LibraryPage } from "@/pages/Library";
 import { NotFoundPage } from "@/pages/NotFound";
 import { OverviewPage } from "@/pages/Overview";
 import { PeoplePage } from "@/pages/People";
+import { PoliciesPage } from "@/pages/Policies";
+import { PolicyDraftPage } from "@/pages/PolicyDraft";
 import { QuestionsPage } from "@/pages/Questions";
 import { RolePage } from "@/pages/Role";
 import { RolesPage } from "@/pages/Roles";
@@ -47,6 +49,8 @@ export const routes = [
       { path: "library", element: <LibraryPage /> },
       { path: "library/:slug", element: <DocumentPage /> },
       { path: "clauses/:key", element: <ClausePage /> },
+      { path: "policies", element: <PoliciesPage /> },
+      { path: "policies/:slug/draft", element: <PolicyDraftPage /> },
       { path: "search", element: <SearchPage /> },
       { path: "laws", element: <SelectedLawsPage /> },
       { path: "users", element: <PeoplePage /> },

@@ -670,8 +670,28 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Accept flags, by their place in the draft's list */
+    /** Accept flags as read, by their place in the draft's list */
     post: operations["accept_v1_policies__slug__draft_flags_accept_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/draft/matches/{key}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Say a clause is a different rule from the one it was matched to
+     * @description The clause becomes new, and the clause of the version before that it was matched to becomes removed, so that a citation of that clause says its rule was removed. The flag that asked about the match is resolved by the change.
+     */
+    post: operations["reject_match_v1_policies__slug__draft_matches__key__reject_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -687,7 +707,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Publish the draft once every flag is accepted */
+    /** Publish the draft once every flag is settled */
     post: operations["publish_v1_policies__slug__draft_publish_post"];
     delete?: never;
     options?: never;
@@ -712,6 +732,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/policies/{slug}/versions/{number}/file": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A version's file as it was read, paragraph by paragraph, beside its clauses
+     * @description Every paragraph with text, in the file's order, with what it looked like, the clause it went to, or why it was set aside. A published version's takes `documents.read`; a draft's, or a discarded one's, takes `documents.upload` or `documents.publish`.
+     */
+    get: operations["read_as_read_v1_policies__slug__versions__number__file_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/policies/{slug}/versions/{number}/original": {
     parameters: {
       query?: never;
@@ -719,7 +759,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** A version's original file, checked against the hash it was stored with */
+    /**
+     * A version's original file, checked against the hash it was stored with
+     * @description A published version's takes `documents.read`; a draft's, or a discarded one's, takes `documents.upload` or `documents.publish`.
+     */
     get: operations["download_v1_policies__slug__versions__number__original_get"];
     put?: never;
     post?: never;
@@ -1071,6 +1114,8 @@ export interface components {
        * @description The key of the clause it continues
        */
       continues: string | null;
+      /** @description That clause as the version before has it, when this one is renumbered or reworded */
+      earlier: components["schemas"]["EarlierClause"] | null;
       /** Children */
       children: components["schemas"]["DraftClause"][];
     };
@@ -1082,6 +1127,42 @@ export interface components {
       effective_date?: string | null;
       /** Version Label */
       version_label?: string | null;
+    };
+    /** DraftReview */
+    DraftReview: {
+      /**
+       * Flags
+       * @description Every flag the draft has
+       */
+      flags: number;
+      /**
+       * Open
+       * @description The flags still to settle before it can be published
+       */
+      open: number;
+      /** Uploaded By */
+      uploaded_by: string | null;
+      /**
+       * Uploaded At
+       * Format: date-time
+       */
+      uploaded_at: string;
+      /**
+       * Next Label
+       * @description The label it is published with
+       */
+      next_label: string;
+    };
+    /** EarlierClause */
+    EarlierClause: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string | null;
+      /** Heading */
+      heading: string | null;
+      /** Text */
+      text: string;
     };
     /** Entries */
     Entries: {
@@ -1127,6 +1208,62 @@ export interface components {
       target_user: components["schemas"]["PersonRef"] | null;
       target_token: components["schemas"]["TokenRef"] | null;
     };
+    /** FileParagraph */
+    FileParagraph: {
+      /**
+       * Position
+       * @description Its place among the file's paragraphs
+       */
+      position: number;
+      /** Text */
+      text: string;
+      /**
+       * Place
+       * @enum {string}
+       */
+      place: "body" | "cell" | "text box" | "contents" | "front matter";
+      /**
+       * Heading
+       * @description Its level, 1 the highest, when it is a heading
+       */
+      heading: number | null;
+      /**
+       * Title
+       * @description The file marks it as the document's title
+       */
+      title: boolean;
+      /**
+       * Label
+       * @description The number the file's own list puts before it
+       */
+      label: string | null;
+      /** Bold */
+      bold: boolean;
+      /**
+       * Table
+       * @description Which table it is in, from 0, with its row and cell
+       */
+      table: number | null;
+      /** Row */
+      row: number | null;
+      /** Cell */
+      cell: number | null;
+      /**
+       * Header
+       * @description Its row is the table's header
+       */
+      header: boolean;
+      /**
+       * Clause
+       * @description The key of the clause it went to
+       */
+      clause: string | null;
+      /**
+       * Set Aside
+       * @description Why it is in no clause, when it is in none
+       */
+      set_aside: ("title" | "front matter" | "contents" | "text box" | "repeated table") | null;
+    };
     /** FlagOut */
     FlagOut: {
       /**
@@ -1146,10 +1283,30 @@ export interface components {
        * @description What to check, in a sentence
        */
       detail: string;
-      /** Accepted By */
+      /**
+       * Accepted By
+       * @description Who accepted it as read
+       */
       accepted_by: string | null;
       /** Accepted At */
       accepted_at: string | null;
+      /**
+       * Resolved By
+       * @description Who made the change that settled it
+       */
+      resolved_by: string | null;
+      /** Resolved At */
+      resolved_at: string | null;
+      /**
+       * Resolution
+       * @description The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to
+       */
+      resolution: string | null;
+      /**
+       * Paragraph
+       * @description The paragraph of the file it is about, as the file view numbers them
+       */
+      paragraph: number | null;
     };
     /** FlagsToAccept */
     FlagsToAccept: {
@@ -1269,6 +1426,19 @@ export interface components {
        * @description The token presented by the caller being asked about
        */
       token: string;
+    };
+    /** LastChange */
+    LastChange: {
+      /**
+       * By
+       * @description A person's name, or null on the command line
+       */
+      by: string | null;
+      /**
+       * At
+       * Format: date-time
+       */
+      at: string;
     };
     /** Law */
     Law: {
@@ -1646,6 +1816,44 @@ export interface components {
       changes: {
         [key: string]: number;
       };
+      /**
+       * Revision
+       * @description Goes up with every change. Send it back in `If-Match`
+       */
+      revision: number;
+      /** Updated At */
+      updated_at: string | null;
+      /**
+       * Updated By
+       * @description Who changed it last, or null for a change made on the command line
+       */
+      updated_by: string | null;
+      /**
+       * Next Label
+       * @description The label it is published with: the one given, or the next number free
+       */
+      next_label: string;
+    };
+    /**
+     * PolicyFile
+     * @description A version's file as it was read, beside which its clauses are reviewed.
+     */
+    PolicyFile: {
+      /** Slug */
+      slug: string;
+      /** Number */
+      number: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "draft" | "published" | "discarded";
+      source: components["schemas"]["OriginalFile"];
+      /**
+       * Paragraphs
+       * @description Every paragraph with text, in the file's order
+       */
+      paragraphs: components["schemas"]["FileParagraph"][];
     };
     /** PolicySummary */
     PolicySummary: {
@@ -1680,6 +1888,27 @@ export interface components {
        * @description Whether the latest published version's clauses are embedded yet, so that searching by meaning finds them
        */
       indexing: ("todo" | "doing" | "succeeded" | "failed") | null;
+      /**
+       * In Force Number
+       * @description The number of the version in force, which names its original file
+       */
+      in_force_number: number | null;
+      /**
+       * Next Label
+       * @description The label a new version is published with, unless it is given one
+       */
+      next_label: string;
+      /**
+       * Sample
+       * @description The made-up policy a new instance starts with
+       */
+      sample: boolean;
+      /** @description The next published version, when it takes effect later */
+      scheduled: components["schemas"]["ScheduledVersion"] | null;
+      /** @description The open draft's review, if there is one */
+      review: components["schemas"]["DraftReview"] | null;
+      /** @description Who last uploaded, reviewed, published or archived it, and when */
+      last_change: components["schemas"]["LastChange"] | null;
     };
     /** PolicyVersion */
     PolicyVersion: {
@@ -1959,6 +2188,16 @@ export interface components {
     Roles: {
       /** Roles */
       roles: components["schemas"]["RoleDocument"][];
+    };
+    /** ScheduledVersion */
+    ScheduledVersion: {
+      /** Label */
+      label: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
     };
     /** SearchRequest */
     SearchRequest: {
@@ -5306,7 +5545,10 @@ export interface operations {
   discard_v1_policies__slug__draft_delete: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
       path: {
         slug: string;
       };
@@ -5320,6 +5562,16 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
       };
       /** @description No usable credential */
       401: {
@@ -5343,6 +5595,16 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
         headers: {
           [name: string]: unknown;
         };
@@ -5375,7 +5637,10 @@ export interface operations {
   edit_draft_v1_policies__slug__draft_patch: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
       path: {
         slug: string;
       };
@@ -5394,6 +5659,16 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
         };
       };
       /** @description No usable credential */
@@ -5418,6 +5693,16 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
         headers: {
           [name: string]: unknown;
         };
@@ -5450,7 +5735,10 @@ export interface operations {
   accept_v1_policies__slug__draft_flags_accept_post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
       path: {
         slug: string;
       };
@@ -5469,6 +5757,16 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
         };
       };
       /** @description No usable credential */
@@ -5501,6 +5799,111 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
+      /** @description Somebody changed it after it was read */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  reject_match_v1_policies__slug__draft_matches__key__reject_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
+      path: {
+        slug: string;
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -5525,7 +5928,10 @@ export interface operations {
   publish_v1_policies__slug__draft_publish_post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
       path: {
         slug: string;
       };
@@ -5540,6 +5946,16 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PolicyVersion"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
         };
       };
       /** @description No usable credential */
@@ -5574,6 +5990,16 @@ export interface operations {
       };
       /** @description The change conflicts with what is there */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
         headers: {
           [name: string]: unknown;
         };
@@ -5662,6 +6088,88 @@ export interface operations {
       };
       /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  read_as_read_v1_policies__slug__versions__number__file_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+        number: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyFile"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description A stored original file is missing or has changed */
+      500: {
         headers: {
           [name: string]: unknown;
         };

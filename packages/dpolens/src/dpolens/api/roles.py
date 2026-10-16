@@ -19,7 +19,14 @@ from fastapi import APIRouter, Depends, Header, Response
 from pydantic import BaseModel, Field
 
 from dpolens.api import problems
-from dpolens.api.dependencies import Caller, Opened, actor_of, requires, requires_any
+from dpolens.api.dependencies import (
+    Caller,
+    Opened,
+    actor_of,
+    expected_revision,
+    requires,
+    requires_any,
+)
 from dpolens.engine.auth import listing
 from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.models import Role
@@ -123,16 +130,6 @@ def _etag(role: Role) -> str:
     return f'"{role.revision}"'
 
 
-def _expected(if_match: str | None) -> int | None:
-    """The revision an `If-Match` names, or None when it names none to check."""
-    if if_match is None or if_match.strip() == "*":
-        return None
-    value = if_match.strip().removeprefix("W/").strip('"')
-    if not value.isdigit():
-        raise problems.invalid_request("If-Match carries the role's revision, as its ETag gave it")
-    return int(value)
-
-
 def _role(opened: Opened, role_id: uuid.UUID, *, for_update: bool = False) -> Role:
     try:
         return get_role_by_id(opened, role_id, for_update=for_update)
@@ -204,7 +201,7 @@ def change_role(
             opened,
             role=role,
             actor=actor_of(who),
-            expected_revision=_expected(if_match),
+            expected_revision=expected_revision(if_match, "role"),
             name=body.name.strip() if body.name is not None else None,
             description=body.description.strip() if body.description is not None else None,
             permissions=body.permissions,

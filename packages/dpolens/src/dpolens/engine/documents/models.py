@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -104,6 +105,17 @@ class DocumentVersion(Base):
     )
     index_job_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     """The job that embeds this version once published, for showing whether it has run."""
+    reading: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+    """The file as it was read: every paragraph in order, with its place and its type. Kept, so
+    that a later reader finding more in the same file never moves this version's paragraphs."""
+
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    """Goes up with every change to a draft, so a change made against an older one is refused
+    rather than undoing somebody else's."""
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
 
     document: Mapped[Document] = relationship(back_populates="versions")
     nodes: Mapped[list[DocumentNode]] = relationship(back_populates="version")
@@ -226,9 +238,19 @@ class ParseFlag(Base):
     position: Mapped[int] = mapped_column(Integer)
     """Its place in the draft's list of flags, which is how a reviewer names one."""
 
+    paragraph: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    """The paragraph of the file it is about, when it is about one."""
+
     accepted_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolution: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    """What a reviewer changed that settled it, such as match-rejected. A flag is settled once
+    it is accepted as read or resolved by a change."""
 
     version: Mapped[DocumentVersion] = relationship(back_populates="flags")

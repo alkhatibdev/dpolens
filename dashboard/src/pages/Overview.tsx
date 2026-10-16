@@ -1,5 +1,6 @@
 import { ArrowUpRight, CalendarDays, MessageCircleQuestion } from "lucide-react";
 import { useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate } from "react-router";
 
@@ -384,7 +385,7 @@ function Unanswered({ overview }: { overview: Overview }) {
   );
 }
 
-function change(t: ReturnType<typeof useTranslation>["t"], overview: Overview): string {
+function change(t: TFunction, overview: Overview): string {
   if (!overview.previous_questions) {
     return t("overview.firstWeek");
   }

@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  FileText,
   KeyRound,
   LayoutGrid,
   LogOut,
@@ -28,7 +29,9 @@ import {
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { initialsOf } from "@/lib/names";
 import {
+  DOCUMENTS_PUBLISH,
   DOCUMENTS_READ,
+  DOCUMENTS_UPLOAD,
   GOVERNANCE_READ,
   QUERIES_READ_ALL,
   QUERIES_READ_OWN,
@@ -59,6 +62,13 @@ const GROUPS = [
         label: "nav.library",
         icon: BookOpen,
         shows: (can: ReadonlySet<string>) => can.has(DOCUMENTS_READ),
+      },
+      {
+        to: "/policies",
+        label: "nav.policies",
+        icon: FileText,
+        shows: (can: ReadonlySet<string>) =>
+          can.has(DOCUMENTS_UPLOAD) || can.has(DOCUMENTS_PUBLISH),
       },
       {
         to: "/logs",

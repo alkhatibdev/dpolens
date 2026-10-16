@@ -39,6 +39,10 @@ export interface Problem {
   revision?: number;
   /** Who holds a role that cannot be deleted. */
   holders?: string[];
+  /** The open draft's number, when an upload finds one. */
+  version?: number;
+  /** The flags still to settle, by their place, when publishing waits for them. */
+  flags?: number[];
 }
 
 export class ApiError extends Error {
