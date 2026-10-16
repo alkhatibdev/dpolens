@@ -47,7 +47,9 @@ Status = Literal["ok", "no_match", "refused", "error"]
 Operation = Literal["search", "get_clause", "get_subtree", "list_documents", "get_document", "ask"]
 Kind = Literal["person", "service_account"]
 UserStatus = Literal["active", "deactivated", "erased"]
-Category = Literal["sign_ins", "people", "roles", "tokens", "laws", "questions", "exports"]
+Category = Literal[
+    "sign_ins", "people", "roles", "tokens", "laws", "policies", "questions", "exports"
+]
 
 CATEGORIES: dict[str, tuple[str, ...]] = {
     "sign_ins": ("session.",),
@@ -55,6 +57,7 @@ CATEGORIES: dict[str, tuple[str, ...]] = {
     "roles": ("role.",),
     "tokens": ("pat.",),
     "laws": ("laws.",),
+    "policies": ("document.",),
     "questions": ("query_log.",),
     "exports": ("governance_log.",),
 }

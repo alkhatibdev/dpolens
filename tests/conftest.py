@@ -38,6 +38,7 @@ COMMITTED_DB = "dpolens_committed"
 FIXTURE_PACKS = Path(__file__).parent / "fixtures" / "packs"
 
 TABLES = (
+    "parse_flags",
     "node_embeddings",
     "embedding_models",
     "node_references",

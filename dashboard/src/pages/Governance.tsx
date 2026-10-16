@@ -127,7 +127,7 @@ function Integrity() {
 
 function Holds() {
   const { t } = useTranslation();
-  const items = ["signIns", "people", "tokens", "laws", "looks", "exports"] as const;
+  const items = ["signIns", "people", "tokens", "documents", "looks", "exports"] as const;
   return (
     <section className="min-w-0 flex-[1_1_360px] rounded-[20px] bg-white px-6 py-[22px]">
       <h2 className="text-xl font-semibold">{t("logs.holdsTitle")}</h2>
@@ -202,9 +202,10 @@ function Change({ entry }: { entry: Entry }) {
   const details = entry.details as Record<string, unknown>;
   const before = Array.isArray(details.before) ? (details.before as string[]) : null;
   const after = Array.isArray(details.after) ? (details.after as string[]) : null;
-  const shown = Object.entries(details).filter(
-    ([key]) => !["via", "actor", "before", "after"].includes(key),
-  );
+  // Lists of before and after are drawn as chips. Anything else, such as a draft's old and new
+  // effective date, is shown with the other details.
+  const hidden = before && after ? ["via", "actor", "before", "after"] : ["via", "actor"];
+  const shown = Object.entries(details).filter(([key]) => !hidden.includes(key));
   const chips = (keys: string[], added: string[] = []) => (
     <div className="flex flex-wrap gap-1.5">
       {keys.map((key) => (
@@ -310,6 +311,7 @@ export function GovernancePage() {
     "roles",
     "tokens",
     "laws",
+    "policies",
     "questions",
     "exports",
   ];

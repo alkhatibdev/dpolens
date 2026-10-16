@@ -12,6 +12,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Computed,
     Date,
@@ -24,7 +25,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dpolens.engine.base import Base
@@ -86,8 +87,27 @@ class DocumentVersion(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+    # The rest is an uploaded policy's, and empty for a pack's version.
+    source_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    """Where the original file is kept: a key from its SHA-256, never a path."""
+    source_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    source_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_format: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    parse_checks: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
+    """What the parser found: coverage, what it set aside, and anything the file itself said."""
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    published_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    index_job_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    """The job that embeds this version once published, for showing whether it has run."""
+
     document: Mapped[Document] = relationship(back_populates="versions")
     nodes: Mapped[list[DocumentNode]] = relationship(back_populates="version")
+    flags: Mapped[list[ParseFlag]] = relationship(back_populates="version")
 
 
 class DocumentNode(Base):
@@ -115,6 +135,17 @@ class DocumentNode(Base):
 
     order_index: Mapped[int] = mapped_column(Integer)
     depth: Mapped[int] = mapped_column(Integer)
+
+    parse_layer: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    """Which layer of the parser decided this clause; empty for a pack's."""
+    source_anchor: Mapped[dict[str, object] | None] = mapped_column(JSONB, nullable=True)
+    """Where in the original file the clause's paragraphs are."""
+    previous_node_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_nodes.id"), nullable=True
+    )
+    """The clause this one continues in the previous version, matched by key and by text."""
+    change_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    """added, modified, moved or unchanged against the previous version; empty for the first."""
 
     version: Mapped[DocumentVersion] = relationship(back_populates="nodes")
     texts: Mapped[list[NodeText]] = relationship(back_populates="node")
@@ -176,3 +207,28 @@ class NodeReference(Base):
     raw_text: Mapped[str] = mapped_column(Text)
 
     node: Mapped[DocumentNode] = relationship(back_populates="references")
+
+
+class ParseFlag(Base):
+    """One thing in a draft the parser could not settle, for a reviewer to resolve or accept."""
+
+    __tablename__ = "parse_flags"
+    __table_args__ = (UniqueConstraint("document_version_id", "position"),)
+
+    id: Mapped[uuid.UUID] = _uuid_column()
+    document_version_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("document_versions.id"))
+    node_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_nodes.id"), nullable=True
+    )
+    canonical_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    kind: Mapped[str] = mapped_column(String(40))
+    detail: Mapped[str] = mapped_column(Text)
+    position: Mapped[int] = mapped_column(Integer)
+    """Its place in the draft's list of flags, which is how a reviewer names one."""
+
+    accepted_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    version: Mapped[DocumentVersion] = relationship(back_populates="flags")

@@ -32,7 +32,7 @@ export function useQuestions(filter: QuestionFilter, before: string | null) {
 }
 
 export type Category =
-  "sign_ins" | "people" | "roles" | "tokens" | "laws" | "questions" | "exports";
+  "sign_ins" | "people" | "roles" | "tokens" | "laws" | "policies" | "questions" | "exports";
 
 export interface EntryFilter {
   actor?: string;

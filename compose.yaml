@@ -1,5 +1,5 @@
-# A whole DPOLens instance: a database, a one off setup, the HTTP API, the
-# dashboard and the MCP server your editor connects to.
+# A whole DPOLens instance: a database, a one off setup, the HTTP API, a worker
+# for background jobs, the dashboard and the MCP server your editor connects to.
 #
 #   printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
 #     "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
@@ -16,8 +16,11 @@
 
 name: dpolens
 
-x-database: &database
+x-application: &application
   DPOLENS_DATABASE_URL: postgresql://dpolens_app:${DPOLENS_APP_PASSWORD:?generate one, see the top of this file}@db:5432/dpolens
+
+x-database: &database
+  <<: *application
   DPOLENS_MIGRATION_DATABASE_URL: postgresql://dpolens_owner:${DPOLENS_OWNER_PASSWORD:?generate one, see the top of this file}@db:5432/dpolens
 
 services:
@@ -40,15 +43,18 @@ services:
       retries: 30
     restart: unless-stopped
 
-  # Migrates, loads every pack in the image, and embeds what is not embedded
-  # yet. It runs as the role that owns the tables and then exits, which is why
-  # the API can run as a role that cannot rewrite its own audit log.
+  # Migrates, loads every pack in the image and the sample policy, and embeds
+  # what is not embedded yet. It runs as the role that owns the tables and then
+  # exits, which is why the API can run as a role that cannot rewrite its own
+  # audit log.
   setup:
     build:
       context: .
       dockerfile: deploy/dpolens/Dockerfile
     command: ["setup.sh"]
     environment: *database
+    volumes:
+      - originals:/var/lib/dpolens/originals
     depends_on:
       db:
         condition: service_healthy
@@ -76,6 +82,8 @@ services:
       # The credential the API provisions for the MCP server. Both containers
       # run as the same user, because the file is readable by its owner alone.
       - surface:/run/dpolens
+      # Uploaded policies' original files, which the worker reads too.
+      - originals:/var/lib/dpolens/originals
     ports:
       - "${DPOLENS_API_PORT:-8000}:8000"
     depends_on:
@@ -91,6 +99,29 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+    restart: unless-stopped
+
+  # Embeds a policy's clauses once it is published, and runs the daily purge:
+  # questions past their retention, ended sessions, used sign-in links, and
+  # original files no version points at. It needs no port, and it connects as
+  # the application role only.
+  worker:
+    build:
+      context: .
+      dockerfile: deploy/dpolens/Dockerfile
+    command: ["dpolens", "worker"]
+    environment:
+      <<: *application
+      DPOLENS_SESSION_IDLE_MINUTES:
+      DPOLENS_SESSION_LIFETIME_HOURS:
+      DPOLENS_INTRA_OP_NUM_THREADS:
+    volumes:
+      - originals:/var/lib/dpolens/originals
+    depends_on:
+      db:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   # The dashboard's files, and a forward from /v1 to the API, so the browser
@@ -138,3 +169,4 @@ services:
 volumes:
   database:
   surface:
+  originals:

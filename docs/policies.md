@@ -1,4 +1,4 @@
-# Reading a policy
+# Your own policies
 
 DPOLens turns an organisation's policy, a Word or Markdown file, into clauses. Each one has
 a key that citations point at, its text word for word, and its place in the document. No AI
@@ -10,6 +10,11 @@ You can see the result for any file on your computer. Nothing is stored:
 ```bash
 dpolens policy parse retention-policy.docx --slug acme-retention
 ```
+
+Uploading the file makes it a draft, which somebody reviews and publishes, and from then on
+assistants search it and cite it. [From a draft to a policy in force](#from-a-draft-to-a-policy-in-force)
+describes those steps, and [Keys over time](#keys-over-time) what happens to a citation when
+a new version renumbers the clauses it points at.
 
 ## What it reads
 
@@ -119,3 +124,133 @@ For a reviewer to settle (1):
 The last column says what decided each clause: `file` for the file's own structure, `type`
 for its typography, `number` for a number written into its text. `--json` prints everything,
 including each clause's full text and its language.
+
+## From a draft to a policy in force
+
+Uploading a policy reads it at once, so a file that cannot be read is refused there and then,
+with what to do about it. A file it can read becomes a **draft**: the clauses, the flags, how
+much of the file reached a clause, and what was set aside. Nothing searches a draft.
+
+```bash
+dpolens policy upload retention-policy.docx --slug acme-retention --effective-date 2026-01-01
+dpolens policy draft acme-retention
+dpolens policy accept acme-retention 1 2
+dpolens policy publish acme-retention
+```
+
+A reviewer reads each flag and accepts it, and publishing waits until every flag is accepted.
+Uploading and reviewing need the permission `documents.upload`; publishing and archiving need
+`documents.publish`, which the seeded Admin and DPO roles hold. A draft's title, effective
+date and version label can be changed until it is published (`dpolens policy edit`), and a
+draft can be discarded (`dpolens policy discard`).
+
+Once published, a version never changes. Searches find it from the day it takes effect: by its
+words straight away, and by meaning once the worker has embedded its clauses. The API reports
+how far that has got as `indexing`.
+
+Versions take effect in the order they are published: each one after the one before it. Each
+has a label that citations show, `1`, `2` and so on unless you give it another, and no two
+versions of a policy share one, because a citation names its version by its label.
+
+The [HTTP API](api.md#policies) takes the same steps, with the file as the request body:
+
+```bash
+curl --data-binary @retention-policy.docx \
+  -H "Authorization: Bearer $DPOLENS_TOKEN" -H "Content-Type: application/octet-stream" \
+  "http://localhost:8000/v1/policies?filename=retention-policy.docx&slug=acme-retention"
+```
+
+On an instance started with Docker Compose, the command line runs in the `api` container, so
+copy the file in first:
+
+```bash
+docker compose cp retention-policy.docx api:/tmp/
+docker compose exec api dpolens policy upload /tmp/retention-policy.docx --slug acme-retention
+```
+
+Every step, from the upload to the publication, is written to the governance log with who took
+it, and the upload's entry records the file's SHA-256.
+
+## A new version
+
+A new version of a policy is uploaded against the policy it replaces:
+
+```bash
+dpolens policy revise acme-retention retention-policy-v2.docx --effective-date 2026-07-01
+```
+
+Each clause of the new version is matched to the clause of the version before it that it
+continues: first by identical words, then by the same number with at least half the same
+wording, then by a different number with at least four fifths the same wording. Each clause is
+then `same`, `reworded`, `new`, or renumbered (`was 4.2`), and a clause of the version before
+that nothing continues is listed as removed.
+
+Matching by wording can be wrong, because two rows of a retention schedule can share most of
+their words, so three things become flags for a reviewer: a clause whose number changed, a
+clause whose words changed so much that it may be a different rule (the flag quotes what it
+said before), and a number that named a different rule in the version before. A policy has
+one draft at a time. Uploading another while one is open is refused, unless you ask for the new
+file to replace it (`--replace`).
+
+## Keys over time
+
+A policy's keys follow the numbers printed in it, so a reader can always find a key in the
+document in front of them. When a new version inserts a clause, the clauses after it are
+printed with new numbers, and their keys change with them:
+
+```text
+Version 1, in force from 1 January         Version 2, in force from 1 July
+4.1  Customer records: 2 years              4.1  Customer records: 2 years
+4.2  Staff records: 6 years                 4.2  Contractor records: 1 year     new
+4.3  Supplier records: 5 years              4.3  Staff records: 6 years         was 4.2
+                                            4.4  Supplier records: 6 years      was 4.3
+```
+
+A citation names its version as well as its key, and that is what keeps it exact. A citation
+of `acme-retention:4.2` in version 1, read as of a date when version 1 was in force, still
+gives the staff rule word for word, and says where that rule is now:
+
+```text
+$ dpolens clause show acme-retention:4.2 --as-of 2026-03-01
+...
+4.2  [acme-retention:4.2]
+Staff records are kept for 6 years after employment ends.
+
+In version 2, in force since 2026-07-01, this rule is acme-retention:4.3, word for word.
+```
+
+Read today, `acme-retention:4.2` is the contractor rule, and says what it named before:
+
+```text
+In version 1, acme-retention:4.2 was a different rule, which is acme-retention:4.3 now:
+  Staff records are kept for 6 years after employment ends.
+```
+
+The HTTP API and the MCP server say the same, as `now` and `formerly`, so an assistant reading
+an old citation is told where the rule went.
+
+## Archiving
+
+Archiving a policy takes it out of search and out of the library. Nothing is deleted: its
+clauses still read by key, marked as archived, so a citation of one still resolves. Publishing
+a new version of an archived policy brings it back.
+
+```bash
+dpolens policy archive acme-retention
+```
+
+## The original file
+
+The file each version was read from is kept, under a name made from its SHA-256, and checked
+against that hash whenever it is read, so a file that went missing or changed is an error
+rather than a different download. Anyone who may read the policies can download it from the
+API. An upload writes the file before its draft, so a failure can leave a file that nothing
+points at, and the worker removes those once a day, after a day's grace.
+[configuration.md](configuration.md) says where the files are kept.
+
+## The sample policy
+
+A new instance starts with a made-up policy for a made-up company,
+`sample-data-protection`, so there is a policy of your own kind to search before yours are in.
+Archive it when they are. It is published once: archived, it is never brought back.
+

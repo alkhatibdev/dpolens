@@ -1,8 +1,8 @@
-# The engine, the HTTP API and the command line, in one image.
+# The engine, the HTTP API, the worker and the command line, in one image.
 #
-# The same image runs the one off setup, serves the API, and is where an
-# operator runs `dpolens` commands, because all three are the same program with
-# the same configuration.
+# The same image runs the one off setup, serves the API, runs the worker, and is
+# where an operator runs `dpolens` commands, because all of them are the same
+# program with the same configuration.
 #
 # The embedding model is baked in at build time, and the API refuses to serve if
 # it is not there.
@@ -27,10 +27,12 @@ ENV UV_LINK_MODE=copy \
 # before anything is installed: changing the owner of a directory afterwards
 # copies every file in it into a new layer, which for a virtual environment and
 # a model is most of the image again.
+# The originals folder is made here too, so a new volume mounted on it starts
+# out owned by that user.
 RUN groupadd --gid 10001 dpolens \
     && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin dpolens \
-    && mkdir -p /opt/dpolens /run/dpolens \
-    && chown dpolens:dpolens /opt/dpolens /run/dpolens
+    && mkdir -p /opt/dpolens /run/dpolens /var/lib/dpolens/originals \
+    && chown dpolens:dpolens /opt/dpolens /run/dpolens /var/lib/dpolens/originals
 
 WORKDIR /opt/dpolens
 USER dpolens

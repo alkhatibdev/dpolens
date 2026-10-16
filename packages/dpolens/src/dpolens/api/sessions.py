@@ -21,7 +21,6 @@ from dpolens.api.dependencies import (
     Opened,
     browser_uses_https,
     check_same_origin,
-    lifetimes_of,
     session_cookie_name,
 )
 from dpolens.api.limits import SignInThrottle
@@ -33,7 +32,13 @@ from dpolens.engine.auth.passwords import (
     WrongPassword,
     change_own_password,
 )
-from dpolens.engine.auth.sessions import SignInRefused, record_refusal, sign_in, sign_out
+from dpolens.engine.auth.sessions import (
+    SignInRefused,
+    lifetimes_of,
+    record_refusal,
+    sign_in,
+    sign_out,
+)
 from dpolens.engine.auth.users import normalise_email
 from dpolens.engine.session import session_from
 from dpolens.settings import Settings

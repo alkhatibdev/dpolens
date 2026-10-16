@@ -51,6 +51,13 @@ class Clause(BaseModel):
         )
     )
     source_url: str | None = Field(description="Where the text was taken from, for a law")
+    archived: bool = Field(
+        default=False,
+        description=(
+            "True for a clause of a policy the organisation has archived, which no longer "
+            "applies. Say so when citing it"
+        ),
+    )
 
     @classmethod
     def of(cls, clause: dict[str, Any], breadcrumb: list[dict[str, Any]] | None = None) -> Clause:
@@ -71,6 +78,7 @@ class Clause(BaseModel):
             jurisdiction=clause["jurisdiction"],
             trust_tier=clause["trust_tier"],
             source_url=clause["source_url"],
+            archived=bool(clause.get("archived", False)),
         )
 
 
@@ -105,6 +113,18 @@ class ClauseInContext(BaseModel):
     subtree: list[Clause] = Field(
         default_factory=list,
         description="This clause and everything beneath it in reading order, when asked for",
+    )
+    now: str | None = Field(
+        default=None,
+        description=(
+            "For a policy's clause read in a version that is no longer in force, where the "
+            "same rule is in the version in force. A policy's keys follow its printed numbers, "
+            "so the rule may have another key now"
+        ),
+    )
+    formerly: str | None = Field(
+        default=None,
+        description="Set when this key named a different rule in the policy's version before",
     )
 
 
@@ -179,6 +199,26 @@ def citation_for(clause: dict[str, Any], trail: list[str]) -> str:
         name = LANGUAGES.get(prevails, prevails)
         citation += f". A translation: where the texts differ, the {name} text prevails"
     return citation
+
+
+def where_now(now: dict[str, Any]) -> str:
+    """Where a policy's rule is in the version in force, as a sentence to pass on."""
+    version = f"version {now['version_label']}, in force since {now['effective_date']}"
+    if now["key"] is None:
+        return f"This rule is not in {version}."
+    words = "in new words" if now["changed"] else "word for word"
+    if now["moved"]:
+        return f"In {version}, this rule is {now['key']}, {words}. Cite that key for it today."
+    return f"In {version}, this rule keeps its key, {words}."
+
+
+def formerly(key: str, before: dict[str, Any]) -> str:
+    """What a policy's key named in the version before, as a sentence to pass on."""
+    went = f"which is {before['now']} in this version" if before["now"] else "since removed"
+    return (
+        f"In version {before['version_label']}, {key} was a different rule, {went}. A citation "
+        f"of {key} that names version {before['version_label']} means that rule."
+    )
 
 
 def _prevails(clause: dict[str, Any]) -> str | None:

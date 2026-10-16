@@ -34,6 +34,8 @@ from dpolens_mcp.results import (
     Found,
     Match,
     OutlineEntry,
+    formerly,
+    where_now,
 )
 from dpolens_mcp.settings import Settings
 
@@ -198,6 +200,12 @@ def build(settings: Settings, api: Api) -> MCPServer:
             children=[Clause.of(child, beneath) for child in answer["children"]],
             cross_references=[reference["key"] for reference in answer["cross_references"]],
             subtree=[Clause.of(view) for view in branch],
+            now=where_now(answer["now"]) if answer.get("now") else None,
+            formerly=(
+                formerly(answer["clause"]["key"], answer["formerly"])
+                if answer.get("formerly")
+                else None
+            ),
         )
 
     @mcp.tool(title="List what can be cited", annotations=READING)

@@ -43,10 +43,32 @@ These are read by Compose itself:
 | `DPOLENS_API_PORT`, `DPOLENS_DASHBOARD_PORT`, `DPOLENS_MCP_PORT` | `8000`, `8080`, `8765` | Where the API, the dashboard and the MCP server are published on the machine |
 | `DPOLENS_MCP_ALLOWED_HOSTS` | `[]` | The host names the MCP server answers to, as a JSON list. Empty means this machine only, and a shared instance names itself here |
 
+Outside Compose, running the API, the worker or the command line from a source checkout, one
+more setting matters:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `DPOLENS_ORIGINALS_DIR` | `/var/lib/dpolens/originals` | Where uploaded policies' original files are kept. The API, the worker and the command line need the same folder, and need to be able to write to it. Compose mounts a volume there |
+
 Two things are not settings. Five wrong passwords for one address within fifteen minutes
 mean a wait before the next try. And every instance takes email addresses, phone numbers,
 card numbers, IBANs and Emirates ID numbers out of a question before storing it, which
 nothing can switch off.
+
+## The worker
+
+The worker runs what does not belong in a request. When a policy is published, it embeds the
+new version's clauses, so that searching by meaning finds them; searching by words finds them
+from the start. A policy published while the worker was stopped is embedded when it starts.
+
+When it starts, and then every day at 03:17 UTC, it deletes questions past their retention,
+sessions that have ended, sign-in links that were used or ran out, and original files no
+version points at. An instance that only runs during the day, such as one on a laptop, still
+deletes them each time it starts.
+
+It is the same image as the API, started with `dpolens worker`, and Compose runs it as the
+`worker` service. It connects as the application role, like the API, and reads the session
+settings above, because ending sessions is part of its daily round.
 
 ## Taking more out of a question
 

@@ -14,6 +14,10 @@ for pack in /opt/dpolens/packs/*/; do
     dpolens pack load "$pack"
 done
 
+# A made-up policy, so a new instance has a policy of its own to search. It is
+# published once: archived, it stays archived.
+dpolens policy sample
+
 # Only the clauses that are not embedded yet, so restarting an instance does not
 # embed a corpus it has already embedded.
 dpolens index build --skip-embedded

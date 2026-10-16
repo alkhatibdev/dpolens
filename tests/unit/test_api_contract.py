@@ -73,6 +73,13 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/laws",
         "/v1/laws/selection",
         "/v1/settings",
+        "/v1/policies",
+        "/v1/policies/{slug}/versions",
+        "/v1/policies/{slug}/draft",
+        "/v1/policies/{slug}/draft/flags/accept",
+        "/v1/policies/{slug}/draft/publish",
+        "/v1/policies/{slug}/archive",
+        "/v1/policies/{slug}/versions/{number}/original",
     }
 
 

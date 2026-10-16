@@ -96,6 +96,14 @@ class Settings(BaseSettings):
         ),
     )
 
+    originals_dir: Path = Field(
+        default=Path("/var/lib/dpolens/originals"),
+        description=(
+            "Where uploaded policies' original files are kept, a folder the API and the "
+            "worker can both write to. The image's default is its originals volume"
+        ),
+    )
+
     redaction_patterns: dict[str, str] = Field(
         default_factory=dict,
         description=(

@@ -8,18 +8,19 @@ with exact, versioned citations. A self-hosted MCP server.**
 > ### Status: pre-release
 >
 > There is no published image yet. What runs today is a whole instance from source:
-> `docker compose up` starts Postgres, the HTTP API, the dashboard and the MCP server, with
-> GDPR and the UAE's data protection law loaded and the embedding model inside the image,
-> and your assistant can search them. The UAE law is there in Arabic, which prevails, and in
-> its official English translation, and a question can be asked in either language. In the
-> dashboard you sign in, choose which laws apply to your organisation, read the library, add
-> the people you work with, decide what each role allows, and make the tokens your assistants
-> use. Until somebody chooses, every search covers both laws. A DPO sees what was asked this
-> week and what answered it, reads every question with the personal data taken out, checks
-> the governance log and exports it for an auditor, and sees how the instance is set up.
-> The command line reads your own policies, Word or Markdown, into clauses with keys, and
-> shows what a reviewer would need to settle. Uploading them in the dashboard is planned
-> for v0.1.
+> `docker compose up` starts Postgres, the HTTP API, a worker, the dashboard and the MCP
+> server, with GDPR and the UAE's data protection law loaded and the embedding model inside
+> the image, and your assistant can search them. The UAE law is there in Arabic, which
+> prevails, and in its official English translation, and a question can be asked in either
+> language. In the dashboard you sign in, choose which laws apply to your organisation, read
+> the library, add the people you work with, decide what each role allows, and make the
+> tokens your assistants use. Until somebody chooses, every search covers both laws. A DPO
+> sees what was asked this week and what answered it, reads every question with the personal
+> data taken out, checks the governance log and exports it for an auditor, and sees how the
+> instance is set up. Your own policies, Word or Markdown, are uploaded through the HTTP API
+> or the command line, read into clauses with keys, reviewed as drafts and published as
+> versions your assistant searches and cites, and a new instance starts with a made-up
+> sample policy. Uploading and reviewing them in the dashboard is planned for v0.1.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -43,7 +44,7 @@ docker compose up -d
 
 The first `up` builds the images and loads GDPR and the UAE law, which takes a few minutes.
 After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
-`dashboard` and `mcp` as healthy.
+`dashboard` and `mcp` as healthy, and `worker` as running.
 
 **2. Create yourself an administrator**
 
@@ -252,7 +253,27 @@ computer, without storing anything:
 dpolens policy parse retention-policy.docx --slug acme-retention
 ```
 
-[docs/policies.md](docs/policies.md) explains how clauses, keys and flags are decided.
+Uploaded, a policy becomes a draft that nothing searches. Somebody reads its flags and
+accepts them, and publishing it fixes the version for good: searches find it from the day it
+takes effect, by its words at once and by meaning once the worker has embedded it. A new
+version is matched to the one before it clause by clause, and every match a person should
+confirm, such as a clause whose number changed, is a flag for the reviewer. Keys follow the
+numbers printed in the policy, and a citation names its version, so a citation of version
+1's 4.2 still reads the rule it quoted, and says where that rule is in the version in force
+today. The file each version came from is kept and checked against its hash whenever it is
+read, archiving a policy takes it out of search without deleting anything, and every step is
+written to the governance log:
+
+```bash
+dpolens policy upload retention-policy.docx --slug acme-retention --effective-date 2026-01-01
+dpolens policy draft acme-retention
+dpolens policy accept acme-retention --all
+dpolens policy publish acme-retention
+dpolens policy revise acme-retention retention-policy-v2.docx --effective-date 2026-07-01
+```
+
+[docs/policies.md](docs/policies.md) explains how clauses, keys and flags are decided, and
+what happens to a policy from its upload to its archive.
 
 Users, roles and the governance log are what every surface authenticates and records
 against. The dashboard manages people, roles and tokens, and checks and exports the
@@ -298,9 +319,11 @@ curl -X POST http://localhost:8000/v1/search \
 
 Search, one clause, a clause and its subtree, and the documents in force, each result
 carrying the text verbatim with its key, its version, the date that version took effect and,
-for a law, the pack it came from and how far that pack has been checked. Failures are RFC
-9457 problem details. [docs/api.md](docs/api.md) covers authentication, the error shapes and
-every route, and [docs/openapi.json](docs/openapi.json) is the contract itself.
+for a law, the pack it came from and how far that pack has been checked. Policies are
+uploaded, reviewed, published and archived through it too, with the file as the request
+body. Failures are RFC 9457 problem details. [docs/api.md](docs/api.md) covers
+authentication, the error shapes and every route, and [docs/openapi.json](docs/openapi.json)
+is the contract itself.
 
 Every call writes one row to the query log, with personal data taken out of the question and
 an expiry the instance enforces itself. Telemetry never carries the words. An instance that

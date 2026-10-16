@@ -10,10 +10,9 @@ audit trail has nothing to offer an auditor, so it declines to serve.
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -27,20 +26,19 @@ from dpolens.api import (
     logs,
     overview,
     people,
+    policies,
     problems,
     roles,
     sessions,
     tokens,
 )
-from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER, lifetimes_of
-from dpolens.api.limits import RateLimiter, SignInThrottle
+from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER
+from dpolens.api.limits import BodyLimit, RateLimiter, SignInThrottle
 from dpolens.engine.auth.catalog import bootstrap
-from dpolens.engine.auth.links import purge_expired_links
-from dpolens.engine.auth.sessions import purge_ended
 from dpolens.engine.embedding import DEFAULT_MODEL, get_model
 from dpolens.engine.embedding.encode import Embedder, ensure_cached
 from dpolens.engine.logs.governance import Actor
-from dpolens.engine.logs.queries import purge_expired
+from dpolens.engine.policies.store import MAX_UPLOAD_BYTES
 from dpolens.engine.session import (
     check_governance_privileges,
     create_db_engine,
@@ -85,7 +83,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.embedder = embedder
     app.state.limiter = RateLimiter(settings.rate_limit_per_minute)
     app.state.sign_in_throttle = SignInThrottle()
-    purge = asyncio.create_task(_purge_daily(app))
     telemetry.info(
         "api.started",
         version=__version__,
@@ -96,9 +93,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        purge.cancel()
-        with suppress(asyncio.CancelledError):
-            await purge
         # Closing the session while Python is still running is what keeps ONNX
         # Runtime from printing an alarming teardown message at interpreter exit.
         embedder.close()
@@ -120,6 +114,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_exception_handler(problems.Problem, _problem_handler)
     app.add_exception_handler(RequestValidationError, _validation_handler)
+    # The largest body any route takes is a policy file. Added before the request id, so that a
+    # refusal carries one too.
+    app.add_middleware(BodyLimit, limit=MAX_UPLOAD_BYTES)
     app.middleware("http")(_request_id)
 
     app.include_router(health.router)
@@ -133,40 +130,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(logs.router)
     app.include_router(overview.router)
     app.include_router(laws.router)
+    app.include_router(policies.router)
     return app
-
-
-PURGE_INTERVAL = 24 * 60 * 60
-"""Once a day. The retention is measured in months, so the hour it runs in does
-not matter, and a missed day costs nothing."""
-
-
-async def _purge_daily(app: FastAPI) -> None:
-    """Delete questions whose retention has run out, and ended sessions, for as long as this runs.
-
-    The instance does this itself because a retention promise that depends on the
-    operator having set up cron is a promise most instances quietly break. The
-    delete blocks, so it goes to a worker thread; several workers are harmless,
-    because the purge takes a lock.
-    """
-    while True:
-        try:
-            await asyncio.sleep(PURGE_INTERVAL)
-            deleted = await asyncio.to_thread(_purge_now, app)
-            if deleted:
-                telemetry.info("query_log.purged", deleted=deleted)
-        except asyncio.CancelledError:
-            raise
-        except Exception as failure:  # keep the loop alive across a bad night
-            telemetry.warning("query_log.purge_failed", error=type(failure).__name__)
-
-
-def _purge_now(app: FastAPI) -> int:
-    """Expired questions, and the sessions and sign-in links nobody can use any more."""
-    with session_from(app.state.engine) as opened:
-        purge_ended(opened, lifetimes=lifetimes_of(app.state.settings))
-        purge_expired_links(opened)
-        return purge_expired(opened, actor=Actor(via="api"))
 
 
 async def _problem_handler(request: Request, raised: Exception) -> Response:

@@ -1,4 +1,4 @@
-"""A per-token rate limit, and a sign-in throttle, held in the worker.
+"""A per-token rate limit, a sign-in throttle, and a limit on the size of a request body.
 
 The purpose is stopping a runaway integration from eating the instance, not
 enforcing a quota anybody has paid for, so an approximate limit inside each
@@ -18,6 +18,13 @@ from collections import OrderedDict, deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from time import monotonic
+
+from starlette.datastructures import Headers
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from dpolens.api import problems
 
 CAPACITY = 4096
 """How many tokens the limiter remembers before forgetting the least recent."""
@@ -121,3 +128,64 @@ class SignInThrottle:
         while attempts and attempts[0] <= now - self.window:
             attempts.popleft()
         return attempts
+
+
+class _TooLarge(Exception):
+    pass
+
+
+class BodyLimit:
+    """Refuses a request body larger than `limit` bytes, with `/problems/too-large`.
+
+    A route reads its whole body before it runs, and before the caller is authenticated, so
+    the limit sits in front of the application. A declared length over the limit is refused
+    before a byte is read. A body sent without one is counted as it arrives and cut off at the
+    limit, whatever the application then makes of the part it received.
+    """
+
+    def __init__(self, app: ASGIApp, limit: int) -> None:
+        self.app = app
+        self.limit = limit
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        def refusal() -> Response:
+            return problems.render(Request(scope), problems.too_large(self.limit))
+
+        declared = Headers(scope=scope).get("content-length", "")
+        if declared.isdigit() and int(declared) > self.limit:
+            await refusal()(scope, receive, send)
+            return
+
+        seen = 0
+        over = False
+        started = False
+
+        async def counted() -> Message:
+            nonlocal seen, over
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > self.limit:
+                    over = True
+                    raise _TooLarge
+            return message
+
+        async def answered(message: Message) -> None:
+            nonlocal started
+            if over:
+                if message["type"] == "http.response.start" and not started:
+                    started = True
+                    await refusal()(scope, receive, send)
+                return
+            started = started or message["type"] == "http.response.start"
+            await send(message)
+
+        try:
+            await self.app(scope, counted, answered)
+        except _TooLarge:
+            if not started:
+                await refusal()(scope, receive, send)

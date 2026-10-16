@@ -282,6 +282,46 @@ class TestReadingAClause:
             "testlaw:art-5:para-1",
         ]
 
+    async def test_an_old_policy_citation_says_where_its_rule_is_now(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        stub.clause_extra = {
+            "now": {
+                "key": "retention:4.3",
+                "version_label": "2",
+                "effective_date": "2026-06-01",
+                "moved": True,
+                "changed": False,
+            }
+        }
+
+        result = await connected.call_tool("get_clause", {"key": "retention:4.2"})
+
+        assert structured(result)["now"] == (
+            "In version 2, in force since 2026-06-01, this rule is retention:4.3, word for word. "
+            "Cite that key for it today."
+        )
+        assert structured(result)["formerly"] is None
+
+    async def test_a_key_that_named_another_rule_before_says_so(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        stub.clause_extra = {
+            "formerly": {
+                "version_label": "1",
+                "heading": None,
+                "text": "Staff records are kept for 6 years.",
+                "now": "testlaw:art-6",
+            }
+        }
+
+        result = await connected.call_tool("get_clause", {"key": "testlaw:art-5"})
+
+        assert structured(result)["formerly"].startswith(
+            "In version 1, testlaw:art-5 was a different rule, which is testlaw:art-6 in this "
+            "version."
+        )
+
 
 class TestWhatCanBeCited:
     async def test_listing_says_what_is_loaded_and_which_version(self, connected: Client) -> None:

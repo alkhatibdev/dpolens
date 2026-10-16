@@ -293,6 +293,78 @@ def wrong_password() -> Problem:
     )
 
 
+def policy_not_found(detail: str) -> Problem:
+    return Problem(kind="policy-not-found", title="No such policy", status=404, detail=detail)
+
+
+def policy_exists(detail: str) -> Problem:
+    return Problem(kind="policy-exists", title="Slug taken", status=409, detail=detail)
+
+
+def draft_exists(detail: str, version: int) -> Problem:
+    """One draft per policy. `version` names the draft there is, which a client can discard,
+    or replace with the upload by asking again with `replace=true`."""
+    return Problem(
+        kind="draft-exists", title="A draft is open", status=409, detail=detail, version=version
+    )
+
+
+def no_draft(detail: str) -> Problem:
+    return Problem(kind="no-draft", title="No draft", status=404, detail=detail)
+
+
+def flags_open(detail: str, positions: Sequence[int]) -> Problem:
+    """Publishing waits for every flag. `flags` lists the open ones by their place."""
+    return Problem(
+        kind="flags-open",
+        title="Flags to settle",
+        status=409,
+        detail=detail,
+        flags=list(positions),
+    )
+
+
+def flag_not_found(detail: str) -> Problem:
+    return Problem(kind="flag-not-found", title="No such flag", status=404, detail=detail)
+
+
+def effective_date_too_early(detail: str) -> Problem:
+    """A new version takes effect after the version published before it."""
+    return Problem(
+        kind="effective-date-too-early", title="Effective date too early", status=409, detail=detail
+    )
+
+
+def version_label_taken(detail: str) -> Problem:
+    return Problem(kind="version-label-taken", title="Label taken", status=409, detail=detail)
+
+
+def too_large(limit: int) -> Problem:
+    """Refused before the body is read, so a large one costs the instance nothing."""
+    return Problem(
+        kind="too-large",
+        title="Request too large",
+        status=413,
+        detail=f"the request body is larger than {limit // (1024 * 1024)} MB",
+    )
+
+
+def unreadable_policy(detail: str) -> Problem:
+    """The file cannot be read as a policy, with what to do about it."""
+    return Problem(kind="unreadable-policy", title="Unreadable policy", status=422, detail=detail)
+
+
+def bad_slug(detail: str) -> Problem:
+    return Problem(kind="bad-slug", title="Unusable slug", status=422, detail=detail)
+
+
+def original_unavailable(detail: str) -> Problem:
+    """The stored file is missing or no longer matches its hash: an error, never a download."""
+    return Problem(
+        kind="original-unavailable", title="Original unavailable", status=500, detail=detail
+    )
+
+
 class ProblemDocument(BaseModel):
     """The error shape, declared so the specification carries it.
 
@@ -316,8 +388,10 @@ TITLES = {
     409: "The change conflicts with what is there",
     410: "The link has been used or has run out",
     412: "Somebody changed it after it was read",
+    413: "The request body is larger than the instance accepts",
     422: "The request body or parameters are not valid",
     429: "The credential has spent its quota for the minute, or too many sign-ins failed",
+    500: "A stored original file is missing or has changed",
     503: "The instance is not ready",
 }
 

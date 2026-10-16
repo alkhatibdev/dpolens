@@ -112,6 +112,8 @@ class Stub:
     accepts: str | None = None
     refusals: dict[str, Refusal] = field(default_factory=dict)
     unreachable: set[str] = field(default_factory=set)
+    clause_extra: dict[str, Any] = field(default_factory=dict)
+    """Added to the answer for a clause, such as where a policy's rule is now."""
 
     def __post_init__(self) -> None:
         if not self.results:
@@ -173,6 +175,7 @@ class Stub:
                     "breadcrumb": [CHAPTER],
                     "children": [PARAGRAPH],
                     "cross_references": [{"key": "testlaw:art-6", "text": "Article 6"}],
+                    **self.clause_extra,
                 },
             )
         if path == "/v1/documents":

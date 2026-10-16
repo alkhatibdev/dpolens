@@ -7,7 +7,14 @@ from typing import Annotated
 
 import typer
 
-from dpolens.engine.documents.read import ClauseNotFound, ClauseView, get_clause, get_subtree
+from dpolens.engine.documents.read import (
+    ClauseNotFound,
+    ClauseView,
+    Continuation,
+    Formerly,
+    get_clause,
+    get_subtree,
+)
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -47,8 +54,21 @@ def show(
         trail = " > ".join(_name(parent) for parent in detail.breadcrumb)
         typer.secho(trail, fg=typer.colors.BRIGHT_BLACK)
 
+    if clause.archived:
+        typer.secho(
+            "The policy is archived: nothing searches it, and its clauses still read.",
+            fg=typer.colors.BRIGHT_BLACK,
+        )
+
     typer.echo("")
     print_clause(clause, indent=0)
+
+    if detail.now is not None:
+        typer.echo("")
+        typer.secho(where_now(detail.now), fg=typer.colors.YELLOW)
+    if detail.formerly is not None:
+        typer.echo("")
+        typer.secho(formerly(clause.key, detail.formerly), fg=typer.colors.BRIGHT_BLACK)
 
     if clause.authoritative_text:
         typer.echo("")
@@ -78,6 +98,25 @@ def show(
         typer.secho("Refers to:", fg=typer.colors.BRIGHT_BLACK)
         for target, wording in detail.cross_references:
             typer.echo(f"  {target}  ({wording})")
+
+
+def where_now(now: Continuation) -> str:
+    """Where a policy's rule is in the version in force, for a clause read in an earlier one."""
+    version = f"version {now.version_label}, in force since {now.effective_date.isoformat()}"
+    if now.key is None:
+        return f"This rule is not in {version}."
+    words = "in new words" if now.changed else "word for word"
+    if now.moved:
+        return f"In {version}, this rule is {now.key}, {words}."
+    return f"In {version}, this rule keeps its number, {words}."
+
+
+def formerly(key: str, before: Formerly) -> str:
+    """What a number named before it named this rule."""
+    what = (before.heading or before.text).strip()
+    what = what if len(what) <= 80 else what[:80].rstrip() + "…"
+    went = f"which is {before.now} now" if before.now else "since removed"
+    return f"In version {before.version_label}, {key} was a different rule, {went}:\n  {what}"
 
 
 def _name(clause: ClauseView) -> str:

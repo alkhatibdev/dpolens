@@ -23,7 +23,7 @@ from dpolens.engine.documents.read import (
 )
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.packs.selection import Scope, scope_for
-from dpolens.engine.search.fuse import DEFAULT_FUSION, Fusion, fuse
+from dpolens.engine.search.fuse import DEFAULT_FUSION, Fused, Fusion, fuse
 from dpolens.engine.search.keyword import KeywordIndex, keyword_search
 from dpolens.engine.search.language import language_of
 from dpolens.engine.search.vector import vector_search
@@ -97,19 +97,26 @@ def search(
             packs=packs,
         ),
     }
-    fused = fuse(lists, fusion)[: limit + TIE_MARGIN]
+    fused = fuse(lists, fusion)
 
     # A candidate the retrievers found may have no version in force on the date
     # being asked about, which is not an error: it is a clause that did not say
-    # this then, so it is not an answer now.
+    # this then, so it is not an answer now. Candidates are read in order until
+    # enough are answers, so one that is passed over leaves no slot empty.
     #
     # Each clause is read in the language asked for, whichever of its texts
     # matched, and in the language that prevails where it has no text in that one.
-    resolved = []
+    resolved: list[tuple[Fused, ClauseDetail]] = []
     for candidate in fused:
+        if len(resolved) == limit + TIE_MARGIN:
+            break
         try:
             detail = get_clause(session, candidate.key, lang=lang, as_of=as_of)
         except ClauseNotFound:
+            continue
+        # An archived policy no longer applies. Its clauses still read by key, so an old
+        # citation can be checked, but nothing searches them.
+        if detail.clause.archived:
             continue
         resolved.append((candidate, detail))
 

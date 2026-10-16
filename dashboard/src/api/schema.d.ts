@@ -607,6 +607,128 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/policies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Every organisation policy, with its version in force and any draft */
+    get: operations["list_all_v1_policies_get"];
+    put?: never;
+    /** Upload a new policy, which becomes its first draft */
+    post: operations["upload_new_v1_policies_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upload a new version of a policy, matched to the version before it */
+    post: operations["upload_new_version_v1_policies__slug__versions_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/draft": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A policy's draft: its clauses, its flags, and what changed */
+    get: operations["read_draft_v1_policies__slug__draft_get"];
+    put?: never;
+    post?: never;
+    /** Discard the draft */
+    delete: operations["discard_v1_policies__slug__draft_delete"];
+    options?: never;
+    head?: never;
+    /** Change a draft's title, effective date or version label */
+    patch: operations["edit_draft_v1_policies__slug__draft_patch"];
+    trace?: never;
+  };
+  "/v1/policies/{slug}/draft/flags/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Accept flags, by their place in the draft's list */
+    post: operations["accept_v1_policies__slug__draft_flags_accept_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/draft/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publish the draft once every flag is accepted */
+    post: operations["publish_v1_policies__slug__draft_publish_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/archive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Archive a policy: nothing searches it, and its clauses still read by key */
+    post: operations["archive_v1_policies__slug__archive_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/versions/{number}/original": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** A version's original file, checked against the hash it was stored with */
+    get: operations["download_v1_policies__slug__versions__number__original_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -749,6 +871,12 @@ export interface components {
       trust_tier: string | null;
       /** Source Url */
       source_url: string | null;
+      /**
+       * Archived
+       * @description True for an archived policy's clause: it still reads, and nothing searches it
+       * @default false
+       */
+      archived: boolean;
     };
     /** ClauseDay */
     ClauseDay: {
@@ -769,6 +897,10 @@ export interface components {
       children: components["schemas"]["Clause"][];
       /** Cross References */
       cross_references: components["schemas"]["CrossReference"][];
+      /** @description For a policy read in a version that is no longer in force, where the same rule is now, since a policy's keys follow its printed numbers */
+      now?: components["schemas"]["WhereItIsNow"] | null;
+      /** @description Set when this key named a different rule in the version before */
+      formerly?: components["schemas"]["Formerly"] | null;
     };
     /**
      * ClauseName
@@ -795,6 +927,23 @@ export interface components {
        * @description Label and heading, outermost first, down to it
        */
       trail: components["schemas"]["Step"][];
+    };
+    /** Coverage */
+    Coverage: {
+      /**
+       * Characters
+       * @description Every character of text in the file
+       */
+      characters: number;
+      /** In Clauses */
+      in_clauses: number;
+      /** Set Aside */
+      set_aside: number;
+      /**
+       * Missed
+       * @description Characters the reader could not take, which is a flag
+       */
+      missed: number;
     };
     /** CrossReference */
     CrossReference: {
@@ -887,6 +1036,53 @@ export interface components {
       /** Offset */
       offset: number;
     };
+    /** DraftClause */
+    DraftClause: {
+      /** Key */
+      key: string;
+      /**
+       * Kind
+       * @description section, paragraph, list, table or row
+       */
+      kind: string;
+      /**
+       * Label
+       * @description The number the document shows for it
+       */
+      label: string | null;
+      /** Heading */
+      heading: string | null;
+      /** Text */
+      text: string;
+      /** Lang */
+      lang: string;
+      /**
+       * Layer
+       * @description What decided where it begins and how deep it sits: the file's own structure, its typography, or a number written into its text
+       */
+      layer: ("native_structure" | "typography" | "numbering") | null;
+      /**
+       * Change
+       * @description Against the version before: added, modified, moved or unchanged
+       */
+      change: ("added" | "modified" | "moved" | "unchanged") | null;
+      /**
+       * Continues
+       * @description The key of the clause it continues
+       */
+      continues: string | null;
+      /** Children */
+      children: components["schemas"]["DraftClause"][];
+    };
+    /** DraftDetails */
+    DraftDetails: {
+      /** Title */
+      title?: string | null;
+      /** Effective Date */
+      effective_date?: string | null;
+      /** Version Label */
+      version_label?: string | null;
+    };
     /** Entries */
     Entries: {
       /** Entries */
@@ -930,6 +1126,52 @@ export interface components {
       actor_token: components["schemas"]["TokenRef"] | null;
       target_user: components["schemas"]["PersonRef"] | null;
       target_token: components["schemas"]["TokenRef"] | null;
+    };
+    /** FlagOut */
+    FlagOut: {
+      /**
+       * Position
+       * @description Its place in the draft's list, which names it
+       */
+      position: number;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "coverage_gap" | "numbering_gap" | "low_confidence_boundary" | "unmatched_key";
+      /** Key */
+      key: string | null;
+      /**
+       * Detail
+       * @description What to check, in a sentence
+       */
+      detail: string;
+      /** Accepted By */
+      accepted_by: string | null;
+      /** Accepted At */
+      accepted_at: string | null;
+    };
+    /** FlagsToAccept */
+    FlagsToAccept: {
+      /** Positions */
+      positions: number[];
+    };
+    /**
+     * Formerly
+     * @description The rule a policy's number named in the version before, before it named this one.
+     */
+    Formerly: {
+      /** Version Label */
+      version_label: string | null;
+      /** Heading */
+      heading: string | null;
+      /** Text */
+      text: string;
+      /**
+       * Now
+       * @description That rule's key in this version, or null if removed
+       */
+      now: string | null;
     };
     /** FromLink */
     FromLink: {
@@ -1177,6 +1419,24 @@ export interface components {
        */
       expires_at?: string | null;
     };
+    /** OriginalFile */
+    OriginalFile: {
+      /**
+       * Name
+       * @description The uploaded file's name
+       */
+      name: string | null;
+      /**
+       * Format
+       * @description docx or markdown
+       */
+      format: string | null;
+      /**
+       * Size
+       * @description In bytes
+       */
+      size: number | null;
+    };
     /**
      * OutlineEntry
      * @description What a top-level clause is, without what it says.
@@ -1351,6 +1611,124 @@ export interface components {
        */
       status: "active" | "deactivated" | "erased";
     };
+    /** PolicyDraft */
+    PolicyDraft: {
+      version: components["schemas"]["PolicyVersion"];
+      /** Clauses */
+      clauses: components["schemas"]["DraftClause"][];
+      /** Flags */
+      flags: components["schemas"]["FlagOut"][];
+      coverage: components["schemas"]["Coverage"];
+      /**
+       * Set Aside
+       * @description Text kept but in no clause, never searched
+       */
+      set_aside: components["schemas"]["SetAside"][];
+      /**
+       * Notices
+       * @description What the file itself said, such as tracked changes
+       */
+      notices: string[];
+      /**
+       * Previous
+       * @description The label of the version it was matched to
+       */
+      previous: string | null;
+      /**
+       * Removed
+       * @description Clauses of that version nothing continues
+       */
+      removed: components["schemas"]["Removed"][];
+      /**
+       * Changes
+       * @description How many clauses were added, modified, moved, unchanged and removed
+       */
+      changes: {
+        [key: string]: number;
+      };
+    };
+    /** PolicySummary */
+    PolicySummary: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "archived";
+      /**
+       * In Force
+       * @description The label of the version in force today
+       */
+      in_force: string | null;
+      /** In Force Since */
+      in_force_since: string | null;
+      /**
+       * Published
+       * @description How many versions have been published
+       */
+      published: number;
+      /**
+       * Draft
+       * @description The open draft's number, if there is one
+       */
+      draft: number | null;
+      /**
+       * Indexing
+       * @description Whether the latest published version's clauses are embedded yet, so that searching by meaning finds them
+       */
+      indexing: ("todo" | "doing" | "succeeded" | "failed") | null;
+    };
+    /** PolicyVersion */
+    PolicyVersion: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /**
+       * Number
+       * @description The version's number among this policy's uploads
+       */
+      number: number;
+      /**
+       * Label
+       * @description The label citations show, set when it is published
+       */
+      label: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "draft" | "published" | "discarded";
+      /**
+       * Effective Date
+       * Format: date
+       * @description The day it takes effect, once published
+       */
+      effective_date: string;
+      source: components["schemas"]["OriginalFile"];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * @description Who uploaded it; empty from the command line
+       */
+      created_by: string | null;
+      /** Published At */
+      published_at: string | null;
+      /** Published By */
+      published_by: string | null;
+      /**
+       * Indexing
+       * @description Once published, whether its clauses are embedded yet, so that searching by meaning finds them. Searching by words finds them at once
+       */
+      indexing: ("todo" | "doing" | "succeeded" | "failed") | null;
+    };
     /**
      * ProblemDocument
      * @description The error shape, declared so the specification carries it.
@@ -1466,6 +1844,15 @@ export interface components {
        * @description The names of the patterns this instance takes out as well
        */
       added_patterns: string[];
+    };
+    /** Removed */
+    Removed: {
+      /** Key */
+      key: string;
+      /** Heading */
+      heading: string | null;
+      /** Text */
+      text: string;
     };
     /** Result */
     Result: {
@@ -1619,6 +2006,16 @@ export interface components {
        * @default false
        */
       explain: boolean;
+    };
+    /** SetAside */
+    SetAside: {
+      /**
+       * Reason
+       * @enum {string}
+       */
+      reason: "title" | "front matter" | "contents" | "text box" | "repeated table";
+      /** Text */
+      text: string;
     };
     /** SignIn */
     SignIn: {
@@ -1877,6 +2274,34 @@ export interface components {
        * Format: date-time
        */
       checked_at: string;
+    };
+    /**
+     * WhereItIsNow
+     * @description Where a policy's rule, read in an earlier version, is in the version in force.
+     */
+    WhereItIsNow: {
+      /**
+       * Key
+       * @description Its key today, or null when the rule was removed
+       */
+      key: string | null;
+      /** Version Label */
+      version_label: string | null;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /**
+       * Moved
+       * @description Whether its number changed
+       */
+      moved: boolean;
+      /**
+       * Changed
+       * @description Whether its words changed
+       */
+      changed: boolean;
     };
   };
   responses: never;
@@ -4031,7 +4456,17 @@ export interface operations {
       query?: {
         actor?: string | null;
         category?:
-          ("sign_ins" | "people" | "roles" | "tokens" | "laws" | "questions" | "exports")[] | null;
+          | (
+              | "sign_ins"
+              | "people"
+              | "roles"
+              | "tokens"
+              | "laws"
+              | "policies"
+              | "questions"
+              | "exports"
+            )[]
+          | null;
         since?: string | null;
         until?: string | null;
         q?: string | null;
@@ -4561,6 +4996,754 @@ export interface operations {
       };
       /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
       429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  list_all_v1_policies_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicySummary"][];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  upload_new_v1_policies_post: {
+    parameters: {
+      query: {
+        /** @description The file's name, whose extension says whether it is Word or Markdown */
+        filename: string;
+        /** @description The slug every key starts with; from the file name if left out */
+        slug?: string | null;
+        title?: string | null;
+        /** @description When it takes effect; today if left out */
+        effective_date?: string | null;
+        version_label?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/octet-stream": string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The request body or parameters are not valid */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  upload_new_version_v1_policies__slug__versions_post: {
+    parameters: {
+      query: {
+        /** @description The file's name, whose extension says whether it is Word or Markdown */
+        filename: string;
+        effective_date?: string | null;
+        version_label?: string | null;
+        /** @description Discard the policy's open draft and use this upload instead */
+        replace?: boolean;
+      };
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/octet-stream": string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The request body or parameters are not valid */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  read_draft_v1_policies__slug__draft_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  discard_v1_policies__slug__draft_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  edit_draft_v1_policies__slug__draft_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DraftDetails"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  accept_v1_policies__slug__draft_flags_accept_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FlagsToAccept"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  publish_v1_policies__slug__draft_publish_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyVersion"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  archive_v1_policies__slug__archive_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  download_v1_policies__slug__versions__number__original_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+        number: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The file */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/octet-stream": unknown;
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description A stored original file is missing or has changed */
+      500: {
         headers: {
           [name: string]: unknown;
         };
