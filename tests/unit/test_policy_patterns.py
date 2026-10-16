@@ -47,6 +47,7 @@ def test_reads_a_number_written_into_the_text(text: str, written: str, rest: str
         "Mix. the two lists",
         "قسم الموارد البشرية مسؤول عن التدريب.",
         "A data controller decides why data is processed.",
+        "أولاً يجب على كل موظف حماية البيانات التي يطلع عليها.",
     ],
 )
 def test_prose_that_only_looks_numbered_is_not(text: str) -> None:

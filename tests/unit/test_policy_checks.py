@@ -68,6 +68,15 @@ def test_a_gap_in_the_numbering_is_flagged() -> None:
     assert [(flag.key, flag.detail) for flag in flags] == [("x:4", "4. follows 2..")]
 
 
+def test_a_gap_in_arabic_ordinal_numbering_is_flagged() -> None:
+    """A clause keeps "رابعاً" without the colon after it, and the check reads it from there."""
+    flags = check_numbering(
+        [clause("x:أولا", "أولاً"), clause("x:ثانيا", "ثانياً"), clause("x:رابعا", "رابعاً")]
+    )
+
+    assert [(flag.key, flag.detail) for flag in flags] == [("x:رابعا", "رابعاً follows ثانياً.")]
+
+
 def test_a_repeated_number_is_flagged() -> None:
     flags = check_numbering([clause("x:1-1", "1-1"), clause("x:1-1_2", "1-1")])
 
