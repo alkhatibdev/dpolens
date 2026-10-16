@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import uuid
 
+from dpolens.engine.policies.checks import snippet
 from dpolens.engine.policies.versions import MOVED_SIMILARITY, Earlier, Later, match
 
 CUSTOMER = "Customer records are kept for 2 years after the account closes."
@@ -100,3 +101,9 @@ def test_a_rule_that_stays_put_is_preferred_to_an_identical_one_elsewhere() -> N
     found = matching.matches["r:2"]
     assert found.change == "unchanged"
     assert found.earlier is not None and found.earlier.key == "r:2"
+
+
+def test_a_flag_quotes_the_earlier_words_up_to_a_whole_word() -> None:
+    assert snippet(STAFF, 30) == "Staff records are kept for 6…"
+    assert snippet(STAFF, 200) == STAFF
+    assert snippet("Retention,\n  in   full", 200) == "Retention, in full"

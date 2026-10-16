@@ -131,14 +131,22 @@ def match(earlier: Sequence[Earlier], later: Sequence[Later]) -> Matching:
     for key in open_later:
         result.matches[key] = Match(change="added", earlier=None)
     result.removed = sorted(open_earlier.values(), key=lambda clause: clause.key)
+    result.reused = reused(earlier, result.matches)
+    return result
 
-    # A number that named one rule and now names another, which a citation without its
-    # version would quietly follow.
+
+def reused(
+    earlier: Sequence[Earlier], matches: dict[str, Match]
+) -> dict[str, tuple[Earlier, str | None]]:
+    """Each number that named one rule and now names another, which a citation without its
+    version would quietly follow: the rule it named, and that rule's new key if it has one."""
+    before = {clause.key: clause for clause in earlier}
     went: dict[uuid.UUID, str] = {
-        found.earlier.id: key for key, found in result.matches.items() if found.earlier
+        found.earlier.id: key for key, found in matches.items() if found.earlier
     }
-    for key, found in result.matches.items():
+    changed: dict[str, tuple[Earlier, str | None]] = {}
+    for key, found in matches.items():
         named = before.get(key)
         if named is not None and (found.earlier is None or found.earlier.id != named.id):
-            result.reused[key] = (named, went.get(named.id))
-    return result
+            changed[key] = (named, went.get(named.id))
+    return changed

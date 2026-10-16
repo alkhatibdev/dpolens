@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from dpolens.engine.policies.reading import Line
+
 Layer = Literal["native_structure", "typography", "numbering"]
 """Which layer decided where a clause begins and how deep it sits."""
 
@@ -83,6 +85,8 @@ class ParsedPolicy:
     flags: tuple[Flag, ...]
     coverage: Coverage
     notices: tuple[str, ...]
+    lines: tuple[Line, ...] = ()
+    """The file as it was read, paragraph by paragraph."""
 
     def walk(self) -> list[Clause]:
         found: list[Clause] = []

@@ -48,6 +48,17 @@ describe("a policy's entries in the governance log", () => {
     );
   });
 
+  it("say which match a reviewer said was wrong", () => {
+    expect(
+      sentence("document.match_rejected", {
+        ...retention,
+        key: "retention:4.3",
+        earlier: "retention:4.2",
+        previous: "2",
+      }),
+    ).toBe("Said 4.3 in the draft of Retention policy is a different rule from version 2's 4.2");
+  });
+
   it("fall back to the slug when an entry has no title", () => {
     expect(sentence("document.archived", { document: "retention" })).toBe("Archived retention");
   });

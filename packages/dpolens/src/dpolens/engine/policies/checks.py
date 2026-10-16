@@ -22,6 +22,15 @@ def printed(text: str) -> int:
     return sum(1 for character in text if not character.isspace())
 
 
+def snippet(text: str, length: int) -> str:
+    """The start of a text for a flag to quote, cut after the last whole word that fits."""
+    text = " ".join(text.split())
+    if len(text) <= length:
+        return text
+    cut = text[: length + 1].rsplit(" ", 1)[0] if " " in text[:length] else text[:length]
+    return cut.rstrip(" ,;:") + "…"
+
+
 def nodes(roots: Sequence[Node]) -> list[Node]:
     found: list[Node] = []
     for node in roots:
@@ -47,7 +56,7 @@ def check_coverage(read: ReadFile, built: Built) -> tuple[Coverage, list[Flag]]:
         flags.append(
             Flag(
                 kind="coverage_gap",
-                detail=f"This text is {where}: {paragraph.text.strip()[:80]!r}.",
+                detail=f'This text is {where}: "{snippet(paragraph.text, 80)}".',
                 position=position,
             )
         )

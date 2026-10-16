@@ -9,6 +9,7 @@ from dpolens.engine.policies.checks import check_coverage, check_keys, check_num
 from dpolens.engine.policies.docx import read_docx
 from dpolens.engine.policies.keys import assign, slug_of
 from dpolens.engine.policies.markdown import read_markdown
+from dpolens.engine.policies.reading import lines_of
 from dpolens.engine.policies.structure import build
 from dpolens.engine.policies.tree import Clause, Flag, ParsedPolicy
 
@@ -58,6 +59,7 @@ def parse_policy(data: bytes, filename: str, slug: str | None = None) -> ParsedP
         flags=tuple(flags),
         coverage=coverage,
         notices=read.notices,
+        lines=lines_of(read),
     )
 
 

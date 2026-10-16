@@ -227,7 +227,7 @@ def test_a_policy_goes_from_a_file_to_a_citation(
     assert refused.exit_code == 1
     assert "flags to settle before it can be published" in said(refused)
     accepted = runner.invoke(app, ["policy", "accept", "retention", "--all"])
-    assert "Every flag is accepted" in said(accepted)
+    assert "Every flag is settled" in said(accepted)
     assert runner.invoke(app, ["policy", "publish", "retention"]).exit_code == 0
 
     cited = runner.invoke(app, ["clause", "show", "retention:4.2", "--as-of", "2026-01-01"])
@@ -238,6 +238,26 @@ def test_a_policy_goes_from_a_file_to_a_citation(
     )
     listed = runner.invoke(app, ["policy", "list"])
     assert "version 2" in listed.output
+
+
+def test_a_match_can_be_said_to_be_a_different_rule(
+    instance: None, clean_tables: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DPOLENS_ORIGINALS_DIR", str(tmp_path))
+    first, second = str(POLICIES / "retention-v1.md"), str(POLICIES / "retention-v2.md")
+    runner.invoke(
+        app, ["policy", "upload", first, "--slug", "retention", "--effective-date", "2026-01-01"]
+    )
+    runner.invoke(app, ["policy", "publish", "retention"])
+    runner.invoke(app, ["policy", "revise", "retention", second, "--effective-date", "2026-06-01"])
+
+    rejected = runner.invoke(app, ["policy", "reject-match", "retention", "4.3"])
+
+    assert rejected.exit_code == 0, rejected.output
+    assert "4.3 is new in the draft, and version 1's 4.2 is removed." in said(rejected)
+    shown = runner.invoke(app, ["policy", "draft", "retention"])
+    assert "said to be a different rule by the command line" in said(shown)
+    assert "2 new, 1 reworded, 1 renumbered, 3 the same, 1 removed." in said(shown)
 
 
 def test_a_policy_without_a_draft_says_so(instance: None, clean_tables: None) -> None:

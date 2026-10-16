@@ -18,7 +18,7 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePath
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -38,16 +38,31 @@ from dpolens.engine.logs.governance import (
     DOCUMENT_DRAFT_EDITED,
     DOCUMENT_DRAFTED,
     DOCUMENT_FLAG_ACCEPTED,
+    DOCUMENT_MATCH_REJECTED,
     DOCUMENT_PUBLISHED,
     Actor,
     record,
 )
+from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.originals import Originals, Stored
 from dpolens.engine.policies.blocks import UnreadablePolicy
+from dpolens.engine.policies.checks import snippet
 from dpolens.engine.policies.keys import slug_of
-from dpolens.engine.policies.parse import parse_policy
+from dpolens.engine.policies.parse import parse_policy, read_file
+from dpolens.engine.policies.reading import Line, as_rows, from_rows, lines_of
 from dpolens.engine.policies.tree import Clause, Flag, ParsedPolicy
-from dpolens.engine.policies.versions import MOVED_SIMILARITY, Earlier, Later, Matching, match
+from dpolens.engine.policies.versions import (
+    MOVED_SIMILARITY,
+    Change,
+    Earlier,
+    Later,
+    Match,
+    Matching,
+    match,
+    reused,
+    similarity,
+    words,
+)
 
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,59}$")
@@ -55,6 +70,16 @@ MAX_KEY = 200
 SAMPLE = Path(__file__).with_name("sample-policy.md")
 SAMPLE_SLUG = "sample-data-protection"
 SAMPLE_EFFECTIVE = date(2026, 1, 1)
+DOCUMENT_ACTIONS = (
+    DOCUMENT_DRAFTED,
+    DOCUMENT_FLAG_ACCEPTED,
+    DOCUMENT_DRAFT_EDITED,
+    DOCUMENT_MATCH_REJECTED,
+    DOCUMENT_PUBLISHED,
+    DOCUMENT_DRAFT_DISCARDED,
+    DOCUMENT_ARCHIVED,
+)
+MATCH_REJECTED = "match-rejected"
 
 
 class PolicyNotFound(Exception):
@@ -97,6 +122,22 @@ class FlagNotFound(Exception):
     """The draft has no flag in that place."""
 
 
+class NoMatch(Exception):
+    """The draft has no clause by that key that continues one of the version before."""
+
+
+class StaleDraft(Exception):
+    """The draft changed after the caller read it, so their change could undo somebody else's."""
+
+    def __init__(
+        self, slug: str, revision: int, updated_at: datetime | None, updated_by: str | None
+    ) -> None:
+        super().__init__(f"{slug}'s draft changed after it was read: it is at revision {revision}.")
+        self.revision = revision
+        self.updated_at = updated_at
+        self.updated_by = updated_by
+
+
 class EffectiveDateTooEarly(Exception):
     """Versions take effect in the order they are published, so that the version a citation
     names and the version in force on a given day always agree."""
@@ -120,6 +161,22 @@ class FlagView:
     """Who accepted it: a person's name, or "the command line"."""
 
     accepted_at: datetime | None
+    resolved_by: str | None
+    """Who made the change that settled it, named as `accepted_by` is."""
+
+    resolved_at: datetime | None
+    resolution: str | None
+    paragraph: int | None
+
+
+@dataclass(frozen=True)
+class EarlierClause:
+    """The clause a new one continues, as the version before has it."""
+
+    key: str
+    label: str | None
+    heading: str | None
+    text: str
 
 
 @dataclass(frozen=True)
@@ -136,6 +193,9 @@ class DraftClause:
 
     continues: str | None
     """The key of the clause it continues in the previous version."""
+
+    earlier: EarlierClause | None
+    """That clause's words, when this one is renumbered or reworded."""
 
     children: tuple[DraftClause, ...]
 
@@ -170,6 +230,38 @@ class DraftView:
 
     removed: tuple[dict[str, str | None], ...]
     changes: dict[str, int]
+    revision: int
+    updated_at: datetime | None
+    updated_by: str | None
+    next_label: str
+    """The label it is published with, which is how citations will name it."""
+
+
+@dataclass(frozen=True)
+class Scheduled:
+    """A published version that takes effect later."""
+
+    label: str
+    effective_date: date
+
+
+@dataclass(frozen=True)
+class DraftReview:
+    """How far a draft's review has got."""
+
+    flags: int
+    open: int
+    uploaded_by: str | None
+    uploaded_at: datetime
+    next_label: str
+
+
+@dataclass(frozen=True)
+class LastChange:
+    by: str | None
+    """A person's name; empty for a change made on the command line."""
+
+    at: datetime
 
 
 @dataclass(frozen=True)
@@ -183,6 +275,37 @@ class PolicySummary:
     draft: int | None
     indexing: str | None
     """The latest published version's embedding job: todo, doing, succeeded or failed."""
+
+    in_force_number: int | None
+    """The number of the version in force, which names its original file."""
+
+    next_label: str
+    """The label a new version is published with, unless it is given one."""
+
+    sample: bool
+    scheduled: Scheduled | None
+    review: DraftReview | None
+    last_change: LastChange | None
+
+
+@dataclass(frozen=True)
+class FileLine:
+    """A paragraph of the file, with the clause it went to or why it was set aside."""
+
+    line: Line
+    clause: str | None
+    set_aside: str | None
+
+
+@dataclass(frozen=True)
+class FileView:
+    slug: str
+    number: int
+    status: str
+    name: str | None
+    format: str | None
+    size: int | None
+    lines: tuple[FileLine, ...]
 
 
 def _check_slug(slug: str) -> None:
@@ -202,19 +325,69 @@ def _document(session: Session, slug: str) -> Document:
     return found
 
 
-def _draft_of(session: Session, document: Document) -> DocumentVersion | None:
-    return session.scalars(
-        select(DocumentVersion).where(
-            DocumentVersion.document_id == document.id, DocumentVersion.status == "draft"
-        )
-    ).first()
+def _draft_of(
+    session: Session, document: Document, *, lock: bool = False
+) -> DocumentVersion | None:
+    query = select(DocumentVersion).where(
+        DocumentVersion.document_id == document.id, DocumentVersion.status == "draft"
+    )
+    if lock:
+        # Held until the change commits, so two changes made at once take turns and the second
+        # sees the revision the first left.
+        query = query.with_for_update().execution_options(populate_existing=True)
+    return session.scalars(query).first()
 
 
-def _require_draft(session: Session, document: Document) -> DocumentVersion:
-    draft = _draft_of(session, document)
+def _require_draft(
+    session: Session,
+    document: Document,
+    *,
+    lock: bool = False,
+    expected_revision: int | None = None,
+) -> DocumentVersion:
+    """The draft, refused if it changed since the revision the caller read, when they name one."""
+    draft = _draft_of(session, document, lock=lock)
     if draft is None:
         raise NoDraft(f"{document.slug} has no draft.")
+    if expected_revision is not None and draft.revision != expected_revision:
+        names = _names(session, [draft.updated_by_user_id])
+        raise StaleDraft(
+            document.slug,
+            draft.revision,
+            draft.updated_at,
+            names.get(draft.updated_by_user_id) if draft.updated_by_user_id else None,
+        )
     return draft
+
+
+def _published_labels(session: Session, document: Document) -> set[str | None]:
+    return set(
+        session.scalars(
+            select(DocumentVersion.version_label).where(
+                DocumentVersion.document_id == document.id,
+                DocumentVersion.status == "published",
+            )
+        )
+    )
+
+
+def _next_label(labels: set[str | None]) -> str:
+    """The next number no published version of the policy has as its label."""
+    number = len(labels) + 1
+    while str(number) in labels:
+        number += 1
+    return str(number)
+
+
+def _label_for(draft: DocumentVersion, labels: set[str | None]) -> str:
+    """The label a draft is published with: the one it was given, or the next number free."""
+    return draft.version_label or _next_label(labels)
+
+
+def _changed(draft: DocumentVersion, actor: Actor) -> None:
+    draft.revision += 1
+    draft.updated_at = datetime.now(UTC)
+    draft.updated_by_user_id = actor.user_id
 
 
 def _latest_published(session: Session, document: Document) -> DocumentVersion | None:
@@ -283,7 +456,7 @@ def upload_version(
 ) -> DraftView:
     """A new version of a policy, as a draft matched to the version before it."""
     document = _document(session, slug)
-    existing = _draft_of(session, document)
+    existing = _draft_of(session, document, lock=True)
     if existing is not None and not replace:
         raise DraftExists(slug, existing.version_number)
     parsed = _parse(data, filename, slug)
@@ -322,11 +495,6 @@ def _short(key: str, slug: str) -> str:
     return key.removeprefix(slug + ":")
 
 
-def _snippet(text: str, length: int) -> str:
-    text = text.strip()
-    return text if len(text) <= length else text[:length].rstrip() + "…"
-
-
 def _matching_flags(
     matching: Matching, later: dict[str, Later], slug: str, label: str
 ) -> list[Flag]:
@@ -344,7 +512,7 @@ def _matching_flags(
             old = found.earlier.heading or found.earlier.text
             said.append(
                 f"{_short(key, slug)} has new words since version {label}, where it read: "
-                f"{_snippet(old, 80)} Check that it is still the same rule."
+                f"{snippet(old, 80)} Check that it is still the same rule."
             )
         if found.change == "moved" and found.earlier is not None:
             clause = later[key]
@@ -356,7 +524,7 @@ def _matching_flags(
             )
         if key in matching.reused:
             named, went = matching.reused[key]
-            what = _snippet(named.heading or named.text, 60)
+            what = snippet(named.heading or named.text, 60)
             now = f"now {_short(went, slug)}" if went else "since removed"
             said.append(
                 f"In version {label}, {_short(key, slug)} was a different rule ({what}), {now}."
@@ -404,6 +572,9 @@ def _write_draft(
         source_size=stored.size,
         source_sha256=stored.sha256,
         source_format=parsed.format,
+        reading=as_rows(parsed.lines),
+        updated_at=datetime.now(UTC),
+        updated_by_user_id=actor.user_id,
         parse_checks={
             "coverage": asdict(parsed.coverage),
             "set_aside": [asdict(block) for block in parsed.set_aside],
@@ -473,6 +644,7 @@ def _write_draft(
                 kind=flag.kind,
                 detail=flag.detail,
                 position=position,
+                paragraph=flag.position,
             )
         )
     session.flush()
@@ -541,59 +713,76 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
         .where(DocumentNode.document_version_id == version.id, NodeText.is_authoritative)
         .order_by(DocumentNode.depth, DocumentNode.order_index)
     ).all()
-    previous_keys = dict(
-        session.execute(
-            select(DocumentNode.id, DocumentNode.canonical_key).where(
+    earlier = {
+        node.id: EarlierClause(
+            key=node.canonical_key, label=node.label, heading=text.heading, text=text.body_text
+        )
+        for node, text in session.execute(
+            select(DocumentNode, NodeText)
+            .join(NodeText, NodeText.node_id == DocumentNode.id)
+            .where(
                 DocumentNode.id.in_(
                     [node.previous_node_id for node, _ in rows if node.previous_node_id]
-                )
+                ),
+                NodeText.is_authoritative,
             )
-        )
-        .tuples()
-        .all()
-    )
+        ).all()
+    }
     children: dict[uuid.UUID | None, list[tuple[DocumentNode, NodeText]]] = {}
     for node, text in rows:
         children.setdefault(node.parent_node_id, []).append((node, text))
 
+    def clause(node: DocumentNode, text: NodeText) -> DraftClause:
+        before = earlier.get(node.previous_node_id) if node.previous_node_id else None
+        return DraftClause(
+            key=node.canonical_key,
+            kind=node.node_type,
+            label=node.label,
+            heading=text.heading,
+            text=text.body_text,
+            lang=text.lang,
+            layer=node.parse_layer,
+            change=node.change_type,
+            continues=before.key if before else None,
+            earlier=before if node.change_type in ("modified", "moved") else None,
+            children=build(node.id),
+        )
+
     def build(parent: uuid.UUID | None) -> tuple[DraftClause, ...]:
         found = sorted(children.get(parent, []), key=lambda pair: pair[0].order_index)
-        return tuple(
-            DraftClause(
-                key=node.canonical_key,
-                kind=node.node_type,
-                label=node.label,
-                heading=text.heading,
-                text=text.body_text,
-                lang=text.lang,
-                layer=node.parse_layer,
-                change=node.change_type,
-                continues=previous_keys.get(node.previous_node_id)
-                if node.previous_node_id
-                else None,
-                children=build(node.id),
-            )
-            for node, text in found
-        )
+        return tuple(clause(node, text) for node, text in found)
 
     flags = session.scalars(
         select(ParseFlag)
         .where(ParseFlag.document_version_id == version.id)
         .order_by(ParseFlag.position)
     ).all()
-    names = _names(session, [flag.accepted_by_user_id for flag in flags])
+    names = _names(
+        session,
+        [
+            version.updated_by_user_id,
+            *(flag.accepted_by_user_id for flag in flags),
+            *(flag.resolved_by_user_id for flag in flags),
+        ],
+    )
+
+    def who(user: uuid.UUID | None, when: datetime | None) -> str | None:
+        if user is not None:
+            return names.get(user)
+        return "the command line" if when else None
+
     flag_views = tuple(
         FlagView(
             position=flag.position,
             kind=flag.kind,
             key=flag.canonical_key,
             detail=flag.detail,
-            accepted_by=(
-                names.get(flag.accepted_by_user_id)
-                if flag.accepted_by_user_id
-                else ("the command line" if flag.accepted_at else None)
-            ),
+            accepted_by=who(flag.accepted_by_user_id, flag.accepted_at),
             accepted_at=flag.accepted_at,
+            resolved_by=who(flag.resolved_by_user_id, flag.resolved_at),
+            resolved_at=flag.resolved_at,
+            resolution=flag.resolution,
+            paragraph=flag.paragraph,
         )
         for flag in flags
     )
@@ -612,15 +801,24 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
         previous=checks.get("previous"),
         removed=removed,
         changes=changes,
+        revision=version.revision,
+        updated_at=version.updated_at,
+        updated_by=(names.get(version.updated_by_user_id) if version.updated_by_user_id else None),
+        next_label=_label_for(version, _published_labels(session, document)),
     )
 
 
 def accept_flags(
-    session: Session, slug: str, positions: Sequence[int] | None, *, actor: Actor
+    session: Session,
+    slug: str,
+    positions: Sequence[int] | None,
+    *,
+    actor: Actor,
+    expected_revision: int | None = None,
 ) -> DraftView:
     """Accept flags by their place in the draft's list, or every open one."""
     document = _document(session, slug)
-    draft = _require_draft(session, document)
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
     flags = {
         flag.position: flag
         for flag in session.scalars(
@@ -637,12 +835,13 @@ def accept_flags(
     accepted = []
     for position in wanted:
         flag = flags[position]
-        if flag.accepted_at is not None:
+        if flag.accepted_at is not None or flag.resolved_at is not None:
             continue
         flag.accepted_at = now
         flag.accepted_by_user_id = actor.user_id
         accepted.append(flag)
     if accepted:
+        _changed(draft, actor)
         record(
             session,
             actor=actor,
@@ -671,10 +870,11 @@ def edit_draft(
     title: str | None = None,
     effective_date: date | None = None,
     version_label: str | None = None,
+    expected_revision: int | None = None,
 ) -> DraftView:
     """Change a draft's details before it is published."""
     document = _document(session, slug)
-    draft = _require_draft(session, document)
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
     before: dict[str, Any] = {}
     after: dict[str, Any] = {}
     if title is not None and title.strip() and title.strip() != document.title:
@@ -688,6 +888,7 @@ def edit_draft(
         before["version_label"], after["version_label"] = draft.version_label, version_label.strip()
         draft.version_label = version_label.strip() or None
     if after:
+        _changed(draft, actor)
         record(
             session,
             actor=actor,
@@ -700,13 +901,19 @@ def edit_draft(
     return read_draft(session, slug, version=draft)
 
 
-def publish(session: Session, slug: str, *, actor: Actor) -> VersionView:
+def publish(
+    session: Session, slug: str, *, actor: Actor, expected_revision: int | None = None
+) -> VersionView:
     """Publish the draft: immutable from now on, searched once in force, and queued to embed."""
     document = _document(session, slug)
-    draft = _require_draft(session, document)
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
     open_flags = session.scalars(
         select(ParseFlag.position)
-        .where(ParseFlag.document_version_id == draft.id, ParseFlag.accepted_at.is_(None))
+        .where(
+            ParseFlag.document_version_id == draft.id,
+            ParseFlag.accepted_at.is_(None),
+            ParseFlag.resolved_at.is_(None),
+        )
         .order_by(ParseFlag.position)
     ).all()
     if open_flags:
@@ -717,22 +924,12 @@ def publish(session: Session, slug: str, *, actor: Actor) -> VersionView:
             f"Version {latest.version_label} of {slug} takes effect on "
             f"{latest.effective_date.isoformat()}. A new version has to take effect after it."
         )
-    labels = set(
-        session.scalars(
-            select(DocumentVersion.version_label).where(
-                DocumentVersion.document_id == document.id,
-                DocumentVersion.status == "published",
-            )
-        )
-    )
+    labels = _published_labels(session, document)
     if draft.version_label in labels:
         raise LabelTaken(
             f"{slug} has a version {draft.version_label} already. Give this one another label."
         )
-    number = len(labels) + 1
-    while str(number) in labels:
-        number += 1
-    label = draft.version_label or str(number)
+    label = _label_for(draft, labels)
     restored = document.status == "archived"
     job = queue_indexing(session, draft.id)
     draft.version_label = label
@@ -760,6 +957,129 @@ def publish(session: Session, slug: str, *, actor: Actor) -> VersionView:
     return _version_view(session, document, draft)
 
 
+def reject_match(
+    session: Session,
+    slug: str,
+    key: str,
+    *,
+    actor: Actor,
+    expected_revision: int | None = None,
+) -> DraftView:
+    """Say a clause of the draft is a different rule from the one it was matched to.
+
+    The clause becomes new and the earlier one removed, so that a citation of the earlier one says
+    its rule was removed instead of pointing at this one. The flag that asked about the match is
+    resolved by the change, and the other matching flags are written again, so that what they say
+    about where each earlier rule went stays true.
+    """
+    document = _document(session, slug)
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
+    node = session.scalars(
+        select(DocumentNode).where(
+            DocumentNode.document_version_id == draft.id, DocumentNode.canonical_key == key
+        )
+    ).first()
+    if node is None:
+        raise NoMatch(f"{slug}'s draft has no clause {key}.")
+    if node.previous_node_id is None:
+        raise NoMatch(f"{key} is new in {slug}'s draft: it continues no earlier clause.")
+    earlier, words_then = session.execute(
+        select(DocumentNode, NodeText)
+        .join(NodeText, NodeText.node_id == DocumentNode.id)
+        .where(DocumentNode.id == node.previous_node_id, NodeText.is_authoritative)
+    ).one()
+    node.previous_node_id = None
+    node.change_type = "added"
+    checks: dict[str, Any] = dict(draft.parse_checks or {})
+    gone = {
+        "key": earlier.canonical_key,
+        "heading": words_then.heading,
+        "text": words_then.body_text,
+    }
+    checks["removed"] = sorted(
+        [*checks.get("removed", []), gone], key=lambda clause: clause["key"] or ""
+    )
+    draft.parse_checks = checks
+    session.flush()
+
+    flags = session.scalars(
+        select(ParseFlag).where(
+            ParseFlag.document_version_id == draft.id, ParseFlag.kind == "unmatched_key"
+        )
+    ).all()
+    now = datetime.now(UTC)
+    for flag in flags:
+        if flag.canonical_key == key:
+            # The latest decision stands: a match accepted earlier and rejected now is rejected.
+            flag.accepted_at = None
+            flag.accepted_by_user_id = None
+            flag.resolved_at = now
+            flag.resolved_by_user_id = actor.user_id
+            flag.resolution = MATCH_REJECTED
+    _rewrite_matching_flags(session, document, draft, flags, keep=key)
+    _changed(draft, actor)
+    session.flush()
+    record(
+        session,
+        actor=actor,
+        action=DOCUMENT_MATCH_REJECTED,
+        target_type="document_version",
+        target_id=str(draft.id),
+        details={
+            "document": slug,
+            "title": document.title,
+            "version": draft.version_number,
+            "key": key,
+            "earlier": earlier.canonical_key,
+            "previous": checks.get("previous"),
+        },
+    )
+    return read_draft(session, slug, version=draft)
+
+
+def _rewrite_matching_flags(
+    session: Session,
+    document: Document,
+    draft: DocumentVersion,
+    flags: Sequence[ParseFlag],
+    *,
+    keep: str,
+) -> None:
+    """Write the matching flags' sentences again from the matches as they now stand. The flag
+    on `keep` says what was decided about, so it keeps its words."""
+    previous = _latest_published(session, document)
+    label = (draft.parse_checks or {}).get("previous")
+    if previous is None or not isinstance(label, str):
+        return
+    earlier = _earlier(session, previous)
+    by_id = {clause.id: clause for clause in earlier}
+    later: dict[str, Later] = {}
+    matches: dict[str, Match] = {}
+    for node, text in session.execute(
+        select(DocumentNode, NodeText)
+        .join(NodeText, NodeText.node_id == DocumentNode.id)
+        .where(DocumentNode.document_version_id == draft.id, NodeText.is_authoritative)
+    ).all():
+        new = Later(node.canonical_key, node.label, text.heading, text.body_text)
+        later[new.key] = new
+        old = by_id.get(node.previous_node_id) if node.previous_node_id else None
+        matches[new.key] = Match(
+            change=cast(Change, node.change_type or "added"),
+            earlier=old,
+            score=similarity(words(new), words(old)) if old else 1.0,
+        )
+    matching = Matching(matches=matches, reused=reused(earlier, matches))
+    said = {
+        flag.key: flag.detail
+        for flag in _matching_flags(matching, later, document.slug, label)
+        if flag.key is not None
+    }
+    for flag in flags:
+        key = flag.canonical_key
+        if key is not None and key != keep and key in said:
+            flag.detail = said[key]
+
+
 def _discard(
     session: Session, document: Document, draft: DocumentVersion, actor: Actor, reason: str
 ) -> None:
@@ -779,10 +1099,13 @@ def _discard(
     )
 
 
-def discard(session: Session, slug: str, *, actor: Actor) -> None:
+def discard(
+    session: Session, slug: str, *, actor: Actor, expected_revision: int | None = None
+) -> None:
     """Throw the draft away. It is kept as discarded, and nothing searches it."""
     document = _document(session, slug)
-    _discard(session, document, _require_draft(session, document), actor, reason="discarded")
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
+    _discard(session, document, draft, actor, reason="discarded")
     session.flush()
 
 
@@ -790,7 +1113,7 @@ def archive(session: Session, slug: str, *, actor: Actor) -> None:
     """Hide a policy from search and the library. Nothing is deleted, citations still read, and
     publishing a new version of it brings it back."""
     document = _document(session, slug)
-    draft = _draft_of(session, document)
+    draft = _draft_of(session, document, lock=True)
     if draft is not None:
         _discard(session, document, draft, actor, reason="the policy was archived")
     document.status = "archived"
@@ -805,8 +1128,26 @@ def archive(session: Session, slug: str, *, actor: Actor) -> None:
     )
 
 
+def _last_changes(session: Session) -> dict[str, LastChange]:
+    """Who last did something to each policy, and when, as the governance log has it."""
+    document = GovernanceEntry.details["document"].as_string()
+    rows = session.execute(
+        select(document, GovernanceEntry.occurred_at, GovernanceEntry.actor_user_id)
+        .where(GovernanceEntry.action.in_(DOCUMENT_ACTIONS))
+        .distinct(document)
+        .order_by(document, GovernanceEntry.seq.desc())
+    ).all()
+    names = _names(session, [user for _, _, user in rows])
+    return {
+        slug: LastChange(by=names.get(user) if user else None, at=at)
+        for slug, at, user in rows
+        if slug
+    }
+
+
 def list_policies(session: Session) -> list[PolicySummary]:
     today = date.today()
+    changes = _last_changes(session)
     summaries = []
     for document in session.scalars(
         select(Document).where(Document.kind == "org_policy").order_by(Document.slug)
@@ -819,11 +1160,33 @@ def list_policies(session: Session) -> list[PolicySummary]:
         published = [v for v in versions if v.status == "published"]
         in_force = [v for v in published if v.effective_date <= today]
         current = max(in_force, key=lambda v: v.effective_date, default=None)
-        draft = next((v.version_number for v in versions if v.status == "draft"), None)
+        later = min(
+            (v for v in published if v.effective_date > today),
+            key=lambda v: v.effective_date,
+            default=None,
+        )
+        draft = next((v for v in versions if v.status == "draft"), None)
         latest = published[-1] if published else None
         indexing = None
         if latest is not None and latest.index_job_id is not None:
             indexing = job_status(session, latest.index_job_id) or "succeeded"
+        review = None
+        if draft is not None:
+            settled = session.execute(
+                select(ParseFlag.accepted_at, ParseFlag.resolved_at).where(
+                    ParseFlag.document_version_id == draft.id
+                )
+            ).all()
+            uploader = draft.created_by_user_id
+            review = DraftReview(
+                flags=len(settled),
+                open=sum(
+                    1 for accepted, resolved in settled if accepted is None and resolved is None
+                ),
+                uploaded_by=_names(session, [uploader]).get(uploader) if uploader else None,
+                uploaded_at=draft.created_at,
+                next_label=_label_for(draft, {v.version_label for v in published}),
+            )
         summaries.append(
             PolicySummary(
                 slug=document.slug,
@@ -832,11 +1195,83 @@ def list_policies(session: Session) -> list[PolicySummary]:
                 in_force=current.version_label if current else None,
                 in_force_since=current.effective_date if current else None,
                 published=len(published),
-                draft=draft,
+                draft=draft.version_number if draft else None,
                 indexing=indexing,
+                in_force_number=current.version_number if current else None,
+                next_label=_next_label({v.version_label for v in published}),
+                sample=document.slug == SAMPLE_SLUG,
+                scheduled=(
+                    Scheduled(
+                        label=later.version_label or str(later.version_number),
+                        effective_date=later.effective_date,
+                    )
+                    if later
+                    else None
+                ),
+                review=review,
+                last_change=changes.get(document.slug),
             )
         )
     return summaries
+
+
+def _numbered(session: Session, document: Document, number: int) -> DocumentVersion:
+    found = session.scalars(
+        select(DocumentVersion).where(
+            DocumentVersion.document_id == document.id, DocumentVersion.version_number == number
+        )
+    ).first()
+    if found is None:
+        raise PolicyNotFound(f"{document.slug} has no version {number}.")
+    return found
+
+
+def version_status(session: Session, slug: str, number: int) -> str:
+    """Whether a version is a draft, published or discarded, which decides who may see its file."""
+    return _numbered(session, _document(session, slug), number).status
+
+
+def file_as_read(session: Session, originals: Originals, slug: str, number: int) -> FileView:
+    """A version's file as it was read: every paragraph in order, each with the clause it went
+    to or the reason it was set aside."""
+    document = _document(session, slug)
+    version = _numbered(session, document, number)
+    if version.reading is not None:
+        lines = from_rows(version.reading)
+    else:
+        # Read before the file as read was kept with its version.
+        data, name, _ = original(session, originals, slug, number)
+        lines = lines_of(read_file(data, name))
+    clauses: dict[int, str] = {}
+    for key, anchor in session.execute(
+        select(DocumentNode.canonical_key, DocumentNode.source_anchor).where(
+            DocumentNode.document_version_id == version.id
+        )
+    ).all():
+        where: dict[str, Any] = dict(anchor or {})
+        for position in where.get("positions", []):
+            clauses.setdefault(position, key)
+    checks: dict[str, Any] = dict(version.parse_checks or {})
+    set_aside = {
+        position: block["reason"]
+        for block in checks.get("set_aside", [])
+        for position in block.get("positions", [])
+    }
+    return FileView(
+        slug=slug,
+        number=number,
+        status=version.status,
+        name=version.source_name,
+        format=version.source_format,
+        size=version.source_size,
+        lines=tuple(
+            FileLine(
+                line=line, clause=clauses.get(line.position), set_aside=set_aside.get(line.position)
+            )
+            for line in lines
+            if line.text.strip()
+        ),
+    )
 
 
 def original(

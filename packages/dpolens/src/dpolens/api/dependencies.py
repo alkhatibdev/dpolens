@@ -234,6 +234,17 @@ def requires_any(*permissions: str) -> Callable[[Authenticated], Authenticated]:
     return guard
 
 
+def expected_revision(if_match: str | None, of: str) -> int | None:
+    """The revision an `If-Match` names, or None when it names none to check. `of` says what
+    the revision belongs to, for the refusal."""
+    if if_match is None or if_match.strip() == "*":
+        return None
+    value = if_match.strip().removeprefix("W/").strip('"')
+    if not value.isdigit():
+        raise problems.invalid_request(f"If-Match carries the {of}'s revision, as its ETag gave it")
+    return int(value)
+
+
 def actor_of(who: Authenticated) -> Actor:
     """Who a governance entry names for this caller, and through which door."""
     return Actor(

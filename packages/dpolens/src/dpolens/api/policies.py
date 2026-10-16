@@ -2,9 +2,14 @@
 
 An upload sends the file itself as the request body, with its name in `filename`, and is parsed
 at once: an unreadable file is refused in the same response. A draft is never searched. Its
-flags are what the parser could not settle; publishing waits until every one is accepted, makes
+flags are what the parser could not settle; publishing waits until every one is settled, makes
 the version immutable, and queues the job that embeds it. Uploading, reviewing and discarding
-take `documents.upload`; publishing and archiving take `documents.publish`.
+take `documents.upload`; publishing and archiving take `documents.publish`, and either opens the
+list of policies and their drafts.
+
+A draft is read with its revision as an `ETag`, and every change may send it back in `If-Match`.
+A change made against an older revision is refused with `412`, naming who changed the draft and
+when, so two people reviewing one draft never undo each other. A change without it is made.
 """
 
 from __future__ import annotations
@@ -13,11 +18,19 @@ from datetime import date, datetime
 from typing import Annotated, Any, Literal, cast
 from urllib.parse import quote
 
-from fastapi import APIRouter, Body, Depends, Query, Response
+from fastapi import APIRouter, Body, Depends, Header, Query, Response
 from pydantic import BaseModel, Field
 
 from dpolens.api import problems
-from dpolens.api.dependencies import Configured, Opened, actor_of, requires
+from dpolens.api.dependencies import (
+    Caller,
+    Configured,
+    Opened,
+    actor_of,
+    expected_revision,
+    requires,
+    requires_any,
+)
 from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.originals import Directory, OriginalUnavailable
@@ -30,12 +43,21 @@ router = APIRouter(
 
 Uploader = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_UPLOAD))]
 Publisher = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_PUBLISH))]
-Reader = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_READ))]
+Reviewer = Annotated[
+    Authenticated,
+    Depends(requires_any(catalog.DOCUMENTS_UPLOAD, catalog.DOCUMENTS_PUBLISH)),
+]
+IfMatch = Annotated[
+    str | None,
+    Header(description="The draft's revision, as its ETag gave it. A change made since is refused"),
+]
 Layer = Literal["native_structure", "typography", "numbering"]
 Change = Literal["added", "modified", "moved", "unchanged"]
 Status = Literal["draft", "published", "discarded"]
 Indexing = Literal["todo", "doing", "succeeded", "failed"]
 FlagKind = Literal["coverage_gap", "numbering_gap", "low_confidence_boundary", "unmatched_key"]
+Place = Literal["body", "cell", "text box", "contents", "front matter"]
+Reason = Literal["title", "front matter", "contents", "text box", "repeated table"]
 
 FileBody = Annotated[
     bytes,
@@ -80,6 +102,13 @@ class PolicyVersion(BaseModel):
     )
 
 
+class EarlierClause(BaseModel):
+    key: str
+    label: str | None
+    heading: str | None
+    text: str
+
+
 class DraftClause(BaseModel):
     key: str
     kind: str = Field(description="section, paragraph, list, table or row")
@@ -97,6 +126,10 @@ class DraftClause(BaseModel):
         description="Against the version before: added, modified, moved or unchanged"
     )
     continues: str | None = Field(description="The key of the clause it continues")
+    earlier: EarlierClause | None = Field(
+        description="That clause as the version before has it, when this one is renumbered or "
+        "reworded"
+    )
     children: list[DraftClause]
 
 
@@ -105,8 +138,17 @@ class FlagOut(BaseModel):
     kind: FlagKind
     key: str | None
     detail: str = Field(description="What to check, in a sentence")
-    accepted_by: str | None
+    accepted_by: str | None = Field(description="Who accepted it as read")
     accepted_at: datetime | None
+    resolved_by: str | None = Field(description="Who made the change that settled it")
+    resolved_at: datetime | None
+    resolution: str | None = Field(
+        description="The change that settled it: match-rejected, when the clause was said to be "
+        "a different rule from the one it was matched to"
+    )
+    paragraph: int | None = Field(
+        description="The paragraph of the file it is about, as the file view numbers them"
+    )
 
 
 class Removed(BaseModel):
@@ -116,7 +158,7 @@ class Removed(BaseModel):
 
 
 class SetAside(BaseModel):
-    reason: Literal["title", "front matter", "contents", "text box", "repeated table"]
+    reason: Reason
     text: str
 
 
@@ -139,6 +181,32 @@ class PolicyDraft(BaseModel):
     changes: dict[str, int] = Field(
         description="How many clauses were added, modified, moved, unchanged and removed"
     )
+    revision: int = Field(description="Goes up with every change. Send it back in `If-Match`")
+    updated_at: datetime | None
+    updated_by: str | None = Field(
+        description="Who changed it last, or null for a change made on the command line"
+    )
+    next_label: str = Field(
+        description="The label it is published with: the one given, or the next number free"
+    )
+
+
+class ScheduledVersion(BaseModel):
+    label: str
+    effective_date: date
+
+
+class DraftReview(BaseModel):
+    flags: int = Field(description="Every flag the draft has")
+    open: int = Field(description="The flags still to settle before it can be published")
+    uploaded_by: str | None
+    uploaded_at: datetime
+    next_label: str = Field(description="The label it is published with")
+
+
+class LastChange(BaseModel):
+    by: str | None = Field(description="A person's name, or null on the command line")
+    at: datetime
 
 
 class PolicySummary(BaseModel):
@@ -154,6 +222,48 @@ class PolicySummary(BaseModel):
             "Whether the latest published version's clauses are embedded yet, so that searching "
             "by meaning finds them"
         )
+    )
+    in_force_number: int | None = Field(
+        description="The number of the version in force, which names its original file"
+    )
+    next_label: str = Field(
+        description="The label a new version is published with, unless it is given one"
+    )
+    sample: bool = Field(description="The made-up policy a new instance starts with")
+    scheduled: ScheduledVersion | None = Field(
+        description="The next published version, when it takes effect later"
+    )
+    review: DraftReview | None = Field(description="The open draft's review, if there is one")
+    last_change: LastChange | None = Field(
+        description="Who last uploaded, reviewed, published or archived it, and when"
+    )
+
+
+class FileParagraph(BaseModel):
+    position: int = Field(description="Its place among the file's paragraphs")
+    text: str
+    place: Place
+    heading: int | None = Field(description="Its level, 1 the highest, when it is a heading")
+    title: bool = Field(description="The file marks it as the document's title")
+    label: str | None = Field(description="The number the file's own list puts before it")
+    bold: bool
+    table: int | None = Field(description="Which table it is in, from 0, with its row and cell")
+    row: int | None
+    cell: int | None
+    header: bool = Field(description="Its row is the table's header")
+    clause: str | None = Field(description="The key of the clause it went to")
+    set_aside: Reason | None = Field(description="Why it is in no clause, when it is in none")
+
+
+class PolicyFile(BaseModel):
+    """A version's file as it was read, beside which its clauses are reviewed."""
+
+    slug: str
+    number: int
+    status: Status
+    source: OriginalFile
+    paragraphs: list[FileParagraph] = Field(
+        description="Every paragraph with text, in the file's order"
     )
 
 
@@ -204,6 +314,16 @@ def _clause(clause: store.DraftClause) -> DraftClause:
         layer=cast(Layer | None, clause.layer),
         change=cast(Change | None, clause.change),
         continues=clause.continues,
+        earlier=(
+            EarlierClause(
+                key=clause.earlier.key,
+                label=clause.earlier.label,
+                heading=clause.earlier.heading,
+                text=clause.earlier.text,
+            )
+            if clause.earlier
+            else None
+        ),
         children=[_clause(child) for child in clause.children],
     )
 
@@ -221,6 +341,10 @@ def _draft(view: store.DraftView) -> PolicyDraft:
                 detail=flag.detail,
                 accepted_by=flag.accepted_by,
                 accepted_at=flag.accepted_at,
+                resolved_by=flag.resolved_by,
+                resolved_at=flag.resolved_at,
+                resolution=flag.resolution,
+                paragraph=flag.paragraph,
             )
             for flag in view.flags
         ],
@@ -236,7 +360,69 @@ def _draft(view: store.DraftView) -> PolicyDraft:
             for gone in view.removed
         ],
         changes=view.changes,
+        revision=view.revision,
+        updated_at=view.updated_at,
+        updated_by=view.updated_by,
+        next_label=view.next_label,
     )
+
+
+def _reviewed(view: store.DraftView, response: Response) -> PolicyDraft:
+    """A draft, with its revision as the ETag a change sends back."""
+    response.headers["ETag"] = f'"{view.revision}"'
+    return _draft(view)
+
+
+def _summary(found: store.PolicySummary) -> PolicySummary:
+    review = found.review
+    return PolicySummary(
+        slug=found.slug,
+        title=found.title,
+        status=cast(Literal["active", "archived"], found.status),
+        in_force=found.in_force,
+        in_force_since=found.in_force_since,
+        published=found.published,
+        draft=found.draft,
+        indexing=cast(Indexing | None, found.indexing),
+        in_force_number=found.in_force_number,
+        next_label=found.next_label,
+        sample=found.sample,
+        scheduled=(
+            ScheduledVersion(
+                label=found.scheduled.label, effective_date=found.scheduled.effective_date
+            )
+            if found.scheduled
+            else None
+        ),
+        review=(
+            DraftReview(
+                flags=review.flags,
+                open=review.open,
+                uploaded_by=review.uploaded_by,
+                uploaded_at=review.uploaded_at,
+                next_label=review.next_label,
+            )
+            if review
+            else None
+        ),
+        last_change=(
+            LastChange(by=found.last_change.by, at=found.last_change.at)
+            if found.last_change
+            else None
+        ),
+    )
+
+
+def _may_see(who: Authenticated, status: str) -> None:
+    """A published version is anyone's who may read the library. A draft, or one thrown away,
+    is only for those who review and publish policies."""
+    if status == "published":
+        if not who.may(catalog.DOCUMENTS_READ):
+            raise problems.permission_required(catalog.DOCUMENTS_READ)
+    elif not (who.may(catalog.DOCUMENTS_UPLOAD) or who.may(catalog.DOCUMENTS_PUBLISH)):
+        raise problems.permission_required_any(
+            (catalog.DOCUMENTS_UPLOAD, catalog.DOCUMENTS_PUBLISH)
+        )
 
 
 def attachment(name: str, fallback: str) -> str:
@@ -264,6 +450,14 @@ def _refused(failure: Exception) -> problems.Problem:
             return problems.flags_open(detail, failure.positions)
         case store.FlagNotFound():
             return problems.flag_not_found(detail)
+        case store.NoMatch():
+            return problems.no_match(detail)
+        case store.StaleDraft():
+            return problems.edit_conflict(
+                revision=failure.revision,
+                updated_at=failure.updated_at.isoformat() if failure.updated_at else "",
+                updated_by=failure.updated_by,
+            )
         case store.EffectiveDateTooEarly():
             return problems.effective_date_too_early(detail)
         case store.LabelTaken():
@@ -284,6 +478,8 @@ REFUSALS = (
     store.NoDraft,
     store.FlagsOpen,
     store.FlagNotFound,
+    store.NoMatch,
+    store.StaleDraft,
     store.EffectiveDateTooEarly,
     store.LabelTaken,
     store.BadSlug,
@@ -293,20 +489,8 @@ REFUSALS = (
 
 
 @router.get("", summary="Every organisation policy, with its version in force and any draft")
-def list_all(who: Uploader, opened: Opened) -> list[PolicySummary]:
-    return [
-        PolicySummary(
-            slug=found.slug,
-            title=found.title,
-            status=cast(Literal["active", "archived"], found.status),
-            in_force=found.in_force,
-            in_force_since=found.in_force_since,
-            published=found.published,
-            draft=found.draft,
-            indexing=cast(Indexing | None, found.indexing),
-        )
-        for found in store.list_policies(opened)
-    ]
+def list_all(who: Reviewer, opened: Opened) -> list[PolicySummary]:
+    return [_summary(found) for found in store.list_policies(opened)]
 
 
 @router.post(
@@ -321,6 +505,7 @@ def upload_new(
     who: Uploader,
     opened: Opened,
     originals: Originals,
+    response: Response,
     slug: Annotated[
         str | None,
         Query(description="The slug every key starts with; from the file name if left out"),
@@ -345,7 +530,7 @@ def upload_new(
         )
     except REFUSALS as failure:
         raise _refused(failure) from failure
-    return _draft(view)
+    return _reviewed(view, response)
 
 
 @router.post(
@@ -361,6 +546,7 @@ def upload_new_version(
     who: Uploader,
     opened: Opened,
     originals: Originals,
+    response: Response,
     effective_date: Annotated[date | None, Query()] = None,
     version_label: Annotated[str | None, Query(max_length=100)] = None,
     replace: Annotated[
@@ -381,7 +567,7 @@ def upload_new_version(
         )
     except REFUSALS as failure:
         raise _refused(failure) from failure
-    return _draft(view)
+    return _reviewed(view, response)
 
 
 @router.get(
@@ -389,9 +575,9 @@ def upload_new_version(
     summary="A policy's draft: its clauses, its flags, and what changed",
     responses=problems.responses(404),
 )
-def read_draft(slug: str, who: Uploader, opened: Opened) -> PolicyDraft:
+def read_draft(slug: str, who: Reviewer, opened: Opened, response: Response) -> PolicyDraft:
     try:
-        return _draft(store.read_draft(opened, slug))
+        return _reviewed(store.read_draft(opened, slug), response)
     except REFUSALS as failure:
         raise _refused(failure) from failure
 
@@ -399,9 +585,16 @@ def read_draft(slug: str, who: Uploader, opened: Opened) -> PolicyDraft:
 @router.patch(
     "/{slug}/draft",
     summary="Change a draft's title, effective date or version label",
-    responses=problems.responses(404),
+    responses=problems.responses(400, 404, 412),
 )
-def edit_draft(slug: str, body: DraftDetails, who: Uploader, opened: Opened) -> PolicyDraft:
+def edit_draft(
+    slug: str,
+    body: DraftDetails,
+    who: Uploader,
+    opened: Opened,
+    response: Response,
+    if_match: IfMatch = None,
+) -> PolicyDraft:
     try:
         view = store.edit_draft(
             opened,
@@ -410,32 +603,85 @@ def edit_draft(slug: str, body: DraftDetails, who: Uploader, opened: Opened) -> 
             title=body.title,
             effective_date=body.effective_date,
             version_label=body.version_label,
+            expected_revision=expected_revision(if_match, "draft"),
         )
     except REFUSALS as failure:
         raise _refused(failure) from failure
-    return _draft(view)
+    return _reviewed(view, response)
 
 
 @router.post(
     "/{slug}/draft/flags/accept",
-    summary="Accept flags, by their place in the draft's list",
-    responses=problems.responses(404),
+    summary="Accept flags as read, by their place in the draft's list",
+    responses=problems.responses(400, 404, 412),
 )
-def accept(slug: str, body: FlagsToAccept, who: Uploader, opened: Opened) -> PolicyDraft:
+def accept(
+    slug: str,
+    body: FlagsToAccept,
+    who: Uploader,
+    opened: Opened,
+    response: Response,
+    if_match: IfMatch = None,
+) -> PolicyDraft:
     try:
-        return _draft(store.accept_flags(opened, slug, body.positions, actor=actor_of(who)))
+        view = store.accept_flags(
+            opened,
+            slug,
+            body.positions,
+            actor=actor_of(who),
+            expected_revision=expected_revision(if_match, "draft"),
+        )
     except REFUSALS as failure:
         raise _refused(failure) from failure
+    return _reviewed(view, response)
+
+
+@router.post(
+    "/{slug}/draft/matches/{key}/reject",
+    summary="Say a clause is a different rule from the one it was matched to",
+    description=(
+        "The clause becomes new, and the clause of the version before that it was matched to "
+        "becomes removed, so that a citation of that clause says its rule was removed. The flag "
+        "that asked about the match is resolved by the change."
+    ),
+    responses=problems.responses(400, 404, 412),
+)
+def reject_match(
+    slug: str,
+    key: str,
+    who: Uploader,
+    opened: Opened,
+    response: Response,
+    if_match: IfMatch = None,
+) -> PolicyDraft:
+    try:
+        view = store.reject_match(
+            opened,
+            slug,
+            key,
+            actor=actor_of(who),
+            expected_revision=expected_revision(if_match, "draft"),
+        )
+    except REFUSALS as failure:
+        raise _refused(failure) from failure
+    return _reviewed(view, response)
 
 
 @router.post(
     "/{slug}/draft/publish",
-    summary="Publish the draft once every flag is accepted",
-    responses=problems.responses(404, 409),
+    summary="Publish the draft once every flag is settled",
+    responses=problems.responses(400, 404, 409, 412),
 )
-def publish(slug: str, who: Publisher, opened: Opened) -> PolicyVersion:
+def publish(slug: str, who: Publisher, opened: Opened, if_match: IfMatch = None) -> PolicyVersion:
     try:
-        return _version(store.publish(opened, slug, actor=actor_of(who)))
+        return _version(
+            store.publish(
+                opened,
+                slug,
+                actor=actor_of(who),
+                expected_revision=expected_revision(if_match, "draft"),
+            )
+        )
     except REFUSALS as failure:
         raise _refused(failure) from failure
 
@@ -444,11 +690,16 @@ def publish(slug: str, who: Publisher, opened: Opened) -> PolicyVersion:
     "/{slug}/draft",
     status_code=204,
     summary="Discard the draft",
-    responses=problems.responses(404),
+    responses=problems.responses(400, 404, 412),
 )
-def discard(slug: str, who: Uploader, opened: Opened) -> Response:
+def discard(slug: str, who: Uploader, opened: Opened, if_match: IfMatch = None) -> Response:
     try:
-        store.discard(opened, slug, actor=actor_of(who))
+        store.discard(
+            opened,
+            slug,
+            actor=actor_of(who),
+            expected_revision=expected_revision(if_match, "draft"),
+        )
     except REFUSALS as failure:
         raise _refused(failure) from failure
     return Response(status_code=204)
@@ -469,16 +720,65 @@ def archive(slug: str, who: Publisher, opened: Opened) -> Response:
 
 
 @router.get(
+    "/{slug}/versions/{number}/file",
+    summary="A version's file as it was read, paragraph by paragraph, beside its clauses",
+    description=(
+        "Every paragraph with text, in the file's order, with what it looked like, the clause "
+        "it went to, or why it was set aside. A published version's takes `documents.read`; a "
+        "draft's, or a discarded one's, takes `documents.upload` or `documents.publish`."
+    ),
+    responses=problems.responses(404, 500),
+)
+def read_as_read(
+    slug: str, number: int, who: Caller, opened: Opened, originals: Originals
+) -> PolicyFile:
+    try:
+        _may_see(who, store.version_status(opened, slug, number))
+        view = store.file_as_read(opened, originals, slug, number)
+    except REFUSALS as failure:
+        raise _refused(failure) from failure
+    return PolicyFile(
+        slug=view.slug,
+        number=view.number,
+        status=cast(Status, view.status),
+        source=OriginalFile(name=view.name, format=view.format, size=view.size),
+        paragraphs=[
+            FileParagraph(
+                position=found.line.position,
+                text=found.line.text,
+                place=found.line.place,
+                heading=found.line.heading,
+                title=found.line.title,
+                label=found.line.label,
+                bold=found.line.bold,
+                table=found.line.table,
+                row=found.line.row,
+                cell=found.line.cell,
+                header=found.line.header,
+                clause=found.clause,
+                set_aside=cast(Reason | None, found.set_aside),
+            )
+            for found in view.lines
+        ],
+    )
+
+
+@router.get(
     "/{slug}/versions/{number}/original",
     summary="A version's original file, checked against the hash it was stored with",
+    description=(
+        "A published version's takes `documents.read`; a draft's, or a discarded one's, takes "
+        "`documents.upload` or `documents.publish`."
+    ),
     response_class=Response,
     responses={
         200: {"content": {"application/octet-stream": {}}, "description": "The file"},
         **problems.responses(404, 500),
     },
 )
-def download(slug: str, number: int, who: Reader, opened: Opened, originals: Originals) -> Response:
+def download(slug: str, number: int, who: Caller, opened: Opened, originals: Originals) -> Response:
     try:
+        _may_see(who, store.version_status(opened, slug, number))
         data, name, form = store.original(opened, originals, slug, number)
     except REFUSALS as failure:
         raise _refused(failure) from failure

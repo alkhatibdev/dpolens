@@ -92,30 +92,49 @@ First version of the API. Everything below is new rather than changed.
   comes back as a draft: its clauses, its flags, how much of the file reached a clause, and what
   was set aside. A file that cannot be read gets `422` and `/problems/unreadable-policy`, which
   says what to do; a slug in use gets `409` and `/problems/policy-exists`, and one that cannot be
-  a slug gets `422` and `/problems/bad-slug`. `GET /v1/policies` lists the policies, with the
-  version in force, any open draft, and whether the latest published version is embedded yet
+  a slug gets `422` and `/problems/bad-slug`. `GET /v1/policies` lists the policies, for
+  `documents.upload` or `documents.publish`: the version in force and its number, a version that
+  takes effect later (`scheduled`), the open draft and how far its review has got (`review`), who
+  last changed the policy and when (`last_change`), whether it is the made-up sample, the label a
+  new version is published with (`next_label`), and whether the latest published version is
+  embedded yet
 - `POST /v1/policies/{slug}/versions` uploads a new version, matched to the version before it:
   each clause says which earlier clause it continues and how it changed. A policy has one draft
   at a time, so a second gets `409` and `/problems/draft-exists`, whose `version` names the open
   one, unless `replace=true` discards it
 - `GET`, `PATCH` and `DELETE /v1/policies/{slug}/draft` read a draft, change its title,
   effective date or version label, and discard it. `POST /v1/policies/{slug}/draft/flags/accept`
-  accepts flags by their place in the draft's list. Each needs `documents.upload`. A policy that
+  accepts flags as read, by their place in the draft's list. Reading a draft needs
+  `documents.upload` or `documents.publish`, and changing one `documents.upload`. A policy that
   does not exist gets `404` and `/problems/policy-not-found`, a draft that does not exist
   `/problems/no-draft`, and a flag that does not exist `/problems/flag-not-found`
+- A draft carries its `revision`, also as the `ETag`. Every change to it, publishing and
+  discarding included, may send it in `If-Match`, and a change made against an older one gets
+  `412` and `/problems/edit-conflict`, naming who changed the draft and when. It carries
+  `next_label` as well, the label it is published with
+- A renumbered or reworded clause of a new version carries `earlier`, the clause it continues as
+  the version before has it. `POST /v1/policies/{slug}/draft/matches/{key}/reject` says a match
+  is wrong: the clause becomes new, the earlier clause becomes removed, and the flag about the
+  match is resolved. A key with no match gets `404` and `/problems/no-match`. A flag is settled
+  once it is accepted (`accepted_by`, `accepted_at`) or resolved by a change (`resolved_by`,
+  `resolved_at` and `resolution`); `paragraph` names the paragraph of the file a flag is about
 - `POST /v1/policies/{slug}/draft/publish` publishes a draft, for `documents.publish`. It waits
-  for every flag (`409`, `/problems/flags-open`, whose `flags` lists the open ones), takes effect
+  until every flag is settled (`409`, `/problems/flags-open`, whose `flags` lists the open ones), takes effect
   after the version published before it (`409`, `/problems/effective-date-too-early`), and needs
   a version label no other version has (`409`, `/problems/version-label-taken`). Publishing a
   new version of an archived policy brings it back
 - `POST /v1/policies/{slug}/archive` takes a policy out of search and the library, for
   `documents.publish`. Its clauses still read by key, with `archived` true
 - `GET /v1/policies/{slug}/versions/{number}/original` returns the file a version was read from,
-  for `documents.read`, checked against the hash it was stored with. A file that is missing or
-  has changed gets `500` and `/problems/original-unavailable` instead of a download
+  checked against the hash it was stored with. A file that is missing or has changed gets `500`
+  and `/problems/original-unavailable` instead of a download
+- `GET /v1/policies/{slug}/versions/{number}/file` returns the file as it was read: every
+  paragraph in order, with what it looked like, the clause it went to, or why it was set aside.
+  A published version's file and original need `documents.read`; a draft's, or a discarded
+  one's, need `documents.upload` or `documents.publish`
 - `GET /v1/clauses/{key}` carries `now` for a policy's clause read in a version no longer in
   force: where the same rule is today, and whether its number or its words changed. It carries
   `formerly` when the key named a different rule in the version before
 - A request body larger than 25 MB gets `413` and `/problems/too-large`, before it is read
-- `GET /v1/governance/entries` takes the category `policies`: uploads, flags accepted, drafts
-  changed and discarded, versions published, and policies archived
+- `GET /v1/governance/entries` takes the category `policies`: uploads, flags accepted, matches
+  said to be wrong, drafts changed and discarded, versions published, and policies archived

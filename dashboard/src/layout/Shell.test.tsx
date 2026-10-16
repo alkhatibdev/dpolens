@@ -61,6 +61,7 @@ describe("the shell", () => {
     expect(main).toHaveTextContent("Library");
     expect(main).toHaveTextContent("Tokens");
     expect(main).not.toHaveTextContent("Users and roles");
+    expect(main).not.toHaveTextContent("Policies");
   });
 
   it("changes the password from the account menu", async () => {

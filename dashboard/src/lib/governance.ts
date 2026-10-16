@@ -118,6 +118,15 @@ export function describeEntry(t: TFunction, entry: Entry): string {
       });
     case "document.draft_edited":
       return t("entries.document_draft_edited", { policy: policy(details) });
+    case "document.match_rejected": {
+      const own = (key: unknown) => text(key).replace(`${text(details.document)}:`, "");
+      return t("entries.document_match_rejected", {
+        key: own(details.key),
+        policy: policy(details),
+        previous: text(details.previous),
+        earlier: own(details.earlier),
+      });
+    }
     case "document.published": {
       const date = text(details.effective_date);
       return t(details.restored ? "entries.document_restored" : "entries.document_published", {

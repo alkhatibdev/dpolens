@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import httpx2
 import pytest
@@ -278,6 +279,222 @@ class TestVersions:
         )
 
 
+def draft_of(client: TestClient, slug: str) -> tuple[dict[str, Any], str]:
+    response = client.get(f"/v1/policies/{slug}/draft", headers=SAME_ORIGIN)
+    assert response.status_code == 200, response.text
+    return response.json(), response.headers["etag"]
+
+
+def flag_on(draft: dict[str, Any], key: str) -> dict[str, Any]:
+    return next(flag for flag in draft["flags"] if flag["key"] == key)
+
+
+def clauses_of(draft: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    found: dict[str, dict[str, Any]] = {}
+
+    def walk(clauses: list[dict[str, Any]]) -> None:
+        for clause in clauses:
+            found[clause["key"]] = clause
+            walk(clause["children"])
+
+    walk(draft["clauses"])
+    return found
+
+
+class TestReview:
+    """Two reviewers on one draft, a match said to be wrong, and the file beside its clauses."""
+
+    def test_a_change_made_after_someone_else_s_is_refused_with_who_and_when(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        made = upload(
+            client, "/v1/policies", "retention-v1.md", slug="schedule", effective_date="2026-01-01"
+        )
+        assert made.headers["etag"] == '"1"'
+        draft, etag = draft_of(client, "schedule")
+        assert (draft["revision"], draft["updated_by"]) == (1, "Yousef Haddad")
+
+        changed = client.patch(
+            "/v1/policies/schedule/draft",
+            json={"title": "Retention schedule"},
+            headers={**SAME_ORIGIN, "If-Match": etag},
+        )
+        stale = client.patch(
+            "/v1/policies/schedule/draft",
+            json={"version_label": "2026"},
+            headers={**SAME_ORIGIN, "If-Match": etag},
+        )
+
+        assert changed.status_code == 200, changed.text
+        assert changed.headers["etag"] == '"2"'
+        assert stale.status_code == 412
+        assert stale.json()["type"] == "/problems/edit-conflict"
+        assert (stale.json()["revision"], stale.json()["updated_by"]) == (2, "Yousef Haddad")
+        assert draft_of(client, "schedule")[0]["version"]["label"] is None
+        unreadable = client.patch(
+            "/v1/policies/schedule/draft",
+            json={"title": "x"},
+            headers={**SAME_ORIGIN, "If-Match": "yesterday"},
+        )
+        assert unreadable.status_code == 400
+
+    def test_a_match_said_to_be_wrong_makes_the_clause_new_and_the_rule_before_removed(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        assert (
+            client.post("/v1/policies/schedule/draft/publish", headers=SAME_ORIGIN).status_code
+            == 200
+        )
+        assert (
+            upload(
+                client,
+                "/v1/policies/schedule/versions",
+                "retention-v2.md",
+                effective_date="2026-06-01",
+            ).status_code
+            == 201
+        )
+        draft, etag = draft_of(client, "schedule")
+        assert (draft["version"]["label"], draft["next_label"]) == (None, "2")
+        assert flag_on(draft, "schedule:4.2")["detail"].endswith(", now 4.3.")
+        staff = clauses_of(draft)["schedule:4.3"]
+        assert staff["earlier"]["text"].startswith("Staff records")
+
+        response = client.post(
+            "/v1/policies/schedule/draft/matches/schedule:4.3/reject",
+            headers={**SAME_ORIGIN, "If-Match": etag},
+        )
+
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        staff = clauses_of(draft)["schedule:4.3"]
+        assert (staff["change"], staff["continues"], staff["earlier"]) == ("added", None, None)
+        assert [gone["key"] for gone in draft["removed"]] == ["schedule:4.2"]
+        assert draft["changes"] == {
+            "added": 2,
+            "modified": 1,
+            "moved": 1,
+            "unchanged": 3,
+            "removed": 1,
+        }
+        settled = flag_on(draft, "schedule:4.3")
+        assert (settled["resolution"], settled["resolved_by"], settled["accepted_at"]) == (
+            "match-rejected",
+            "Yousef Haddad",
+            None,
+        )
+        assert flag_on(draft, "schedule:4.2")["detail"].endswith(", since removed.")
+        again = client.post(
+            "/v1/policies/schedule/draft/matches/schedule:4.3/reject", headers=SAME_ORIGIN
+        )
+        assert again.status_code == 404
+        assert again.json()["type"] == "/problems/no-match"
+
+    def test_the_rule_said_to_be_different_reads_as_removed_once_published(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        refused = client.post("/v1/policies/schedule/draft/publish", headers=SAME_ORIGIN)
+        draft, _ = draft_of(client, "schedule")
+        open_flags = [
+            flag["position"]
+            for flag in draft["flags"]
+            if flag["accepted_at"] is None and flag["resolved_at"] is None
+        ]
+        assert refused.json()["flags"] == open_flags
+        assert flag_on(draft, "schedule:4.3")["position"] not in open_flags
+        client.post(
+            "/v1/policies/schedule/draft/flags/accept",
+            json={"positions": open_flags},
+            headers=SAME_ORIGIN,
+        )
+
+        assert (
+            client.post("/v1/policies/schedule/draft/publish", headers=SAME_ORIGIN).status_code
+            == 200
+        )
+        cited = client.get(
+            "/v1/clauses/schedule:4.2", params={"as_of": "2026-01-01"}, headers=SAME_ORIGIN
+        ).json()
+        assert cited["clause"]["text"].startswith("Staff records")
+        assert cited["now"]["key"] is None
+
+    def test_the_file_as_read_names_the_clause_each_paragraph_went_to(
+        self, app_client: TestClient
+    ) -> None:
+        response = signed_in(app_client, DEVELOPER).get(
+            "/v1/policies/schedule/versions/1/file", headers=SAME_ORIGIN
+        )
+
+        assert response.status_code == 200, response.text
+        read = response.json()
+        assert read["source"] == {
+            "name": "retention-v1.md",
+            "format": "markdown",
+            "size": len((FIXTURES / "retention-v1.md").read_bytes()),
+        }
+        assert [
+            (
+                paragraph["text"][:12],
+                paragraph["heading"],
+                paragraph["clause"],
+                paragraph["set_aside"],
+            )
+            for paragraph in read["paragraphs"][:3]
+        ] == [
+            ("Retention po", 1, None, "title"),
+            ("4. Retention", 2, "schedule:4", None),
+            ("4.1 Customer", None, "schedule:4.1", None),
+        ]
+
+    def test_a_draft_s_file_and_original_are_for_those_who_review_policies(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        assert (
+            upload(client, "/v1/policies/schedule/versions", "retention-v1.md").status_code == 201
+        )
+        assert client.get("/v1/policies/schedule/versions/3/file", headers=SAME_ORIGIN).is_success
+
+        reader = signed_in(app_client, DEVELOPER)
+        for path in ("file", "original"):
+            refused = reader.get(f"/v1/policies/schedule/versions/3/{path}", headers=SAME_ORIGIN)
+            assert refused.status_code == 403
+            assert refused.json()["permissions"] == ["documents.upload", "documents.publish"]
+
+    def test_the_list_says_how_far_each_review_has_got(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+        assert (
+            upload(
+                client, "/v1/policies", "retention-v1.md", slug="later", effective_date="2099-01-01"
+            ).status_code
+            == 201
+        )
+        assert (
+            client.post("/v1/policies/later/draft/publish", headers=SAME_ORIGIN).status_code == 200
+        )
+
+        listed = {p["slug"]: p for p in client.get("/v1/policies", headers=SAME_ORIGIN).json()}
+
+        schedule = listed["schedule"]
+        assert (schedule["in_force"], schedule["in_force_number"], schedule["draft"]) == ("2", 2, 3)
+        assert (schedule["sample"], schedule["next_label"]) == (False, "3")
+        assert (schedule["review"]["uploaded_by"], schedule["review"]["next_label"]) == (
+            "Yousef Haddad",
+            "3",
+        )
+        assert schedule["review"]["open"] == schedule["review"]["flags"]
+        assert schedule["last_change"]["by"] == "Yousef Haddad"
+        later = listed["later"]
+        assert (later["in_force"], later["scheduled"]) == (
+            None,
+            {"label": "1", "effective_date": "2099-01-01"},
+        )
+        assert (later["review"], later["next_label"]) == (None, "2")
+
+
 class TestEndings:
     def test_a_draft_can_be_discarded(self, app_client: TestClient) -> None:
         client = signed_in(app_client, ADMIN)
@@ -318,6 +535,7 @@ class TestEndings:
             ]
         assert ("document.drafted", "dashboard") in actions
         assert ("document.flag_accepted", "dashboard") in actions
+        assert ("document.match_rejected", "dashboard") in actions
         assert ("document.published", "dashboard") in actions
         assert ("document.draft_discarded", "dashboard") in actions
         assert ("document.archived", "dashboard") in actions

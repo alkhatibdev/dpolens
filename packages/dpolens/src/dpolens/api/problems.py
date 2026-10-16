@@ -328,6 +328,11 @@ def flag_not_found(detail: str) -> Problem:
     return Problem(kind="flag-not-found", title="No such flag", status=404, detail=detail)
 
 
+def no_match(detail: str) -> Problem:
+    """The draft has no clause by that key, or the clause continues none of the version before."""
+    return Problem(kind="no-match", title="No such match", status=404, detail=detail)
+
+
 def effective_date_too_early(detail: str) -> Problem:
     """A new version takes effect after the version published before it."""
     return Problem(

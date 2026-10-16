@@ -4949,6 +4949,24 @@
               "type": "string",
               "title": "Slug"
             }
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The draft's revision, as its ETag gave it. A change made since is refused",
+              "title": "If-Match"
+            },
+            "description": "The draft's revision, as its ETag gave it. A change made since is refused"
           }
         ],
         "requestBody": {
@@ -5017,8 +5035,38 @@
               }
             }
           },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Somebody changed it after it was read",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5059,6 +5107,24 @@
               "type": "string",
               "title": "Slug"
             }
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The draft's revision, as its ETag gave it. A change made since is refused",
+              "title": "If-Match"
+            },
+            "description": "The draft's revision, as its ETag gave it. A change made since is refused"
           }
         ],
         "responses": {
@@ -5110,8 +5176,38 @@
               }
             }
           },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Somebody changed it after it was read",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5143,7 +5239,7 @@
         "tags": [
           "policies"
         ],
-        "summary": "Accept flags, by their place in the draft's list",
+        "summary": "Accept flags as read, by their place in the draft's list",
         "operationId": "accept_v1_policies__slug__draft_flags_accept_post",
         "parameters": [
           {
@@ -5154,6 +5250,24 @@
               "type": "string",
               "title": "Slug"
             }
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The draft's revision, as its ETag gave it. A change made since is refused",
+              "title": "If-Match"
+            },
+            "description": "The draft's revision, as its ETag gave it. A change made since is refused"
           }
         ],
         "requestBody": {
@@ -5222,8 +5336,198 @@
               }
             }
           },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Somebody changed it after it was read",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policies/{slug}/draft/matches/{key}/reject": {
+      "post": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "Say a clause is a different rule from the one it was matched to",
+        "description": "The clause becomes new, and the clause of the version before that it was matched to becomes removed, so that a citation of that clause says its rule was removed. The flag that asked about the match is resolved by the change.",
+        "operationId": "reject_match_v1_policies__slug__draft_matches__key__reject_post",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The draft's revision, as its ETag gave it. A change made since is refused",
+              "title": "If-Match"
+            },
+            "description": "The draft's revision, as its ETag gave it. A change made since is refused"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyDraft"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Somebody changed it after it was read",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5255,7 +5559,7 @@
         "tags": [
           "policies"
         ],
-        "summary": "Publish the draft once every flag is accepted",
+        "summary": "Publish the draft once every flag is settled",
         "operationId": "publish_v1_policies__slug__draft_publish_post",
         "parameters": [
           {
@@ -5266,6 +5570,24 @@
               "type": "string",
               "title": "Slug"
             }
+          },
+          {
+            "name": "if-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The draft's revision, as its ETag gave it. A change made since is refused",
+              "title": "If-Match"
+            },
+            "description": "The draft's revision, as its ETag gave it. A change made since is refused"
           }
         ],
         "responses": {
@@ -5324,6 +5646,21 @@
               }
             }
           },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
           "404": {
             "description": "No such clause or document",
             "content": {
@@ -5341,6 +5678,21 @@
           },
           "409": {
             "description": "The change conflicts with what is there",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "Somebody changed it after it was read",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5462,12 +5814,140 @@
         }
       }
     },
+    "/v1/policies/{slug}/versions/{number}/file": {
+      "get": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "A version's file as it was read, paragraph by paragraph, beside its clauses",
+        "description": "Every paragraph with text, in the file's order, with what it looked like, the clause it went to, or why it was set aside. A published version's takes `documents.read`; a draft's, or a discarded one's, takes `documents.upload` or `documents.publish`.",
+        "operationId": "read_as_read_v1_policies__slug__versions__number__file_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyFile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "A stored original file is missing or has changed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/policies/{slug}/versions/{number}/original": {
       "get": {
         "tags": [
           "policies"
         ],
         "summary": "A version's original file, checked against the hash it was stored with",
+        "description": "A published version's takes `documents.read`; a draft's, or a discarded one's, takes `documents.upload` or `documents.publish`.",
         "operationId": "download_v1_policies__slug__versions__number__original_get",
         "parameters": [
           {
@@ -6414,6 +6894,17 @@
             "title": "Continues",
             "description": "The key of the clause it continues"
           },
+          "earlier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EarlierClause"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "That clause as the version before has it, when this one is renumbered or reworded"
+          },
           "children": {
             "items": {
               "$ref": "#/components/schemas/DraftClause"
@@ -6433,6 +6924,7 @@
           "layer",
           "change",
           "continues",
+          "earlier",
           "children"
         ],
         "title": "DraftClause"
@@ -6478,6 +6970,92 @@
         },
         "type": "object",
         "title": "DraftDetails"
+      },
+      "DraftReview": {
+        "properties": {
+          "flags": {
+            "type": "integer",
+            "title": "Flags",
+            "description": "Every flag the draft has"
+          },
+          "open": {
+            "type": "integer",
+            "title": "Open",
+            "description": "The flags still to settle before it can be published"
+          },
+          "uploaded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By"
+          },
+          "uploaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Uploaded At"
+          },
+          "next_label": {
+            "type": "string",
+            "title": "Next Label",
+            "description": "The label it is published with"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flags",
+          "open",
+          "uploaded_by",
+          "uploaded_at",
+          "next_label"
+        ],
+        "title": "DraftReview"
+      },
+      "EarlierClause": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "heading",
+          "text"
+        ],
+        "title": "EarlierClause"
       },
       "Entries": {
         "properties": {
@@ -6609,6 +7187,150 @@
         ],
         "title": "Entry"
       },
+      "FileParagraph": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position",
+            "description": "Its place among the file's paragraphs"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "place": {
+            "type": "string",
+            "enum": [
+              "body",
+              "cell",
+              "text box",
+              "contents",
+              "front matter"
+            ],
+            "title": "Place"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading",
+            "description": "Its level, 1 the highest, when it is a heading"
+          },
+          "title": {
+            "type": "boolean",
+            "title": "Title",
+            "description": "The file marks it as the document's title"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "The number the file's own list puts before it"
+          },
+          "bold": {
+            "type": "boolean",
+            "title": "Bold"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table",
+            "description": "Which table it is in, from 0, with its row and cell"
+          },
+          "row": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row"
+          },
+          "cell": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cell"
+          },
+          "header": {
+            "type": "boolean",
+            "title": "Header",
+            "description": "Its row is the table's header"
+          },
+          "clause": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clause",
+            "description": "The key of the clause it went to"
+          },
+          "set_aside": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "title",
+                  "front matter",
+                  "contents",
+                  "text box",
+                  "repeated table"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Aside",
+            "description": "Why it is in no clause, when it is in none"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "text",
+          "place",
+          "heading",
+          "title",
+          "label",
+          "bold",
+          "table",
+          "row",
+          "cell",
+          "header",
+          "clause",
+          "set_aside"
+        ],
+        "title": "FileParagraph"
+      },
       "FlagOut": {
         "properties": {
           "position": {
@@ -6651,7 +7373,8 @@
                 "type": "null"
               }
             ],
-            "title": "Accepted By"
+            "title": "Accepted By",
+            "description": "Who accepted it as read"
           },
           "accepted_at": {
             "anyOf": [
@@ -6664,6 +7387,54 @@
               }
             ],
             "title": "Accepted At"
+          },
+          "resolved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By",
+            "description": "Who made the change that settled it"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution",
+            "description": "The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paragraph",
+            "description": "The paragraph of the file it is about, as the file view numbers them"
           }
         },
         "type": "object",
@@ -6673,7 +7444,11 @@
           "key",
           "detail",
           "accepted_by",
-          "accepted_at"
+          "accepted_at",
+          "resolved_by",
+          "resolved_at",
+          "resolution",
+          "paragraph"
         ],
         "title": "FlagOut"
       },
@@ -6976,6 +7751,33 @@
           "token"
         ],
         "title": "IntrospectionRequest"
+      },
+      "LastChange": {
+        "properties": {
+          "by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By",
+            "description": "A person's name, or null on the command line"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "by",
+          "at"
+        ],
+        "title": "LastChange"
       },
       "Law": {
         "properties": {
@@ -7807,6 +8609,40 @@
             "type": "object",
             "title": "Changes",
             "description": "How many clauses were added, modified, moved, unchanged and removed"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision",
+            "description": "Goes up with every change. Send it back in `If-Match`"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By",
+            "description": "Who changed it last, or null for a change made on the command line"
+          },
+          "next_label": {
+            "type": "string",
+            "title": "Next Label",
+            "description": "The label it is published with: the one given, or the next number free"
           }
         },
         "type": "object",
@@ -7819,9 +8655,55 @@
           "notices",
           "previous",
           "removed",
-          "changes"
+          "changes",
+          "revision",
+          "updated_at",
+          "updated_by",
+          "next_label"
         ],
         "title": "PolicyDraft"
+      },
+      "PolicyFile": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "discarded"
+            ],
+            "title": "Status"
+          },
+          "source": {
+            "$ref": "#/components/schemas/OriginalFile"
+          },
+          "paragraphs": {
+            "items": {
+              "$ref": "#/components/schemas/FileParagraph"
+            },
+            "type": "array",
+            "title": "Paragraphs",
+            "description": "Every paragraph with text, in the file's order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "number",
+          "status",
+          "source",
+          "paragraphs"
+        ],
+        "title": "PolicyFile",
+        "description": "A version's file as it was read, beside which its clauses are reviewed."
       },
       "PolicySummary": {
         "properties": {
@@ -7899,6 +8781,61 @@
             ],
             "title": "Indexing",
             "description": "Whether the latest published version's clauses are embedded yet, so that searching by meaning finds them"
+          },
+          "in_force_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Force Number",
+            "description": "The number of the version in force, which names its original file"
+          },
+          "next_label": {
+            "type": "string",
+            "title": "Next Label",
+            "description": "The label a new version is published with, unless it is given one"
+          },
+          "sample": {
+            "type": "boolean",
+            "title": "Sample",
+            "description": "The made-up policy a new instance starts with"
+          },
+          "scheduled": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScheduledVersion"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The next published version, when it takes effect later"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DraftReview"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The open draft's review, if there is one"
+          },
+          "last_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LastChange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who last uploaded, reviewed, published or archived it, and when"
           }
         },
         "type": "object",
@@ -7910,7 +8847,13 @@
           "in_force_since",
           "published",
           "draft",
-          "indexing"
+          "indexing",
+          "in_force_number",
+          "next_label",
+          "sample",
+          "scheduled",
+          "review",
+          "last_change"
         ],
         "title": "PolicySummary"
       },
@@ -8564,6 +9507,25 @@
           "roles"
         ],
         "title": "Roles"
+      },
+      "ScheduledVersion": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "effective_date"
+        ],
+        "title": "ScheduledVersion"
       },
       "SearchRequest": {
         "properties": {

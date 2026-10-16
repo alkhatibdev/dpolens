@@ -106,8 +106,8 @@ _Avoid_: Pending version, unpublished version
 **Continues**:
 What a clause of a new version does to the clause of the version before it that states the
 same rule, whatever number each is printed with. It is decided by matching their wording when
-the version is drafted, and a reviewer confirms every clause whose number changed. It is how
-an old citation says where its rule is now.
+the version is drafted, and a reviewer confirms every clause whose number changed, or says it
+is a different rule. It is how an old citation says where its rule is now.
 _Avoid_: Succeeds, maps to, replaces
 
 **Published**:
@@ -140,6 +140,11 @@ _Avoid_: Validation, test, rule
 One place in a draft that a reviewer must resolve or accept before publishing, whatever
 raised it.
 _Avoid_: Confidence flag, flagged spot, warning, issue
+
+**Settled**:
+The state of a flag a reviewer has accepted as read, or resolved with a change made because of
+it. Publishing waits until every flag is settled.
+_Avoid_: Closed, cleared, done
 
 **Parse layer**:
 Which technique decided a clause's boundary and depth: the file's own structure,
@@ -208,9 +213,9 @@ Developer are seeded on first use and are ordinary roles afterwards.
 _Avoid_: Group, profile, permission set
 
 **Revision**:
-The number a role carries that goes up with every change. A change made against an older
-revision is refused, and the page says who changed the role and when, so nobody's change is
-undone without them knowing.
+The number a role or a draft carries that goes up with every change. A change made against an
+older revision is refused, and the page says who made the other change and when, so nobody's
+change is undone without them knowing.
 _Avoid_: Version (that is a published document's), ETag (that is how the API carries it)
 
 **Lockout guard**:

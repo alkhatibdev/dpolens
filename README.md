@@ -17,10 +17,11 @@ with exact, versioned citations. A self-hosted MCP server.**
 > tokens your assistants use. Until somebody chooses, every search covers both laws. A DPO
 > sees what was asked this week and what answered it, reads every question with the personal
 > data taken out, checks the governance log and exports it for an auditor, and sees how the
-> instance is set up. Your own policies, Word or Markdown, are uploaded through the HTTP API
-> or the command line, read into clauses with keys, reviewed as drafts and published as
-> versions your assistant searches and cites, and a new instance starts with a made-up
-> sample policy. Uploading and reviewing them in the dashboard is planned for v0.1.
+> instance is set up. Your own policies, Word or Markdown, are uploaded in the dashboard, the
+> HTTP API or the command line, read into clauses with keys, reviewed as drafts beside the file
+> as it was read, and published as versions your assistant searches and cites. A new version
+> shows what changed against the one before, and a new instance starts with a made-up sample
+> policy.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -253,11 +254,13 @@ computer, without storing anything:
 dpolens policy parse retention-policy.docx --slug acme-retention
 ```
 
-Uploaded, a policy becomes a draft that nothing searches. Somebody reads its flags and
-accepts them, and publishing it fixes the version for good: searches find it from the day it
+Uploaded, a policy becomes a draft that nothing searches. Somebody checks its flags against
+the file, which the dashboard shows beside the clauses as it was read, and settles them, and
+publishing it fixes the version for good: searches find it from the day it
 takes effect, by its words at once and by meaning once the worker has embedded it. A new
 version is matched to the one before it clause by clause, and every match a person should
-confirm, such as a clause whose number changed, is a flag for the reviewer. Keys follow the
+confirm, such as a clause whose number changed, is a flag for the reviewer, who can say a
+match is wrong as well as confirm it. Keys follow the
 numbers printed in the policy, and a citation names its version, so a citation of version
 1's 4.2 still reads the rule it quoted, and says where that rule is in the version in force
 today. The file each version came from is kept and checked against its hash whenever it is
