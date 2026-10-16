@@ -8,7 +8,7 @@ from typing import Literal
 Layer = Literal["native_structure", "typography", "numbering"]
 """Which layer decided where a clause begins and how deep it sits."""
 
-FlagKind = Literal["coverage_gap", "numbering_gap", "low_confidence_boundary"]
+FlagKind = Literal["coverage_gap", "numbering_gap", "low_confidence_boundary", "unmatched_key"]
 Reason = Literal["title", "front matter", "contents", "text box", "repeated table"]
 
 

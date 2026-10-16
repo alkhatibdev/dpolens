@@ -1,6 +1,7 @@
 import type { TFunction } from "i18next";
 
 import type { Entry } from "@/api/client";
+import { formatDate } from "@/lib/format";
 import { wordsFor } from "@/lib/permissionWords";
 
 type Details = Record<string, unknown>;
@@ -18,6 +19,11 @@ function text(value: unknown): string {
     : value === null || value === undefined
       ? ""
       : String(value);
+}
+
+/** A policy by its title, or by its slug where an entry has no title. */
+function policy(details: Details): string {
+  return text(details.title) || text(details.document);
 }
 
 /** One plain sentence for an entry, in the reader's words. The raw action shows when it is new to this build. */
@@ -103,6 +109,31 @@ export function describeEntry(t: TFunction, entry: Entry): string {
       });
     case "laws.selection_cleared":
       return t("entries.laws_selection_cleared");
+    case "document.drafted":
+      return t("entries.document_drafted", { file: text(details.file), policy: policy(details) });
+    case "document.flag_accepted":
+      return t("entries.document_flag_accepted", {
+        count: Array.isArray(details.flags) ? details.flags.length : 0,
+        policy: policy(details),
+      });
+    case "document.draft_edited":
+      return t("entries.document_draft_edited", { policy: policy(details) });
+    case "document.published": {
+      const date = text(details.effective_date);
+      return t(details.restored ? "entries.document_restored" : "entries.document_published", {
+        version: text(details.version),
+        policy: policy(details),
+        date: date ? formatDate(date) : "",
+      });
+    }
+    case "document.draft_discarded":
+      return details.reason === "replaced by a new upload"
+        ? t("entries.document_draft_replaced", { policy: policy(details) })
+        : details.reason === "the policy was archived"
+          ? t("entries.document_draft_archived", { policy: policy(details) })
+          : t("entries.document_draft_discarded", { policy: policy(details) });
+    case "document.archived":
+      return t("entries.document_archived", { policy: policy(details) });
     case "governance_log.exported":
       return t("entries.governance_log_exported", {
         from: text(details.from_seq),

@@ -64,6 +64,7 @@ def build_index(
     embedder: Embedder,
     activate: bool = True,
     skip_embedded: bool = False,
+    create_index: bool = True,
 ) -> IndexResult:
     """Embed every clause that has text, then build the vector index.
 
@@ -71,6 +72,10 @@ def build_index(
     current recipe is left alone. That makes a second run cheap, which is what an
     instance restarting wants, and it is why the recipe is part of the condition:
     a change to the recipe has to embed everything again.
+
+    Without `create_index`, the index is left as it is: Postgres adds each new
+    vector to it, and creating one needs the role that owns the table, which the
+    worker embedding a newly published policy does not hold.
     """
     model_id = register_model(session, embedder.model, activate=activate)
 
@@ -158,7 +163,8 @@ def build_index(
         )
         embedded += len(chunk)
 
-    _create_index(session, model_id, embedder.model.dimensions)
+    if create_index:
+        _create_index(session, model_id, embedder.model.dimensions)
 
     return IndexResult(
         model=embedder.model.name,

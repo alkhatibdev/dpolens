@@ -27,6 +27,7 @@ from dpolens.engine.logs.governance import (
     Actor,
     record,
 )
+from dpolens.settings import Settings
 
 SECRET_BYTES = 32
 
@@ -40,6 +41,14 @@ idle timeout measured in tens of minutes."""
 class Lifetimes:
     idle: timedelta
     absolute: timedelta
+
+
+def lifetimes_of(settings: Settings) -> Lifetimes:
+    """How long a session lasts, as this instance is configured."""
+    return Lifetimes(
+        idle=timedelta(minutes=settings.session_idle_minutes),
+        absolute=timedelta(hours=settings.session_lifetime_hours),
+    )
 
 
 class SignInRefused(Exception):

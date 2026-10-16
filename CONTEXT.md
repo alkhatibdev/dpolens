@@ -34,6 +34,11 @@ A document written by the organisation that runs the instance, uploaded and publ
 through the dashboard.
 _Avoid_: Company policy, policy (on its own, when laws are also meant), internal rule
 
+**Archived**:
+An organisation policy taken out of search and the library. Nothing is deleted: its clauses
+still resolve by key, and publishing a new version of it brings it back.
+_Avoid_: Deleted, retired, inactive
+
 **Law**:
 A statutory data-protection or privacy law, such as GDPR or UAE PDPL.
 _Avoid_: Regulation (except inside a proper name), legislation, statute
@@ -62,8 +67,11 @@ a chapter) appears in browsing and breadcrumbs, but search never returns it on i
 _Avoid_: Node, provision, section (as the general word)
 
 **Canonical key**:
-The permanent, readable identity of a clause, such as `gdpr:art-17:para-1:pt-b`, the same
-in every version of its document.
+The readable identity of a clause in a version of its document, such as
+`gdpr:art-17:para-1:pt-b`, built from the numbers the document prints, or from a heading's
+words where there is none. When a later version prints a different clause under the same
+number, that clause takes the key, so a citation names its version as well as its key, and
+that is what keeps it exact.
 _Avoid_: Clause id, node id, reference
 
 **Breadcrumb**:
@@ -80,8 +88,8 @@ Article 6(1)(f)". It may point into another document.
 _Avoid_: Link, citation, reference
 
 **Retired key**:
-A canonical key whose clause was removed. It still resolves in the versions that
-contained it, and it is never given to a different clause.
+A canonical key that no clause holds in the version in force, because its clause was removed
+or renumbered. It still resolves in the versions that contained it.
 _Avoid_: Deleted key, free key
 
 ### Versions
@@ -91,8 +99,16 @@ One fixed state of a document's text. Once published it never changes.
 _Avoid_: Revision, edition, snapshot
 
 **Draft**:
-A version that is still being reviewed. Search never sees a draft.
+A version that is still being reviewed. Search never sees a draft, and a policy has one at a
+time.
 _Avoid_: Pending version, unpublished version
+
+**Continues**:
+What a clause of a new version does to the clause of the version before it that states the
+same rule, whatever number each is printed with. It is decided by matching their wording when
+the version is drafted, and a reviewer confirms every clause whose number changed. It is how
+an old citation says where its rule is now.
+_Avoid_: Succeeds, maps to, replaces
 
 **Published**:
 The state of a version that has been approved and can no longer change.
@@ -129,6 +145,11 @@ _Avoid_: Confidence flag, flagged spot, warning, issue
 Which technique decided a clause's boundary and depth: the file's own structure,
 typography, numbering patterns, or a reviewer by hand.
 _Avoid_: Parse method, strategy, pass
+
+**Original file**:
+The file a version was read from, kept under its SHA-256 and checked against it whenever it
+is read.
+_Avoid_: Source file, attachment, upload (that is the act of sending it)
 
 **Set aside**:
 Text in a file that belongs to no clause: a title, a cover, a contents page, a metadata or

@@ -118,7 +118,24 @@ beside it.
 | `/problems/sign-in-link-unusable` | 410 | The sign-in link was used, ran out, or never existed |
 | `/problems/edit-conflict` | 412 | Somebody changed it after it was read. `updated_by`, `updated_at` and `revision` say who, when and where it is now |
 | `/problems/weak-password` | 422 | The new password is shorter than 12 characters or longer than 1,024 |
+| `/problems/policy-not-found` | 404 | No organisation policy has that slug, or it has no version with that number |
+| `/problems/no-draft` | 404 | The policy has no draft to read, change, publish or discard |
+| `/problems/flag-not-found` | 404 | The draft has no flag in that place |
+| `/problems/policy-exists` | 409 | A document has that slug already. Upload a new version of it instead |
+| `/problems/draft-exists` | 409 | The policy has a draft already. `version` names it |
+| `/problems/flags-open` | 409 | The draft has flags nobody has accepted. `flags` lists them |
+| `/problems/effective-date-too-early` | 409 | A new version has to take effect after the version published before it |
+| `/problems/version-label-taken` | 409 | Another version of the policy has that label |
+| `/problems/too-large` | 413 | The request body is larger than 25 MB |
+| `/problems/unreadable-policy` | 422 | The file cannot be read as a policy. `detail` says what to do |
+| `/problems/bad-slug` | 422 | A slug is lower-case Latin letters, digits and hyphens |
+| `/problems/original-unavailable` | 500 | A version's stored file is missing or no longer matches its hash |
 | `/problems/not-ready` | 503 | The database is not reachable |
+
+## Request size
+
+A request body may be at most 25 MB, the size of the largest policy file the instance takes.
+A larger one is refused with `413` before it is read, and before the credential is checked.
 
 ## Rate limit
 
@@ -179,6 +196,17 @@ once it has the top hit.
 Both take `lang` and `as_of`. Without `lang`, or for a language the clause has no
 text in, a clause comes back in the language that prevails.
 
+A policy's keys follow the numbers printed in it, so when a new version inserts a clause, the
+clauses after it take new keys, and a key can name a different rule from one version to the
+next. A citation names its version, which keeps it exact, and `GET /v1/clauses/{key}` says the
+rest. Read in a version that is no longer in force, a policy's clause carries `now`: its key in
+the version in force today, or null when the rule was removed, and whether its number or its
+words changed. A clause whose key named a different rule in the version before carries
+`formerly`: that rule's words, and its key in this version.
+
+An archived policy's clauses still read, with `archived` true, so a citation of one still
+resolves. Nothing searches them.
+
 ### Documents
 
 `GET /v1/documents` lists what can be cited today, with `limit` (at most 100),
@@ -190,6 +218,61 @@ thousand clauses does not belong in one response.
 A document says whether it is one of the organisation's selected laws,
 `in_selected_laws`, which is always true for the organisation's own policies, and for a
 law which language prevails, `authoritative_language`.
+
+### Policies
+
+An organisation's own policies arrive through these routes. Uploading, reviewing and discarding
+need `documents.upload`; publishing and archiving need `documents.publish`.
+
+`POST /v1/policies` uploads a new policy. The request body is the file itself, a Word (`.docx`)
+or Markdown (`.md`) file of at most 25 MB, sent as `application/octet-stream`, and `filename`
+carries its name, whose extension says which it is. `slug`, the start of every key, comes from
+the file's name when it is left out; `title`, `effective_date` (today when left out) and
+`version_label` are optional.
+
+```bash
+curl --data-binary @data-protection.docx \
+  -H "Authorization: Bearer $DPOLENS_TOKEN" -H "Content-Type: application/octet-stream" \
+  "http://localhost:8000/v1/policies?filename=data-protection.docx&effective_date=2026-01-01"
+```
+
+The file is read in the same request, so a file that cannot be read is refused at once, with
+what to do about it, such as uploading the Word file a PDF was made from. What comes back is a
+draft, and nothing searches a draft:
+
+- `clauses`, the tree of clauses with their keys, labels, headings and words, and for each, what
+  decided where it begins: the file's own structure, its typography, or a number in its text
+- `flags`, what a person should check before it is published, each named by its place in the
+  list
+- `coverage`, how many characters of the file reached a clause, were set aside, or were missed,
+  and `set_aside`, the text kept out of every clause, such as a table of contents
+- `notices`, what the file itself said, such as tracked changes nobody accepted
+
+`POST /v1/policies/{slug}/versions` uploads a new version of a policy, with the same
+parameters apart from `slug` and `title`. It is matched to the version before it: each clause
+says which earlier clause it `continues` and whether it was `added`, `modified`, `moved` or
+left `unchanged`, `removed` lists the clauses nothing continues, and a clause whose number
+changed, whose words changed too much to be sure it is the same rule, or whose number named a
+different rule before, is a flag. A policy has one draft at a
+time; `replace=true` discards the open one and uses the upload instead.
+
+`GET /v1/policies/{slug}/draft` reads the draft, `PATCH` changes its `title`, `effective_date`
+or `version_label`, and `DELETE` discards it. `POST /v1/policies/{slug}/draft/flags/accept`,
+with `positions`, accepts flags. `POST /v1/policies/{slug}/draft/publish` publishes the draft
+once every flag is accepted. Its version then never changes, it is searched from its effective
+date, and its clauses are embedded in the background, so searching by meaning finds them a
+little after searching by words does; `indexing` says how far that has got. A new version takes
+effect after the version published before it, and its label, `1`, `2` and so on unless one is
+given, is one no other version of the policy has, because a citation names its version by it.
+
+`POST /v1/policies/{slug}/archive` takes a policy out of search and the library. Nothing is
+deleted, its clauses still read by key, and publishing a new version of it brings it back.
+
+`GET /v1/policies` lists the policies, archived ones included, with the version in force, any
+open draft, and whether the latest published version is embedded yet (`indexing`). `GET /v1/policies/{slug}/versions/{number}/original` returns the file a version
+was read from, for `documents.read`, after checking it against the hash it was stored with.
+
+Every step is written to the governance log, with who took it.
 
 ### People
 
@@ -282,8 +365,8 @@ file is being written is not in it.
 `GET /v1/governance/entries` reads the log a page at a time, newest first, for
 `governance.read`. Each entry carries what the log stores, with the person and the token its
 ids stand for. It narrows by `actor`, `category` (`sign_ins`, `people`, `roles`, `tokens`,
-`laws`, `questions`, `exports`), `since`, `until` and `q`, words in a name, an address, a
-token, a role or what changed. `GET /v1/governance/actors` lists everyone who has acted.
+`laws`, `policies`, `questions`, `exports`), `since`, `until` and `q`, words in a name, an
+address, a token, a role or what changed. `GET /v1/governance/actors` lists everyone who has acted.
 
 `GET /v1/governance/verification` recomputes the chain and says whether it holds, as
 `dpolens governance verify` does. `POST /v1/governance/exports` returns the export as a zip of

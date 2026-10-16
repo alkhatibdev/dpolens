@@ -5,6 +5,10 @@ This product includes software developed as part of the DPOLens project
 (https://github.com/alkhatibdev/dpolens), licensed under the Apache License,
 Version 2.0.
 
+packages/dpolens/src/dpolens/migrations/versions/0014_procrastinate_3_10_0.sql is
+the database schema of Procrastinate (https://github.com/procrastinate-org/procrastinate),
+copyright its authors and licensed under the MIT License, whose text the file carries.
+
 The contents of packs/ are covered by packs/LICENSE, not by this licence. Law
 text in a pack keeps the licence of the official source it came from, declared
 in that pack's pack.yaml.

@@ -57,6 +57,10 @@ class Clause(BaseModel):
         "source, community when it has passed validation only, null for a policy"
     )
     source_url: str | None
+    archived: bool = Field(
+        default=False,
+        description="True for an archived policy's clause: it still reads, and nothing searches it",
+    )
 
     @classmethod
     def of(cls, view: ClauseView) -> Clause:
@@ -113,11 +117,41 @@ class Results(BaseModel):
     results: list[Result]
 
 
+class WhereItIsNow(BaseModel):
+    """Where a policy's rule, read in an earlier version, is in the version in force."""
+
+    key: str | None = Field(description="Its key today, or null when the rule was removed")
+    version_label: str | None
+    effective_date: date
+    moved: bool = Field(description="Whether its number changed")
+    changed: bool = Field(description="Whether its words changed")
+
+
+class Formerly(BaseModel):
+    """The rule a policy's number named in the version before, before it named this one."""
+
+    version_label: str | None
+    heading: str | None
+    text: str
+    now: str | None = Field(description="That rule's key in this version, or null if removed")
+
+
 class ClauseInContext(BaseModel):
     clause: Clause
     breadcrumb: list[Clause]
     children: list[Clause]
     cross_references: list[CrossReference]
+    now: WhereItIsNow | None = Field(
+        default=None,
+        description=(
+            "For a policy read in a version that is no longer in force, where the same rule "
+            "is now, since a policy's keys follow its printed numbers"
+        ),
+    )
+    formerly: Formerly | None = Field(
+        default=None,
+        description="Set when this key named a different rule in the version before",
+    )
 
     @classmethod
     def of(cls, detail: ClauseDetail) -> ClauseInContext:
@@ -128,6 +162,8 @@ class ClauseInContext(BaseModel):
             cross_references=[
                 CrossReference(key=key, text=text) for key, text in detail.cross_references
             ],
+            now=WhereItIsNow(**vars(detail.now)) if detail.now else None,
+            formerly=Formerly(**vars(detail.formerly)) if detail.formerly else None,
         )
 
 

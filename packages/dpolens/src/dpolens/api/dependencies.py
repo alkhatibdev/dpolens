@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable, Iterator
-from datetime import timedelta
 from typing import Annotated
 from urllib.parse import urlsplit
 
@@ -16,7 +15,7 @@ from fastapi import Depends, Request
 
 from dpolens.api import problems
 from dpolens.engine.auth import permissions as catalog
-from dpolens.engine.auth.sessions import Lifetimes, SessionEnded, UnknownSession, resolve
+from dpolens.engine.auth.sessions import SessionEnded, UnknownSession, lifetimes_of, resolve
 from dpolens.engine.auth.tokens import (
     Authenticated,
     DelegationRefused,
@@ -75,13 +74,6 @@ def session_cookie_name(secure: bool) -> str:
 
 def presented_session(request: Request) -> str | None:
     return request.cookies.get(SESSION_COOKIE) or request.cookies.get(PLAIN_HTTP_SESSION_COOKIE)
-
-
-def lifetimes_of(settings: Settings) -> Lifetimes:
-    return Lifetimes(
-        idle=timedelta(minutes=settings.session_idle_minutes),
-        absolute=timedelta(hours=settings.session_lifetime_hours),
-    )
 
 
 def check_same_origin(request: Request) -> None:

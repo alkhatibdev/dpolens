@@ -53,6 +53,32 @@ class ClauseView:
     """Which language prevails where a law's texts disagree, so a translation can say so."""
     authoritative_text: str | None = None
     """The text that prevails, when this one is a translation, so the two can be read together."""
+    archived: bool = False
+    """The document no longer applies. Its clauses still read, and search no longer finds them."""
+
+
+@dataclass(frozen=True)
+class Continuation:
+    """Where a rule read in an earlier version is in the version in force today."""
+
+    key: str | None
+    """Its key today, or None when the rule was removed."""
+
+    version_label: str | None
+    effective_date: date
+    moved: bool
+    changed: bool
+
+
+@dataclass(frozen=True)
+class Formerly:
+    """The rule a policy's number named in an earlier version, before it named this one."""
+
+    version_label: str | None
+    heading: str | None
+    text: str
+    now: str | None
+    """That rule's key in this version, or None when it was removed."""
 
 
 @dataclass(frozen=True)
@@ -63,6 +89,10 @@ class ClauseDetail:
     breadcrumb: tuple[ClauseView, ...]
     children: tuple[ClauseView, ...]
     cross_references: tuple[tuple[str, str], ...]
+    now: Continuation | None = None
+    """Set when the version read is not the one in force: where the rule is today."""
+    formerly: Formerly | None = None
+    """Set when the key named a different rule in the version before."""
 
 
 class ClauseNotFound(Exception):
@@ -111,6 +141,7 @@ def _view(
         source_url=document.pack.source_url if document.pack else None,
         authoritative_language=document.pack.authoritative_language if document.pack else None,
         authoritative_text=prevailing.body_text if prevailing else None,
+        archived=document.status == "archived",
     )
 
 
@@ -167,6 +198,7 @@ def get_clause(
     """One clause, with its breadcrumb, its children and the links its text states."""
     found = _locate(session, key, as_of or date.today())
     document, version, node = found.document, found.version, found.node
+    policy = document.kind == "org_policy"
 
     return ClauseDetail(
         clause=_view(node, _texts_for(session, node, lang), document, version),
@@ -183,6 +215,104 @@ def get_clause(
                 .order_by(NodeReference.to_canonical_key)
             )
         ),
+        now=_continuation(session, document, version, node) if policy else None,
+        formerly=_formerly(session, document, version, node) if policy else None,
+    )
+
+
+def _published(session: Session, document: Document) -> list[DocumentVersion]:
+    return list(
+        session.scalars(
+            select(DocumentVersion)
+            .where(
+                DocumentVersion.document_id == document.id, DocumentVersion.status == "published"
+            )
+            .order_by(DocumentVersion.version_number)
+        )
+    )
+
+
+def _successor(
+    session: Session, node: DocumentNode, version: DocumentVersion
+) -> DocumentNode | None:
+    """The clause in `version` that continues `node`, matched when that version was drafted."""
+    return session.scalar(
+        select(DocumentNode).where(
+            DocumentNode.previous_node_id == node.id,
+            DocumentNode.document_version_id == version.id,
+        )
+    )
+
+
+def _authoritative_text(session: Session, node: DocumentNode) -> NodeText | None:
+    return session.scalar(
+        select(NodeText).where(NodeText.node_id == node.id, NodeText.is_authoritative)
+    )
+
+
+def _continuation(
+    session: Session, document: Document, version: DocumentVersion, node: DocumentNode
+) -> Continuation | None:
+    """Follow a rule from the version read to the one in force today, a version at a time."""
+    today = _version_in_force(session, document.id, date.today())
+    if today is None or today.id == version.id:
+        return None
+    later = [v for v in _published(session, document) if v.version_number > version.version_number]
+    current: DocumentNode | None = node
+    for step in later:
+        if current is None:
+            break
+        current = _successor(session, current, step)
+        if step.id == today.id:
+            break
+    if current is None:
+        return Continuation(
+            key=None,
+            version_label=today.version_label,
+            effective_date=today.effective_date,
+            moved=False,
+            changed=True,
+        )
+    before, after = _authoritative_text(session, node), _authoritative_text(session, current)
+    changed = (
+        (before.heading, before.body_text) != (after.heading, after.body_text)
+        if (before and after)
+        else True
+    )
+    return Continuation(
+        key=current.canonical_key,
+        version_label=today.version_label,
+        effective_date=today.effective_date,
+        moved=current.canonical_key != node.canonical_key,
+        changed=changed,
+    )
+
+
+def _formerly(
+    session: Session, document: Document, version: DocumentVersion, node: DocumentNode
+) -> Formerly | None:
+    """Whether this number named a different rule in the version before this one."""
+    earlier = [
+        v for v in _published(session, document) if v.version_number < version.version_number
+    ]
+    if not earlier:
+        return None
+    previous = earlier[-1]
+    old = session.scalar(
+        select(DocumentNode).where(
+            DocumentNode.document_version_id == previous.id,
+            DocumentNode.canonical_key == node.canonical_key,
+        )
+    )
+    if old is None or old.id == node.previous_node_id:
+        return None
+    text = _authoritative_text(session, old)
+    went = _successor(session, old, version)
+    return Formerly(
+        version_label=previous.version_label,
+        heading=text.heading if text else None,
+        text=text.body_text if text else "",
+        now=went.canonical_key if went else None,
     )
 
 

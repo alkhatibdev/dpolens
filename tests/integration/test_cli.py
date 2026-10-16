@@ -17,6 +17,7 @@ from dpolens.cli.main import app
 pytestmark = pytest.mark.integration
 
 GDPR_PACK = Path(__file__).parents[2] / "packs" / "gdpr"
+POLICIES = Path(__file__).parents[1] / "fixtures" / "policies"
 runner = CliRunner()
 BORDERS = str.maketrans(dict.fromkeys("│╭╮╰╯─", " "))
 
@@ -197,3 +198,50 @@ def test_scoring_together_needs_two_sets() -> None:
 
     assert result.exit_code == 2
     assert "at least two sets" in said(result)
+
+
+def test_a_policy_goes_from_a_file_to_a_citation(
+    instance: None, clean_tables: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DPOLENS_ORIGINALS_DIR", str(tmp_path))
+    first = str(POLICIES / "retention-v1.md")
+    uploaded = runner.invoke(
+        app, ["policy", "upload", first, "--slug", "retention", "--effective-date", "2026-01-01"]
+    )
+    assert uploaded.exit_code == 0, uploaded.output
+    assert "Nothing to settle. Publish with: dpolens policy publish retention" in said(uploaded)
+    published = runner.invoke(app, ["policy", "publish", "retention"])
+    assert "Published version 1 of Retention policy, in force from 2026-01-01" in said(published)
+
+    second = str(POLICIES / "retention-v2.md")
+    revised = runner.invoke(
+        app, ["policy", "revise", "retention", second, "--effective-date", "2026-06-01"]
+    )
+    assert revised.exit_code == 0, revised.output
+    assert "Against version 1: 1 new, 1 reworded, 2 renumbered, 3 the same, 0 removed." in said(
+        revised
+    )
+    assert "was 4.2" in revised.output
+
+    refused = runner.invoke(app, ["policy", "publish", "retention"])
+    assert refused.exit_code == 1
+    assert "flags to settle before it can be published" in said(refused)
+    accepted = runner.invoke(app, ["policy", "accept", "retention", "--all"])
+    assert "Every flag is accepted" in said(accepted)
+    assert runner.invoke(app, ["policy", "publish", "retention"]).exit_code == 0
+
+    cited = runner.invoke(app, ["clause", "show", "retention:4.2", "--as-of", "2026-01-01"])
+    assert "Staff records" in cited.output
+    assert (
+        "In version 2, in force since 2026-06-01, this rule is retention:4.3, word for word."
+        in (said(cited))
+    )
+    listed = runner.invoke(app, ["policy", "list"])
+    assert "version 2" in listed.output
+
+
+def test_a_policy_without_a_draft_says_so(instance: None, clean_tables: None) -> None:
+    result = runner.invoke(app, ["policy", "publish", "nothing-here"])
+
+    assert result.exit_code == 1
+    assert "There is no policy called nothing-here." in said(result)

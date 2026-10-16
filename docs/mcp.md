@@ -26,6 +26,13 @@ in `as_of` reads the documents as they stood then, which is how to answer a ques
 code written two years ago. `laws` searches other laws by slug, and a clause from a law
 outside the selection comes back with `in_selected_laws` false.
 
+A policy's keys follow the numbers printed in it, so a new version that inserts a clause gives
+the clauses after it new keys. A citation names its version, which keeps it exact. `get_clause`,
+reading a policy's clause in a version no longer in force, says in `now` where the same rule is
+today and whether its words changed, and a key that named a different rule in the version
+before says so in `formerly`. A clause of a policy the organisation has archived comes back
+with `archived` true.
+
 Two prompts arrive as commands in the clients that show them:
 
 - **`policy_check`** reviews the change you are working on, names every place it touches

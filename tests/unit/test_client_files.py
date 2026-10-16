@@ -172,8 +172,28 @@ class TestThePluginAndItsMarketplace:
 
 
 class TestTheComposeFile:
-    def test_it_starts_the_five_things_an_instance_is(self) -> None:
-        assert set(compose()["services"]) == {"db", "setup", "api", "dashboard", "mcp"}
+    def test_it_starts_the_six_things_an_instance_is(self) -> None:
+        assert set(compose()["services"]) == {
+            "db",
+            "setup",
+            "api",
+            "worker",
+            "dashboard",
+            "mcp",
+        }
+
+    def test_the_worker_connects_as_the_application_role_alone(self) -> None:
+        """It embeds and purges, and neither needs the role that owns the tables."""
+        environment = compose()["services"]["worker"]["environment"]
+
+        assert "dpolens_app:" in environment["DPOLENS_DATABASE_URL"]
+        assert "DPOLENS_MIGRATION_DATABASE_URL" not in environment
+
+    def test_the_original_files_are_one_volume_for_everything_that_reads_them(self) -> None:
+        services = compose()["services"]
+
+        for name in ("setup", "api", "worker"):
+            assert "originals:/var/lib/dpolens/originals" in services[name]["volumes"]
 
     def test_the_dashboard_waits_for_the_api_it_forwards_to(self) -> None:
         """The browser sees one origin: the dashboard's server passes /v1 to the API."""

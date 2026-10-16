@@ -22,6 +22,7 @@ from dpolens.cli import (
     search,
     token,
     user,
+    worker,
 )
 from dpolens.engine.auth.catalog import StalePermission
 from dpolens.engine.auth.passwords import NoPasswordAllowed, WeakPassword
@@ -45,9 +46,21 @@ from dpolens.engine.auth.users import (
 from dpolens.engine.documents.read import ClauseNotFound
 from dpolens.engine.instance import MissingInstanceRow
 from dpolens.engine.logs.export import ExportRefused, MalformedExport
+from dpolens.engine.originals import OriginalsUnwritable, OriginalUnavailable
 from dpolens.engine.packs.format import PackFormatError
 from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
 from dpolens.engine.policies.blocks import UnreadablePolicy
+from dpolens.engine.policies.store import (
+    BadSlug,
+    DraftExists,
+    EffectiveDateTooEarly,
+    FlagNotFound,
+    FlagsOpen,
+    LabelTaken,
+    NoDraft,
+    PolicyExists,
+    PolicyNotFound,
+)
 from dpolens.engine.session import DatabaseUnavailable, MissingExtension, NotMigrated
 
 # Problems a person can act on: printed as one line, without a traceback.
@@ -81,6 +94,17 @@ EXPECTED = (
     NoPasswordAllowed,
     EmptySelection,
     UnreadablePolicy,
+    PolicyNotFound,
+    PolicyExists,
+    DraftExists,
+    NoDraft,
+    FlagsOpen,
+    FlagNotFound,
+    EffectiveDateTooEarly,
+    LabelTaken,
+    BadSlug,
+    OriginalUnavailable,
+    OriginalsUnwritable,
 )
 
 
@@ -121,6 +145,7 @@ app.add_typer(index.app)
 app.add_typer(model.app)
 app.add_typer(evals.app)
 app.command(name="search")(search.run)
+app.command(name="worker")(worker.run)
 
 
 @app.callback()
