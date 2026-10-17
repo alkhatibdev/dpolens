@@ -114,6 +114,34 @@ describe("signing in", () => {
     renderAt("/sign-in");
 
     await screen.findByLabelText("Email");
-    expect(document.body.textContent).not.toMatch(/dpolens |administrator/i);
+    // A command is lower case ("dpolens user ..."); the name on the page is not.
+    expect(document.body.textContent).not.toMatch(/dpolens [a-z]/);
+    expect(document.body.textContent).not.toMatch(/administrator/i);
+  });
+
+  it("says how to get back in without a password, once asked", async () => {
+    serve({ "GET /v1/sessions/current": problem("unauthenticated", 401) });
+    renderAt("/sign-in");
+    const forgot = await screen.findByRole("button", { name: "Forgot your password?" });
+    expect(forgot).toHaveAttribute("aria-expanded", "false");
+
+    await userEvent.click(forgot);
+
+    expect(forgot).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByText("An administrator can make you a sign-in link, to choose a new password."),
+    ).toBeInTheDocument();
+  });
+
+  it("answers its question with the clause and the version to cite it by", async () => {
+    serve({ "GET /v1/sessions/current": problem("unauthenticated", 401) });
+    renderAt("/sign-in");
+
+    expect(await screen.findByText("gdpr:art-17:para-1:pt-a")).toBeInTheDocument();
+    expect(screen.getByText("in force since 25 May 2018")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View it on GitHub" })).toHaveAttribute(
+      "href",
+      "https://github.com/alkhatibdev/dpolens",
+    );
   });
 });

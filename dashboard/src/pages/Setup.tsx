@@ -6,7 +6,7 @@ import { neverChosen, useChooseLaws, useLaws } from "@/api/laws";
 import { LawChoice } from "@/components/LawChoice";
 import { Notice } from "@/components/Notice";
 import { Failed, Loading } from "@/components/States";
-import { Wordmark } from "@/components/Wordmark";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { AccountMenu } from "@/layout/Shell";
 import { SETTINGS_MANAGE } from "@/lib/permissions";
@@ -58,7 +58,7 @@ export function SetupPage() {
   return (
     <div className="flex min-h-dvh flex-col gap-2 p-2 sm:gap-4 sm:p-4">
       <header className="flex items-center justify-between gap-3 rounded-[20px] bg-white p-2 ps-5 sm:rounded-[24px] sm:p-3.5 sm:ps-6">
-        <Wordmark />
+        <Logo />
         <AccountMenu />
       </header>
       <main className="flex flex-1 justify-center rounded-[20px] bg-panel px-4 py-8 sm:rounded-[24px] sm:px-7 sm:py-12">
