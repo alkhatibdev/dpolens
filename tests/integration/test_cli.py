@@ -285,6 +285,36 @@ def test_how_a_clause_was_read_is_fixed_from_the_shell(
     assert "3.2 The records are kept for 90 days. you" in shown
 
 
+def test_a_policy_s_versions_are_listed_and_compared_from_the_shell(
+    instance: None, clean_tables: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DPOLENS_ORIGINALS_DIR", str(tmp_path))
+    first, second = str(POLICIES / "retention-v1.md"), str(POLICIES / "retention-v2.md")
+    runner.invoke(
+        app, ["policy", "upload", first, "--slug", "retention", "--effective-date", "2026-01-01"]
+    )
+    runner.invoke(app, ["policy", "publish", "retention"])
+    runner.invoke(app, ["policy", "revise", "retention", second, "--effective-date", "2026-06-01"])
+    runner.invoke(app, ["policy", "accept", "retention", "--all"])
+    runner.invoke(app, ["policy", "publish", "retention"])
+
+    listed = runner.invoke(app, ["policy", "versions", "retention"])
+    compared = runner.invoke(app, ["policy", "compare", "retention", "1", "2"])
+    itself = runner.invoke(app, ["policy", "compare", "retention", "2", "2"])
+
+    assert listed.exit_code == 0, listed.output
+    assert "2 in force from 2026-06-01" in said(listed)
+    assert "1 replaced 2026-01-01 to 2026-05-31" in said(listed)
+    assert compared.exit_code == 0, compared.output
+    assert (
+        "Version 1 to version 2: 1 new, 1 reworded, 2 renumbered, 3 the same, 0 removed."
+        in said(compared)
+    )
+    assert "4.3 was 4.2" in said(compared)
+    assert itself.exit_code == 1
+    assert "Version 2 is the same version. Choose two different ones." in said(itself)
+
+
 def test_a_policy_without_a_draft_says_so(instance: None, clean_tables: None) -> None:
     result = runner.invoke(app, ["policy", "publish", "nothing-here"])
 

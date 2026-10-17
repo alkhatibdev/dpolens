@@ -1,5 +1,5 @@
 import { ApiError } from "@/api/client";
-import type { DraftClause, DraftFlag, PolicyDraft } from "@/api/policies";
+import type { DraftClause, DraftFlag, PolicyDraft, VersionEntry } from "@/api/policies";
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
@@ -127,4 +127,16 @@ export function today(): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${now.getFullYear()}-${month}-${day}`;
+}
+
+/** Where a version's original file downloads from. */
+export function originalOf(slug: string, entry: VersionEntry): string {
+  return `/v1/policies/${encodeURIComponent(slug)}/versions/${entry.number}/original`;
+}
+
+/** The library page of a version read as it stood: its effective date, as the API reads it. */
+export function readingLink(slug: string, entry: VersionEntry, current: boolean): string {
+  return current
+    ? `/library/${encodeURIComponent(slug)}`
+    : `/library/${encodeURIComponent(slug)}?as_of=${entry.effective_date}`;
 }

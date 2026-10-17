@@ -38,7 +38,7 @@ from dpolens.api.dependencies import (
 from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.originals import Directory, OriginalUnavailable
-from dpolens.engine.policies import store
+from dpolens.engine.policies import library, store
 from dpolens.engine.policies.blocks import UnreadablePolicy
 from dpolens.engine.policies.fixing import CannotFix
 
@@ -47,6 +47,7 @@ router = APIRouter(
 )
 
 Uploader = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_UPLOAD))]
+Reader = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_READ))]
 Publisher = Annotated[Authenticated, Depends(requires(catalog.DOCUMENTS_PUBLISH))]
 Reviewer = Annotated[
     Authenticated,
@@ -286,6 +287,70 @@ class PolicySummary(BaseModel):
     review: DraftReview | None = Field(description="The open draft's review, if there is one")
     last_change: LastChange | None = Field(
         description="Who last uploaded, reviewed, published or archived it, and when"
+    )
+
+
+class VersionEntry(BaseModel):
+    number: int = Field(description="The version's number among this policy's uploads")
+    label: str = Field(description="The label citations show; for a draft, the one it takes")
+    state: Literal["draft", "scheduled", "in_force", "replaced"] = Field(
+        description="A draft, published to take effect later, in force today, or replaced"
+    )
+    effective_date: date
+    until: date | None = Field(
+        description="Its last day in force, once a later version is published to take over"
+    )
+    created_at: datetime
+    created_by: str | None = Field(description="Who uploaded it; empty from the command line")
+    published_at: datetime | None
+    published_by: str | None
+    source: OriginalFile
+    flags: int | None = Field(description="For a draft, every flag it has")
+    open: int | None = Field(description="For a draft, the flags still to settle")
+
+
+class PolicyVersions(BaseModel):
+    slug: str
+    title: str
+    status: Literal["active", "archived"]
+    versions: list[VersionEntry] = Field(
+        description=(
+            "The draft first, for those who review policies, then every published version, "
+            "the latest to take effect first. A discarded draft is never listed"
+        )
+    )
+
+
+class VersionRef(BaseModel):
+    number: int
+    label: str
+    effective_date: date
+
+
+class ComparedClause(BaseModel):
+    key: str
+    label: str | None
+    heading: str | None
+    text: str
+    change: Change = Field(
+        description="Against the earlier version: added, modified, moved or unchanged"
+    )
+    earlier: EarlierClause | None = Field(
+        description="The clause of the earlier version it continues"
+    )
+
+
+class PolicyComparison(BaseModel):
+    slug: str
+    title: str
+    earlier: VersionRef
+    later: VersionRef
+    clauses: list[ComparedClause] = Field(description="Every clause of the later version, in order")
+    removed: list[Removed] = Field(
+        description="Clauses of the earlier version nothing in the later one continues"
+    )
+    changes: dict[str, int] = Field(
+        description="How many clauses were added, modified, moved, unchanged and removed"
     )
 
 
@@ -539,6 +604,8 @@ def _refused(failure: Exception) -> problems.Problem:
             return problems.no_clause(detail)
         case CannotFix():
             return problems.fix_refused(detail)
+        case library.SameVersion():
+            return problems.invalid_request(detail)
         case store.StaleDraft():
             return problems.edit_conflict(
                 revision=failure.revision,
@@ -568,6 +635,7 @@ REFUSALS = (
     store.NoMatch,
     store.NoClause,
     CannotFix,
+    library.SameVersion,
     store.StaleDraft,
     store.EffectiveDateTooEarly,
     store.LabelTaken,
@@ -843,6 +911,107 @@ def archive(slug: str, who: Publisher, opened: Opened) -> Response:
     except REFUSALS as failure:
         raise _refused(failure) from failure
     return Response(status_code=204)
+
+
+@router.get(
+    "/{slug}/versions",
+    summary="A policy's versions: in force, replaced, scheduled, and its draft for reviewers",
+    description=(
+        "Each version with the day it takes effect and, once a later one is published to take "
+        "over, its last day in force. Takes `documents.read`; the draft is listed only for "
+        "those who hold `documents.upload` or `documents.publish`."
+    ),
+    responses=problems.responses(404),
+)
+def list_versions(slug: str, who: Reader, opened: Opened) -> PolicyVersions:
+    drafts = who.may(catalog.DOCUMENTS_UPLOAD) or who.may(catalog.DOCUMENTS_PUBLISH)
+    try:
+        history = library.list_versions(opened, slug, drafts=drafts)
+    except REFUSALS as failure:
+        raise _refused(failure) from failure
+    return PolicyVersions(
+        slug=history.slug,
+        title=history.title,
+        status=cast(Literal["active", "archived"], history.status),
+        versions=[
+            VersionEntry(
+                number=entry.number,
+                label=entry.label,
+                state=entry.state,
+                effective_date=entry.effective_date,
+                until=entry.until,
+                created_at=entry.created_at,
+                created_by=entry.created_by,
+                published_at=entry.published_at,
+                published_by=entry.published_by,
+                source=OriginalFile(
+                    name=entry.source_name, format=entry.source_format, size=entry.source_size
+                ),
+                flags=entry.flags,
+                open=entry.open,
+            )
+            for entry in history.versions
+        ],
+    )
+
+
+@router.get(
+    "/{slug}/compare",
+    summary="Two published versions of a policy, clause by clause",
+    description=(
+        "Each clause is followed from one version to the next through the matches made when "
+        "each was uploaded and reviewed, so a rejected match or a fix counts as it did then. "
+        "The two are compared in the order they take effect, whichever is named first."
+    ),
+    responses=problems.responses(400, 404),
+)
+def compare_versions(
+    slug: str,
+    who: Reader,
+    opened: Opened,
+    first: Annotated[int, Query(alias="from", description="One version, by its number")],
+    second: Annotated[int, Query(alias="to", description="The other version, by its number")],
+) -> PolicyComparison:
+    try:
+        found = library.compare(opened, slug, first, second)
+    except REFUSALS as failure:
+        raise _refused(failure) from failure
+
+    def ref(version: library.VersionRef) -> VersionRef:
+        return VersionRef(
+            number=version.number, label=version.label, effective_date=version.effective_date
+        )
+
+    return PolicyComparison(
+        slug=found.slug,
+        title=found.title,
+        earlier=ref(found.earlier),
+        later=ref(found.later),
+        clauses=[
+            ComparedClause(
+                key=clause.key,
+                label=clause.label,
+                heading=clause.heading,
+                text=clause.text,
+                change=clause.change,
+                earlier=(
+                    EarlierClause(
+                        key=clause.earlier.key,
+                        label=clause.earlier.label,
+                        heading=clause.earlier.heading,
+                        text=clause.earlier.text,
+                    )
+                    if clause.earlier
+                    else None
+                ),
+            )
+            for clause in found.clauses
+        ],
+        removed=[
+            Removed(key=gone.key, heading=gone.heading, text=gone.text) for gone in found.removed
+        ],
+        changes=found.changes,
+    )
 
 
 @router.get(

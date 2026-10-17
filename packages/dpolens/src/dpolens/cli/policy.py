@@ -16,7 +16,7 @@ import typer
 
 from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.originals import Directory
-from dpolens.engine.policies import store
+from dpolens.engine.policies import library, store
 from dpolens.engine.policies.fixing import boundaries
 from dpolens.engine.policies.parse import parse_policy
 from dpolens.engine.policies.tree import Clause, Edit, ParsedPolicy
@@ -367,6 +367,61 @@ def list_() -> None:
         )
         draft = f", draft {summary.draft}" if summary.draft else ""
         typer.echo(f"{summary.slug:28} {state + draft:24} {summary.title}")
+
+
+STATES = {
+    "draft": "draft",
+    "scheduled": "scheduled",
+    "in_force": "in force",
+    "replaced": "replaced",
+}
+
+
+@app.command()
+def versions(slug: Slug) -> None:
+    """List a policy's versions: its draft, the version in force, and those it replaced."""
+    with session_scope(load_settings()) as session:
+        history = library.list_versions(session, slug, drafts=True)
+    typer.secho(f"{history.title} ({history.slug})", bold=True)
+    for entry in history.versions:
+        if entry.state == "draft":
+            when = f"takes effect {entry.effective_date.isoformat()} once published"
+        elif entry.until is not None:
+            when = f"{entry.effective_date.isoformat()} to {entry.until.isoformat()}"
+        else:
+            when = f"from {entry.effective_date.isoformat()}"
+        who = entry.published_by if entry.state != "draft" else entry.created_by
+        by = f", by {who}" if who else ""
+        typer.echo(f"  {entry.label:>6}  {STATES[entry.state]:<10} {when}{by}")
+
+
+@app.command()
+def compare(
+    slug: Slug,
+    first: Annotated[int, typer.Argument(help="One version, by its number")],
+    second: Annotated[int, typer.Argument(help="The other version, by its number")],
+) -> None:
+    """Compare two published versions of a policy, clause by clause."""
+    with session_scope(load_settings()) as session:
+        found = library.compare(session, slug, first, second)
+    changes = found.changes
+    typer.secho(
+        f"Version {found.earlier.label} to version {found.later.label}: {changes['added']} new, "
+        f"{changes['modified']} reworded, {changes['moved']} renumbered, {changes['unchanged']} "
+        f"the same, {changes['removed']} removed.",
+        bold=True,
+    )
+    for clause in found.clauses:
+        if clause.change == "unchanged":
+            continue
+        key = clause.key.removeprefix(slug + ":")
+        if clause.change == "moved" and clause.earlier is not None:
+            note = f"was {clause.earlier.key.removeprefix(slug + ':')}"
+        else:
+            note = CHANGES[clause.change]
+        typer.echo(f"  {key:<12} {note}")
+    for gone in found.removed:
+        typer.echo(f"  {gone.key.removeprefix(slug + ':'):<12} removed")
 
 
 @app.command()

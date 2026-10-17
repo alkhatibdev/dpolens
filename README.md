@@ -20,8 +20,9 @@ with exact, versioned citations. A self-hosted MCP server.**
 > instance is set up. Your own policies, Word or Markdown, are uploaded in the dashboard, the
 > HTTP API or the command line, read into clauses with keys, reviewed as drafts beside the file
 > as it was read, fixed where a clause was read wrongly, and published as versions your
-> assistant searches and cites. A new version shows what changed against the one before, and a
-> new instance starts with a made-up sample policy.
+> assistant searches and cites. A new version shows what changed against the one before, the
+> library reads any version as it stood and compares any two, and a new instance starts with a
+> made-up sample policy.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -265,7 +266,7 @@ confirm, such as a clause whose number changed, is a flag for the reviewer, who 
 match is wrong as well as confirm it. Keys follow the
 numbers printed in the policy, and a citation names its version, so a citation of version
 1's 4.2 still reads the rule it quoted, and says where that rule is in the version in force
-today. The file each version came from is kept and checked against its hash whenever it is
+today. The library lists every version, reads any of them as it stood, and compares any two. The file each version came from is kept and checked against its hash whenever it is
 read, archiving a policy takes it out of search without deleting anything, and every step is
 written to the governance log:
 
@@ -276,6 +277,7 @@ dpolens policy fix acme-retention 4.1 split --before "4.2"
 dpolens policy accept acme-retention --all
 dpolens policy publish acme-retention
 dpolens policy revise acme-retention retention-policy-v2.docx --effective-date 2026-07-01
+dpolens policy compare acme-retention 1 2
 ```
 
 [docs/policies.md](docs/policies.md) explains how clauses, keys and flags are decided, and

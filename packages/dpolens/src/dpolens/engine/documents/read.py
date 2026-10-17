@@ -321,18 +321,24 @@ def get_subtree(
 ) -> list[ClauseView]:
     """A clause and everything beneath it, in reading order.
 
-    Descendants come back in one query. Keys carry the hierarchy, so a prefix
-    match finds them, and the parent links put them back in order.
+    Descendants come back in one query, found by their parent links rather than by their keys:
+    a policy's 4.1 under 4 is keyed `slug:4.1`, not `slug:4:4.1`, because a number that
+    continues its parent's stands alone.
     """
     located = _locate(session, key, as_of or date.today())
     document, version, root = located.document, located.version, located.node
 
+    beneath = (
+        select(DocumentNode.id)
+        .where(DocumentNode.parent_node_id == root.id)
+        .cte(name="beneath", recursive=True)
+    )
+    beneath = beneath.union_all(
+        select(DocumentNode.id).where(DocumentNode.parent_node_id == beneath.c.id)
+    )
     descendants = session.scalars(
         select(DocumentNode)
-        .where(
-            DocumentNode.document_version_id == version.id,
-            DocumentNode.canonical_key.startswith(f"{key}:"),
-        )
+        .where(DocumentNode.id.in_(select(beneath.c.id)))
         .order_by(DocumentNode.order_index)
     )
 

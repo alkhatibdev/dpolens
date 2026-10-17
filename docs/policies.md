@@ -294,6 +294,28 @@ In version 1, acme-retention:4.2 was a different rule, which is acme-retention:4
 The HTTP API and the MCP server say the same, as `now` and `formerly`, so an assistant reading
 an old citation is told where the rule went.
 
+## Versions in the library
+
+A policy's page in the library lists its versions: the one in force, one published to take
+effect later, and those it replaced, each with the day it took effect and, once another took
+over, its last day in force. Any of them can be read as it stood, and each one's original file
+downloads from the list. Whoever reviews policies also sees the open draft there, with how many
+flags it has left.
+
+Any two published versions can be compared, clause by clause: what was added, renumbered,
+reworded and removed, with the words that changed marked. Each rule is followed from one version
+to the next through the matches made when each was uploaded and reviewed, so a match a reviewer
+rejected, or a clause they fixed, counts as it did then. On the command line:
+
+```bash
+dpolens policy versions acme-retention
+dpolens policy compare acme-retention 1 3
+```
+
+A clause read in a version no longer in force says so in the dashboard, with the days that
+version was in force and where the rule is today, and when its key names another rule today, the
+page shows that one too.
+
 ## Archiving
 
 Archiving a policy takes it out of search and out of the library. Nothing is deleted: its

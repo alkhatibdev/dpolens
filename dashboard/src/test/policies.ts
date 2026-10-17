@@ -1,12 +1,15 @@
-import type { SignedIn } from "@/api/client";
+import type { Clause, DocumentInDetail, SignedIn } from "@/api/client";
 import type {
   DraftClause,
   DraftFlag,
   FileParagraph,
+  PolicyComparison,
   PolicyDraft,
   PolicyFile,
   PolicySummary,
   PolicyVersion,
+  PolicyVersions,
+  VersionEntry,
 } from "@/api/policies";
 
 import { admin } from "./fixtures";
@@ -396,4 +399,171 @@ export const acceptableUseFile: PolicyFile = {
       clause: "acceptable-use:4.1",
     }),
   ],
+};
+
+/** The retention policy as the library reads it: version 2 in force, version 3 a draft. */
+export const retentionDocument: DocumentInDetail = {
+  document: {
+    slug: "data-retention",
+    title: "Data retention policy",
+    kind: "org_policy",
+    version_label: "2",
+    effective_date: "2026-02-01",
+    clauses: 6,
+    languages: ["en"],
+    pack_slug: null,
+    jurisdiction: null,
+    trust_tier: null,
+    source_url: null,
+    authoritative_language: null,
+    in_selected_laws: false,
+  },
+  outline: [
+    {
+      key: "data-retention:4",
+      clause_type: "section",
+      label: "4",
+      heading: "Retention periods",
+      is_normative: true,
+      children: 2,
+    },
+    {
+      key: "data-retention:5",
+      clause_type: "section",
+      label: "5",
+      heading: "Review",
+      is_normative: true,
+      children: 1,
+    },
+  ],
+};
+
+export function policyClause(
+  fields: Partial<Clause> & Pick<Clause, "key" | "text">,
+  version: { label: string; date: string } = { label: "2", date: "2026-02-01" },
+): Clause {
+  return {
+    clause_type: "paragraph",
+    label: null,
+    heading: null,
+    lang: "en",
+    is_authoritative: true,
+    authoritative_language: null,
+    authoritative_text: null,
+    is_normative: true,
+    depth: 1,
+    document_title: "Data retention policy",
+    document_slug: "data-retention",
+    version_label: version.label,
+    effective_date: version.date,
+    pack_slug: null,
+    jurisdiction: null,
+    trust_tier: null,
+    source_url: null,
+    archived: false,
+    ...fields,
+  };
+}
+
+export const retentionPart: Clause[] = [
+  policyClause({
+    key: "data-retention:4",
+    clause_type: "section",
+    label: "4",
+    heading: "Retention periods",
+    text: "",
+    depth: 0,
+  }),
+  policyClause({
+    key: "data-retention:4.1",
+    label: "4.1",
+    text: "Customer account data is kept while the account is open and for 2 years after it closes, for disputes and refunds.",
+  }),
+  policyClause({
+    key: "data-retention:4.2",
+    label: "4.2",
+    text: "When the 2 years have passed, a closed account is deleted from live systems within 30 days, and from backups when those backups expire.",
+  }),
+];
+
+function entry(fields: Partial<VersionEntry> & Pick<VersionEntry, "number" | "label" | "state">) {
+  return {
+    effective_date: "2026-02-01",
+    until: null,
+    created_at: "2026-01-19T10:00:00Z",
+    created_by: "Mariam Al Amiri",
+    published_at: "2026-01-20T10:00:00Z",
+    published_by: "Mariam Al Amiri",
+    source: { name: "data-retention.docx", format: "docx", size: 40_960 },
+    flags: null,
+    open: null,
+    ...fields,
+  };
+}
+
+export const retentionVersions: PolicyVersions = {
+  slug: "data-retention",
+  title: "Data retention policy",
+  status: "active",
+  versions: [
+    entry({
+      number: 3,
+      label: "3",
+      state: "draft",
+      effective_date: "2026-11-01",
+      created_at: new Date().toISOString(),
+      published_at: null,
+      published_by: null,
+      flags: 4,
+      open: 3,
+    }),
+    entry({ number: 2, label: "2", state: "in_force" }),
+    entry({
+      number: 1,
+      label: "1",
+      state: "replaced",
+      effective_date: "2025-09-01",
+      until: "2026-01-31",
+      published_at: "2025-08-25T10:00:00Z",
+      published_by: "Yousef Haddad",
+    }),
+  ],
+};
+
+export const retentionComparison: PolicyComparison = {
+  slug: "data-retention",
+  title: "Data retention policy",
+  earlier: { number: 1, label: "1", effective_date: "2025-09-01" },
+  later: { number: 2, label: "2", effective_date: "2026-02-01" },
+  clauses: [
+    {
+      key: "data-retention:4",
+      label: "4",
+      heading: "Retention periods",
+      text: "",
+      change: "unchanged",
+      earlier: null,
+    },
+    {
+      key: "data-retention:4.1",
+      label: "4.1",
+      heading: null,
+      text: "Customer account data is kept while the account is open and for 2 years after it closes, for disputes and refunds.",
+      change: "modified",
+      earlier: {
+        key: "data-retention:4.1",
+        label: "4.1",
+        heading: null,
+        text: "Customer account data is kept while the account is open and for 3 years after it closes.",
+      },
+    },
+  ],
+  removed: [
+    {
+      key: "data-retention:4.4",
+      heading: null,
+      text: "Marketing preferences are kept until the customer withdraws consent.",
+    },
+  ],
+  changes: { added: 0, modified: 1, moved: 0, unchanged: 1, removed: 1 },
 };

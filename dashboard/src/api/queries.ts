@@ -2,27 +2,37 @@ import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 
 import { api, unwrap, type Clause } from "./client";
 
-export function useDocuments() {
+export function useDocuments(enabled = true) {
   return useQuery({
     queryKey: ["documents"],
+    enabled,
     queryFn: () => unwrap(api.GET("/v1/documents", { params: { query: { limit: 100 } } })),
   });
 }
 
-export function useDocument(slug: string, lang?: string) {
+/** A document as it stood on `asOf`, or as it is in force today. */
+export function useDocument(slug: string, lang?: string, asOf?: string | null) {
   return useQuery({
-    queryKey: ["document", slug, lang],
+    queryKey: ["document", slug, lang, asOf ?? null],
     queryFn: () =>
-      unwrap(api.GET("/v1/documents/{slug}", { params: { path: { slug }, query: { lang } } })),
+      unwrap(
+        api.GET("/v1/documents/{slug}", {
+          params: { path: { slug }, query: { lang, as_of: asOf ?? undefined } },
+        }),
+      ),
   });
 }
 
-export function useClause(key: string, lang?: string, enabled = true) {
+export function useClause(key: string, lang?: string, enabled = true, asOf?: string | null) {
   return useQuery({
-    queryKey: ["clause", key, lang],
+    queryKey: ["clause", key, lang, asOf ?? null],
     enabled,
     queryFn: () =>
-      unwrap(api.GET("/v1/clauses/{key}", { params: { path: { key }, query: { lang } } })),
+      unwrap(
+        api.GET("/v1/clauses/{key}", {
+          params: { path: { key }, query: { lang, as_of: asOf ?? undefined } },
+        }),
+      ),
   });
 }
 
@@ -31,16 +41,20 @@ export function useClause(key: string, lang?: string, enabled = true) {
  * translation's points are numbered in its own words, so each language is read
  * as itself rather than taken from another's `authoritative_text`.
  */
-export function useSubtrees(key: string | null, languages: readonly string[]) {
+export function useSubtrees(
+  key: string | null,
+  languages: readonly string[],
+  asOf?: string | null,
+) {
   return useQueries({
     queries: languages.map((lang) => ({
-      queryKey: ["subtree", key, lang],
+      queryKey: ["subtree", key, lang, asOf ?? null],
       enabled: key !== null,
       placeholderData: keepPreviousData,
       queryFn: () =>
         unwrap(
           api.GET("/v1/clauses/{key}/subtree", {
-            params: { path: { key: key ?? "" }, query: { lang } },
+            params: { path: { key: key ?? "" }, query: { lang, as_of: asOf ?? undefined } },
           }),
         ),
     })),

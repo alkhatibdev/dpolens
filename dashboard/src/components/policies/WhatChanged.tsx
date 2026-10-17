@@ -14,7 +14,7 @@ import { usePermitted } from "@/session";
 
 import { FlagCard, small } from "./FlagCard";
 
-function Stat({ value, label, note }: { value: ReactNode; label: string; note: string }) {
+export function Stat({ value, label, note }: { value: ReactNode; label: string; note: string }) {
   return (
     <div className="min-w-0 flex-[1_1_160px]">
       <div className="text-[13px] text-muted">{label}</div>
@@ -90,7 +90,8 @@ function reworded(clause: DraftClause): boolean {
   return earlier !== null && (earlier.text !== clause.text || earlier.heading !== clause.heading);
 }
 
-function Words({ clause }: { clause: DraftClause }) {
+/** A clause's words, with what changed since the clause it continues marked. */
+export function Words({ clause }: { clause: Pick<DraftClause, "heading" | "text" | "earlier"> }) {
   const earlier = clause.earlier;
   const headingChanged = earlier !== null && earlier.heading !== clause.heading;
   return (
@@ -117,7 +118,7 @@ function Words({ clause }: { clause: DraftClause }) {
   );
 }
 
-function ChangeRow({
+export function ChangeRow({
   keyText,
   keyNote,
   chips,
@@ -132,7 +133,19 @@ function ChangeRow({
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-x-3.5 gap-y-2 border-b border-line px-1 py-[18px] last:border-b-0 sm:grid-cols-[92px_minmax(0,1fr)]">
       <div className="pt-0.5">
-        <div className="font-mono text-[13px] font-medium break-all text-brand-dark">{keyText}</div>
+        <div className="font-mono text-[13px] font-medium break-words text-brand-dark">
+          {keyText.split(":").map((part, at) => (
+            // A long key wraps where its parts meet, not in the middle of one.
+            <span key={at}>
+              {at ? (
+                <>
+                  :<wbr />
+                </>
+              ) : null}
+              {part}
+            </span>
+          ))}
+        </div>
         {keyNote ? <div className="mt-0.5 text-xs text-muted">{keyNote}</div> : null}
       </div>
       <div className="flex min-w-0 flex-col gap-2.5">

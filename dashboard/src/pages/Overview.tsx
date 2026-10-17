@@ -1,4 +1,4 @@
-import { ArrowUpRight, CalendarDays, MessageCircleQuestion } from "lucide-react";
+import { ArrowUpRight, CalendarDays, MessageCircleQuestion, Plus } from "lucide-react";
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -6,14 +6,24 @@ import { Link, Navigate } from "react-router";
 
 import type { Overview } from "@/api/client";
 import { useOverview } from "@/api/logs";
+import { usePolicies, type PolicySummary } from "@/api/policies";
+import { useDocuments } from "@/api/queries";
 import { Citation } from "@/components/Citation";
 import { Redacted } from "@/components/logs/Redacted";
 import { PageHeading } from "@/components/Page";
 import { PillSelect } from "@/components/PillSelect";
+import { UploadDialog } from "@/components/policies/UploadDialog";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
+import { Button } from "@/components/ui/button";
 import { sourceName } from "@/lib/clauseName";
-import { formatNumber, formatSince } from "@/lib/format";
-import { QUERIES_READ_ALL } from "@/lib/permissions";
+import { formatNumber, formatSince, formatWhen } from "@/lib/format";
+import {
+  DOCUMENTS_PUBLISH,
+  DOCUMENTS_READ,
+  DOCUMENTS_UPLOAD,
+  QUERIES_READ_ALL,
+} from "@/lib/permissions";
+import { isolate } from "@/lib/policies";
 import { cn } from "@/lib/utils";
 import { usePermitted } from "@/session";
 
@@ -385,6 +395,69 @@ function Unanswered({ overview }: { overview: Overview }) {
   );
 }
 
+/**
+ * The drafts waiting for someone to settle their flags and publish them. Like the rest of the
+ * page, it names nobody: who uploaded a draft is on the draft itself.
+ */
+function Waiting({ policies }: { policies: readonly PolicySummary[] }) {
+  const { t } = useTranslation();
+  const drafts = policies.filter((policy) => policy.review !== null);
+  return (
+    <section className="flex min-w-0 flex-[1_1_300px] flex-col gap-3.5 rounded-[20px] bg-white px-6 py-[22px]">
+      <h2 className="text-xl font-semibold">{t("overview.waiting")}</h2>
+      {drafts.length === 0 ? (
+        <p className="text-[15px] text-ink-2">
+          {t("overview.nothingWaiting")}{" "}
+          <Link to="/policies" className="font-medium text-brand-dark underline">
+            {t("overview.openPolicies")}
+          </Link>
+        </p>
+      ) : null}
+      {drafts.map((policy) => {
+        const review = policy.review;
+        if (!review) {
+          return null;
+        }
+        return (
+          <div key={policy.slug} className="rounded-2xl bg-panel p-4">
+            <div className="text-lg leading-snug font-semibold text-brand-dark">
+              {t("overview.waitingItem", {
+                title: isolate(policy.title),
+                label: isolate(review.next_label),
+              })}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {review.open ? (
+                <Chip tone="warn">{t("overview.flagsToSettle", { count: review.open })}</Chip>
+              ) : (
+                <span className="text-[13px] font-semibold">{t("overview.readyToPublish")}</span>
+              )}
+              <span className="text-[13px] text-muted">
+                {review.open
+                  ? t("overview.uploadedWhen", { when: formatWhen(review.uploaded_at) })
+                  : t("overview.everyFlagSettled")}
+              </span>
+            </div>
+            {review.open ? (
+              <Button asChild size="sm" className="mt-3.5">
+                <Link to={`/policies/${encodeURIComponent(policy.slug)}/draft`}>
+                  {t("overview.continueReview")}
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild variant="quiet" size="sm" className="mt-3.5">
+                <Link to={`/policies/${encodeURIComponent(policy.slug)}/draft`}>
+                  {t("overview.continueReview")}
+                </Link>
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 function change(t: TFunction, overview: Overview): string {
   if (!overview.previous_questions) {
     return t("overview.firstWeek");
@@ -405,31 +478,47 @@ export function OverviewPage() {
   const { t } = useTranslation();
   const can = usePermitted();
   const [range, setRange] = useState<Range>("7");
+  const [uploading, setUploading] = useState(false);
   const allowed = can.has(QUERIES_READ_ALL);
   const overview = useOverview(Number(range), allowed);
+  const reviewer = can.has(DOCUMENTS_UPLOAD) || can.has(DOCUMENTS_PUBLISH);
+  const documents = useDocuments(allowed && can.has(DOCUMENTS_READ));
+  const policies = usePolicies(allowed && reviewer);
 
   if (!allowed) {
     return <Navigate to="/library" replace />;
   }
 
   const data = overview.data;
+  const inForce = documents.data
+    ? documents.data.documents.filter((document) => document.kind === "org_policy").length
+    : null;
+  const drafts = (policies.data ?? []).filter((policy) => policy.review !== null).length;
   return (
     <Panel>
       <PageHeading
         title={t("overview.title")}
         subtitle={t("overview.subtitle", { days: range })}
         action={
-          <PillSelect
-            label={t("overview.range")}
-            value={range}
-            onChange={setRange}
-            icon={<CalendarDays aria-hidden className="size-4" />}
-            options={[
-              { value: "7", label: t("overview.days7") },
-              { value: "30", label: t("overview.days30") },
-              { value: "90", label: t("overview.days90") },
-            ]}
-          />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <PillSelect
+              label={t("overview.range")}
+              value={range}
+              onChange={setRange}
+              icon={<CalendarDays aria-hidden className="size-4" />}
+              options={[
+                { value: "7", label: t("overview.days7") },
+                { value: "30", label: t("overview.days30") },
+                { value: "90", label: t("overview.days90") },
+              ]}
+            />
+            {can.has(DOCUMENTS_UPLOAD) ? (
+              <Button size="sm" onClick={() => setUploading(true)}>
+                <Plus aria-hidden className="size-4" />
+                {t("overview.uploadPolicy")}
+              </Button>
+            ) : null}
+          </div>
         }
       />
       {overview.isPending ? <Loading /> : null}
@@ -464,6 +553,21 @@ export function OverviewPage() {
               to="/library"
               linkLabel={t("overview.openLaws")}
             />
+            {inForce !== null ? (
+              <Tile
+                label={t("overview.policies")}
+                value={formatNumber(inForce)}
+                note={
+                  policies.data
+                    ? drafts
+                      ? t("overview.policiesDrafts", { count: drafts })
+                      : t("overview.policiesNoDrafts")
+                    : t("overview.policiesOwn")
+                }
+                to="/library"
+                linkLabel={t("overview.openLibrary")}
+              />
+            ) : null}
           </div>
           {data.questions === 0 ? (
             <div className="flex flex-col items-start gap-2.5 rounded-[20px] border-2 border-dashed border-line-strong p-6">
@@ -476,19 +580,49 @@ export function OverviewPage() {
                 <Link to="/tokens">{t("nav.tokens")}</Link>
               </Chip>
             </div>
-          ) : (
+          ) : null}
+          {data.questions === 0 && policies.data ? (
+            <div className="flex flex-wrap gap-4">
+              <Waiting policies={policies.data} />
+            </div>
+          ) : null}
+          {data.questions === 0 ? null : (
             <>
-              <div className="flex flex-wrap gap-4">
-                <ByDay overview={data} />
-                <Sources overview={data} />
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <MostCited overview={data} />
-                <Unanswered overview={data} />
-              </div>
+              {policies.data ? (
+                <>
+                  <div className="flex flex-wrap gap-4">
+                    <ByDay overview={data} />
+                    <Waiting policies={policies.data} />
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    <MostCited overview={data} />
+                    <Sources overview={data} />
+                  </div>
+                  <Unanswered overview={data} />
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-4">
+                    <ByDay overview={data} />
+                    <Sources overview={data} />
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    <MostCited overview={data} />
+                    <Unanswered overview={data} />
+                  </div>
+                </>
+              )}
             </>
           )}
         </>
+      ) : null}
+      {uploading ? (
+        <UploadDialog
+          open
+          policy={null}
+          policies={policies.data ?? []}
+          onClose={() => setUploading(false)}
+        />
       ) : null}
     </Panel>
   );

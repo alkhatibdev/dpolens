@@ -4831,6 +4831,107 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "A policy's versions: in force, replaced, scheduled, and its draft for reviewers",
+        "description": "Each version with the day it takes effect and, once a later one is published to take over, its last day in force. Takes `documents.read`; the draft is listed only for those who hold `documents.upload` or `documents.publish`.",
+        "operationId": "list_versions_v1_policies__slug__versions_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyVersions"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/policies/{slug}/draft": {
@@ -5990,6 +6091,146 @@
         }
       }
     },
+    "/v1/policies/{slug}/compare": {
+      "get": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "Two published versions of a policy, clause by clause",
+        "description": "Each clause is followed from one version to the next through the matches made when each was uploaded and reviewed, so a rejected match or a fix counts as it did then. The two are compared in the order they take effect, whichever is named first.",
+        "operationId": "compare_versions_v1_policies__slug__compare_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "One version, by its number",
+              "title": "From"
+            },
+            "description": "One version, by its number"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The other version, by its number",
+              "title": "To"
+            },
+            "description": "The other version, by its number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyComparison"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No usable credential",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential may not do this",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The credential has spent its quota for the minute, or too many sign-ins failed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request does not make sense",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such clause or document",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/policies/{slug}/versions/{number}/file": {
       "get": {
         "tags": [
@@ -6726,6 +6967,72 @@
         ],
         "title": "ClauseName",
         "description": "A clause as a citation names it, in the language it was returned in."
+      },
+      "ComparedClause": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "added",
+              "modified",
+              "moved",
+              "unchanged"
+            ],
+            "title": "Change",
+            "description": "Against the earlier version: added, modified, moved or unchanged"
+          },
+          "earlier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EarlierClause"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The clause of the earlier version it continues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "heading",
+          "text",
+          "change",
+          "earlier"
+        ],
+        "title": "ComparedClause"
       },
       "Coverage": {
         "properties": {
@@ -9014,6 +9321,59 @@
         ],
         "title": "PersonRef"
       },
+      "PolicyComparison": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "earlier": {
+            "$ref": "#/components/schemas/VersionRef"
+          },
+          "later": {
+            "$ref": "#/components/schemas/VersionRef"
+          },
+          "clauses": {
+            "items": {
+              "$ref": "#/components/schemas/ComparedClause"
+            },
+            "type": "array",
+            "title": "Clauses",
+            "description": "Every clause of the later version, in order"
+          },
+          "removed": {
+            "items": {
+              "$ref": "#/components/schemas/Removed"
+            },
+            "type": "array",
+            "title": "Removed",
+            "description": "Clauses of the earlier version nothing in the later one continues"
+          },
+          "changes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Changes",
+            "description": "How many clauses were added, modified, moved, unchanged and removed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "earlier",
+          "later",
+          "clauses",
+          "removed",
+          "changes"
+        ],
+        "title": "PolicyComparison"
+      },
       "PolicyDraft": {
         "properties": {
           "version": {
@@ -9447,6 +9807,42 @@
           "indexing"
         ],
         "title": "PolicyVersion"
+      },
+      "PolicyVersions": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ],
+            "title": "Status"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/VersionEntry"
+            },
+            "type": "array",
+            "title": "Versions",
+            "description": "The draft first, for those who review policies, then every published version, the latest to take effect first. A discarded draft is never listed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "title",
+          "status",
+          "versions"
+        ],
+        "title": "PolicyVersions"
       },
       "ProblemDocument": {
         "properties": {
@@ -10729,6 +11125,156 @@
         ],
         "title": "Verification",
         "description": "The chain, recomputed now."
+      },
+      "VersionEntry": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "The version's number among this policy's uploads"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "The label citations show; for a draft, the one it takes"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "in_force",
+              "replaced"
+            ],
+            "title": "State",
+            "description": "A draft, published to take effect later, in force today, or replaced"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective Date"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Until",
+            "description": "Its last day in force, once a later version is published to take over"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By",
+            "description": "Who uploaded it; empty from the command line"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "source": {
+            "$ref": "#/components/schemas/OriginalFile"
+          },
+          "flags": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flags",
+            "description": "For a draft, every flag it has"
+          },
+          "open": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open",
+            "description": "For a draft, the flags still to settle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "label",
+          "state",
+          "effective_date",
+          "until",
+          "created_at",
+          "created_by",
+          "published_at",
+          "published_by",
+          "source",
+          "flags",
+          "open"
+        ],
+        "title": "VersionEntry"
+      },
+      "VersionRef": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "label",
+          "effective_date"
+        ],
+        "title": "VersionRef"
       },
       "WhereItIsNow": {
         "properties": {
