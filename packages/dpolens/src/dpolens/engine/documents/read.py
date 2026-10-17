@@ -100,11 +100,19 @@ class ClauseNotFound(Exception):
 
 
 def _in_force(as_of: date) -> Select[tuple[DocumentVersion]]:
-    """The published versions whose effective date has passed, latest per document."""
+    """The published versions whose effective date has passed, latest per document.
+
+    A law pack corrected without the law changing keeps the law's date, so two
+    versions can take effect on the same day: the later one is in force.
+    """
     return (
         select(DocumentVersion)
         .where(DocumentVersion.status == "published", DocumentVersion.effective_date <= as_of)
-        .order_by(DocumentVersion.document_id, DocumentVersion.effective_date.desc())
+        .order_by(
+            DocumentVersion.document_id,
+            DocumentVersion.effective_date.desc(),
+            DocumentVersion.version_number.desc(),
+        )
     )
 
 

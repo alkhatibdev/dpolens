@@ -9,9 +9,12 @@ set -eu
 echo "Migrating ..."
 alembic upgrade head
 
+# Only a law this instance has no version of. An upgrade can carry a newer
+# version of a law, and loading it would change which text is in force without
+# anybody asking: `dpolens pack update` or `dpolens pack load` does that by hand.
 for pack in /opt/dpolens/packs/*/; do
     echo "Loading $(basename "$pack") ..."
-    dpolens pack load "$pack"
+    dpolens pack load --unless-loaded "$pack"
 done
 
 # A made-up policy, so a new instance has a policy of its own to search. It is

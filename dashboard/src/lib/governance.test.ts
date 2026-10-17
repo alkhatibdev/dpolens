@@ -93,3 +93,28 @@ describe("a policy's entries in the governance log", () => {
     expect(sentence("document.archived", { document: "retention" })).toBe("Archived retention");
   });
 });
+
+describe("a law's entries in the governance log", () => {
+  it("say which version of which law was loaded, and where it came from", () => {
+    const loaded = { pack: "uae-pdpl", version: "2026.2" };
+    expect(
+      sentence("laws.pack_loaded", {
+        ...loaded,
+        source: "update",
+        repository: "alkhatibdev/dpolens",
+      }),
+    ).toBe("Loaded UAE PDPL 2026.2, downloaded from alkhatibdev/dpolens on GitHub");
+    expect(sentence("laws.pack_loaded", { ...loaded, source: "file" })).toBe(
+      "Loaded UAE PDPL 2026.2, imported from a file",
+    );
+    expect(sentence("laws.pack_loaded", { ...loaded, source: "image" })).toBe(
+      "Loaded UAE PDPL 2026.2, which came with this instance",
+    );
+  });
+
+  it("still say what was loaded when the source is new to this build", () => {
+    expect(
+      sentence("laws.pack_loaded", { pack: "gdpr", version: "2026.1", source: "mirror" }),
+    ).toBe("Loaded GDPR 2026.1");
+  });
+});

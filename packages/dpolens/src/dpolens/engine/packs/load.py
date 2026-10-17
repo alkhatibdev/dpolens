@@ -3,11 +3,16 @@
 A pack arrives as reviewed files and is stored, not parsed: the structure was
 settled when the pack was built. Loading the same pack version twice is a no-op,
 so a restart or a repeated command cannot duplicate a law.
+
+A newer version is stored beside the one before it, and becomes the version in
+force from its effective date. An older version than the one loaded is refused:
+stored, it would read as the newest text of its day.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -40,6 +45,29 @@ class LoadResult:
     documents_loaded: int
     clauses_loaded: int
     already_loaded: bool
+    version_ids: tuple[uuid.UUID, ...] = field(default=())
+
+
+class OlderPack(PackFormatError):
+    """A pack version older than the one an instance has loaded."""
+
+
+def loaded_version(session: Session, slug: str) -> str | None:
+    """The version of a pack this instance has loaded, if any."""
+    return session.scalar(select(Pack.version).where(Pack.slug == slug))
+
+
+def loaded_packs(session: Session) -> dict[str, str]:
+    """Every pack this instance has loaded, with its version."""
+    return {slug: version for slug, version in session.execute(select(Pack.slug, Pack.version))}
+
+
+def version_key(version: str) -> tuple[int, ...]:
+    """A pack's version as numbers, so 2026.10 sorts after 2026.9."""
+    try:
+        return tuple(int(part) for part in version.split("."))
+    except ValueError as error:
+        raise PackFormatError(f"{version!r} is not a pack version: write it as 2026.1") from error
 
 
 def source_ref(pack: PackMetadata) -> str:
@@ -50,6 +78,11 @@ def load_pack(session: Session, pack_dir: Path) -> LoadResult:
     """Read a pack directory and store every clause in it."""
     pack = read_pack_metadata(pack_dir)
     reference = source_ref(pack)
+    loaded = loaded_version(session, pack.slug)
+    if loaded is not None and version_key(pack.version) < version_key(loaded):
+        raise OlderPack(
+            f"this instance has {pack.slug} {loaded}, which is newer than {pack.version}"
+        )
     row = _pack_row(session, pack)
 
     if _already_loaded(session, pack, reference):
@@ -60,11 +93,13 @@ def load_pack(session: Session, pack_dir: Path) -> LoadResult:
         return LoadResult(pack.slug, pack.version, 0, 0, already_loaded=True)
 
     clauses_loaded = 0
+    versions: list[uuid.UUID] = []
     for entry in pack.documents:
         clauses = read_document(pack_dir, entry)
         translations = read_translations(pack_dir, entry, pack, clauses)
         document = _document_for(session, pack, entry, row)
         version = _new_version(session, document, pack, reference)
+        versions.append(version.id)
         clauses_loaded += _store_clauses(session, version, clauses, translations, pack)
 
     return LoadResult(
@@ -73,6 +108,7 @@ def load_pack(session: Session, pack_dir: Path) -> LoadResult:
         documents_loaded=len(pack.documents),
         clauses_loaded=clauses_loaded,
         already_loaded=False,
+        version_ids=tuple(versions),
     )
 
 

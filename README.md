@@ -236,6 +236,20 @@ The text follows the official PDFs from the UAE Legislations portal, and every a
 checked against them, the English word by word and the Arabic letter by letter.
 [packs/uae-pdpl/SOURCE.md](packs/uae-pdpl/SOURCE.md) says how, and gives each PDF's checksum.
 
+A law gets new versions on its own schedule, apart from DPOLens's releases, and each is
+released as a pack archive. `dpolens pack update` says which laws have a newer version, and
+`dpolens pack update gdpr` loads it beside the version before it, so a citation of the old
+text still reads that text. A server with no way to the internet imports the archive
+instead. Nothing changes which version of a law an instance has unless somebody runs one of
+these, an upgrade of DPOLens included, and every version loaded is written to the governance
+log. [docs/releases.md](docs/releases.md#law-packs) says how:
+
+```bash
+dpolens pack update
+dpolens pack update gdpr
+dpolens pack import dpolens-pack-gdpr-2026.2.tar.gz
+```
+
 An administrator chooses which laws apply to the organisation. A search covers those and
 the organisation's own policies, so a company in Dubai with no EU customers is not answered
 from GDPR. Another law is searched only when a search names it, and its clauses come back

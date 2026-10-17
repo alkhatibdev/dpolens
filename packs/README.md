@@ -1,6 +1,6 @@
 # The pack format
 
-This is the reference for what a pack file contains. To build one, start with
+This is the reference for what a pack contains. To build one, start with
 [BUILDING.md](BUILDING.md).
 
 A pack is one law plus its official companion texts, structured so that a citation can
@@ -67,6 +67,13 @@ documents:
 `expected_clauses` is a count the pack asserts about itself. The loader refuses a pack
 whose files do not match it, so a clause lost between building the pack and committing it
 is caught rather than quietly missing from every search.
+
+`version` is the pack's own, a year and a number: `2026.1`, then `2026.2`. A released version
+is never changed in place, because an instance that loaded it keeps it: a change is a new
+version. `effective_date` is the day the law's text took effect. A correction to how the pack
+holds the law, with the law itself unchanged, keeps the law's date, and the newer version is
+the one in force from that day. [docs/releases.md](../docs/releases.md#law-packs) says how a
+version is released and how an instance loads it.
 
 ## A clause file
 

@@ -70,6 +70,9 @@ PAT_REJECTED = "pat.rejected"
 GOVERNANCE_EXPORTED = "governance_log.exported"
 LAWS_SELECTED = "laws.selected"
 LAWS_SELECTION_CLEARED = "laws.selection_cleared"
+# A version of a law pack loaded into the instance: from its image, a folder, an
+# update or a file. Which law is in force is a governance question.
+LAWS_PACK_LOADED = "laws.pack_loaded"
 USER_PASSWORD_SET = "user.password_set"
 SESSION_STARTED = "session.started"
 SESSION_ENDED = "session.ended"

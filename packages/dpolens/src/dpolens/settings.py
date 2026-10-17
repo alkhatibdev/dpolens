@@ -104,6 +104,15 @@ class Settings(BaseSettings):
         ),
     )
 
+    packs_repository: str = Field(
+        default="alkhatibdev/dpolens",
+        pattern=r"^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$",
+        description=(
+            "The GitHub repository, as owner/name, whose releases `dpolens pack update` reads. "
+            "A fork that publishes its own packs is named here"
+        ),
+    )
+
     redaction_patterns: dict[str, str] = Field(
         default_factory=dict,
         description=(

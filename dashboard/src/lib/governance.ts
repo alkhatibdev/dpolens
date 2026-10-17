@@ -21,6 +21,14 @@ function text(value: unknown): string {
       : String(value);
 }
 
+/** A law by its pack's slug, the way people write it: "gdpr" is GDPR, "uae-pdpl" is UAE PDPL. */
+function law(slug: unknown): string {
+  return text(slug).toUpperCase().replace(/-/g, " ");
+}
+
+const PACK_SOURCES = ["image", "folder", "update", "file"] as const;
+type PackSource = (typeof PACK_SOURCES)[number];
+
 /** A policy by its title, or by its slug where an entry has no title. */
 function policy(details: Details): string {
   return text(details.title) || text(details.document);
@@ -102,11 +110,19 @@ export function describeEntry(t: TFunction, entry: Entry): string {
       });
     }
     case "laws.selected":
-      return t("entries.laws_selected", {
-        laws: list(details.after)
-          .map((slug) => slug.toUpperCase().replace(/-/g, " "))
-          .join(", "),
-      });
+      return t("entries.laws_selected", { laws: list(details.after).map(law).join(", ") });
+    case "laws.pack_loaded": {
+      const loaded = {
+        pack: law(details.pack),
+        version: text(details.version),
+        // An update names the repository it was read from, which can be a fork.
+        repository: text(details.repository) || t("entries.pack_repository_unknown"),
+      };
+      const source = text(details.source);
+      return PACK_SOURCES.includes(source as PackSource)
+        ? t(`entries.pack_loaded_from.${source as PackSource}`, loaded)
+        : t("entries.pack_loaded", loaded);
+    }
     case "laws.selection_cleared":
       return t("entries.laws_selection_cleared");
     case "document.drafted":
