@@ -16,8 +16,9 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router";
 
+import mark from "@/assets/brand/dpolens-mark.svg";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
-import { Wordmark } from "@/components/Wordmark";
+import { Logo } from "@/components/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -238,7 +239,7 @@ export function Shell() {
         aria-label={t("nav.label")}
         className="hidden w-[260px] shrink-0 flex-col gap-2 self-start rounded-[24px] bg-white px-4 py-7 lg:sticky lg:top-4 lg:flex"
       >
-        <Wordmark className="px-3 pb-6" />
+        <Logo className="mx-3 mb-6" />
         <Navigation />
       </nav>
 
@@ -251,10 +252,12 @@ export function Shell() {
             >
               <Menu aria-hidden className="size-5" />
             </SheetTrigger>
+            {/* The navigation and its logo fold away on a phone, so the mark stays in view. */}
+            <img src={mark} alt="" width={28} height={28} className="size-7 shrink-0 lg:hidden" />
             <SheetContent>
               <div className="flex items-center justify-between pb-6">
                 <SheetTitle asChild>
-                  <Wordmark className="px-3" />
+                  <Logo className="mx-3" />
                 </SheetTitle>
                 <SheetClose
                   aria-label={t("nav.close")}

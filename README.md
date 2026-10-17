@@ -1,23 +1,36 @@
-# DPOLens
+<p align="center">
+  <br>
+  <br>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/dpolens-logo-on-dark.svg">
+    <img alt="DPOLens" src="docs/brand/dpolens-logo.svg" height="64">
+  </picture>
+  <br>
+  <br>
+</p>
 
-**Give your AI coding assistant access to your organisation's privacy policies and the law,
-with exact, versioned citations. A self-hosted MCP server.**
+<p align="center">
+  <strong>Give your AI coding assistant access to your organisation's privacy policies and the
+  law, with exact, versioned citations. A self-hosted MCP server.</strong>
+</p>
 
----
+<p align="center">
+  <a href="https://github.com/alkhatibdev/dpolens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/alkhatibdev/dpolens/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="Licence: Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-12784E"></a>
+</p>
 
-> ### Status: pre-release
->
-> There is no published image yet. `docker compose up` runs a whole instance from source:
-> Postgres, the HTTP API, a worker, the dashboard and the MCP server, with GDPR and the UAE's
-> data protection law loaded in Arabic and English. Your assistant searches the laws and your
-> own published policies and cites them by version, and the dashboard is where policies are
-> reviewed and published, people and tokens are managed, and both logs are read.
-> [What exists today](#what-exists-today) has the detail.
->
-> Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
-> the database schema) change without notice until 1.0.
+<p align="center">
+  <a href="#getting-it-running">Get it running</a> ·
+  <a href="docs/mcp.md#connecting">Connect your assistant</a> ·
+  <a href="#does-it-actually-find-the-right-clause">Search scores</a> ·
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
 
----
+> [!NOTE]
+> **Pre-release.** There is no published image yet: `docker compose up` builds a whole instance
+> from source. Interfaces (the HTTP API, the pack format, the database schema) change without
+> notice until 1.0. [What exists today](#what-exists-today) has the detail, and watching the
+> repository tells you when v0.1 lands.
 
 ## Getting it running
 
@@ -28,9 +41,12 @@ VS Code).
 
 ```bash
 git clone https://github.com/alkhatibdev/dpolens.git
+
 cd dpolens
+
 printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
   "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+
 docker compose up -d
 ```
 
@@ -43,6 +59,7 @@ After that it takes seconds. When it returns, `docker compose ps` shows `db`, `a
 ```bash
 docker compose exec api dpolens user create --email you@example.com \
   --name "Your Name" --role Admin
+
 docker compose exec api dpolens user set-password you@example.com
 ```
 

@@ -20,6 +20,7 @@ import { Avatar } from "@/components/Avatar";
 import { FindBox } from "@/components/Filters";
 import { LogsTabs } from "@/components/logs/LogsTabs";
 import { Notice } from "@/components/Notice";
+import { Outlines } from "@/components/Outlines";
 import { PageHeading, TableCard, td, th } from "@/components/Page";
 import { PillSelect } from "@/components/PillSelect";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
@@ -54,21 +55,7 @@ function Integrity() {
         broken ? "bg-danger-soft text-danger-ink" : "bg-brand text-white",
       )}
     >
-      {broken ? null : (
-        <svg
-          aria-hidden
-          viewBox="0 0 260 260"
-          className="absolute -right-[90px] -bottom-[110px] size-[260px]"
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.13"
-          strokeWidth="1.5"
-        >
-          {[40, 70, 100, 128].map((r) => (
-            <circle key={r} cx="130" cy="130" r={r} />
-          ))}
-        </svg>
-      )}
+      {broken ? null : <Outlines />}
       <div className="relative flex items-center gap-3">
         <span
           className={cn(

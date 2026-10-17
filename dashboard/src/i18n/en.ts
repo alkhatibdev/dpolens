@@ -36,9 +36,10 @@ export const en = {
   },
   signIn: {
     title: "Sign in",
-    subtitle: "Sign in to continue.",
     email: "Email",
     password: "Password",
+    forgot: "Forgot your password?",
+    forgotHelp: "An administrator can make you a sign-in link, to choose a new password.",
     showPassword: "Show the password",
     hidePassword: "Hide the password",
     submit: "Sign in",
@@ -56,6 +57,15 @@ export const en = {
     headline: "The clause itself, word for word, with the version to cite it by.",
     promise:
       "Your organisation's policies and the privacy law that applies to it, in the dashboard and in your team's coding assistants.",
+    question: "Do we have to delete a customer's data once we no longer need it?",
+    inForce: "In force",
+    gdprWhere: "General Data Protection Regulation, Article 17(1)(a)",
+    uaeWhere: "UAE Personal Data Protection Law, Article (15)(2)(a)",
+    version: "version {{label}}",
+    since: "in force since {{date}}",
+    arabicPrevails: "the Arabic text prevails",
+    openSource: "DPOLens is open source.",
+    viewOnGitHub: "View it on GitHub",
   },
   search: {
     label: "Ask the library",

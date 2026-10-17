@@ -10,6 +10,7 @@ import { usePolicies, type PolicySummary } from "@/api/policies";
 import { useDocuments } from "@/api/queries";
 import { Citation } from "@/components/Citation";
 import { Redacted } from "@/components/logs/Redacted";
+import { Outlines } from "@/components/Outlines";
 import { PageHeading } from "@/components/Page";
 import { PillSelect } from "@/components/PillSelect";
 import { UploadDialog } from "@/components/policies/UploadDialog";
@@ -74,21 +75,7 @@ function Tile({
         brand ? "bg-brand text-white" : "bg-white",
       )}
     >
-      {brand ? (
-        <svg
-          aria-hidden
-          viewBox="0 0 260 260"
-          className="absolute -right-[90px] -bottom-[110px] size-[260px]"
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.13"
-          strokeWidth="1.5"
-        >
-          {[40, 70, 100, 128].map((r) => (
-            <circle key={r} cx="130" cy="130" r={r} />
-          ))}
-        </svg>
-      ) : null}
+      {brand ? <Outlines /> : null}
       <div className="relative flex items-start justify-between gap-3">
         <span className="font-medium">{label}</span>
         <Corner to={to} label={linkLabel} onBrand={brand} />

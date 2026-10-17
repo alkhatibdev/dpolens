@@ -19,11 +19,17 @@
   --color-ink-2: #3a423d;
   --color-muted: #5b635e;
 
-  --color-brand: #0f7a4d;
-  --color-brand-dark: #094c30;
-  --color-brand-mid: #9ac7b4;
-  --color-brand-deep: #4b9b7a;
-  --color-brand-soft: #e2efea;
+  /* The logo's green, and the tints mixed from it. */
+  --color-brand: #12784e;
+  --color-brand-dark: #0b4a30;
+  --color-brand-mid: #9bc6b5;
+  --color-brand-deep: #4d9a7a;
+  --color-brand-soft: #e3efea;
+
+  /* The brand's dark ground, from the logo's kit, and what reads on it. */
+  --color-deep: #0d3b2a;
+  --color-deep-muted: #a9cbbb;
+  --color-mint: #c9f2dd;
 
   --color-warn-soft: #fdebd3;
   --color-warn-ink: #7a3e00;
@@ -106,21 +112,94 @@
   );
 }
 
-@keyframes drift {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
+/* The logo's green lit softly behind something, so a dark panel has depth. */
+@utility bg-glow {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-brand) 62%, transparent),
+    color-mix(in srgb, var(--color-brand) 24%, transparent) 55%,
+    transparent
+  );
+}
+
+/* Outlines strong in the panel's open top corner and faint behind its text. */
+@utility fade-from-corner {
+  mask-image: linear-gradient(to left, #000 18%, rgb(0 0 0 / 0.22) 62%, rgb(0 0 0 / 0.12));
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    mask-image: linear-gradient(to right, #000 18%, rgb(0 0 0 / 0.22) 62%, rgb(0 0 0 / 0.12));
   }
 }
 
-@utility animate-drift {
-  animation: drift var(--drift-duration, 24s) linear infinite;
+/*
+ * An outline of the sign-in pages grows from the smallest size to the largest
+ * and fades. Each one starts where it would stand still, so the panel is whole
+ * before anything moves.
+ */
+@keyframes outline-grow {
+  from {
+    transform: scale(var(--from));
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(var(--to));
+    opacity: 0;
+  }
+}
+
+@utility animate-outline {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: outline-grow 42s linear infinite;
+}
+
+/* As a sign-in page opens, the lens's corners close in and the clause comes into focus. */
+@keyframes focus-in {
+  from {
+    translate: var(--focus-from);
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes sharpen {
+  from {
+    filter: blur(4px);
+    opacity: 0.5;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@utility animate-focus {
+  animation: focus-in 1.3s cubic-bezier(0.16, 0.84, 0.3, 1) 0.25s both;
+}
+
+@utility animate-sharpen {
+  animation: sharpen 1.3s cubic-bezier(0.16, 0.84, 0.3, 1) 0.25s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-drift {
+  .animate-outline,
+  .animate-focus,
+  .animate-sharpen {
     animation: none;
   }
 }
+
+/*
+ * How much of the sign-in pages' story fits beside the form: the clause once a
+ * wide screen is 720 pixels tall, both clauses and the larger type from 960.
+ */
+@custom-variant with-clause (@media (width >= 64rem) and (height >= 720px));
+@custom-variant with-both (@media (width >= 64rem) and (height >= 960px));
