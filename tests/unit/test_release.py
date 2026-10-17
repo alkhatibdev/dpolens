@@ -54,7 +54,8 @@ def test_a_matching_tag_is_published() -> None:
 
     facts = release.check(f"v{version}")
 
-    assert facts == {"version": version, "prerelease": "false", "publish": "true"}
+    prerelease = "true" if "-" in version else "false"
+    assert facts == {"version": version, "prerelease": prerelease, "publish": "true"}
 
 
 def test_without_a_tag_nothing_is_published() -> None:
@@ -74,6 +75,7 @@ def test_a_candidate_is_a_prerelease_in_both_spellings(repo: Path) -> None:
 
 def test_bump_writes_every_place_and_nothing_else(repo: Path) -> None:
     lock_before = (repo / "uv.lock").read_text(encoding="utf-8")
+    before = release.to_python(release.current(repo))
 
     release.bump("0.2.0", repo)
 
@@ -84,7 +86,15 @@ def test_bump_writes_every_place_and_nothing_else(repo: Path) -> None:
         for old, new in zip(lock_before.splitlines(), lock_after.splitlines(), strict=True)
         if old != new
     ]
-    assert changed == [('version = "0.0.0"', 'version = "0.2.0"')] * 2
+    assert changed == [(f'version = "{before}"', 'version = "0.2.0"')] * 2
+
+
+def test_bump_names_the_release_in_the_published_contract(repo: Path) -> None:
+    release.bump("0.2.0-rc.3", repo)
+
+    spec = (repo / "docs/openapi.json").read_text(encoding="utf-8")
+
+    assert '\n    "version": "0.2.0rc3"\n' in spec
 
 
 def test_a_tag_for_another_version_is_refused(repo: Path) -> None:
@@ -100,8 +110,9 @@ def test_a_tag_of_another_shape_is_refused(repo: Path, tag: str) -> None:
 
 def test_files_that_disagree_are_named(repo: Path) -> None:
     init = repo / "packages/dpolens-mcp/src/dpolens_mcp/__init__.py"
+    current = release.to_python(release.current(repo))
     init.write_text(
-        init.read_text(encoding="utf-8").replace('"0.0.0"', '"0.0.1"'), encoding="utf-8"
+        init.read_text(encoding="utf-8").replace(f'"{current}"', '"0.0.1"'), encoding="utf-8"
     )
 
     with pytest.raises(ReleaseError, match=re.escape("dpolens_mcp/__init__.py has 0.0.1")):

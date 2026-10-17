@@ -20,6 +20,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 from dpolens.api.app import create_app
 from dpolens.settings import Settings
@@ -38,14 +39,44 @@ def generated() -> str:
     return json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n"
 
 
-def changed_files(base: str) -> list[str]:
-    merge_base = subprocess.run(
+def without_version(text: str) -> dict[str, Any]:
+    """A specification without the release that serves it, which is not part of the contract."""
+    loaded: dict[str, Any] = json.loads(text)
+    loaded.get("info", {}).pop("version", None)
+    return loaded
+
+
+def contract_differs(before: str | None, after: str) -> bool:
+    """Whether the contract changed, apart from the version a release writes into it.
+
+    A release changes `info.version` and nothing else, and that alone is no news
+    to the people building against the API.
+    """
+    return before is None or without_version(before) != without_version(after)
+
+
+def merge_base_with(base: str) -> str:
+    return subprocess.run(
         ["git", "merge-base", base, "HEAD"],
         capture_output=True,
         text=True,
         cwd=REPO,
         check=True,
     ).stdout.strip()
+
+
+def spec_at(commit: str) -> str | None:
+    shown = subprocess.run(
+        ["git", "show", f"{commit}:{SPEC.relative_to(REPO)}"],
+        capture_output=True,
+        text=True,
+        cwd=REPO,
+    )
+    return shown.stdout if shown.returncode == 0 else None
+
+
+def changed_files(base: str) -> list[str]:
+    merge_base = merge_base_with(base)
     listed = subprocess.run(
         ["git", "diff", "--name-only", f"{merge_base}..HEAD"],
         capture_output=True,
@@ -88,7 +119,11 @@ def main() -> int:
         changed = changed_files(arguments.base)
         spec_path = str(SPEC.relative_to(REPO))
         log_path = str(CHANGELOG.relative_to(REPO))
-        if spec_path in changed and log_path not in changed:
+        if (
+            spec_path in changed
+            and log_path not in changed
+            and contract_differs(spec_at(merge_base_with(arguments.base)), committed)
+        ):
             print(
                 f"{spec_path} changed and {log_path} did not. Every contract change gets a "
                 "line, because the people building against this API have no other way to "
