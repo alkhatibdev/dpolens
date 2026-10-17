@@ -53,6 +53,12 @@ One law plus its official companion texts (recitals, implementing regulations), 
 as a separate document, and named after the law rather than the place.
 _Avoid_: Regulation pack, jurisdiction pack, law bundle
 
+**Pack archive**:
+One version of a pack as a single file, `dpolens-pack-<slug>-<version>.tar.gz`, the way a
+release publishes it, with its SHA-256 in a file beside it. `dpolens pack update` downloads
+one and `dpolens pack import` loads one brought by hand.
+_Avoid_: Pack file, bundle, tarball
+
 **Jurisdiction**:
 The place a law applies to, recorded on a pack as a description. Several packs can share
 one jurisdiction, and a jurisdiction never identifies a pack.

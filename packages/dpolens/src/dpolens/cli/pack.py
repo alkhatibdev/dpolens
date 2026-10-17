@@ -1,7 +1,10 @@
 """Pack commands.
 
 `build` is maintainer tooling: a pack is converted once, reviewed by a person
-and committed, so no instance ever parses law text for itself.
+and committed, so no instance ever parses law text for itself. `archive` makes the
+file a release publishes. `update` and `import` load a newer version of a law
+from a release or from a file, and nothing else ever does: an upgrade of the app
+leaves the laws an instance has as they are.
 """
 
 from __future__ import annotations
@@ -13,9 +16,24 @@ from xml.etree import ElementTree
 
 import typer
 
-from dpolens.engine.packs.format import Clause
+from dpolens.engine.logs.governance import cli_actor
+from dpolens.engine.packs.archive import (
+    CHECKSUM_SUFFIX,
+    ArchiveError,
+    read_checksum,
+    write_archive,
+)
+from dpolens.engine.packs.format import Clause, PackFormatError, read_pack_metadata
 from dpolens.engine.packs.formex import parse_articles, parse_recitals, text_of
-from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.install import install_archive, loaded
+from dpolens.engine.packs.load import (
+    LoadResult,
+    load_pack,
+    loaded_packs,
+    loaded_version,
+    version_key,
+)
+from dpolens.engine.packs.releases import fetch, newest, pack_releases
 from dpolens.engine.packs.write import check_coverage, link_clauses, write_document
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
@@ -89,15 +107,41 @@ def _report_dangling(clauses: list[Clause], document_slug: str) -> None:
 @app.command()
 def load(
     directory: Annotated[Path, typer.Argument(help="Pack directory, for example packs/gdpr")],
+    unless_loaded: Annotated[
+        bool,
+        typer.Option(
+            "--unless-loaded",
+            help=(
+                "Leave alone a pack this instance has any version of, and say when the "
+                "folder's is newer. Starting an instance does this."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Load a pack into this instance.
 
     Loading the same pack version twice changes nothing, so running it again
-    after a restart is safe.
+    after a restart is safe. A version older than the one loaded is refused.
     """
     with session_scope(load_settings()) as session:
+        if unless_loaded:
+            metadata = read_pack_metadata(directory)
+            current = loaded_version(session, metadata.slug)
+            if current is not None:
+                if version_key(metadata.version) > version_key(current):
+                    typer.echo(
+                        f"{metadata.slug} {metadata.version} is in {directory}, and this instance "
+                        f"has {current}. `dpolens pack load {directory}` loads it."
+                    )
+                else:
+                    typer.echo(f"{metadata.slug} {current} is loaded")
+                return
         result = load_pack(session, directory)
+        loaded(session, result, source="image" if unless_loaded else "folder", actor=cli_actor())
+    _report(result)
 
+
+def _report(result: LoadResult, *, embedded_later: bool = False) -> None:
     if result.already_loaded:
         typer.echo(f"{result.pack_slug} {result.version} is already loaded")
         return
@@ -106,3 +150,114 @@ def load(
         f"Loaded {result.pack_slug} {result.version}: "
         f"{result.clauses_loaded} clauses across {result.documents_loaded} {documents}"
     )
+    if embedded_later:
+        typer.echo("Its words are searchable now, and its meaning once the worker has embedded it.")
+
+
+@app.command()
+def archive(
+    directory: Annotated[Path, typer.Argument(help="Pack directory, for example packs/gdpr")],
+    out: Annotated[Path, typer.Option(help="Where to write the file and its checksum")] = Path(
+        "dist"
+    ),
+    tag: Annotated[
+        str | None,
+        typer.Option(help="The release's tag, pack/<slug>/<version>, which has to match the pack"),
+    ] = None,
+) -> None:
+    """Write a pack archive, the one file a release publishes, with its SHA-256 beside it."""
+    metadata = read_pack_metadata(directory)
+    if tag is not None and tag != f"pack/{metadata.slug}/{metadata.version}":
+        raise PackFormatError(
+            f"the tag {tag} does not name {metadata.slug} {metadata.version}, "
+            f"which {directory / 'pack.yaml'} holds"
+        )
+    licence = directory.parent / "LICENSE"
+    if not licence.is_file():
+        raise PackFormatError(f"{licence} is missing, and every pack archive carries it")
+    path = write_archive(directory, licence, out, metadata.slug, metadata.version)
+    typer.echo(f"{path}\n{path}{CHECKSUM_SUFFIX}")
+
+
+@app.command()
+def update(
+    slug: Annotated[
+        str | None,
+        typer.Argument(help="The pack to update, for example gdpr. Without it, nothing is loaded."),
+    ] = None,
+) -> None:
+    """Load the newest version of a law pack from GitHub.
+
+    The releases read are those of the repository DPOLENS_PACKS_REPOSITORY names,
+    alkhatibdev/dpolens unless it is set.
+
+    Without a pack named, this lists each pack the instance has and whether a newer
+    version is published. Nothing is loaded unless it is asked for by name.
+    """
+    settings = load_settings()
+    with session_scope(settings) as session:
+        current = loaded_packs(session)
+    releases = pack_releases(settings.packs_repository)
+
+    if slug is None:
+        for name, version in sorted(current.items()):
+            release = newest(releases, name, version)
+            if release is None:
+                typer.echo(f"{name} {version}: nothing newer is published")
+            else:
+                typer.echo(
+                    f"{name} {version}: {release.version} is published. "
+                    f"`dpolens pack update {name}` loads it."
+                )
+        return
+
+    if slug not in current:
+        raise PackFormatError(
+            f"this instance has no {slug}. `dpolens pack update` lists the packs it has."
+        )
+    release = newest(releases, slug, current[slug])
+    if release is None:
+        typer.echo(f"{slug} {current[slug]}: nothing newer is published")
+        return
+    data = fetch(release.archive_url)
+    checksum = read_checksum(fetch(release.checksum_url).decode("utf-8"))
+    with session_scope(settings) as session:
+        result = install_archive(
+            session,
+            data,
+            checksum,
+            source="update",
+            actor=cli_actor(),
+            expected=(release.slug, release.version),
+            repository=settings.packs_repository,
+        )
+    _report(result, embedded_later=True)
+
+
+@app.command("import")
+def import_(
+    file: Annotated[
+        Path, typer.Argument(help="A pack archive, for example dpolens-pack-gdpr-2026.2.tar.gz")
+    ],
+    sha256: Annotated[
+        str | None,
+        typer.Option(
+            help="The file's SHA-256 from its release. Without it, the .sha256 beside it."
+        ),
+    ] = None,
+) -> None:
+    """Load a pack archive brought by hand, for an instance with no way to the internet."""
+    if sha256 is None:
+        beside = file.with_name(f"{file.name}{CHECKSUM_SUFFIX}")
+        if not beside.is_file():
+            raise ArchiveError(
+                f"there is no checksum to check {file.name} against: put {beside.name} from "
+                "its release beside it, or pass --sha256"
+            )
+        sha256 = beside.read_text(encoding="utf-8")
+    checksum = read_checksum(sha256)
+    with session_scope(load_settings()) as session:
+        result = install_archive(
+            session, file.read_bytes(), checksum, source="file", actor=cli_actor()
+        )
+    _report(result, embedded_later=True)

@@ -47,7 +47,9 @@ from dpolens.engine.documents.read import ClauseNotFound
 from dpolens.engine.instance import MissingInstanceRow
 from dpolens.engine.logs.export import ExportRefused, MalformedExport
 from dpolens.engine.originals import OriginalsUnwritable, OriginalUnavailable
+from dpolens.engine.packs.archive import ArchiveError
 from dpolens.engine.packs.format import PackFormatError
+from dpolens.engine.packs.releases import ReleaseError as PackReleaseError
 from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
 from dpolens.engine.policies.blocks import UnreadablePolicy
 from dpolens.engine.policies.fixing import CannotFix
@@ -76,6 +78,8 @@ EXPECTED = (
     MissingInstanceRow,
     ClauseNotFound,
     PackFormatError,
+    ArchiveError,
+    PackReleaseError,
     StalePermission,
     UserNotFound,
     DuplicateEmail,

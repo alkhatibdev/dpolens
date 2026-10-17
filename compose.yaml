@@ -87,6 +87,10 @@ services:
       DPOLENS_SESSION_LIFETIME_HOURS:
       DPOLENS_RATE_LIMIT_PER_MINUTE:
       DPOLENS_INTRA_OP_NUM_THREADS:
+      # Read by `dpolens pack update`, which runs here, and by nothing else.
+      DPOLENS_PACKS_REPOSITORY:
+      HTTPS_PROXY:
+      NO_PROXY:
     volumes:
       # The credential the API provisions for the MCP server. Both containers
       # run as the same user, because the file is readable by its owner alone.
