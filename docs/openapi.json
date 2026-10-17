@@ -4,7 +4,7 @@
     "title": "DPOLens",
     "summary": "Policies and law, with citations a client can check",
     "description": "\nThe only way into DPOLens. Every surface, including the MCP server and the\ndashboard, is a client of this API.\n\nInterfaces change without notice until 1.0. Errors are\n[RFC 9457](https://www.rfc-editor.org/info/rfc9457/) problem details, and `type`\nis the field to branch on.\n",
-    "version": "0.0.0"
+    "version": "0.1.0rc1"
   },
   "paths": {
     "/live": {
