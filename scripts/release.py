@@ -4,9 +4,11 @@
     python scripts/release.py notes VERSION   the changelog's section for a version
     python scripts/release.py bump VERSION    write a new version everywhere one is kept
 
-A version is spelled two ways. Tags, images and Compose use semantic versioning
-(0.1.0-rc.1); the Python packages use the spelling Python normalises it to
-(0.1.0rc1). They are the same version, and `check` compares them as one.
+The version is kept in the two packages, the lock file, `compose.yaml` and the
+published API contract. It is spelled two ways. Tags, images and Compose use
+semantic versioning (0.1.0-rc.1); the Python packages use the spelling Python
+normalises it to (0.1.0rc1). They are the same version, and `check` compares
+them as one.
 
 The release workflow runs `check` with the tag it was started by. Outside GitHub
 Actions it prints what it would have handed the workflow.
@@ -90,6 +92,8 @@ PLACES = (
     ),
     # Every image Compose names, which is the version the checkout runs.
     Place("compose.yaml", re.compile(r"\$\{DPOLENS_VERSION:-([^}]+)\}"), python=False),
+    # The published contract names the release that serves it, in its `info`.
+    Place("docs/openapi.json", re.compile(r'^    "version": "([^"]+)"$', re.M), python=True),
 )
 
 
