@@ -682,6 +682,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/policies/{slug}/draft/matches/{key}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Say a new clause is the same rule as a clause of the version before
+     * @description For a clause the draft has as new, and a clause of the version before that nothing in the draft continues: the clause continues it, renumbered, reworded or both, as a match made when the draft was uploaded would, so that a citation of that clause says where its rule is now. The flag on the clause is settled by it, and `POST /draft/matches/{key}/reject` undoes it.
+     */
+    post: operations["make_match_v1_policies__slug__draft_matches__key__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/policies/{slug}/draft/matches/{key}/reject": {
     parameters: {
       query?: never;
@@ -692,8 +712,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Say a clause is a different rule from the one it was matched to
-     * @description The clause becomes new, and the clause of the version before that it was matched to becomes removed, so that a citation of that clause says its rule was removed. The flag that asked about the match is resolved by the change.
+     * Say a clause is a different rule from the one it was matched to or asked about
+     * @description A matched clause becomes new, and the clause of the version before that it was matched to becomes removed, so that a citation of that clause says its rule was removed. For a new clause whose flag asks whether it is the same rule as a clause of the version before, the answer is no, and the clause stays new. The flag on the clause is settled by it, and the pair is never matched or asked about again.
      */
     post: operations["reject_match_v1_policies__slug__draft_matches__key__reject_post"];
     delete?: never;
@@ -873,6 +893,17 @@ export interface components {
        * @description Requests one token may make each minute, counted in each API worker
        */
       requests_per_minute: number;
+    };
+    /** Candidate */
+    Candidate: {
+      /** Key */
+      key: string;
+      /**
+       * Closeness
+       * @description How many of the new clause's words it shares: most, some or few
+       * @enum {string}
+       */
+      closeness: "most" | "some" | "few";
     };
     /**
      * Catalog
@@ -1195,6 +1226,11 @@ export interface components {
        * @description Where in its text it can be split
        */
       splits?: components["schemas"]["SplitPlace"][];
+      /**
+       * Candidates
+       * @description For a new clause of a new version, the clauses of the version before that nothing continues, closest first: the ones it can be said to be the same rule as
+       */
+      candidates?: components["schemas"]["Candidate"][];
       /** Children */
       children: components["schemas"]["DraftClause"][];
     };
@@ -1460,11 +1496,12 @@ export interface components {
       resolved_at: string | null;
       /**
        * Resolution
-       * @description The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to, or the fix a reviewer made to it
+       * @description The change that settled it: match-rejected, when the clause was said to be a different rule from the one it was matched to or asked about; match-made, when it was said to be the same rule as a clause of the version before; or the fix a reviewer made to it
        */
       resolution:
         | (
             | "match-rejected"
+            | "match-made"
             | "split"
             | "merged"
             | "made-text"
@@ -1475,7 +1512,7 @@ export interface components {
         | null;
       /**
        * Resolution Key
-       * @description The clause the fix named: what it went under or into, or a split's second part
+       * @description The clause the change named: the clause of the version before that a match or a different rule was said about, what a fix put it under or into, or a split's second part
        */
       resolution_key?: string | null;
       /**
@@ -1485,6 +1522,8 @@ export interface components {
       paragraph: number | null;
       /** @description The fix the parser would make, while the flag is open and it can be made */
       suggestion?: components["schemas"]["FlagSuggestion"] | null;
+      /** @description For a flag asking whether a new clause is the same rule as a clause of the version before that nothing continues, that clause */
+      candidate?: components["schemas"]["EarlierClause"] | null;
     };
     /**
      * FlagSuggestion
@@ -2430,6 +2469,14 @@ export interface components {
     Roles: {
       /** Roles */
       roles: components["schemas"]["RoleDocument"][];
+    };
+    /** SameRule */
+    SameRule: {
+      /**
+       * Continues
+       * @description The key of the clause of the version before that the clause continues
+       */
+      continues: string;
     };
     /** ScheduledVersion */
     ScheduledVersion: {
@@ -6183,6 +6230,115 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Somebody changed it after it was read */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  make_match_v1_policies__slug__draft_matches__key__post: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description The draft's revision, as its ETag gave it. A change made since is refused */
+        "if-match"?: string | null;
+      };
+      path: {
+        slug: string;
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SameRule"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyDraft"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The change conflicts with what is there */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -5,14 +5,16 @@ a new one continues: text does. Each clause of a new version is matched to the p
 version's by key and by text, and marked unchanged, modified, moved or added; an earlier clause
 nothing continues was removed. A move, a number that now names a different rule, and new words
 too far from the old to be sure of, are flags the reviewer confirms, because matching by text
-can be wrong: two rows of a retention schedule share most of their words.
+can be wrong: two rows of a retention schedule share most of their words. A new clause that
+shares most of its words with an earlier clause nothing continues, too few to pair them without
+asking, is a question for the reviewer: it may be that rule, renumbered and reworded.
 """
 
 from __future__ import annotations
 
 import re
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from typing import Literal
@@ -24,6 +26,9 @@ SAME_KEY_SIMILARITY = 0.5
 
 MOVED_SIMILARITY = 0.8
 """Under a different key, text must be this alike to be the same rule, renumbered."""
+
+ASK_SIMILARITY = 0.5
+"""A new clause and an earlier one nothing continues, this alike, are asked about."""
 
 
 @dataclass(frozen=True)
@@ -133,6 +138,36 @@ def match(earlier: Sequence[Earlier], later: Sequence[Later]) -> Matching:
     result.removed = sorted(open_earlier.values(), key=lambda clause: clause.key)
     result.reused = reused(earlier, result.matches)
     return result
+
+
+def questions(
+    later: Sequence[Later],
+    earlier: Sequence[Earlier],
+    skip: Callable[[Later, Earlier], bool] = lambda new, old: False,
+) -> dict[str, tuple[Earlier, float]]:
+    """For new clauses that continue nothing, the earlier clause nothing continues that shares
+    most of their words: each clause in one question at most, the closest pairs first, and never
+    a pair `skip` names, such as one a reviewer said is a different rule."""
+    scored = sorted(
+        (
+            (similarity(words(new), words(old)), new, old)
+            for new in later
+            for old in earlier
+            if not skip(new, old)
+        ),
+        # The closest first, and pairs as close as each other by their keys, never by chance.
+        key=lambda found: (-found[0], found[1].key, found[2].key),
+    )
+    asked: dict[str, tuple[Earlier, float]] = {}
+    taken: set[uuid.UUID] = set()
+    for score, new, old in scored:
+        if score < ASK_SIMILARITY:
+            break
+        if score >= MOVED_SIMILARITY or new.key in asked or old.id in taken:
+            continue
+        asked[new.key] = (old, score)
+        taken.add(old.id)
+    return asked
 
 
 def reused(

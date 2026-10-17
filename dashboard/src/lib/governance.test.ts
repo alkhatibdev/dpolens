@@ -59,6 +59,17 @@ describe("a policy's entries in the governance log", () => {
     ).toBe("Said 4.3 in the draft of Retention policy is a different rule from version 2's 4.2");
   });
 
+  it("say which match a reviewer made", () => {
+    expect(
+      sentence("document.match_made", {
+        ...retention,
+        key: "retention:4.4",
+        earlier: "retention:4.3",
+        previous: "2",
+      }),
+    ).toBe("Said 4.4 in the draft of Retention policy is the same rule as version 2's 4.3");
+  });
+
   it("say how a clause was fixed", () => {
     expect(
       sentence("document.clause_fixed", {

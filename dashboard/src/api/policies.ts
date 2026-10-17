@@ -13,6 +13,7 @@ export type PolicyVersion = components["schemas"]["PolicyVersion"];
 export type Edit = components["schemas"]["Fix"]["edit"];
 export type FlagSuggestion = components["schemas"]["FlagSuggestion"];
 export type SplitPlace = components["schemas"]["SplitPlace"];
+export type Candidate = components["schemas"]["Candidate"];
 export type PolicyVersions = components["schemas"]["PolicyVersions"];
 export type VersionEntry = components["schemas"]["VersionEntry"];
 export type PolicyComparison = components["schemas"]["PolicyComparison"];
@@ -181,6 +182,20 @@ export function useFixClause(slug: string) {
       void client.invalidateQueries({ queryKey: ["policies"], exact: true });
     },
   });
+}
+
+/** Say a new clause is the same rule as a clause of the version before that nothing continues. */
+export function useSameRule(slug: string) {
+  return useDraftChange(
+    slug,
+    ({ revision, key, continues }: Change & { key: string; continues: string }) =>
+      unwrap(
+        api.POST("/v1/policies/{slug}/draft/matches/{key}", {
+          params: { path: { slug, key }, header: ifMatch(revision) },
+          body: { continues },
+        }),
+      ),
+  );
 }
 
 export function useRejectMatch(slug: string) {

@@ -61,8 +61,16 @@ Layer = Literal["native_structure", "typography", "numbering", "reviewer"]
 Edit = Literal["split", "merge", "make-text", "make-heading", "move-under", "move-out"]
 Fixed = Literal["split", "merged", "made-text", "made-heading", "moved-under", "moved-out"]
 Resolution = Literal[
-    "match-rejected", "split", "merged", "made-text", "made-heading", "moved-under", "moved-out"
+    "match-rejected",
+    "match-made",
+    "split",
+    "merged",
+    "made-text",
+    "made-heading",
+    "moved-under",
+    "moved-out",
 ]
+Closeness = Literal["most", "some", "few"]
 Change = Literal["added", "modified", "moved", "unchanged"]
 Status = Literal["draft", "published", "discarded"]
 Indexing = Literal["todo", "doing", "succeeded", "failed"]
@@ -120,6 +128,13 @@ class EarlierClause(BaseModel):
     text: str
 
 
+class Candidate(BaseModel):
+    key: str
+    closeness: Closeness = Field(
+        description="How many of the new clause's words it shares: most, some or few"
+    )
+
+
 class SplitPlace(BaseModel):
     at: int = Field(description="Where the second part begins, as a split's `at` names it")
     label: str | None = Field(description="The number the second part starts with, its label")
@@ -156,6 +171,11 @@ class DraftClause(BaseModel):
     splits: list[SplitPlace] = Field(
         default_factory=list, description="Where in its text it can be split"
     )
+    candidates: list[Candidate] = Field(
+        default_factory=list,
+        description="For a new clause of a new version, the clauses of the version before that "
+        "nothing continues, closest first: the ones it can be said to be the same rule as",
+    )
     children: list[DraftClause]
 
 
@@ -180,12 +200,15 @@ class FlagOut(BaseModel):
     resolved_at: datetime | None
     resolution: Resolution | None = Field(
         description="The change that settled it: match-rejected, when the clause was said to be "
-        "a different rule from the one it was matched to, or the fix a reviewer made to it"
+        "a different rule from the one it was matched to or asked about; match-made, when it "
+        "was said to be the same rule as a clause of the version before; or the fix a reviewer "
+        "made to it"
     )
     resolution_key: str | None = Field(
         default=None,
-        description="The clause the fix named: what it went under or into, or a split's second "
-        "part",
+        description="The clause the change named: the clause of the version before that a "
+        "match or a different rule was said about, what a fix put it under or into, or a "
+        "split's second part",
     )
     paragraph: int | None = Field(
         description="The paragraph of the file it is about, as the file view numbers them"
@@ -193,6 +216,11 @@ class FlagOut(BaseModel):
     suggestion: FlagSuggestion | None = Field(
         default=None,
         description="The fix the parser would make, while the flag is open and it can be made",
+    )
+    candidate: EarlierClause | None = Field(
+        default=None,
+        description="For a flag asking whether a new clause is the same rule as a clause of the "
+        "version before that nothing continues, that clause",
     )
 
 
@@ -396,6 +424,14 @@ class FlagsToAccept(BaseModel):
     positions: list[int] = Field(min_length=1, max_length=1000)
 
 
+class SameRule(BaseModel):
+    continues: str = Field(
+        min_length=1,
+        max_length=200,
+        description="The key of the clause of the version before that the clause continues",
+    )
+
+
 class Fix(BaseModel):
     edit: Edit = Field(
         description=(
@@ -454,6 +490,10 @@ def _clause(clause: store.DraftClause) -> DraftClause:
         fixed=cast(Fixed | None, clause.fixed),
         fixes=list(clause.fixes),
         splits=[SplitPlace(at=at, label=label) for at, label in clause.splits],
+        candidates=[
+            Candidate(key=key, closeness=cast(Closeness, closeness))
+            for key, closeness in clause.candidates
+        ],
         earlier=(
             EarlierClause(
                 key=clause.earlier.key,
@@ -491,6 +531,16 @@ def _draft(view: store.DraftView) -> PolicyDraft:
                         edit=flag.suggestion.edit, key=flag.suggestion.key, at=flag.suggestion.at
                     )
                     if flag.suggestion
+                    else None
+                ),
+                candidate=(
+                    EarlierClause(
+                        key=flag.candidate.key,
+                        label=flag.candidate.label,
+                        heading=flag.candidate.heading,
+                        text=flag.candidate.text,
+                    )
+                    if flag.candidate
                     else None
                 ),
             )
@@ -602,6 +652,8 @@ def _refused(failure: Exception) -> problems.Problem:
             return problems.no_match(detail)
         case store.NoClause():
             return problems.no_clause(detail)
+        case store.MatchRefused():
+            return problems.match_refused(detail)
         case CannotFix():
             return problems.fix_refused(detail)
         case library.SameVersion():
@@ -634,6 +686,7 @@ REFUSALS = (
     store.FlagNotFound,
     store.NoMatch,
     store.NoClause,
+    store.MatchRefused,
     CannotFix,
     library.SameVersion,
     store.StaleDraft,
@@ -794,12 +847,49 @@ def accept(
 
 
 @router.post(
-    "/{slug}/draft/matches/{key}/reject",
-    summary="Say a clause is a different rule from the one it was matched to",
+    "/{slug}/draft/matches/{key}",
+    summary="Say a new clause is the same rule as a clause of the version before",
     description=(
-        "The clause becomes new, and the clause of the version before that it was matched to "
-        "becomes removed, so that a citation of that clause says its rule was removed. The flag "
-        "that asked about the match is resolved by the change."
+        "For a clause the draft has as new, and a clause of the version before that nothing in "
+        "the draft continues: the clause continues it, renumbered, reworded or both, as a match "
+        "made when the draft was uploaded would, so that a citation of that clause says where "
+        "its rule is now. The flag on the clause is settled by it, and `POST "
+        "/draft/matches/{key}/reject` undoes it."
+    ),
+    responses=problems.responses(400, 404, 409, 412),
+)
+def make_match(
+    slug: str,
+    key: str,
+    body: SameRule,
+    who: Uploader,
+    opened: Opened,
+    response: Response,
+    if_match: IfMatch = None,
+) -> PolicyDraft:
+    try:
+        view = store.continue_match(
+            opened,
+            slug,
+            key,
+            body.continues,
+            actor=actor_of(who),
+            expected_revision=expected_revision(if_match, "draft"),
+        )
+    except REFUSALS as failure:
+        raise _refused(failure) from failure
+    return _reviewed(view, response)
+
+
+@router.post(
+    "/{slug}/draft/matches/{key}/reject",
+    summary="Say a clause is a different rule from the one it was matched to or asked about",
+    description=(
+        "A matched clause becomes new, and the clause of the version before that it was matched "
+        "to becomes removed, so that a citation of that clause says its rule was removed. For a "
+        "new clause whose flag asks whether it is the same rule as a clause of the version "
+        "before, the answer is no, and the clause stays new. The flag on the clause is settled "
+        "by it, and the pair is never matched or asked about again."
     ),
     responses=problems.responses(400, 404, 412),
 )

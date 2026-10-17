@@ -9,13 +9,21 @@ from __future__ import annotations
 import uuid
 
 from dpolens.engine.policies.checks import snippet
-from dpolens.engine.policies.versions import MOVED_SIMILARITY, Earlier, Later, match
+from dpolens.engine.policies.versions import (
+    ASK_SIMILARITY,
+    MOVED_SIMILARITY,
+    Earlier,
+    Later,
+    match,
+    questions,
+)
 
 CUSTOMER = "Customer records are kept for 2 years after the account closes."
 STAFF = "Staff records are kept for 6 years after employment ends."
 SUPPLIER = "Supplier records are kept for 5 years after the contract ends."
 CONTRACTOR = "Contractor records are kept for 1 year after the contract ends."
 BACKUPS = "Backups are encrypted and kept in a second region."
+PAYMENTS = "Payment records are kept for 7 years, as tax law requires."
 
 
 def before(key: str, text: str) -> Earlier:
@@ -107,3 +115,45 @@ def test_a_flag_quotes_the_earlier_words_up_to_a_whole_word() -> None:
     assert snippet(STAFF, 30) == "Staff records are kept for 6…"
     assert snippet(STAFF, 200) == STAFF
     assert snippet("Retention,\n  in   full", 200) == "Retention, in full"
+
+
+def test_a_new_rule_sharing_most_of_a_removed_rule_s_words_is_asked_about() -> None:
+    """Renumbered and reworded, it is too far from the rule before to be paired without asking."""
+    payments = before("r:4.3", PAYMENTS)
+    later = after(
+        "r:4.4", PAYMENTS.replace("7 years,", "7 years after the end of the financial year,")
+    )
+
+    matching = match([payments], [later])
+    asked = questions([later], matching.removed)
+
+    assert matching.matches["r:4.4"].change == "added"
+    old, score = asked["r:4.4"]
+    assert old == payments
+    assert ASK_SIMILARITY <= score < MOVED_SIMILARITY
+
+
+def test_each_rule_is_in_one_question_at_most_the_closest_pair_first() -> None:
+    """The customer rule is closer to the supplier rule than to the staff rule, but the contractor
+    rule is closer still, so the customer rule is asked about the staff rule."""
+    staff, supplier = before("r:4.2", STAFF), before("r:4.3", SUPPLIER)
+
+    asked = questions([after("r:4.6", CUSTOMER), after("r:4.5", CONTRACTOR)], [staff, supplier])
+
+    assert {key: old.key for key, (old, _) in asked.items()} == {"r:4.5": "r:4.3", "r:4.6": "r:4.2"}
+
+
+def test_a_pair_said_to_be_different_rules_is_never_asked_about() -> None:
+    staff, supplier = before("r:4.2", STAFF), before("r:4.3", SUPPLIER)
+
+    asked = questions(
+        [after("r:4.5", CONTRACTOR)], [staff, supplier], skip=lambda new, old: old == supplier
+    )
+
+    assert asked["r:4.5"][0] == staff
+
+
+def test_few_shared_words_or_enough_to_be_paired_are_no_question() -> None:
+    assert questions([after("r:4.5", BACKUPS)], [before("r:4.2", STAFF)]) == {}
+    invoices = after("r:4.5", PAYMENTS.replace("Payment records", "Invoices"))
+    assert questions([invoices], [before("r:4.3", PAYMENTS)]) == {}

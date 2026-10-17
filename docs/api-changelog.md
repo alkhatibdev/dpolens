@@ -126,6 +126,14 @@ First version of the API. Everything below is new rather than changed.
   would make, and once a fix settles it `resolution_key`, the clause the fix named. A key the
   draft does not have gets `404` and `/problems/no-clause`, and a fix that cannot be made `409`
   and `/problems/fix-refused`
+- `POST /v1/policies/{slug}/draft/matches/{key}`, with `continues`, says a new clause of a new
+  version is the same rule as a clause of the version before that nothing continues, and the
+  clause continues it. A new clause carries `candidates`, the clauses it can be paired with,
+  closest first, each with its `closeness`. A flag that asks whether a new clause is the same
+  rule as such a clause carries it as `candidate`, and `.../reject` answers that it is not. A
+  clause that continues one already, or an earlier clause that is continued already, gets `409`
+  and `/problems/match-refused`. Either decision settles the flag on the clause, with
+  `resolution` `match-made` or `match-rejected` and `resolution_key` the earlier clause
 - `POST /v1/policies/{slug}/draft/publish` publishes a draft, for `documents.publish`. It waits
   until every flag is settled (`409`, `/problems/flags-open`, whose `flags` lists the open ones), takes effect
   after the version published before it (`409`, `/problems/effective-date-too-early`), and needs
@@ -153,5 +161,5 @@ First version of the API. Everything below is new rather than changed.
   `formerly` when the key named a different rule in the version before
 - A request body larger than 25 MB gets `413` and `/problems/too-large`, before it is read
 - `GET /v1/governance/entries` takes the category `policies`: uploads, flags accepted, matches
-  said to be wrong, clauses fixed, drafts changed and discarded, versions published, and policies
-  archived
+  made or said to be wrong, clauses fixed, drafts changed and discarded, versions published, and
+  policies archived

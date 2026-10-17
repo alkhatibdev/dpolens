@@ -129,6 +129,7 @@ beside it.
 | `/problems/effective-date-too-early` | 409 | A new version has to take effect after the version published before it |
 | `/problems/version-label-taken` | 409 | Another version of the policy has that label |
 | `/problems/fix-refused` | 409 | That fix cannot be made to the clause as the draft stands. `detail` says why |
+| `/problems/match-refused` | 409 | That match cannot be made as the draft stands: the clause continues one already, or the earlier clause is continued already. `detail` says which |
 | `/problems/too-large` | 413 | The request body is larger than 25 MB |
 | `/problems/unreadable-policy` | 422 | The file cannot be read as a policy. `detail` says what to do |
 | `/problems/bad-slug` | 422 | A slug is lower-case Latin letters, digits and hyphens |
@@ -259,14 +260,26 @@ parameters apart from `slug` and `title`. It is matched to the version before it
 says which earlier clause it `continues` and whether it was `added`, `modified`, `moved` or
 left `unchanged`, `removed` lists the clauses nothing continues, and a clause whose number
 changed, whose words changed too much to be sure it is the same rule, or whose number named a
-different rule before, is a flag. A policy has one draft at a
+different rule before, is a flag. So is a new clause that shares most of its words with an
+earlier clause nothing continues: the flag's `candidate` is that clause, and it asks whether
+the two are the same rule. A policy has one draft at a
 time; `replace=true` discards the open one and uses the upload instead.
 
 A renumbered or reworded clause carries `earlier`, the clause it continues as the version before
 has it, so the words that changed can be shown. When a match is wrong, because two rules share
 most of their words, `POST /v1/policies/{slug}/draft/matches/{key}/reject` says so: the clause
 becomes new, the clause it was matched to is removed, and a citation of that one then says its
-rule was removed instead of pointing at the wrong rule.
+rule was removed instead of pointing at the wrong rule. Sent for a new clause whose flag has a
+`candidate`, it answers that the two are different rules, and the clause stays new.
+
+`POST /v1/policies/{slug}/draft/matches/{key}`, with `continues` naming a clause of the version
+before, says a new clause is that rule: it continues it as if matching had paired them, and a
+citation of that clause says where its rule is now. Each new clause lists the clauses it can be
+paired with in `candidates`, the clauses nothing continues, closest first, with how many of its
+words each shares (`most`, `some` or `few`). A clause that continues one already, or an earlier
+clause that is continued already, is refused with `409` and `/problems/match-refused`. Either
+decision settles the flag on the clause, with `resolution` `match-made` or `match-rejected`
+and `resolution_key` the earlier clause, and the other undoes it.
 
 `POST /v1/policies/{slug}/draft/edits` fixes how a clause was read, and no word changes: `edit`
 is `split`, `merge`, `make-text`, `make-heading`, `move-under` or `move-out`, `key` names the

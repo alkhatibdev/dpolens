@@ -337,6 +337,14 @@ def no_clause(detail: str) -> Problem:
     return Problem(kind="no-clause", title="No such clause", status=404, detail=detail)
 
 
+def match_refused(detail: str) -> Problem:
+    """A match that cannot be made as the draft stands: the clause continues one already, or the
+    earlier clause is continued already."""
+    return Problem(
+        kind="match-refused", title="That match cannot be made", status=409, detail=detail
+    )
+
+
 def fix_refused(detail: str) -> Problem:
     """A fix that cannot be made to that clause as the draft stands, with why."""
     return Problem(kind="fix-refused", title="That fix cannot be made", status=409, detail=detail)

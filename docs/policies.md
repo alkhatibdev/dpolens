@@ -78,6 +78,11 @@ contents page, text boxes, and a table printed again on later pages. That text i
 with its reason. It is kept and counted, so nothing goes missing quietly, and it is never
 searched.
 
+Before the policy begins, a line stays a clause only when it reads as a sentence: plain text
+that ends with a full stop, a question or exclamation mark, or a colon. A line such as
+"Owner: Information Security · Version 1.0 · Approved 10 October 2026" is set aside as front
+matter, and a "Contents:" line that lists the sections' numbers is set aside as contents.
+
 ## Checks and flags
 
 Every parse checks two things:
@@ -240,11 +245,13 @@ then `same`, `reworded`, `new`, or renumbered (`was 4.2`), and a clause of the v
 that nothing continues is listed as removed.
 
 Matching by wording can be wrong, because two rows of a retention schedule can share most of
-their words, so three things become flags for a reviewer: a clause whose number changed, a
+their words, so four things become flags for a reviewer: a clause whose number changed, a
 clause whose words changed so much that it may be a different rule (the flag quotes what it
-said before), and a number that named a different rule in the version before. A policy has
-one draft at a time. Uploading another while one is open is refused, unless you ask for the new
-file to replace it (`--replace`).
+said before), a number that named a different rule in the version before, and a new clause
+that shares most of its words with a clause of the version before that nothing continues,
+which may be that rule, renumbered and reworded more than matching pairs without asking. A
+policy has one draft at a time. Uploading another while one is open is refused, unless you ask
+for the new file to replace it (`--replace`).
 
 When a match is wrong, say so, with **It's a different rule** in the dashboard or on the
 command line:
@@ -256,6 +263,22 @@ dpolens policy reject-match acme-retention 4.3
 The clause becomes new, and the clause of the version before that it was matched to becomes
 removed. A citation of that earlier clause then says its rule was removed, instead of pointing
 at a different rule that happened to share its words.
+
+When two clauses are the same rule and matching left them apart, say that too. The flag on a
+new clause that shares most of an earlier clause's words shows the two side by side and asks:
+**It's the same rule as 4.3**, or **It's a different rule**. Each clause is asked about once,
+the closest pair first. Any other new clause can be paired with **It's the same rule as…**,
+which lists the clauses of the version before that nothing continues, closest first. On the
+command line:
+
+```bash
+dpolens policy same-rule acme-retention 4.4 4.3
+```
+
+The new clause then continues the earlier one as if matching had paired them, so a citation
+of the earlier clause says where its rule is now. Only a clause nothing continues can be
+named, and each of these two decisions undoes the other. Both are written to the governance
+log.
 
 ## Keys over time
 

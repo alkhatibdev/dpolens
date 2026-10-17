@@ -10,6 +10,8 @@ import {
   useFixClause,
   usePolicies,
   usePolicyFile,
+  useRejectMatch,
+  useSameRule,
   type DraftClause,
   type DraftFlag,
   type Edit,
@@ -26,6 +28,7 @@ import {
   DiscardDialog,
   PublishDialog,
   RejectDialog,
+  SameRuleDialog,
 } from "@/components/policies/DraftDialogs";
 import { FileAsRead, type Marks } from "@/components/policies/FileAsRead";
 import { FlagCard, small } from "@/components/policies/FlagCard";
@@ -154,11 +157,14 @@ export function PolicyDraftPage() {
   const file = usePolicyFile(slug, draft.data?.version.number);
   const accept = useAcceptFlags(slug);
   const fixer = useFixClause(slug);
+  const same = useSameRule(slug);
+  const answer = useRejectMatch(slug);
   const [selected, setSelected] = useState<string | null>(null);
   const [splitting, setSplitting] = useState<Splitting | null>(null);
   const [tab, setTab] = useState<Tab>("changes");
   const [dialog, setDialog] = useState<"publish" | "details" | "discard" | null>(null);
   const [rejecting, setRejecting] = useState<DraftClause | null>(null);
+  const [choosing, setChoosing] = useState<DraftClause | null>(null);
   const [conflict, setConflict] = useState<Conflict | null>(null);
   const columns = useRef<HTMLDivElement>(null);
 
@@ -219,6 +225,17 @@ export function PolicyDraftPage() {
 
   function acceptFlag(flag: DraftFlag) {
     accept.mutate({ revision: current.revision, positions: [flag.position] }, { onError: failed });
+  }
+
+  function sameRule(clause: DraftClause, earlier: string) {
+    same.mutate(
+      { revision: current.revision, key: clause.key, continues: earlier },
+      { onError: failed },
+    );
+  }
+
+  function differentRule(clause: DraftClause) {
+    answer.mutate({ revision: current.revision, key: clause.key }, { onError: failed });
   }
 
   function fix(edit: Edit, key: string, at?: number) {
@@ -376,14 +393,28 @@ export function PolicyDraftPage() {
         </Notice>
       ) : null}
 
+      {same.error && !conflictOf(same.error) ? (
+        <Notice tone="danger">
+          {same.error instanceof ApiError && same.error.kind === "match-refused"
+            ? t("changes.matchRefused", { detail: same.error.problem?.detail ?? "" })
+            : t("common.failed")}
+        </Notice>
+      ) : null}
+      {answer.error && !conflictOf(answer.error) ? (
+        <Notice tone="danger">{t("common.failed")}</Notice>
+      ) : null}
+
       {shown === "changes" ? (
         <WhatChanged
           draft={current}
           summary={summary}
           canSettle={canUpload}
-          busy={accept.isPending}
+          busy={accept.isPending || same.isPending || answer.isPending}
           onAccept={acceptFlag}
           onReject={setRejecting}
+          onSame={sameRule}
+          onNotSame={differentRule}
+          onChoose={setChoosing}
         />
       ) : (
         <>
@@ -541,6 +572,12 @@ export function PolicyDraftPage() {
         clause={rejecting}
         draft={current}
         onClose={() => setRejecting(null)}
+        onConflict={setConflict}
+      />
+      <SameRuleDialog
+        clause={choosing}
+        draft={current}
+        onClose={() => setChoosing(null)}
         onConflict={setConflict}
       />
       <ConflictDialog

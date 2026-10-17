@@ -23,6 +23,12 @@ export function useSettledLine(slug: string) {
     const by =
       flag.resolved_by && flag.resolved_by !== "the command line" ? flag.resolved_by : null;
     const at = when(flag.resolved_at);
+    if (flag.resolution === "match-made") {
+      const key = isolate(shortKey(flag.resolution_key ?? "", slug));
+      return by
+        ? t("review.sameBy", { key, name: by, when: at })
+        : t("review.sameAnon", { key, when: at });
+    }
     if (flag.resolution && flag.resolution !== "match-rejected") {
       const fix = FIX_WORDS[flag.resolution];
       const key = isolate(shortKey(flag.resolution_key ?? "", slug));

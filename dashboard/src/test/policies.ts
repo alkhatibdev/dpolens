@@ -250,6 +250,50 @@ export const retentionDraft: PolicyDraft = {
   next_label: "3",
 };
 
+const REWORDED =
+  "Payment records are kept for 7 years after the end of the financial year, as tax law requires.";
+
+/**
+ * The same upload, with 4.4 reworded past what matching can be sure of: it is new, version 2's
+ * 4.3 is removed, and the review asks whether they are the same rule.
+ */
+export const askingDraft: PolicyDraft = {
+  ...retentionDraft,
+  clauses: [
+    clause({
+      ...retentionDraft.clauses[0]!,
+      children: [
+        retentionDraft.clauses[0]!.children[0]!,
+        {
+          ...retentionDraft.clauses[0]!.children[1]!,
+          candidates: [{ key: "data-retention:4.3", closeness: "few" }],
+        },
+        retentionDraft.clauses[0]!.children[2]!,
+        clause({
+          key: "data-retention:4.4",
+          label: "4.4",
+          text: REWORDED,
+          change: "added",
+          candidates: [{ key: "data-retention:4.3", closeness: "most" }],
+        }),
+      ],
+    }),
+  ],
+  flags: [
+    ...retentionDraft.flags.slice(0, 2),
+    flag({
+      position: 3,
+      kind: "unmatched_key",
+      key: "data-retention:4.4",
+      detail:
+        "4.4 is new, and version 2's 4.3, which nothing in this version continues, has most of its words. Is it the same rule?",
+      candidate: { key: "data-retention:4.3", label: "4.3", heading: null, text: PAYMENTS },
+    }),
+  ],
+  removed: [{ key: "data-retention:4.3", heading: null, text: PAYMENTS }],
+  changes: { added: 2, modified: 0, moved: 1, unchanged: 2, removed: 1 },
+};
+
 /** The first version of the acceptable use policy, with two flags from how it was read. */
 export const acceptableUseDraft: PolicyDraft = {
   ...retentionDraft,

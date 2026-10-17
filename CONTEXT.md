@@ -107,7 +107,9 @@ _Avoid_: Pending version, unpublished version
 What a clause of a new version does to the clause of the version before it that states the
 same rule, whatever number each is printed with. It is decided by matching their wording when
 the version is drafted, and a reviewer confirms every clause whose number changed, or says it
-is a different rule. It is how an old citation says where its rule is now.
+is a different rule. A reviewer can also say a new clause continues a clause that nothing
+continues, which the review asks about when the two share most of their words. It is how an
+old citation says where its rule is now.
 _Avoid_: Succeeds, maps to, replaces
 
 **Published**:

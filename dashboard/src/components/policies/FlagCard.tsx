@@ -35,12 +35,18 @@ export function FlagCard({
   slug,
   actions,
   compact = false,
+  children,
+  afterwards,
 }: {
   flag: DraftFlag;
   slug: string;
   actions?: ReactNode;
   /** Inside a changed clause's row, which already names the clause. */
   compact?: boolean;
+  /** What helps to settle it, shown until it is settled. */
+  children?: ReactNode;
+  /** What can still be done once it is settled, such as taking the decision back. */
+  afterwards?: ReactNode;
 }) {
   const { t } = useTranslation();
   const settledLine = useSettledLine(slug);
@@ -76,7 +82,9 @@ export function FlagCard({
           </span>
         )}
       </p>
+      {!settled && children ? children : null}
       {!settled && actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {settled && afterwards ? <div className="flex flex-wrap gap-2">{afterwards}</div> : null}
     </div>
   );
 }

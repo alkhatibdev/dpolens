@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path, PurePath
@@ -39,6 +39,7 @@ from dpolens.engine.logs.governance import (
     DOCUMENT_DRAFT_EDITED,
     DOCUMENT_DRAFTED,
     DOCUMENT_FLAG_ACCEPTED,
+    DOCUMENT_MATCH_MADE,
     DOCUMENT_MATCH_REJECTED,
     DOCUMENT_PUBLISHED,
     Actor,
@@ -68,6 +69,7 @@ from dpolens.engine.policies.patterns import parse_label
 from dpolens.engine.policies.reading import Line, as_rows, from_rows, lines_of
 from dpolens.engine.policies.tree import Clause, Edit, Flag, Layer, ParsedPolicy
 from dpolens.engine.policies.versions import (
+    ASK_SIMILARITY,
     MOVED_SIMILARITY,
     Change,
     Earlier,
@@ -75,6 +77,7 @@ from dpolens.engine.policies.versions import (
     Match,
     Matching,
     match,
+    questions,
     reused,
     similarity,
     words,
@@ -91,12 +94,18 @@ DOCUMENT_ACTIONS = (
     DOCUMENT_FLAG_ACCEPTED,
     DOCUMENT_DRAFT_EDITED,
     DOCUMENT_MATCH_REJECTED,
+    DOCUMENT_MATCH_MADE,
     DOCUMENT_CLAUSE_FIXED,
     DOCUMENT_PUBLISHED,
     DOCUMENT_DRAFT_DISCARDED,
     DOCUMENT_ARCHIVED,
 )
 MATCH_REJECTED = "match-rejected"
+MATCH_MADE = "match-made"
+DECIDED = frozenset({MATCH_REJECTED, MATCH_MADE})
+"""How a matching flag is resolved when a reviewer decided what its clause continues."""
+SOME_SIMILARITY = 0.2
+"""Below the question's half, a clause this alike shares some of a new one's words."""
 
 
 class PolicyNotFound(Exception):
@@ -145,6 +154,10 @@ class NoClause(Exception):
 
 class NoMatch(Exception):
     """The draft has no clause by that key that continues one of the version before."""
+
+
+class MatchRefused(Exception):
+    """A match that cannot be made as the draft stands, with why."""
 
 
 class StaleDraft(Exception):
@@ -205,6 +218,9 @@ class FlagView:
     second part."""
 
     suggestion: FlagSuggestion | None = None
+    candidate: EarlierClause | None = None
+    """For a flag asking whether a new clause continues an earlier one nothing continues, that
+    one."""
 
 
 @dataclass(frozen=True)
@@ -244,6 +260,10 @@ class DraftClause:
 
     splits: tuple[tuple[int, str | None], ...] = ()
     """Where in its text it can be split, each with the number the second part would take."""
+
+    candidates: tuple[tuple[str, str], ...] = ()
+    """For a new clause of a new version, the earlier clauses nothing continues, closest first,
+    each with how many of its words they share: most, some or few."""
 
 
 @dataclass(frozen=True)
@@ -558,14 +578,23 @@ def _matching_flags(
     slug: str,
     label: str,
     quiet: frozenset[str] = frozenset(),
+    asked: dict[str, tuple[Earlier, float]] | None = None,
 ) -> list[Flag]:
     """One flag for each clause whose match a reviewer should check: renumbered, reworded too
-    far to be sure it is the same rule, or holding a number that named a different rule in the
-    version before. A clause in `quiet` was renumbered by a reviewer's own change, which needs
-    no one to confirm it is the same rule when its words are."""
+    far to be sure it is the same rule, holding a number that named a different rule in the
+    version before, or new while an earlier clause nothing continues shares most of its words
+    (`asked`). A clause in `quiet` was renumbered by a reviewer's own change, which needs no one
+    to confirm it is the same rule when its words are."""
     flags: list[Flag] = []
     for key, found in matching.matches.items():
         said: list[str] = []
+        candidate = (asked or {}).get(key)
+        if found.change == "added" and candidate is not None:
+            said.append(
+                f"{_short(key, slug)} is new, and version {label}'s "
+                f"{_short(candidate[0].key, slug)}, which nothing in this version continues, has "
+                "most of its words. Is it the same rule?"
+            )
         if (
             found.change == "modified"
             and found.earlier is not None
@@ -585,7 +614,10 @@ def _matching_flags(
                     f"{_short(key, slug)} continues {_short(found.earlier.key, slug)} from "
                     f"version {label}, {how}. Check that it is the same rule."
                 )
-        if key in matching.reused:
+        if key in matching.reused and not (
+            candidate and found.change == "added" and candidate[0] == matching.reused[key][0]
+        ):
+            # Unless the question is whether it is the rule its number named, which asks it.
             named, went = matching.reused[key]
             what = snippet(named.heading or named.text, 60)
             now = f"now {_short(went, slug)}" if went else "since removed"
@@ -593,13 +625,26 @@ def _matching_flags(
                 f"In version {label}, {_short(key, slug)} was a different rule ({what}), {now}."
             )
         if said:
-            flags.append(Flag(kind="unmatched_key", detail=" ".join(said), key=key))
+            flags.append(
+                Flag(
+                    kind="unmatched_key",
+                    detail=" ".join(said),
+                    key=key,
+                    candidate=candidate[0].key if candidate and found.change == "added" else None,
+                )
+            )
     return flags
 
 
-def _stored(flag: Flag, rows: dict[str, uuid.UUID]) -> dict[str, Any] | None:
+def _stored(
+    flag: Flag, rows: dict[str, uuid.UUID], earlier: dict[str, uuid.UUID] | None = None
+) -> dict[str, Any] | None:
     """A flag's suggested fix as it is kept: the clause it applies to by its row, which stays
-    the same however its key changes, and none when that clause is not there."""
+    the same however its key changes, and none when that clause is not there. For a flag asking
+    whether a new clause continues an earlier one, that one's row."""
+    if flag.candidate is not None:
+        row = (earlier or {}).get(flag.candidate)
+        return {"continues": str(row)} if row else None
     found = flag.suggestion
     if found is None:
         return None
@@ -612,6 +657,24 @@ def _stored(flag: Flag, rows: dict[str, uuid.UUID]) -> dict[str, Any] | None:
         "at": found.at,
         "label": found.label,
     }
+
+
+def _continues(flag: ParseFlag) -> uuid.UUID | None:
+    """The earlier clause a flag asks whether its clause continues, when it asks."""
+    found = dict(flag.suggestion or {}).get("continues")
+    return uuid.UUID(str(found)) if found else None
+
+
+def _speaks_for(flag: ParseFlag, reworded: Set[uuid.UUID] = frozenset()) -> bool:
+    """Whether a matching flag still speaks for its clause's match, so that no new one is raised
+    on the clause: it is not resolved, or a reviewer decided what the clause continues and no fix
+    has reworded the clause since."""
+    return flag.kind == "unmatched_key" and (
+        flag.resolved_at is None
+        or (
+            flag.resolution in DECIDED and flag.node_id is not None and flag.node_id not in reworded
+        )
+    )
 
 
 def _write_draft(
@@ -709,10 +772,14 @@ def _write_draft(
         store(clause, None, index, 0)
 
     flags = list(parsed.flags)
+    earlier_rows: dict[str, uuid.UUID] = {}
     if matching is not None and previous_label is not None:
         # In the order the clauses come, which is the order a reviewer reads them.
         order = {clause.key: index for index, clause in enumerate(parsed.walk())}
-        found = _matching_flags(matching, later, document.slug, previous_label)
+        added = [later[key] for key, found in matching.matches.items() if found.change == "added"]
+        asked = questions(added, matching.removed)
+        earlier_rows = {old.key: old.id for old, _ in asked.values()}
+        found = _matching_flags(matching, later, document.slug, previous_label, asked=asked)
         flags.extend(sorted(found, key=lambda flag: order.get(flag.key or "", len(order))))
     for position, flag in enumerate(flags, start=1):
         node = nodes.get(flag.key) if flag.key else None
@@ -725,7 +792,9 @@ def _write_draft(
                 detail=flag.detail,
                 position=position,
                 paragraph=flag.position,
-                suggestion=_stored(flag, {key: found.id for key, found in nodes.items()}),
+                suggestion=_stored(
+                    flag, {key: found.id for key, found in nodes.items()}, earlier_rows
+                ),
             )
         )
     session.flush()
@@ -814,10 +883,19 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
         children.setdefault(node.parent_node_id, []).append((node, text))
     roots = _parts_of([(node, text) for node, text in rows]) if version.status == "draft" else []
     offered = fixes(roots)
+    checks: dict[str, Any] = dict(version.parse_checks or {})
+    removed = tuple(checks.get("removed") or ())
 
     def clause(node: DocumentNode, text: NodeText) -> DraftClause:
         before = earlier.get(node.previous_node_id) if node.previous_node_id else None
         can = tuple(offered.get(node.canonical_key, ()))
+        candidates = (
+            _candidates(
+                Later(node.canonical_key, node.label, text.heading, text.body_text), removed
+            )
+            if node.change_type == "added" and version.status == "draft"
+            else ()
+        )
         return DraftClause(
             key=node.canonical_key,
             kind=node.node_type,
@@ -833,6 +911,7 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
             fixed=node.fixed,
             fixes=can,
             splits=_splits(text.body_text) if "split" in can else (),
+            candidates=candidates,
         )
 
     def build(parent: uuid.UUID | None) -> tuple[DraftClause, ...]:
@@ -859,6 +938,7 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
         return "the command line" if when else None
 
     suggest = _suggestions(roots, flags)
+    asking = _candidates_of(session, flags)
     flag_views = tuple(
         FlagView(
             position=flag.position,
@@ -873,11 +953,10 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
             paragraph=flag.paragraph,
             resolution_key=flag.resolution_key,
             suggestion=suggest.get(flag.position),
+            candidate=asking.get(flag.position),
         )
         for flag in flags
     )
-    checks: dict[str, Any] = dict(version.parse_checks or {})
-    removed = tuple(checks.get("removed") or ())
     changes = {"added": 0, "modified": 0, "moved": 0, "unchanged": 0}
     for node, _ in rows:
         if node.change_type in changes:
@@ -898,6 +977,50 @@ def read_draft(session: Session, slug: str, version: DocumentVersion | None = No
     )
 
 
+def _candidates(new: Later, removed: Sequence[dict[str, Any]]) -> tuple[tuple[str, str], ...]:
+    """The earlier clauses nothing continues that a new clause could continue, closest first."""
+    scored = sorted(
+        (
+            (
+                similarity(
+                    words(new),
+                    words(
+                        Later(gone["key"] or "", None, gone.get("heading"), gone.get("text") or "")
+                    ),
+                ),
+                gone["key"] or "",
+            )
+            for gone in removed
+        ),
+        key=lambda found: (-found[0], found[1]),
+    )
+    return tuple(
+        (
+            key,
+            "most" if score >= ASK_SIMILARITY else "some" if score >= SOME_SIMILARITY else "few",
+        )
+        for score, key in scored
+    )
+
+
+def _candidates_of(session: Session, flags: Sequence[ParseFlag]) -> dict[int, EarlierClause]:
+    """The earlier clause each question flag asks about, by the flag's place in the list."""
+    wanted = {flag.position: row for flag in flags if (row := _continues(flag)) is not None}
+    if not wanted:
+        return {}
+    found = {
+        node.id: EarlierClause(
+            key=node.canonical_key, label=node.label, heading=text.heading, text=text.body_text
+        )
+        for node, text in session.execute(
+            select(DocumentNode, NodeText)
+            .join(NodeText, NodeText.node_id == DocumentNode.id)
+            .where(DocumentNode.id.in_(list(wanted.values())), NodeText.is_authoritative)
+        ).all()
+    }
+    return {position: found[row] for position, row in wanted.items() if row in found}
+
+
 def _splits(text: str) -> tuple[tuple[int, str | None], ...]:
     found: list[tuple[int, str | None]] = []
     for at in boundaries(text):
@@ -911,7 +1034,10 @@ def _suggestions(roots: list[Part], flags: Sequence[ParseFlag]) -> dict[int, Fla
     wanted = [
         flag
         for flag in flags
-        if flag.suggestion and flag.accepted_at is None and flag.resolved_at is None
+        if flag.suggestion
+        and "edit" in dict(flag.suggestion)
+        and flag.accepted_at is None
+        and flag.resolved_at is None
     ]
     if not wanted:
         return {}
@@ -1091,12 +1217,13 @@ def reject_match(
     actor: Actor,
     expected_revision: int | None = None,
 ) -> DraftView:
-    """Say a clause of the draft is a different rule from the one it was matched to.
+    """Say a clause of the draft is a different rule from the one it was matched to, or from the
+    one its flag asks whether it continues.
 
-    The clause becomes new and the earlier one removed, so that a citation of the earlier one says
-    its rule was removed instead of pointing at this one. The flag that asked about the match is
-    resolved by the change, and the other matching flags are written again, so that what they say
-    about where each earlier rule went stays true.
+    A matched clause becomes new and the earlier one removed, so that a citation of the earlier
+    one says its rule was removed instead of pointing at this one. A new clause stays new, and
+    its question is answered. Either way the pair is never matched or asked about again, the
+    flag on the clause is settled by the decision, and the other flags follow it.
     """
     document = _document(session, slug)
     draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
@@ -1108,7 +1235,10 @@ def reject_match(
     if node is None:
         raise NoMatch(f"{slug}'s draft has no clause {key}.")
     if node.previous_node_id is None:
-        raise NoMatch(f"{key} is new in {slug}'s draft: it continues no earlier clause.")
+        question = _question_on(session, draft, node)
+        if question is None:
+            raise NoMatch(f"{key} is new in {slug}'s draft: it continues no earlier clause.")
+        return _answer_no(session, document, draft, node, question, actor)
     earlier, words_then = session.execute(
         select(DocumentNode, NodeText)
         .join(NodeText, NodeText.node_id == DocumentNode.id)
@@ -1132,22 +1262,7 @@ def reject_match(
     ]
     draft.parse_checks = checks
     session.flush()
-
-    flags = session.scalars(
-        select(ParseFlag).where(
-            ParseFlag.document_version_id == draft.id, ParseFlag.kind == "unmatched_key"
-        )
-    ).all()
-    now = datetime.now(UTC)
-    for flag in flags:
-        if flag.canonical_key == key:
-            # The latest decision stands: a match accepted earlier and rejected now is rejected.
-            flag.accepted_at = None
-            flag.accepted_by_user_id = None
-            flag.resolved_at = now
-            flag.resolved_by_user_id = actor.user_id
-            flag.resolution = MATCH_REJECTED
-    _rewrite_matching_flags(session, document, draft, flags, keep=key)
+    _decided(session, document, draft, node, MATCH_REJECTED, earlier.canonical_key, actor)
     _changed(draft, actor)
     session.flush()
     record(
@@ -1168,47 +1283,338 @@ def reject_match(
     return read_draft(session, slug, version=draft)
 
 
-def _rewrite_matching_flags(
+def _question_on(session: Session, draft: DocumentVersion, node: DocumentNode) -> ParseFlag | None:
+    """The open flag asking whether a new clause continues an earlier one, if it has one."""
+    for flag in session.scalars(
+        select(ParseFlag).where(
+            ParseFlag.document_version_id == draft.id,
+            ParseFlag.node_id == node.id,
+            ParseFlag.kind == "unmatched_key",
+            ParseFlag.accepted_at.is_(None),
+            ParseFlag.resolved_at.is_(None),
+        )
+    ):
+        if _continues(flag) is not None:
+            return flag
+    return None
+
+
+def _answer_no(
     session: Session,
     document: Document,
     draft: DocumentVersion,
-    flags: Sequence[ParseFlag],
+    node: DocumentNode,
+    question: ParseFlag,
+    actor: Actor,
+) -> DraftView:
+    """A new clause is not the earlier one its flag asks about: it stays new, and the pair is
+    never asked about again."""
+    candidate = _continues(question)
+    earlier_key = session.scalar(
+        select(DocumentNode.canonical_key).where(DocumentNode.id == candidate)
+    )
+    checks: dict[str, Any] = dict(draft.parse_checks or {})
+    checks["rejected"] = [
+        *checks.get("rejected", []),
+        {"node": str(node.id), "earlier": str(candidate)},
+    ]
+    draft.parse_checks = checks
+    session.flush()
+    _decided(session, document, draft, node, MATCH_REJECTED, earlier_key, actor)
+    _changed(draft, actor)
+    session.flush()
+    record(
+        session,
+        actor=actor,
+        action=DOCUMENT_MATCH_REJECTED,
+        target_type="document_version",
+        target_id=str(draft.id),
+        details={
+            "document": document.slug,
+            "title": document.title,
+            "version": draft.version_number,
+            "key": node.canonical_key,
+            "earlier": earlier_key,
+            "previous": checks.get("previous"),
+        },
+    )
+    return read_draft(session, document.slug, version=draft)
+
+
+def continue_match(
+    session: Session,
+    slug: str,
+    key: str,
+    earlier_key: str,
     *,
-    keep: str,
+    actor: Actor,
+    expected_revision: int | None = None,
+) -> DraftView:
+    """Say a new clause of the draft is the same rule as a clause of the version before that
+    nothing continues: renumbered, reworded, or both.
+
+    It continues that clause as a match made at the upload would, so a citation of the earlier
+    clause says where its rule is now. The flag on the clause is settled by the decision, the
+    other flags follow it, and saying it is a different rule undoes it.
+    """
+    document = _document(session, slug)
+    draft = _require_draft(session, document, lock=True, expected_revision=expected_revision)
+    previous = _latest_published(session, document)
+    label = (draft.parse_checks or {}).get("previous")
+    if previous is None or not isinstance(label, str):
+        raise MatchRefused(f"{slug}'s draft is its first version, so no rule came before it.")
+    found = session.execute(
+        select(DocumentNode, NodeText)
+        .join(NodeText, NodeText.node_id == DocumentNode.id)
+        .where(
+            DocumentNode.document_version_id == draft.id,
+            DocumentNode.canonical_key == key,
+            NodeText.is_authoritative,
+        )
+    ).first()
+    if found is None:
+        raise NoClause(f"{slug}'s draft has no clause {key}.")
+    node, text_now = found
+    if node.previous_node_id is not None:
+        raise MatchRefused(
+            f"{_short(key, slug)} continues a clause of version {label} already. Say it is a "
+            "different rule first."
+        )
+    then = session.execute(
+        select(DocumentNode, NodeText)
+        .join(NodeText, NodeText.node_id == DocumentNode.id)
+        .where(
+            DocumentNode.document_version_id == previous.id,
+            DocumentNode.canonical_key == earlier_key,
+            NodeText.is_authoritative,
+        )
+    ).first()
+    if then is None:
+        raise NoClause(f"Version {label} of {slug} has no clause {_short(earlier_key, slug)}.")
+    earlier, text_then = then
+    taken = session.scalar(
+        select(DocumentNode.canonical_key).where(
+            DocumentNode.document_version_id == draft.id,
+            DocumentNode.previous_node_id == earlier.id,
+        )
+    )
+    if taken is not None:
+        raise MatchRefused(
+            f"Version {label}'s {_short(earlier_key, slug)} is continued by "
+            f"{_short(taken, slug)} already."
+        )
+    node.previous_node_id = earlier.id
+    node.change_type = _change_of(
+        Later(key, node.label, text_now.heading, text_now.body_text),
+        Earlier(
+            earlier.id, earlier.canonical_key, earlier.label, text_then.heading, text_then.body_text
+        ),
+    )
+    checks: dict[str, Any] = dict(draft.parse_checks or {})
+    checks["removed"] = [
+        gone for gone in checks.get("removed", []) if gone.get("key") != earlier.canonical_key
+    ]
+    checks["rejected"] = [
+        pair
+        for pair in checks.get("rejected", [])
+        if pair != {"node": str(node.id), "earlier": str(earlier.id)}
+    ]
+    draft.parse_checks = checks
+    session.flush()
+    _decided(session, document, draft, node, MATCH_MADE, earlier.canonical_key, actor)
+    _changed(draft, actor)
+    session.flush()
+    record(
+        session,
+        actor=actor,
+        action=DOCUMENT_MATCH_MADE,
+        target_type="document_version",
+        target_id=str(draft.id),
+        details={
+            "document": slug,
+            "title": document.title,
+            "version": draft.version_number,
+            "key": key,
+            "earlier": earlier.canonical_key,
+            "previous": label,
+        },
+    )
+    return read_draft(session, slug, version=draft)
+
+
+def _decided(
+    session: Session,
+    document: Document,
+    draft: DocumentVersion,
+    node: DocumentNode,
+    resolution: str,
+    earlier_key: str | None,
+    actor: Actor,
 ) -> None:
-    """Write the matching flags' sentences again from the matches as they now stand. The flag
-    on `keep` says what was decided about, so it keeps its words."""
+    """Put a reviewer's decision about what a clause continues on the record, once it is made on
+    the clause and in the draft's checks, and bring the matching flags up to date with it.
+
+    The decision settles the clause's flag, over an acceptance given before. A clause no flag
+    spoke for gets one, settled, so the decision is on the record and the review asks nothing
+    new of the clause. Every other flag not resolved is written again from the matches as they
+    now stand, and an open question about an earlier clause that another clause continues now
+    is settled: its clause is a different rule. A question the draft asks now that no flag asks
+    is a new flag.
+    """
     previous = _latest_published(session, document)
     label = (draft.parse_checks or {}).get("previous")
     if previous is None or not isinstance(label, str):
         return
+    flags = list(
+        session.scalars(
+            select(ParseFlag)
+            .where(ParseFlag.document_version_id == draft.id)
+            .order_by(ParseFlag.position)
+        )
+    )
+    now = datetime.now(UTC)
+
+    def settle(flag: ParseFlag, how: str, key: str | None) -> None:
+        flag.accepted_at = None
+        flag.accepted_by_user_id = None
+        flag.resolved_at = now
+        flag.resolved_by_user_id = actor.user_id
+        flag.resolution = how
+        flag.resolution_key = key
+
+    own = [
+        flag
+        for flag in flags
+        if flag.kind == "unmatched_key" and flag.node_id == node.id and flag.resolved_at is None
+    ]
+    for flag in own:
+        settle(flag, resolution, earlier_key)
+    on_record: ParseFlag | None = None
+    if not own:
+        on_record = ParseFlag(
+            document_version_id=draft.id,
+            node_id=node.id,
+            canonical_key=node.canonical_key,
+            kind="unmatched_key",
+            detail="",
+            position=max((flag.position for flag in flags), default=0) + 1,
+        )
+        settle(on_record, resolution, earlier_key)
+        session.add(on_record)
+        flags.append(on_record)
+
     earlier = _earlier(session, previous)
     by_id = {clause.id: clause for clause in earlier}
-    later: dict[str, Later] = {}
+    parts = list(walk_parts(_parts(session, draft)))
+    later = {part.key: Later(part.key, part.label, part.heading, part.text) for part in parts}
     matches: dict[str, Match] = {}
-    for node, text in session.execute(
-        select(DocumentNode, NodeText)
-        .join(NodeText, NodeText.node_id == DocumentNode.id)
-        .where(DocumentNode.document_version_id == draft.id, NodeText.is_authoritative)
-    ).all():
-        new = Later(node.canonical_key, node.label, text.heading, text.body_text)
-        later[new.key] = new
-        old = by_id.get(node.previous_node_id) if node.previous_node_id else None
-        matches[new.key] = Match(
-            change=cast(Change, node.change_type or "added"),
+    for part in parts:
+        old = by_id.get(part.previous) if part.previous else None
+        matches[part.key] = Match(
+            change=cast(Change, part.change or "added"),
             earlier=old,
-            score=similarity(words(new), words(old)) if old else 1.0,
+            score=similarity(words(later[part.key]), words(old)) if old else 1.0,
         )
-    matching = Matching(matches=matches, reused=reused(earlier, matches))
+    continued = {part.previous for part in parts if part.previous}
+    matching = Matching(
+        matches=matches,
+        removed=[clause for clause in earlier if clause.id not in continued],
+        reused=reused(earlier, matches),
+    )
+    rows = {part.key: part.row for part in parts if part.row is not None}
+    asked = _asked(matching, later, rows, dict(draft.parse_checks or {}), flags)
+    earlier_rows = {old.key: old.id for old, _ in asked.values()}
     said = {
-        flag.key: flag.detail
-        for flag in _matching_flags(matching, later, document.slug, label)
-        if flag.key is not None
+        found.key: found
+        for found in _matching_flags(matching, later, document.slug, label, asked=asked)
+        if found.key is not None
     }
+    if on_record is not None:
+        short, then = (
+            _short(node.canonical_key, document.slug),
+            _short(earlier_key or "", document.slug),
+        )
+        found = said.get(node.canonical_key)
+        if resolution == MATCH_MADE:
+            on_record.detail = (
+                found.detail if found else f"{short} continues {then} from version {label}."
+            )
+        else:
+            on_record.detail = f"{short} continued {then} from version {label}."
     for flag in flags:
-        key = flag.canonical_key
-        if key is not None and key != keep and key in said:
-            flag.detail = said[key]
+        if flag.kind != "unmatched_key" or flag.resolved_at is not None or not flag.canonical_key:
+            continue
+        found = said.get(flag.canonical_key)
+        asked_about = _continues(flag)
+        if found is not None:
+            flag.detail = found.detail
+            flag.suggestion = _stored(found, rows, earlier_rows)
+        elif flag.accepted_at is None and asked_about is not None:
+            gone = by_id.get(asked_about)
+            settle(flag, MATCH_REJECTED, gone.key if gone else None)
+    spoken = {flag.canonical_key for flag in flags if _speaks_for(flag)}
+    order = {part.key: index for index, part in enumerate(parts)}
+    position = max(flag.position for flag in flags) if flags else 0
+    for found in sorted(
+        (found for key, found in said.items() if key not in spoken),
+        key=lambda found: order.get(found.key or "", len(order)),
+    ):
+        position += 1
+        session.add(
+            ParseFlag(
+                document_version_id=draft.id,
+                node_id=rows.get(found.key) if found.key else None,
+                canonical_key=found.key,
+                kind=found.kind,
+                detail=found.detail,
+                position=position,
+                suggestion=_stored(found, rows, earlier_rows),
+            )
+        )
+    session.flush()
+
+
+def _asked(
+    matching: Matching,
+    later: dict[str, Later],
+    rows: Mapping[str, uuid.UUID | None],
+    checks: dict[str, Any],
+    flags: Sequence[ParseFlag] = (),
+    reworded: Set[uuid.UUID] = frozenset(),
+) -> dict[str, tuple[Earlier, float]]:
+    """The questions a draft asks, each about a new clause and an earlier one nothing continues.
+
+    A question a flag asks already stands while the two clauses are still apart and still alike.
+    The rest are asked of the clauses left, closest first, never of a clause whose match a
+    reviewer settled (by accepting its flag, or by deciding what it continues when no fix has
+    reworded it since) nor of a pair a reviewer said is a different rule.
+    """
+    rejected = {(item["node"], item["earlier"]) for item in checks.get("rejected", [])}
+    keys = {row: key for key, row in rows.items() if row is not None}
+    added = {key: later[key] for key, found in matching.matches.items() if found.change == "added"}
+    apart = {clause.id: clause for clause in matching.removed}
+    standing: dict[str, tuple[Earlier, float]] = {}
+    settled: set[str] = set()
+    for flag in flags:
+        key = keys.get(flag.node_id) if flag.node_id else None
+        if flag.kind != "unmatched_key" or key is None:
+            continue
+        asked_about = _continues(flag)
+        old = apart.get(asked_about) if asked_about else None
+        if flag.resolved_at is None and old is not None and key in added:
+            score = similarity(words(added[key]), words(old))
+            if ASK_SIMILARITY <= score < MOVED_SIMILARITY:
+                standing[key] = (old, score)
+        accepted = flag.accepted_at is not None and flag.resolved_at is None
+        if accepted or (flag.resolution in DECIDED and flag.node_id not in reworded):
+            settled.add(key)
+    taken = {old.id for old, _ in standing.values()}
+    fresh = questions(
+        [new for key, new in added.items() if key not in standing and key not in settled],
+        [old for old in matching.removed if old.id not in taken],
+        skip=lambda new, old: (str(rows.get(new.key)), str(old.id)) in rejected,
+    )
+    return {**standing, **fresh}
 
 
 def _positions(node: DocumentNode) -> list[int]:
@@ -1264,16 +1670,28 @@ def _change_of(new: Later, old: Earlier | None) -> Change:
     return "unchanged" if words(new) == words(old) else "modified"
 
 
+@dataclass(frozen=True)
+class Rematched:
+    """A new version's matches as they stand after a fix, and the questions they leave."""
+
+    matching: Matching
+    later: dict[str, Later]
+    label: str
+    asked: dict[str, tuple[Earlier, float]]
+
+
 def _match_again(
     session: Session,
     document: Document,
     roots: list[Part],
     result: Result,
     checks: dict[str, Any],
-) -> tuple[Matching, dict[str, Later], str] | None:
+    flags: Sequence[ParseFlag],
+) -> Rematched | None:
     """For a new version: the clauses a change reworded are matched again, by the rules an upload
     uses, against the earlier clauses nothing continues, never to a rule a reviewer said is a
-    different one. Then every clause's change is worked out again from its key and its words."""
+    different one. Then every clause's change is worked out again from its key and its words,
+    and what the draft asks about its new clauses with them."""
     previous = _latest_published(session, document)
     label = checks.get("previous")
     if previous is None or not isinstance(label, str):
@@ -1312,7 +1730,11 @@ def _match_again(
         for gone in sorted(removed, key=lambda clause: clause.key)
     ]
     matching = Matching(matches=matches, removed=removed, reused=reused(earlier, matches))
-    return matching, later, label
+    rows = {part.key: part.row for part in parts}
+    rewritten = {part.row for part in result.reworded if part.row is not None}
+    return Rematched(
+        matching, later, label, _asked(matching, later, rows, checks, flags, rewritten)
+    )
 
 
 def _store_parts(session: Session, draft: DocumentVersion, roots: list[Part]) -> None:
@@ -1407,21 +1829,17 @@ def _settle_flags(
     clauses: tuple[Clause, ...],
     result: Result,
     edit: Edit,
-    matched: tuple[Matching, dict[str, Later], str] | None,
+    matched: Rematched | None,
+    flags: list[ParseFlag],
     actor: Actor,
 ) -> tuple[list[int], list[int]]:
     """Flags after a fix: each follows its clause to its new key; an open one on the fixed
     clause, or one the change made untrue, is resolved by it; and what the checks and the
     matching find now that no flag says is a new flag. Returns the flags settled and added."""
-    flags = list(
-        session.scalars(
-            select(ParseFlag)
-            .where(ParseFlag.document_version_id == draft.id)
-            .order_by(ParseFlag.position)
-        )
-    )
     rows = {part.row: part for part in walk_parts(roots) if part.row is not None}
+    by_key = {part.key: part.row for part in walk_parts(roots) if part.row is not None}
     gone = {part.row for part in result.gone}
+    reworded = {part.row for part in result.reworded if part.row is not None}
     now = datetime.now(UTC)
     settled: list[int] = []
 
@@ -1439,15 +1857,22 @@ def _settle_flags(
     found_numbering = {(flag.detail, flag.key) for flag in numbering}
     standing: dict[str, Flag] = {}
     fresh: list[Flag] = []
+    earlier_rows: dict[str, uuid.UUID] = {}
     if matched is not None:
-        matching, later, label = matched
+        matching, later, label, asked = (
+            matched.matching,
+            matched.later,
+            matched.label,
+            matched.asked,
+        )
+        earlier_rows = {old.key: old.id for old, _ in asked.values()}
         standing = {
             flag.key: flag
-            for flag in _matching_flags(matching, later, document.slug, label)
+            for flag in _matching_flags(matching, later, document.slug, label, asked=asked)
             if flag.key
         }
         quiet = frozenset(part.key for part in result.marked if part not in result.reworded)
-        fresh = _matching_flags(matching, later, document.slug, label, quiet)
+        fresh = _matching_flags(matching, later, document.slug, label, quiet, asked)
 
     for flag in flags:
         if flag.node_id in gone:
@@ -1461,6 +1886,7 @@ def _settle_flags(
             said = standing.get(flag.canonical_key or "")
             if said is not None:
                 flag.detail = said.detail
+                flag.suggestion = _stored(said, by_key, earlier_rows)
         if not open_(flag):
             continue
         if flag.node_id is not None and flag.node_id == result.subject.row:
@@ -1476,23 +1902,19 @@ def _settle_flags(
                 resolve(flag)
             else:
                 flag.detail = said.detail
+                flag.suggestion = _stored(said, by_key, earlier_rows)
 
     held = {
         (flag.kind, flag.detail, flag.canonical_key)
         for flag in flags
         if flag.resolved_at is None and flag.kind == "numbering_gap"
     }
-    matched_keys = {
-        flag.canonical_key
-        for flag in flags
-        if flag.resolved_at is None and flag.kind == "unmatched_key"
-    }
+    matched_keys = {flag.canonical_key for flag in flags if _speaks_for(flag, reworded)}
     order = {part.key: index for index, part in enumerate(walk_parts(roots))}
     new = [
         *(flag for flag in numbering if (flag.kind, flag.detail, flag.key) not in held),
         *(flag for flag in fresh if flag.key not in matched_keys),
     ]
-    by_key = {part.key: part.row for part in walk_parts(roots) if part.row is not None}
     position = max((flag.position for flag in flags), default=0)
     added: list[int] = []
     for finding in sorted(new, key=lambda found: order.get(found.key or "", len(order))):
@@ -1505,7 +1927,7 @@ def _settle_flags(
                 kind=finding.kind,
                 detail=finding.detail,
                 position=position,
-                suggestion=_stored(finding, by_key),
+                suggestion=_stored(finding, by_key, earlier_rows),
             )
         )
         added.append(position)
@@ -1546,10 +1968,17 @@ def fix_clause(
                 f"({found.key[:60]}…), which nests it too deeply."
             )
     checks: dict[str, Any] = dict(draft.parse_checks or {})
-    matched = _match_again(session, document, roots, result, checks)
+    flags = list(
+        session.scalars(
+            select(ParseFlag)
+            .where(ParseFlag.document_version_id == draft.id)
+            .order_by(ParseFlag.position)
+        )
+    )
+    matched = _match_again(session, document, roots, result, checks, flags)
     _store_parts(session, draft, roots)
     settled, added = _settle_flags(
-        session, document, draft, roots, clauses, result, edit, matched, actor
+        session, document, draft, roots, clauses, result, edit, matched, flags, actor
     )
     for gone in result.gone:
         if gone.row is not None:
