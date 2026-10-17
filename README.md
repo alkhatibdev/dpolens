@@ -27,10 +27,10 @@
 </p>
 
 > [!NOTE]
-> **Pre-release.** There is no published image yet: `docker compose up` builds a whole instance
-> from source. Interfaces (the HTTP API, the pack format, the database schema) change without
-> notice until 1.0. [What exists today](#what-exists-today) has the detail, and watching the
-> repository tells you when v0.1 lands.
+> **Pre-release.** 0.1.0-rc.1 is a release candidate for 0.1.0, and `docker compose up`
+> downloads its images. Interfaces (the HTTP API, the pack format, the database schema) change
+> without notice until 1.0. [What exists today](#what-exists-today) has the detail, and
+> watching the repository tells you when 0.1.0 lands.
 
 ## Getting it running
 
@@ -388,11 +388,11 @@ opened, and exports the same files as `dpolens governance export`. Settings show
 instance is set up: how long a question is kept and what is taken out of it, when a session
 ends, where assistants connect, and that no AI provider is used.
 [docs/configuration.md](docs/configuration.md) lists every setting and how to change it. The
-interface is English, built so an Arabic one can follow, and it works on a phone. There is no
-published image yet: `docker compose up` builds from source, and once a version is released it
-downloads that version's images, built for amd64 and arm64 and attested.
-[docs/releases.md](docs/releases.md) says what a release publishes and how to check that an
-image was built here.
+interface is English, built so an Arabic one can follow, and it works on a phone. Each
+release's images are published, built for amd64 and arm64 and attested, and `docker compose up`
+downloads the ones the checkout names; only a version that has not been released is built from
+source. [docs/releases.md](docs/releases.md) says what a release publishes and how to check
+that an image was built here.
 
 ## Contributing
 

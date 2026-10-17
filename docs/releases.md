@@ -22,7 +22,8 @@ The release's page on GitHub holds its notes, which are the same as its section 
 [CHANGELOG.md](../CHANGELOG.md), and a pack archive of every law the release carries, for an
 instance with no way to the internet.
 
-There is no published release yet, so there are no images to download.
+The repository's [releases](https://github.com/alkhatibdev/dpolens/releases) list every one,
+the app's and each law pack's.
 
 ## Which version an instance runs
 
