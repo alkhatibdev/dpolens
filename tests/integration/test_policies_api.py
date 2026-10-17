@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx2
 import pytest
@@ -620,6 +621,20 @@ class TestFixing:
         reader = signed_in(app_client, DEVELOPER)
         assert fixed(reader, "aup", "move-out", "aup:2.1").status_code == 403
 
+    def test_a_numbering_flag_stays_open_when_its_clause_only_lost_its_neighbours(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        made = upload(client, "/v1/policies", "acceptable-use.md", slug="aup-gap")
+        assert made.status_code == 201, made.text
+
+        # 2.2 goes out a level and 2.4 comes along; 2.2 goes back under 2, and 2.4 stays out.
+        fixed(client, "aup-gap", "move-out", "aup-gap:2.2")
+        draft = fixed(client, "aup-gap", "move-under", "aup-gap:2.2").json()
+
+        gap = next(flag for flag in draft["flags"] if flag["detail"] == "2.4 follows 2.2.")
+        assert (gap["key"], gap["resolved_at"]) == ("aup-gap:2.4", None)
+
     def test_heading_or_text_goes_both_ways(self, app_client: TestClient) -> None:
         client = signed_in(app_client, ADMIN)
 
@@ -681,6 +696,150 @@ class TestFixing:
             "removed": 0,
         }
         assert open_flags(draft) == []
+
+
+def settle_and_publish(client: TestClient, slug: str) -> None:
+    draft, _ = draft_of(client, slug)
+    left = [flag["position"] for flag in open_flags(draft)]
+    if left:
+        client.post(
+            f"/v1/policies/{slug}/draft/flags/accept",
+            json={"positions": left},
+            headers=SAME_ORIGIN,
+        )
+    published = client.post(f"/v1/policies/{slug}/draft/publish", headers=SAME_ORIGIN)
+    assert published.status_code == 200, published.text
+
+
+class TestLibrary:
+    """A policy's versions and any two compared: version 2 inserts a rule at 4.2, and version 3
+    takes it out again, so every rule of version 3 is where version 1 had it."""
+
+    def test_the_versions_say_which_is_in_force_and_until_when(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        first = upload(
+            client, "/v1/policies", "retention-v1.md", slug="history", effective_date="2025-09-01"
+        )
+        assert first.status_code == 201, first.text
+        settle_and_publish(client, "history")
+        for name, effective in (
+            ("retention-v2.md", "2026-02-01"),
+            ("retention-v1.md", "2099-01-01"),
+        ):
+            path = "/v1/policies/history/versions"
+            assert upload(client, path, name, effective_date=effective).status_code == 201
+            settle_and_publish(client, "history")
+        assert upload(client, "/v1/policies/history/versions", "retention-v2.md").status_code == 201
+
+        listed = client.get("/v1/policies/history/versions", headers=SAME_ORIGIN).json()
+
+        assert [
+            (entry["label"], entry["state"], entry["effective_date"], entry["until"])
+            for entry in listed["versions"]
+        ] == [
+            ("4", "draft", listed["versions"][0]["effective_date"], None),
+            ("3", "scheduled", "2099-01-01", None),
+            ("2", "in_force", "2026-02-01", "2098-12-31"),
+            ("1", "replaced", "2025-09-01", "2026-01-31"),
+        ]
+        draft = listed["versions"][0]
+        assert (draft["created_by"], draft["flags"] == draft["open"]) == ("Yousef Haddad", True)
+        assert listed["versions"][2]["published_by"] == "Yousef Haddad"
+        assert listed["versions"][2]["source"]["name"] == "retention-v2.md"
+
+    def test_a_reader_sees_every_published_version_and_no_draft(
+        self, app_client: TestClient
+    ) -> None:
+        listed = (
+            signed_in(app_client, DEVELOPER)
+            .get("/v1/policies/history/versions", headers=SAME_ORIGIN)
+            .json()
+        )
+
+        assert [entry["state"] for entry in listed["versions"]] == [
+            "scheduled",
+            "in_force",
+            "replaced",
+        ]
+
+    def test_a_section_reads_with_the_clauses_numbered_under_it(
+        self, app_client: TestClient
+    ) -> None:
+        # 4.1 is keyed history:4.1, not history:4:4.1, and is still read as part of 4.
+        branch = (
+            signed_in(app_client, DEVELOPER)
+            .get(f"/v1/clauses/{quote('history:4')}/subtree", headers=SAME_ORIGIN)
+            .json()
+        )
+
+        assert [clause["key"] for clause in branch] == [
+            "history:4",
+            "history:4.1",
+            "history:4.2",
+            "history:4.3",
+            "history:4.4",
+        ]
+
+    def test_two_adjacent_versions_compare_as_they_were_matched(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, DEVELOPER)
+
+        found = client.get(
+            "/v1/policies/history/compare", params={"from": 2, "to": 1}, headers=SAME_ORIGIN
+        )
+
+        assert found.status_code == 200, found.text
+        compared = found.json()
+        assert (compared["earlier"]["label"], compared["later"]["label"]) == ("1", "2")
+        assert compared["changes"] == {
+            "added": 1,
+            "modified": 1,
+            "moved": 2,
+            "unchanged": 3,
+            "removed": 0,
+        }
+        by_key = {clause["key"]: clause for clause in compared["clauses"]}
+        assert (by_key["history:4.3"]["change"], by_key["history:4.3"]["earlier"]["key"]) == (
+            "moved",
+            "history:4.2",
+        )
+        assert by_key["history:4.2"]["earlier"] is None
+        assert by_key["history:5.1"]["earlier"]["text"] == "This policy is reviewed every year."
+
+    def test_versions_further_apart_follow_each_rule_through_the_ones_between(
+        self, app_client: TestClient
+    ) -> None:
+        compared = (
+            signed_in(app_client, DEVELOPER)
+            .get("/v1/policies/history/compare", params={"from": 1, "to": 3}, headers=SAME_ORIGIN)
+            .json()
+        )
+
+        # The contractor rule came in with version 2 and left with version 3.
+        assert compared["changes"] == {
+            "added": 0,
+            "modified": 0,
+            "moved": 0,
+            "unchanged": 6,
+            "removed": 0,
+        }
+
+    def test_only_two_different_published_versions_compare(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+
+        itself = client.get(
+            "/v1/policies/history/compare", params={"from": 2, "to": 2}, headers=SAME_ORIGIN
+        )
+        draft = client.get(
+            "/v1/policies/history/compare", params={"from": 2, "to": 4}, headers=SAME_ORIGIN
+        )
+
+        assert (itself.status_code, itself.json()["type"]) == (400, "/problems/invalid-request")
+        assert (draft.status_code, draft.json()["type"]) == (404, "/problems/policy-not-found")
+        assert "no published version 4" in draft.json()["detail"]
 
 
 class TestEndings:

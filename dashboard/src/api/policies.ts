@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "./client";
 import type { components } from "./schema";
@@ -13,6 +13,10 @@ export type PolicyVersion = components["schemas"]["PolicyVersion"];
 export type Edit = components["schemas"]["Fix"]["edit"];
 export type FlagSuggestion = components["schemas"]["FlagSuggestion"];
 export type SplitPlace = components["schemas"]["SplitPlace"];
+export type PolicyVersions = components["schemas"]["PolicyVersions"];
+export type VersionEntry = components["schemas"]["VersionEntry"];
+export type PolicyComparison = components["schemas"]["PolicyComparison"];
+export type ComparedClause = components["schemas"]["ComparedClause"];
 
 export function usePolicies(enabled = true) {
   return useQuery({
@@ -23,6 +27,32 @@ export function usePolicies(enabled = true) {
 }
 
 const draftKey = (slug: string) => ["policies", slug, "draft"];
+const versionsKey = (slug: string) => ["policies", slug, "versions"];
+
+/** A policy's versions; the draft is among them only for those who review policies. */
+export function usePolicyVersions(slug: string, enabled = true) {
+  return useQuery({
+    queryKey: versionsKey(slug),
+    enabled,
+    queryFn: () => unwrap(api.GET("/v1/policies/{slug}/versions", { params: { path: { slug } } })),
+  });
+}
+
+/** Two published versions compared, clause by clause. Published versions never change. */
+export function useComparison(slug: string, from: number | null, to: number | null) {
+  return useQuery({
+    queryKey: ["policies", slug, "compare", from, to],
+    enabled: from !== null && to !== null && from !== to,
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      unwrap(
+        api.GET("/v1/policies/{slug}/compare", {
+          params: { path: { slug }, query: { from: from ?? 0, to: to ?? 0 } },
+        }),
+      ),
+  });
+}
 
 export function useDraft(slug: string) {
   return useQuery({
@@ -89,6 +119,7 @@ export function useUpload() {
     onSuccess: (draft) => {
       client.setQueryData(draftKey(draft.version.slug), draft);
       void client.invalidateQueries({ queryKey: ["policies"], exact: true });
+      void client.invalidateQueries({ queryKey: versionsKey(draft.version.slug) });
     },
   });
 }
@@ -191,7 +222,9 @@ export function usePublish(slug: string) {
     onSuccess: () => {
       client.removeQueries({ queryKey: draftKey(slug) });
       void client.invalidateQueries({ queryKey: ["policies"], exact: true });
+      void client.invalidateQueries({ queryKey: versionsKey(slug) });
       void client.invalidateQueries({ queryKey: ["documents"] });
+      void client.invalidateQueries({ queryKey: ["document", slug] });
     },
   });
 }
@@ -208,6 +241,7 @@ export function useDiscard(slug: string) {
     onSuccess: () => {
       client.removeQueries({ queryKey: draftKey(slug) });
       void client.invalidateQueries({ queryKey: ["policies"], exact: true });
+      void client.invalidateQueries({ queryKey: versionsKey(slug) });
     },
   });
 }

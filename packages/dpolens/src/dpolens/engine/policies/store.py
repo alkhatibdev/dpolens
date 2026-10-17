@@ -64,6 +64,7 @@ from dpolens.engine.policies.fixing import (
 from dpolens.engine.policies.fixing import walk as walk_parts
 from dpolens.engine.policies.keys import slug_of
 from dpolens.engine.policies.parse import parse_policy, read_file
+from dpolens.engine.policies.patterns import parse_label
 from dpolens.engine.policies.reading import Line, as_rows, from_rows, lines_of
 from dpolens.engine.policies.tree import Clause, Edit, Flag, Layer, ParsedPolicy
 from dpolens.engine.policies.versions import (
@@ -1369,6 +1370,35 @@ def _store_parts(session: Session, draft: DocumentVersion, roots: list[Part]) ->
     session.flush()
 
 
+KEYS_COLLIDED = re.compile(r".+ names \d+ clauses\.")
+"""How the check that every key names one clause says two do."""
+
+
+def _in_sequence(roots: list[Part], row: uuid.UUID | None) -> bool:
+    """Whether a clause still follows a sibling numbered in its own style. A numbering flag the
+    checks no longer raise is settled only then: its numbers now run in order, rather than the
+    clause having been moved away from the numbers it was out of step with."""
+
+    def look(siblings: list[Part]) -> bool | None:
+        for index, part in enumerate(siblings):
+            if part.row == row:
+                label = parse_label(part.label) if part.label else None
+                if label is None or label.bullet:
+                    return False
+                styles = {style for style, _ in label.readings()}
+                for before in siblings[:index]:
+                    other = parse_label(before.label) if before.label else None
+                    if other is not None and styles & {style for style, _ in other.readings()}:
+                        return True
+                return False
+            found = look(part.children)
+            if found is not None:
+                return found
+        return None
+
+    return row is not None and bool(look(roots))
+
+
 def _settle_flags(
     session: Session,
     document: Document,
@@ -1436,7 +1466,9 @@ def _settle_flags(
         if flag.node_id is not None and flag.node_id == result.subject.row:
             resolve(flag)
         elif flag.kind == "numbering_gap":
-            if (flag.detail, flag.canonical_key) not in found_numbering:
+            untrue = (flag.detail, flag.canonical_key) not in found_numbering
+            collided = KEYS_COLLIDED.fullmatch(flag.detail) is not None
+            if untrue and (collided or _in_sequence(roots, flag.node_id)):
                 resolve(flag)
         elif flag.kind == "unmatched_key" and matched is not None:
             said = standing.get(flag.canonical_key or "")

@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 
 import { Shell } from "@/layout/Shell";
 import { ClausePage } from "@/pages/Clause";
+import { ComparePage } from "@/pages/Compare";
 import { DocumentPage } from "@/pages/Document";
 import { GovernancePage } from "@/pages/Governance";
 import { Home } from "@/pages/Home";
@@ -48,6 +49,7 @@ export const routes = [
       { path: "logs/governance", element: <GovernancePage /> },
       { path: "library", element: <LibraryPage /> },
       { path: "library/:slug", element: <DocumentPage /> },
+      { path: "library/:slug/compare", element: <ComparePage /> },
       { path: "clauses/:key", element: <ClausePage /> },
       { path: "policies", element: <PoliciesPage /> },
       { path: "policies/:slug/draft", element: <PolicyDraftPage /> },

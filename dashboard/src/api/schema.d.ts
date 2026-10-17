@@ -632,7 +632,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * A policy's versions: in force, replaced, scheduled, and its draft for reviewers
+     * @description Each version with the day it takes effect and, once a later one is published to take over, its last day in force. Takes `documents.read`; the draft is listed only for those who hold `documents.upload` or `documents.publish`.
+     */
+    get: operations["list_versions_v1_policies__slug__versions_get"];
     put?: never;
     /** Upload a new version of a policy, matched to the version before it */
     post: operations["upload_new_version_v1_policies__slug__versions_post"];
@@ -746,6 +750,26 @@ export interface paths {
     put?: never;
     /** Archive a policy: nothing searches it, and its clauses still read by key */
     post: operations["archive_v1_policies__slug__archive_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/policies/{slug}/compare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Two published versions of a policy, clause by clause
+     * @description Each clause is followed from one version to the next through the matches made when each was uploaded and reviewed, so a rejected match or a fix counts as it did then. The two are compared in the order they take effect, whichever is named first.
+     */
+    get: operations["compare_versions_v1_policies__slug__compare_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -990,6 +1014,25 @@ export interface components {
        * @description Label and heading, outermost first, down to it
        */
       trail: components["schemas"]["Step"][];
+    };
+    /** ComparedClause */
+    ComparedClause: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string | null;
+      /** Heading */
+      heading: string | null;
+      /** Text */
+      text: string;
+      /**
+       * Change
+       * @description Against the earlier version: added, modified, moved or unchanged
+       * @enum {string}
+       */
+      change: "added" | "modified" | "moved" | "unchanged";
+      /** @description The clause of the earlier version it continues */
+      earlier: components["schemas"]["EarlierClause"] | null;
     };
     /** Coverage */
     Coverage: {
@@ -1937,6 +1980,32 @@ export interface components {
        */
       status: "active" | "deactivated" | "erased";
     };
+    /** PolicyComparison */
+    PolicyComparison: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      earlier: components["schemas"]["VersionRef"];
+      later: components["schemas"]["VersionRef"];
+      /**
+       * Clauses
+       * @description Every clause of the later version, in order
+       */
+      clauses: components["schemas"]["ComparedClause"][];
+      /**
+       * Removed
+       * @description Clauses of the earlier version nothing in the later one continues
+       */
+      removed: components["schemas"]["Removed"][];
+      /**
+       * Changes
+       * @description How many clauses were added, modified, moved, unchanged and removed
+       */
+      changes: {
+        [key: string]: number;
+      };
+    };
     /** PolicyDraft */
     PolicyDraft: {
       version: components["schemas"]["PolicyVersion"];
@@ -2113,6 +2182,23 @@ export interface components {
        * @description Once published, whether its clauses are embedded yet, so that searching by meaning finds them. Searching by words finds them at once
        */
       indexing: ("todo" | "doing" | "succeeded" | "failed") | null;
+    };
+    /** PolicyVersions */
+    PolicyVersions: {
+      /** Slug */
+      slug: string;
+      /** Title */
+      title: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "archived";
+      /**
+       * Versions
+       * @description The draft first, for those who review policies, then every published version, the latest to take effect first. A discarded draft is never listed
+       */
+      versions: components["schemas"]["VersionEntry"][];
     };
     /**
      * ProblemDocument
@@ -2682,6 +2768,72 @@ export interface components {
        * Format: date-time
        */
       checked_at: string;
+    };
+    /** VersionEntry */
+    VersionEntry: {
+      /**
+       * Number
+       * @description The version's number among this policy's uploads
+       */
+      number: number;
+      /**
+       * Label
+       * @description The label citations show; for a draft, the one it takes
+       */
+      label: string;
+      /**
+       * State
+       * @description A draft, published to take effect later, in force today, or replaced
+       * @enum {string}
+       */
+      state: "draft" | "scheduled" | "in_force" | "replaced";
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
+      /**
+       * Until
+       * @description Its last day in force, once a later version is published to take over
+       */
+      until: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Created By
+       * @description Who uploaded it; empty from the command line
+       */
+      created_by: string | null;
+      /** Published At */
+      published_at: string | null;
+      /** Published By */
+      published_by: string | null;
+      source: components["schemas"]["OriginalFile"];
+      /**
+       * Flags
+       * @description For a draft, every flag it has
+       */
+      flags: number | null;
+      /**
+       * Open
+       * @description For a draft, the flags still to settle
+       */
+      open: number | null;
+    };
+    /** VersionRef */
+    VersionRef: {
+      /** Number */
+      number: number;
+      /** Label */
+      label: string;
+      /**
+       * Effective Date
+       * Format: date
+       */
+      effective_date: string;
     };
     /**
      * WhereItIsNow
@@ -5547,6 +5699,77 @@ export interface operations {
       };
     };
   };
+  list_versions_v1_policies__slug__versions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyVersions"];
+        };
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
   upload_new_version_v1_policies__slug__versions_post: {
     parameters: {
       query: {
@@ -6323,6 +6546,92 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description No usable credential */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The credential may not do this */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description No such clause or document */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+    };
+  };
+  compare_versions_v1_policies__slug__compare_get: {
+    parameters: {
+      query: {
+        /** @description One version, by its number */
+        from: number;
+        /** @description The other version, by its number */
+        to: number;
+      };
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyComparison"];
+        };
+      };
+      /** @description The request does not make sense */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
       };
       /** @description No usable credential */
       401: {

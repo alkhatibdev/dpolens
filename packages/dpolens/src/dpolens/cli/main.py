@@ -51,6 +51,7 @@ from dpolens.engine.packs.format import PackFormatError
 from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
 from dpolens.engine.policies.blocks import UnreadablePolicy
 from dpolens.engine.policies.fixing import CannotFix
+from dpolens.engine.policies.library import SameVersion
 from dpolens.engine.policies.store import (
     BadSlug,
     DraftExists,
@@ -106,6 +107,7 @@ EXPECTED = (
     NoMatch,
     NoClause,
     CannotFix,
+    SameVersion,
     EffectiveDateTooEarly,
     LabelTaken,
     BadSlug,

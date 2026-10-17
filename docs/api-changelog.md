@@ -133,6 +133,13 @@ First version of the API. Everything below is new rather than changed.
   new version of an archived policy brings it back
 - `POST /v1/policies/{slug}/archive` takes a policy out of search and the library, for
   `documents.publish`. Its clauses still read by key, with `archived` true
+- `GET /v1/policies/{slug}/versions` lists a policy's versions with each one's `state`
+  (`in_force`, `scheduled`, `replaced`, and for those who upload or publish, `draft`), its
+  effective date, `until`, who uploaded and published it, and its original file, for
+  `documents.read`. `GET /v1/policies/{slug}/compare?from=&to=` compares two published versions
+  clause by clause, following each rule through the versions between them; a version compared
+  with itself gets `400` and `/problems/invalid-request`, and one that is not published `404` and
+  `/problems/policy-not-found`
 - `GET /v1/policies/{slug}/versions/{number}/original` returns the file a version was read from,
   checked against the hash it was stored with. A file that is missing or has changed gets `500`
   and `/problems/original-unavailable` instead of a download

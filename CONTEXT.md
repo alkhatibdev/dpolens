@@ -124,6 +124,12 @@ A published version whose effective date has not arrived yet. It appears in the 
 but search does not return it by default.
 _Avoid_: Future version, upcoming, pending
 
+**Replaced**:
+A published version a later one has taken over from: in force from its own effective date to
+the day before the next one's. It still reads as it stood, and a citation of one of its clauses
+says where that rule is now.
+_Avoid_: Superseded, old, archived (that is a whole policy no longer applying)
+
 **Pinned**:
 A law held at a chosen version by the organisation, so that search keeps returning that
 text even after a newer version comes into force.

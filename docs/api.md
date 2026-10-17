@@ -302,6 +302,17 @@ version that takes effect later (`scheduled`), the open draft and how far its re
 published with unless it is given one (`next_label`), and whether the latest published version
 is embedded yet (`indexing`). A draft carries `next_label` too: the label it is published with.
 
+`GET /v1/policies/{slug}/versions` lists a policy's versions, for `documents.read`: each with its
+`state` (`in_force`, `scheduled`, `replaced`, or `draft`, which only those who upload or publish
+policies see), the day it takes effect, `until`, its last day in force once a later version is
+published to take over, who uploaded and published it, and its original file.
+`GET /v1/policies/{slug}/compare?from=1&to=3` compares two published versions clause by clause,
+in the order they take effect: each clause of the later one with its `change` and the clause of
+the earlier one it continues (`earlier`), the clauses nothing continues (`removed`), and how many
+of each (`changes`). A rule is followed through every version between the two, along the matches
+made when each was uploaded and reviewed. A version compared with itself is refused with `400`,
+and one that is not published with `404`.
+
 `GET /v1/policies/{slug}/versions/{number}/file` is the file as it was read: every paragraph in
 order, with what it looked like, the clause it went to, or why it was set aside. `clauses` names
 every clause that holds part of a paragraph, two once a clause is split inside it. It is kept
