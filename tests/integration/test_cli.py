@@ -222,6 +222,7 @@ def test_a_policy_goes_from_a_file_to_a_citation(
         revised
     )
     assert "was 4.2" in revised.output
+    assert "Nothing to settle" not in said(revised)
 
     refused = runner.invoke(app, ["policy", "publish", "retention"])
     assert refused.exit_code == 1
@@ -258,6 +259,38 @@ def test_a_match_can_be_said_to_be_a_different_rule(
     shown = runner.invoke(app, ["policy", "draft", "retention"])
     assert "said to be a different rule by the command line" in said(shown)
     assert "2 new, 1 reworded, 1 renumbered, 3 the same, 1 removed." in said(shown)
+
+
+def test_a_new_clause_can_be_said_to_be_the_same_rule_from_the_shell(
+    instance: None, clean_tables: None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("DPOLENS_ORIGINALS_DIR", str(tmp_path))
+    first, second = str(POLICIES / "reworded-v1.md"), str(POLICIES / "reworded-v2.md")
+    for slug in ("retention", "asked"):
+        runner.invoke(
+            app, ["policy", "upload", first, "--slug", slug, "--effective-date", "2026-02-01"]
+        )
+        runner.invoke(app, ["policy", "publish", slug])
+    revised = runner.invoke(
+        app, ["policy", "revise", "retention", second, "--effective-date", "2026-10-01"]
+    )
+    runner.invoke(app, ["policy", "revise", "asked", second, "--effective-date", "2026-10-01"])
+    assert "has most of its words. Is it the same rule?" in said(revised)
+    assert "dpolens policy same-rule retention KEY EARLIER" in said(revised)
+    assert "Nothing to settle" not in said(revised)
+
+    paired = runner.invoke(app, ["policy", "same-rule", "retention", "4.4", "4.3"])
+    refused = runner.invoke(app, ["policy", "same-rule", "retention", "4.2", "4.3"])
+    answered = runner.invoke(app, ["policy", "reject-match", "asked", "4.4"])
+
+    assert paired.exit_code == 0, paired.output
+    assert "4.4 continues version 1's 4.3, renumbered and reworded." in said(paired)
+    assert refused.exit_code == 1
+    assert "Version 1's 4.3 is continued by 4.4 already." in said(refused)
+    assert "4.4 stays new: it is a different rule from version 1's 4.3." in said(answered)
+    shown = said(runner.invoke(app, ["policy", "draft", "retention"]))
+    assert "(said to be the same rule as 4.3 by the command line)" in shown
+    assert "1 new, 0 reworded, 2 renumbered, 4 the same, 0 removed." in shown
 
 
 def test_how_a_clause_was_read_is_fixed_from_the_shell(

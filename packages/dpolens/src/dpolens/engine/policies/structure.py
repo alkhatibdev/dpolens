@@ -37,6 +37,11 @@ CONTENTS_WORDS = {
     "فهرس المحتويات", "الفهرس", "جدول المحتويات",
 }  # fmt: skip
 PAGE_NUMBER = re.compile(r"\t\s*\d+\s*$")
+PROSE_END = (".", "!", "?", ":", "؟", "؛", "۔")
+"""What a sentence of prose ends with, or a lead-in to what follows it."""
+
+CLOSERS = "\"'”’)]»"
+NUMBERS = re.compile(r"[0-9٠-٩۰-۹]+")
 
 Marker = tuple[str, ...]
 """What placed a clause, such as ("style", "2"), ("type", "0016.001"), ("list", id, "1") or
@@ -90,6 +95,20 @@ def words(text: str) -> int:
 
 def ends_a_sentence(text: str) -> bool:
     return text.rstrip().endswith(SENTENCE_END)
+
+
+def reads_as_prose(text: str) -> bool:
+    """Whether a line ends as a sentence does, or as a lead-in: what a policy's opening prose
+    ends with, and what a line of metadata such as "Owner: IT · Version 1.0" does not."""
+    return text.rstrip().rstrip(CLOSERS).rstrip().endswith(PROSE_END)
+
+
+def inline_contents(text: str) -> bool:
+    """A contents page on one line, "Contents: 1 Purpose · 2 Scope", its entries numbered."""
+    head, colon, rest = text.strip().partition(":")
+    return (
+        bool(colon) and head.strip().lower() in CONTENTS_WORDS and len(NUMBERS.findall(rest)) >= 2
+    )
 
 
 @dataclass(frozen=True)
@@ -608,6 +627,9 @@ class Builder:
                     in_contents = True
                     result.append(replace(item, place="contents"))
                     continue
+                if inline_contents(item.text) and item.place == "body":
+                    result.append(replace(item, place="contents"))
+                    continue
                 if in_contents and item.text.strip():
                     entry = self.entry(item.text)
                     # An entry ends in its page number, or names a heading that comes later.
@@ -742,7 +764,8 @@ class Builder:
         return isinstance(item, Paragraph) and item.centred
 
     def front(self, items: list[Item]) -> None:
-        """Before the policy begins: a title, a cover and metadata are set aside; prose is kept."""
+        """Before the policy begins: a title, a cover and metadata are set aside; prose is kept,
+        which is a line of eight words or more, set as text, that ends as a sentence does."""
         for index, item in enumerate(items):
             if isinstance(item, Table):
                 self.tables_seen.add(signature(item))
@@ -757,6 +780,7 @@ class Builder:
                 text
                 and item.place == "body"
                 and words(text) >= 8
+                and reads_as_prose(text)
                 and not (item.bold or item.centred or item.capitals or item.heading_level)
             ):
                 node = Node(kind="paragraph", layer="native_structure")

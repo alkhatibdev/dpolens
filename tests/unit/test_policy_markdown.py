@@ -61,6 +61,32 @@ def test_front_matter_and_a_list_of_links_to_sections_are_set_aside() -> None:
     assert reasons == ["front matter", "title", "front matter", "front matter", "contents"]
 
 
+def test_a_line_before_the_policy_is_kept_only_when_it_reads_as_prose() -> None:
+    policy = parse_policy(
+        """# Acceptable use policy
+
+Owner: Information Security · Version 1.0 · Approved 10 October 2026
+
+Contents: 1 Purpose · 2 Scope · 3 Using Acme systems · 4 Monitoring
+
+This policy sets out how Acme's systems may be used, and by whom, from today.
+
+## 1. Purpose
+
+1.1 Acme's systems are for Acme's work.
+""".encode(),
+        "aup.md",
+        "x",
+    )
+
+    assert [(block.reason, block.text[:12]) for block in policy.set_aside] == [
+        ("title", "Acceptable u"),
+        ("front matter", "Owner: Infor"),
+        ("contents", "Contents: 1 "),
+    ]
+    assert keys(policy) == ["p1", "1", "1.1"]
+
+
 def test_a_nested_list_stays_with_its_lead_in() -> None:
     lead_in = clause(parse("headings.md"), "what-we-collect:account-data:p1")
 

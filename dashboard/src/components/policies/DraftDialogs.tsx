@@ -7,6 +7,7 @@ import {
   useEditDraft,
   usePublish,
   useRejectMatch,
+  useSameRule,
   type DraftClause,
   type PolicyDraft,
   type PolicySummary,
@@ -19,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDate, formatWhen } from "@/lib/format";
 import { conflictOf, isolate, shortKey, today, walk, type Conflict } from "@/lib/policies";
+import { cn } from "@/lib/utils";
 
 /** The version a new one must take effect after: the latest published, in force or not yet. */
 function latestOf(summary: PolicySummary | undefined): { label: string; date: string } | null {
@@ -406,6 +408,169 @@ export function RejectDialog({
             <Button variant="ghost" size="sm">
               {t("common.cancel")}
             </Button>
+          </DialogClose>
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Which clause of the version before a new clause continues, when no flag asks: the clauses
+ * nothing continues, closest first, and what saying so does to citations.
+ */
+export function SameRuleDialog({
+  clause,
+  draft,
+  onClose,
+  onConflict,
+}: {
+  clause: DraftClause | null;
+  draft: PolicyDraft;
+  onClose: () => void;
+  onConflict: (conflict: Conflict) => void;
+}) {
+  const { t } = useTranslation();
+  const same = useSameRule(draft.version.slug);
+  const [chosen, setChosen] = useState<string | null>(null);
+  if (!clause) {
+    return null;
+  }
+  const slug = draft.version.slug;
+  const key = shortKey(clause.key, slug);
+  const previous = draft.previous ?? "";
+  const removed = new Map(draft.removed.map((gone) => [gone.key, gone]));
+  const candidates = clause.candidates ?? [];
+  const choice = chosen ?? candidates[0]?.key ?? null;
+  const picked = choice ? removed.get(choice) : undefined;
+  const earlier = isolate(shortKey(choice ?? "", slug));
+  const renumbered = picked !== undefined && shortKey(picked.key, slug) !== key;
+  const reworded =
+    picked !== undefined &&
+    (picked.text !== clause.text || (picked.heading ?? null) !== (clause.heading ?? null));
+  const how = renumbered
+    ? reworded
+      ? "renumberedReworded"
+      : "renumbered"
+    : reworded
+      ? "reworded"
+      : "same";
+  const refused =
+    same.error instanceof ApiError && same.error.kind === "match-refused"
+      ? (same.error.problem?.detail ?? "")
+      : null;
+
+  function close() {
+    same.reset();
+    setChosen(null);
+    onClose();
+  }
+
+  return (
+    <Dialog open onOpenChange={(next) => !next && close()}>
+      <DialogContent
+        className="w-[min(600px,calc(100vw-24px))]"
+        title={t("changes.chooseTitle", { label: isolate(previous), key: isolate(key) })}
+      >
+        <div className="flex gap-3 rounded-[14px] bg-panel px-3.5 py-3">
+          <span className="font-mono text-[13px] leading-relaxed font-medium whitespace-nowrap text-brand-dark">
+            {key}
+          </span>
+          <p dir="auto" className="min-w-0 text-sm leading-relaxed text-ink-2">
+            {clause.heading ? <span className="font-semibold">{clause.heading} </span> : null}
+            {clause.text}
+          </p>
+        </div>
+        <p className="text-[15px] leading-relaxed text-ink-2">
+          {t("changes.chooseIntro", { label: isolate(previous) })}
+        </p>
+        <fieldset className="flex flex-col gap-2.5">
+          <legend className="sr-only">
+            {t("changes.chooseTitle", { label: isolate(previous), key: isolate(key) })}
+          </legend>
+          {candidates.map((candidate) => {
+            const gone = removed.get(candidate.key);
+            const selected = candidate.key === choice;
+            return (
+              <label
+                key={candidate.key}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-[14px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
+                  selected
+                    ? "border-2 border-brand-dark bg-brand-soft px-[13px] py-[11px]"
+                    : "border border-line px-3.5 py-3",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="continues"
+                  value={candidate.key}
+                  checked={selected}
+                  onChange={() => setChosen(candidate.key)}
+                  className="sr-only"
+                />
+                <span
+                  aria-hidden
+                  className="mt-0.5 inline-flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 border-brand-dark"
+                >
+                  {selected ? <span className="size-2 rounded-full bg-brand-dark" /> : null}
+                </span>
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-[13px] font-medium text-brand-dark">
+                      {shortKey(candidate.key, slug)}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {t(`changes.closeness.${candidate.closeness}`)}
+                    </span>
+                  </span>
+                  <span dir="auto" className="text-sm leading-relaxed text-ink-2">
+                    {gone?.heading ? <span className="font-semibold">{gone.heading} </span> : null}
+                    {gone?.text}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
+        {choice ? (
+          <p className="text-[15px] leading-relaxed text-ink-2">
+            {t("changes.chooseEffect", {
+              key: isolate(key),
+              label: isolate(previous),
+              earlier,
+              how: t(`changes.how.${how}`),
+            })}
+          </p>
+        ) : null}
+        {refused !== null ? <Notice tone="danger">{refused}</Notice> : null}
+        {same.error && refused === null && !conflictOf(same.error) ? (
+          <Notice tone="danger">{t("common.failed")}</Notice>
+        ) : null}
+        <DialogActions>
+          <Button
+            disabled={same.isPending || !choice}
+            onClick={() =>
+              choice &&
+              same.mutate(
+                { revision: draft.revision, key: clause.key, continues: choice },
+                {
+                  onSuccess: close,
+                  onError: (failure) => {
+                    const conflict = conflictOf(failure);
+                    if (conflict) {
+                      close();
+                      onConflict(conflict);
+                    }
+                  },
+                },
+              )
+            }
+          >
+            {t("changes.sameAs", { key: earlier })}
+          </Button>
+          <DialogClose asChild>
+            <Button variant="ghost">{t("common.cancel")}</Button>
           </DialogClose>
         </DialogActions>
       </DialogContent>

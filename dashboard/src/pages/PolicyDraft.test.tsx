@@ -6,6 +6,7 @@ import type { PolicyDraft } from "@/api/policies";
 import {
   acceptableUseDraft,
   acceptableUseFile,
+  askingDraft,
   dpo,
   policies,
   retentionDraft,
@@ -146,6 +147,113 @@ describe("a draft under review", () => {
 
     const sent = calls.find((call) => call.method === "POST")!;
     expect(sent.headers.get("If-Match")).toBe('"3"');
+  });
+
+  it("asks whether a new clause is a rule nothing continues, and says it is", async () => {
+    const paired: PolicyDraft = {
+      ...retentionDraft,
+      revision: 4,
+      flags: [
+        ...retentionDraft.flags.slice(0, 2),
+        {
+          ...askingDraft.flags[2]!,
+          resolved_by: "Mariam Al Amiri",
+          resolved_at: ACCEPTED_AT,
+          resolution: "match-made",
+          resolution_key: "data-retention:4.3",
+        },
+      ],
+    };
+    const { calls } = serve({
+      ...reviewing,
+      "GET /v1/policies/data-retention/draft": { body: askingDraft },
+      "POST /v1/policies/data-retention/draft/matches/data-retention%3A4.4": { body: paired },
+    });
+    renderAt("/policies/data-retention/draft");
+
+    const question = (await screen.findByText(/^4.4 is new, and version 2's 4.3/)).closest(
+      "div.flex-col",
+    )! as HTMLElement;
+    expect(within(question).getByText("Against version 2's 4.3")).toBeInTheDocument();
+    expect(
+      within(question).getByText("after the end of the financial year", { selector: "ins" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Flag 3 asks whether 4.4 continues it.")).toBeInTheDocument();
+    // 4.4's flag asks already, so only the other new clause offers the choice.
+    expect(screen.getAllByRole("button", { name: "It's the same rule as…" })).toHaveLength(1);
+    await userEvent.click(
+      within(question).getByRole("button", { name: "It's the same rule as 4.3" }),
+    );
+
+    expect(
+      await screen.findByText(/^Fixed: the same rule as 4.3, by Mariam Al Amiri/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Renumbered and reworded, was 4.3")).toBeInTheDocument();
+    const sent = calls.find((call) => call.method === "POST")!;
+    expect(sent.headers.get("If-Match")).toBe('"3"');
+    expect(await sent.json()).toEqual({ continues: "data-retention:4.3" });
+
+    // The decision can be taken back.
+    const answered = screen
+      .getByText(/^Fixed: the same rule as 4.3/)
+      .closest("div.flex-col")! as HTMLElement;
+    await userEvent.click(within(answered).getByRole("button", { name: "It's a different rule" }));
+    expect(screen.getByRole("dialog", { name: "Is 4.4 a different rule?" })).toHaveTextContent(
+      "If this is wrong, It's the same rule as… undoes it.",
+    );
+  });
+
+  it("answers a question with a different rule at once, without asking again", async () => {
+    const { calls } = serve({
+      ...reviewing,
+      "GET /v1/policies/data-retention/draft": { body: askingDraft },
+      "POST /v1/policies/data-retention/draft/matches/data-retention%3A4.4/reject": {
+        body: askingDraft,
+      },
+    });
+    renderAt("/policies/data-retention/draft");
+
+    const question = (await screen.findByText(/^4.4 is new, and version 2's 4.3/)).closest(
+      "div.flex-col",
+    )! as HTMLElement;
+    await userEvent.click(within(question).getByRole("button", { name: "It's a different rule" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const sent = calls.find((call) => call.method === "POST")!;
+    expect(sent.url).toContain("/matches/data-retention%3A4.4/reject");
+    expect(sent.headers.get("If-Match")).toBe('"3"');
+  });
+
+  it("lets any new clause be said to be a rule nothing continues, closest first", async () => {
+    const { calls } = serve({
+      ...reviewing,
+      "GET /v1/policies/data-retention/draft": { body: askingDraft },
+      "POST /v1/policies/data-retention/draft/matches/data-retention%3A4.2": problem(
+        "match-refused",
+        409,
+        { detail: "Version 2's 4.3 is continued by 4.4 already." },
+      ),
+    });
+    renderAt("/policies/data-retention/draft");
+
+    await userEvent.click(await screen.findByRole("button", { name: "It's the same rule as…" }));
+    const chooser = screen.getByRole("dialog", {
+      name: "Which rule of version 2 does 4.2 continue?",
+    });
+    const option = within(chooser).getByRole("radio", { name: /4.3\s*Few of its words/ });
+    expect(option).toBeChecked();
+    expect(chooser).toHaveTextContent(
+      "4.2 becomes version 2's 4.3, renumbered and reworded. A citation of version 2's 4.3 will say its rule is 4.2 now.",
+    );
+    await userEvent.click(
+      within(chooser).getByRole("button", { name: "It's the same rule as 4.3" }),
+    );
+
+    expect(
+      await within(chooser).findByText("Version 2's 4.3 is continued by 4.4 already."),
+    ).toBeInTheDocument();
+    const sent = calls.find((call) => call.method === "POST")!;
+    expect(await sent.json()).toEqual({ continues: "data-retention:4.3" });
   });
 
   it("publishes once every flag is settled, and says so on Policies", async () => {

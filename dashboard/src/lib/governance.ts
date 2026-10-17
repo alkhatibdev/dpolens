@@ -127,6 +127,15 @@ export function describeEntry(t: TFunction, entry: Entry): string {
         earlier: own(details.earlier),
       });
     }
+    case "document.match_made": {
+      const own = (key: unknown) => text(key).replace(`${text(details.document)}:`, "");
+      return t("entries.document_match_made", {
+        key: own(details.key),
+        policy: policy(details),
+        previous: text(details.previous),
+        earlier: own(details.earlier),
+      });
+    }
     case "document.clause_fixed": {
       const own = (key: unknown) => text(key).replace(`${text(details.document)}:`, "");
       const edits = {

@@ -386,7 +386,13 @@ class TestReview:
             "Yousef Haddad",
             None,
         )
-        assert flag_on(draft, "schedule:4.2")["detail"].endswith(", since removed.")
+        # Version 1's 4.2 is free now, and the new 4.2 under its number shares most of its words.
+        question = flag_on(draft, "schedule:4.2")
+        assert question["detail"] == (
+            "4.2 is new, and version 1's 4.2, which nothing in this version continues, has most "
+            "of its words. Is it the same rule?"
+        )
+        assert question["candidate"]["key"] == "schedule:4.2"
         again = client.post(
             "/v1/policies/schedule/draft/matches/schedule:4.3/reject", headers=SAME_ORIGIN
         )
@@ -494,6 +500,214 @@ class TestReview:
             {"label": "1", "effective_date": "2099-01-01"},
         )
         assert (later["review"], later["next_label"]) == (None, "2")
+
+
+def new_version_of(client: TestClient, slug: str) -> dict[str, Any]:
+    """A made-up retention policy whose version 2 adds a rule at 4.2 and moves the payment rule
+    from 4.3 to 4.4, with words added: too far from the rule before to pair without asking."""
+    made = upload(client, "/v1/policies", "reworded-v1.md", slug=slug, effective_date="2026-02-01")
+    assert made.status_code == 201, made.text
+    settle_and_publish(client, slug)
+    revised = upload(
+        client, f"/v1/policies/{slug}/versions", "reworded-v2.md", effective_date="2026-10-01"
+    )
+    assert revised.status_code == 201, revised.text
+    draft: dict[str, Any] = revised.json()
+    return draft
+
+
+PAYMENTS = "Payment records are kept for 7 years, as tax law requires."
+
+
+def same_rule(
+    client: TestClient, slug: str, key: str, earlier: str, etag: str = ""
+) -> httpx2.Response:
+    return client.post(
+        f"/v1/policies/{slug}/draft/matches/{slug}:{key}",
+        json={"continues": f"{slug}:{earlier}"},
+        headers={**SAME_ORIGIN, **({"If-Match": etag} if etag else {})},
+    )
+
+
+class TestSameRule:
+    """Saying a new clause is the same rule as a clause of the version before that nothing in
+    the new version continues, whether the review asked or not."""
+
+    def test_the_review_asks_about_a_rule_renumbered_and_reworded(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+
+        draft = new_version_of(client, "payments")
+
+        question = flag_on(draft, "payments:4.4")
+        assert question["detail"] == (
+            "4.4 is new, and version 1's 4.3, which nothing in this version continues, has most "
+            "of its words. Is it the same rule?"
+        )
+        assert question["candidate"] == {
+            "key": "payments:4.3",
+            "label": "4.3",
+            "heading": None,
+            "text": PAYMENTS,
+        }
+        clauses = clauses_of(draft)
+        assert clauses["payments:4.4"]["candidates"] == [
+            {"key": "payments:4.3", "closeness": "most"}
+        ]
+        assert clauses["payments:4.2"]["candidates"] == [
+            {"key": "payments:4.3", "closeness": "few"}
+        ]
+        assert clauses["payments:4.3"]["candidates"] == []
+        assert [gone["key"] for gone in draft["removed"]] == ["payments:4.3"]
+        assert flag_on(draft, "payments:4.3")["detail"].endswith(", since removed.")
+
+    def test_saying_it_is_the_same_rule_continues_the_rule_before(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+        draft, etag = draft_of(client, "payments")
+
+        response = same_rule(client, "payments", "4.4", "4.3", etag)
+
+        assert response.status_code == 200, response.text
+        assert response.headers["etag"] == f'"{draft["revision"] + 1}"'
+        draft = response.json()
+        payments = clauses_of(draft)["payments:4.4"]
+        assert (payments["change"], payments["continues"]) == ("moved", "payments:4.3")
+        assert payments["earlier"]["text"] == PAYMENTS
+        assert payments["candidates"] == []
+        assert draft["removed"] == []
+        assert draft["changes"] == {
+            "added": 1,
+            "modified": 0,
+            "moved": 2,
+            "unchanged": 4,
+            "removed": 0,
+        }
+        answered = flag_on(draft, "payments:4.4")
+        assert (answered["resolution"], answered["resolution_key"], answered["resolved_by"]) == (
+            "match-made",
+            "payments:4.3",
+            "Yousef Haddad",
+        )
+        assert answered["detail"].endswith("Is it the same rule?")
+        assert flag_on(draft, "payments:4.3")["detail"].endswith(", now 4.4.")
+        assert [flag["key"] for flag in open_flags(draft)] == ["payments:4.2", "payments:4.3"]
+
+    def test_once_published_a_citation_of_the_rule_before_says_where_it_is_now(
+        self, app_client: TestClient
+    ) -> None:
+        client = signed_in(app_client, ADMIN)
+
+        settle_and_publish(client, "payments")
+
+        cited = client.get(
+            "/v1/clauses/payments:4.3", params={"as_of": "2026-03-01"}, headers=SAME_ORIGIN
+        ).json()
+        assert cited["clause"]["text"] == PAYMENTS
+        assert cited["now"]["key"] == "payments:4.4"
+
+    def test_a_different_rule_settles_the_question_for_good(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+        draft = new_version_of(client, "asked")
+
+        response = client.post(
+            "/v1/policies/asked/draft/matches/asked:4.4/reject",
+            headers={**SAME_ORIGIN, "If-Match": f'"{draft["revision"]}"'},
+        )
+
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        answered = flag_on(draft, "asked:4.4")
+        assert (answered["resolution"], answered["resolution_key"]) == (
+            "match-rejected",
+            "asked:4.3",
+        )
+        assert clauses_of(draft)["asked:4.4"]["change"] == "added"
+        assert [gone["key"] for gone in draft["removed"]] == ["asked:4.3"]
+        refixed = fixed(client, "asked", "make-heading", "asked:5.1")
+        assert refixed.status_code == 200, refixed.text
+        assert [flag for flag in refixed.json()["flags"] if flag["key"] == "asked:4.4"] == [
+            answered
+        ]
+        again = client.post(
+            "/v1/policies/asked/draft/matches/asked:4.4/reject", headers=SAME_ORIGIN
+        )
+        assert (again.status_code, again.json()["type"]) == (404, "/problems/no-match")
+
+    def test_any_new_clause_can_be_said_to_be_a_rule_nothing_continues(
+        self, app_client: TestClient
+    ) -> None:
+        """The fraud rule at 4.2 shares few of the payment rule's words, but a reviewer can still
+        say it is that rule. The question about 4.4 is answered with it."""
+        client = signed_in(app_client, ADMIN)
+        new_version_of(client, "chosen")
+
+        response = same_rule(client, "chosen", "4.2", "4.3")
+
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        fraud = clauses_of(draft)["chosen:4.2"]
+        assert (fraud["change"], fraud["continues"]) == ("moved", "chosen:4.3")
+        made = flag_on(draft, "chosen:4.2")
+        assert (made["resolution"], made["resolution_key"]) == ("match-made", "chosen:4.3")
+        moot = flag_on(draft, "chosen:4.4")
+        assert (moot["resolution"], moot["resolution_key"], moot["resolved_by"]) == (
+            "match-rejected",
+            "chosen:4.3",
+            "Yousef Haddad",
+        )
+
+        undone = client.post(
+            "/v1/policies/chosen/draft/matches/chosen:4.2/reject", headers=SAME_ORIGIN
+        )
+
+        assert undone.status_code == 200, undone.text
+        draft = undone.json()
+        assert clauses_of(draft)["chosen:4.2"]["change"] == "added"
+        assert [gone["key"] for gone in draft["removed"]] == ["chosen:4.3"]
+        on_record = draft["flags"][-1]
+        assert (on_record["key"], on_record["detail"], on_record["resolution"]) == (
+            "chosen:4.2",
+            "4.2 continued 4.3 from version 1.",
+            "match-rejected",
+        )
+        assert [flag["key"] for flag in open_flags(draft)] == ["chosen:4.3"]
+
+    def test_a_match_that_cannot_be_made_is_refused_with_why(self, app_client: TestClient) -> None:
+        client = signed_in(app_client, ADMIN)
+
+        matched = same_rule(client, "chosen", "4.3", "4.3")
+        assert (matched.status_code, matched.json()["type"]) == (409, "/problems/match-refused")
+        assert matched.json()["detail"] == (
+            "4.3 continues a clause of version 1 already. Say it is a different rule first."
+        )
+        assert same_rule(client, "chosen", "4.4", "4.3").status_code == 200
+        taken = same_rule(client, "chosen", "4.2", "4.3")
+        assert (taken.status_code, taken.json()["detail"]) == (
+            409,
+            "Version 1's 4.3 is continued by 4.4 already.",
+        )
+        missing = same_rule(client, "chosen", "4.9", "4.3")
+        assert (missing.status_code, missing.json()["type"]) == (404, "/problems/no-clause")
+        nowhere = same_rule(client, "chosen", "4.2", "9.9")
+        assert (nowhere.status_code, nowhere.json()["detail"]) == (
+            404,
+            "Version 1 of chosen has no clause 9.9.",
+        )
+        stale = same_rule(client, "chosen", "4.2", "4.1", etag='"1"')
+        assert stale.status_code == 412
+        assert (
+            same_rule(signed_in(app_client, DEVELOPER), "chosen", "4.2", "4.1").status_code == 403
+        )
+        client = signed_in(app_client, ADMIN)
+        assert upload(client, "/v1/policies", "reworded-v1.md", slug="first").status_code == 201
+        first = same_rule(client, "first", "4.1", "4.1")
+        assert (first.status_code, first.json()["detail"]) == (
+            409,
+            "first's draft is its first version, so no rule came before it.",
+        )
 
 
 def fixed(
@@ -883,6 +1097,7 @@ class TestEndings:
         assert ("document.drafted", "dashboard") in actions
         assert ("document.flag_accepted", "dashboard") in actions
         assert ("document.match_rejected", "dashboard") in actions
+        assert ("document.match_made", "dashboard") in actions
         assert ("document.clause_fixed", "dashboard") in actions
         assert ("document.published", "dashboard") in actions
         assert ("document.draft_discarded", "dashboard") in actions

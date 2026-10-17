@@ -216,23 +216,71 @@ def accept(
         typer.echo(f"Every flag is settled. Publish with: dpolens policy publish {slug}")
 
 
+@app.command(name="same-rule")
+def same_rule(
+    slug: Slug,
+    key: Annotated[str, typer.Argument(help="The new clause in the draft, such as 4.4")],
+    earlier: Annotated[
+        str, typer.Argument(help="The clause of the version before that it continues, such as 4.3")
+    ],
+) -> None:
+    """Say a new clause of a new version is the same rule as a clause of the version before.
+
+    That clause must be one nothing in the draft continues. The new clause continues it,
+    renumbered, reworded or both, so that a citation of it says where its rule is now. A flag on
+    the clause is settled, and reject-match undoes it.
+    """
+    full = key if key.startswith(slug + ":") else f"{slug}:{key}"
+    then = earlier if earlier.startswith(slug + ":") else f"{slug}:{earlier}"
+    with session_scope(load_settings()) as session:
+        found = store.continue_match(session, slug, full, then, actor=cli_actor())
+    clause = next((clause for clause in _walk(found.clauses) if clause.key == full), None)
+    how = ""
+    if clause is not None and clause.change == "moved":
+        same = clause.earlier is not None and (clause.earlier.heading, clause.earlier.text) == (
+            clause.heading,
+            clause.text,
+        )
+        how = ", renumbered" if same else ", renumbered and reworded"
+    elif clause is not None and clause.change == "modified":
+        how = ", reworded"
+    shown = then.removeprefix(slug + ":")
+    typer.echo(f"{key} continues version {found.previous}'s {shown}{how}.")
+
+
 @app.command(name="reject-match")
 def reject_match(
     slug: Slug,
     key: Annotated[str, typer.Argument(help="The clause in the draft, such as 4.3")],
 ) -> None:
-    """Say a clause of a new version is a different rule from the one it was matched to.
+    """Say a clause of a new version is a different rule from the one it was matched to, or from
+    the one its flag asks about.
 
-    It becomes new, and the earlier clause it was matched to becomes removed, so that a citation
-    of the earlier clause says its rule was removed.
+    A matched clause becomes new, and the earlier clause it was matched to becomes removed, so
+    that a citation of the earlier clause says its rule was removed. A new clause stays new.
     """
     full = key if key.startswith(slug + ":") else f"{slug}:{key}"
     with session_scope(load_settings()) as session:
-        before = {clause.key: clause for clause in _walk(store.read_draft(session, slug).clauses)}
-        earlier = before[full].continues if full in before else None
+        before = store.read_draft(session, slug)
+        clauses = {clause.key: clause for clause in _walk(before.clauses)}
+        earlier = clauses[full].continues if full in clauses else None
+        asked = next(
+            (
+                flag.candidate.key
+                for flag in before.flags
+                if flag.key == full and flag.candidate and _open(flag)
+            ),
+            None,
+        )
         found = store.reject_match(session, slug, full, actor=cli_actor())
-    gone = (earlier or "").removeprefix(slug + ":")
-    typer.echo(f"{key} is new in the draft, and version {found.previous}'s {gone} is removed.")
+    if earlier:
+        gone = earlier.removeprefix(slug + ":")
+        typer.echo(f"{key} is new in the draft, and version {found.previous}'s {gone} is removed.")
+    else:
+        other = (asked or "").removeprefix(slug + ":")
+        typer.echo(
+            f"{key} stays new: it is a different rule from version {found.previous}'s {other}."
+        )
 
 
 @app.command(name="fix")
@@ -439,6 +487,7 @@ def sample() -> None:
 CHANGES = {"added": "new", "modified": "reworded", "unchanged": "same"}
 RESOLVED = {
     "match-rejected": "said to be a different rule",
+    "match-made": "said to be the same rule",
     "split": "split",
     "merged": "merged",
     "made-text": "made text",
@@ -496,9 +545,10 @@ def show_draft(found: store.DraftView) -> None:
         if flag.accepted_at:
             done = typer.style(f" (accepted by {flag.accepted_by})", dim=True)
         elif flag.resolved_at:
-            done = typer.style(
-                f" ({RESOLVED.get(flag.resolution or '', 'fixed')} by {flag.resolved_by})", dim=True
-            )
+            said = RESOLVED.get(flag.resolution or "", "fixed")
+            if flag.resolution == store.MATCH_MADE and flag.resolution_key:
+                said += " as " + flag.resolution_key.removeprefix(version.slug + ":")
+            done = typer.style(f" ({said} by {flag.resolved_by})", dim=True)
         typer.echo(f"  {flag.position:>3}  {FLAGS[flag.kind]:<10} {where}  {flag.detail}{done}")
     if open_flags:
         typer.secho(
@@ -506,6 +556,13 @@ def show_draft(found: store.DraftView) -> None:
             f"dpolens policy accept {version.slug} NUMBER... (or --all)",
             fg=typer.colors.YELLOW,
         )
+        if any(flag.candidate for flag in open_flags):
+            typer.secho(
+                "Answer a flag that asks whether a clause is the same rule with: "
+                f"dpolens policy same-rule {version.slug} KEY EARLIER, or reject-match "
+                f"{version.slug} KEY when it is a different rule.",
+                fg=typer.colors.YELLOW,
+            )
     else:
         typer.secho(
             f"Nothing to settle. Publish with: dpolens policy publish {version.slug}",

@@ -78,6 +78,9 @@ class Flag:
     key: str | None = None
     position: int | None = None
     suggestion: Suggestion | None = None
+    candidate: str | None = None
+    """For a flag asking whether a new clause continues an earlier one nothing continues, that
+    one's key."""
 
 
 @dataclass(frozen=True)

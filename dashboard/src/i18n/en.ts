@@ -724,6 +724,8 @@ export const en = {
     document_draft_edited: "Changed the details of the draft of {{policy}}",
     document_match_rejected:
       "Said {{key}} in the draft of {{policy}} is a different rule from version {{previous}}'s {{earlier}}",
+    document_match_made:
+      "Said {{key}} in the draft of {{policy}} is the same rule as version {{previous}}'s {{earlier}}",
     document_clause_fixed: {
       split: "Split {{key}} in the draft of {{policy}}, making {{with}}",
       merge: "Merged {{key}} into {{with}} in the draft of {{policy}}",
@@ -910,6 +912,8 @@ export const en = {
     acceptedAnon: "Accepted as read on the command line, {{when}}",
     differentBy: "Fixed: a different rule, by {{name}}, {{when}}",
     differentAnon: "Fixed: a different rule, on the command line, {{when}}",
+    sameBy: "Fixed: the same rule as {{key}}, by {{name}}, {{when}}",
+    sameAnon: "Fixed: the same rule as {{key}}, on the command line, {{when}}",
     fixedBy: {
       split: "Fixed: split out {{key}} by {{name}}, {{when}}",
       merged: "Fixed: merged into {{key}} by {{name}}, {{when}}",
@@ -1079,7 +1083,28 @@ export const en = {
     nothing: "Nothing changed: every clause has the same number and the same words.",
     rejectTitle: "Is {{key}} a different rule?",
     rejectBody:
-      "{{key}} becomes new, and version {{previous}}'s {{earlier}} is removed: a citation of it will say its rule was removed, instead of pointing at {{key}}. Only a new upload undoes this.",
+      "{{key}} becomes new, and version {{previous}}'s {{earlier}} is removed: a citation of it will say its rule was removed, instead of pointing at {{key}}. If this is wrong, It's the same rule as… undoes it.",
+    againstClause: "Against version {{label}}'s {{key}}",
+    sameAs: "It's the same rule as {{key}}",
+    sameAsChoose: "It's the same rule as…",
+    askedAbout: "Flag {{position}} asks whether {{key}} continues it.",
+    chooseTitle: "Which rule of version {{label}} does {{key}} continue?",
+    chooseIntro:
+      "Only the clauses of version {{label}} that nothing in this version continues are listed, closest first.",
+    chooseEffect:
+      "{{key}} becomes version {{label}}'s {{earlier}}, {{how}}. A citation of version {{label}}'s {{earlier}} will say its rule is {{key}} now. If this is wrong, It's a different rule undoes it.",
+    closeness: {
+      most: "Most of its words",
+      some: "Some of its words",
+      few: "Few of its words",
+    },
+    how: {
+      renumberedReworded: "renumbered and reworded",
+      renumbered: "renumbered",
+      reworded: "reworded",
+      same: "with the same words",
+    },
+    matchRefused: "That match couldn't be made. {{detail}}",
   },
   publishing: {
     title: "Publish version {{label}} of {{title}}?",

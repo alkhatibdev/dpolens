@@ -7,22 +7,12 @@ with exact, versioned citations. A self-hosted MCP server.**
 
 > ### Status: pre-release
 >
-> There is no published image yet. What runs today is a whole instance from source:
-> `docker compose up` starts Postgres, the HTTP API, a worker, the dashboard and the MCP
-> server, with GDPR and the UAE's data protection law loaded and the embedding model inside
-> the image, and your assistant can search them. The UAE law is there in Arabic, which
-> prevails, and in its official English translation, and a question can be asked in either
-> language. In the dashboard you sign in, choose which laws apply to your organisation, read
-> the library, add the people you work with, decide what each role allows, and make the
-> tokens your assistants use. Until somebody chooses, every search covers both laws. A DPO
-> sees what was asked this week and what answered it, reads every question with the personal
-> data taken out, checks the governance log and exports it for an auditor, and sees how the
-> instance is set up. Your own policies, Word or Markdown, are uploaded in the dashboard, the
-> HTTP API or the command line, read into clauses with keys, reviewed as drafts beside the file
-> as it was read, fixed where a clause was read wrongly, and published as versions your
-> assistant searches and cites. A new version shows what changed against the one before, the
-> library reads any version as it stood and compares any two, and a new instance starts with a
-> made-up sample policy.
+> There is no published image yet. `docker compose up` runs a whole instance from source:
+> Postgres, the HTTP API, a worker, the dashboard and the MCP server, with GDPR and the UAE's
+> data protection law loaded in Arabic and English. Your assistant searches the laws and your
+> own published policies and cites them by version, and the dashboard is where policies are
+> reviewed and published, people and tokens are managed, and both logs are read.
+> [What exists today](#what-exists-today) has the detail.
 >
 > Watch the repository to know when v0.1 lands. Interfaces (the HTTP API, the pack format,
 > the database schema) change without notice until 1.0.
@@ -263,7 +253,8 @@ never changes: searches find it from the day it takes effect, by its words at on
 meaning once the worker has embedded it. A new
 version is matched to the one before it clause by clause, and every match a person should
 confirm, such as a clause whose number changed, is a flag for the reviewer, who can say a
-match is wrong as well as confirm it. Keys follow the
+match is wrong as well as confirm it, and can say a new clause is the same rule as one that
+nothing continues, which the review asks about when the two share most of their words. Keys follow the
 numbers printed in the policy, and a citation names its version, so a citation of version
 1's 4.2 still reads the rule it quoted, and says where that rule is in the version in force
 today. The library lists every version, reads any of them as it stood, and compares any two. The file each version came from is kept and checked against its hash whenever it is
@@ -279,6 +270,9 @@ dpolens policy publish acme-retention
 dpolens policy revise acme-retention retention-policy-v2.docx --effective-date 2026-07-01
 dpolens policy compare acme-retention 1 2
 ```
+
+A new instance starts with a made-up sample policy, so there is one to search before
+yours are in.
 
 [docs/policies.md](docs/policies.md) explains how clauses, keys and flags are decided, and
 what happens to a policy from its upload to its archive.

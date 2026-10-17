@@ -8,7 +8,8 @@ import { Chip } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import { QUERIES_READ_ALL } from "@/lib/permissions";
-import { isolate, shortKey, walk } from "@/lib/policies";
+import { isSettled, isolate, shortKey, walk } from "@/lib/policies";
+import { cn } from "@/lib/utils";
 import { wordDiff } from "@/lib/wordDiff";
 import { usePermitted } from "@/session";
 
@@ -91,11 +92,17 @@ function reworded(clause: DraftClause): boolean {
 }
 
 /** A clause's words, with what changed since the clause it continues marked. */
-export function Words({ clause }: { clause: Pick<DraftClause, "heading" | "text" | "earlier"> }) {
+export function Words({
+  clause,
+  className,
+}: {
+  clause: Pick<DraftClause, "heading" | "text" | "earlier">;
+  className?: string;
+}) {
   const earlier = clause.earlier;
   const headingChanged = earlier !== null && earlier.heading !== clause.heading;
   return (
-    <div dir="auto" className="flex flex-col gap-1 text-[15px] leading-relaxed">
+    <div dir="auto" className={cn("flex flex-col gap-1 text-[15px] leading-relaxed", className)}>
       {clause.heading ? (
         <p className="font-semibold">
           {headingChanged ? (
@@ -114,6 +121,38 @@ export function Words({ clause }: { clause: Pick<DraftClause, "heading" | "text"
           )}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/** A new clause's words against the earlier clause its flag asks about, what it added marked. */
+function Against({
+  clause,
+  flag,
+  slug,
+  previous,
+}: {
+  clause: DraftClause;
+  flag: DraftFlag;
+  slug: string;
+  previous: string;
+}) {
+  const { t } = useTranslation();
+  if (!flag.candidate) {
+    return null;
+  }
+  return (
+    <div className="rounded-xl bg-panel px-3 py-2.5">
+      <p className="text-xs font-semibold tracking-[0.04em] text-muted uppercase">
+        {t("changes.againstClause", {
+          label: isolate(previous),
+          key: isolate(shortKey(flag.candidate.key, slug)),
+        })}
+      </p>
+      <Words
+        className="mt-0.5 text-sm text-ink-2"
+        clause={{ heading: clause.heading, text: clause.text, earlier: flag.candidate }}
+      />
     </div>
   );
 }
@@ -167,6 +206,9 @@ export function WhatChanged({
   busy,
   onAccept,
   onReject,
+  onSame,
+  onNotSame,
+  onChoose,
 }: {
   draft: PolicyDraft;
   summary: PolicySummary | undefined;
@@ -174,6 +216,12 @@ export function WhatChanged({
   busy: boolean;
   onAccept: (flag: DraftFlag) => void;
   onReject: (clause: DraftClause) => void;
+  /** Answer a flag's question: the new clause is the earlier clause it asks about. */
+  onSame: (clause: DraftClause, earlier: string) => void;
+  /** Answer a flag's question: the new clause is a different rule. */
+  onNotSame: (clause: DraftClause) => void;
+  /** Choose the earlier clause a new one continues, which no flag asks about. */
+  onChoose: (clause: DraftClause) => void;
 }) {
   const { t } = useTranslation();
   const slug = draft.version.slug;
@@ -181,10 +229,18 @@ export function WhatChanged({
   const clauses = walk(draft.clauses);
   const changed = clauses.filter((clause) => clause.change && clause.change !== "unchanged");
   const unchanged = clauses.filter((clause) => clause.change === "unchanged");
-  const flagOn = new Map(
+  const flagOn = new Map<string, DraftFlag>();
+  for (const flag of draft.flags) {
+    const before = flagOn.get(flag.key ?? "");
+    // A clause shows its latest matching flag, unless an earlier one is still open.
+    if (flag.kind === "unmatched_key" && flag.key && (!before || isSettled(before))) {
+      flagOn.set(flag.key, flag);
+    }
+  }
+  const asking = new Map(
     draft.flags
-      .filter((flag) => flag.kind === "unmatched_key" && flag.key)
-      .map((flag) => [flag.key ?? "", flag]),
+      .filter((flag) => flag.candidate && !isSettled(flag))
+      .map((flag) => [flag.candidate?.key ?? "", flag]),
   );
   const counts = draft.changes;
   const movedReworded = clauses.filter((clause) => clause.change === "moved" && reworded(clause));
@@ -221,6 +277,31 @@ export function WhatChanged({
   function actionsFor(clause: DraftClause, flag: DraftFlag) {
     if (!canSettle) {
       return null;
+    }
+    if (clause.change === "added" && flag.candidate) {
+      const earlier = flag.candidate.key;
+      return (
+        <>
+          <Button
+            size="sm"
+            className={small}
+            disabled={busy}
+            onClick={() => onSame(clause, earlier)}
+          >
+            <Check aria-hidden className="size-4" />
+            {t("changes.sameAs", { key: isolate(shortKey(earlier, slug)) })}
+          </Button>
+          <Button
+            size="sm"
+            variant="quiet"
+            className={small}
+            disabled={busy}
+            onClick={() => onNotSame(clause)}
+          >
+            {t("changes.differentRule")}
+          </Button>
+        </>
+      );
     }
     if (clause.change === "added") {
       return (
@@ -311,6 +392,7 @@ export function WhatChanged({
         ) : null}
         {changed.map((clause) => {
           const flag = flagOn.get(clause.key);
+          const asked = flag?.candidate && !isSettled(flag);
           return (
             <ChangeRow
               key={clause.key}
@@ -321,25 +403,75 @@ export function WhatChanged({
               {clause.change === "moved" && clause.continues ? (
                 <Cited earlierKey={clause.continues} slug={slug} previous={previous} />
               ) : null}
+              {canSettle && clause.change === "added" && clause.candidates?.length && !asked ? (
+                <div className="flex">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className={small}
+                    disabled={busy}
+                    onClick={() => onChoose(clause)}
+                  >
+                    {t("changes.sameAsChoose")}
+                  </Button>
+                </div>
+              ) : null}
               {flag ? (
-                <FlagCard flag={flag} slug={slug} compact actions={actionsFor(clause, flag)} />
+                <FlagCard
+                  flag={flag}
+                  slug={slug}
+                  compact
+                  actions={actionsFor(clause, flag)}
+                  afterwards={
+                    // A rule said to be the same as an earlier one can be said to be different.
+                    canSettle && flag.resolution === "match-made" && clause.continues ? (
+                      <Button
+                        size="sm"
+                        variant="quiet"
+                        className={small}
+                        disabled={busy}
+                        onClick={() => onReject(clause)}
+                      >
+                        {t("changes.differentRule")}
+                      </Button>
+                    ) : null
+                  }
+                >
+                  {asked ? (
+                    <Against clause={clause} flag={flag} slug={slug} previous={previous} />
+                  ) : null}
+                </FlagCard>
               ) : null}
             </ChangeRow>
           );
         })}
-        {draft.removed.map((gone) => (
-          <ChangeRow
-            key={gone.key}
-            keyText={shortKey(gone.key, slug)}
-            keyNote={t("changes.inVersion", { label: isolate(previous) })}
-            chips={<Chip tone="quiet">{t("changes.chipRemoved")}</Chip>}
-          >
-            <div dir="auto" className="flex flex-col gap-1 text-[15px] leading-relaxed text-ink-2">
-              {gone.heading ? <p className="font-semibold">{gone.heading}</p> : null}
-              {gone.text ? <p className="whitespace-pre-line">{gone.text}</p> : null}
-            </div>
-          </ChangeRow>
-        ))}
+        {draft.removed.map((gone) => {
+          const asker = asking.get(gone.key);
+          return (
+            <ChangeRow
+              key={gone.key}
+              keyText={shortKey(gone.key, slug)}
+              keyNote={t("changes.inVersion", { label: isolate(previous) })}
+              chips={<Chip tone="quiet">{t("changes.chipRemoved")}</Chip>}
+            >
+              <div
+                dir="auto"
+                className="flex flex-col gap-1 text-[15px] leading-relaxed text-ink-2"
+              >
+                {gone.heading ? <p className="font-semibold">{gone.heading}</p> : null}
+                {gone.text ? <p className="whitespace-pre-line">{gone.text}</p> : null}
+              </div>
+              {asker ? (
+                <p className="text-[13px] leading-normal text-muted">
+                  {t("changes.askedAbout", {
+                    position: asker.position,
+                    key: isolate(shortKey(asker.key ?? "", slug)),
+                  })}
+                </p>
+              ) : null}
+            </ChangeRow>
+          );
+        })}
         {unchanged.length ? (
           <details className="px-1 pt-4 pb-1.5">
             <summary className="cursor-pointer text-[15px] font-semibold">
