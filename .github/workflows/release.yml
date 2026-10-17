@@ -1,0 +1,258 @@
+name: Release
+
+# A release starts with its tag. `v0.1.0` publishes the four images to GitHub's
+# container registry, each built for amd64 and arm64 and attested, then opens a
+# draft release for a person to read and publish. Nothing is published unless
+# the tag is on main and every version in the repository says the same.
+#
+# A pull request that changes how the images are built builds all four for both
+# platforms and pushes nothing. So does running this by hand from the Actions tab.
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - deploy/**
+      - scripts/release.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  # A tag's run is never cancelled halfway through publishing.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Each action is pinned to a commit, because this workflow can push images and
+# write releases, and a tag can be moved to point at different code.
+jobs:
+  version:
+    name: version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+      publish: ${{ steps.check.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Whether the tagged commit is on main is read from main's history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check the tag against every version
+        id: check
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          if [ -n "$TAG" ]; then
+            python3 scripts/release.py check "$TAG"
+          else
+            python3 scripts/release.py check
+          fi
+
+      - name: Release only what is on main
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME is not on main, and only main is released."
+            exit 1
+          fi
+
+      - name: Check the changelog has the release's notes
+        if: steps.check.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+        run: python3 scripts/release.py notes "$VERSION" > /dev/null
+
+  build:
+    name: ${{ matrix.image }} for ${{ matrix.arch }}
+    needs: version
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [dpolens, dpolens-mcp, dpolens-dashboard, dpolens-postgres]
+        arch: [amd64, arm64]
+        include:
+          - image: dpolens
+            context: .
+            file: deploy/dpolens/Dockerfile
+          - image: dpolens-mcp
+            context: .
+            file: deploy/mcp/Dockerfile
+          - image: dpolens-dashboard
+            context: .
+            file: deploy/dashboard/Dockerfile
+          - image: dpolens-postgres
+            context: deploy/postgres
+            file: deploy/postgres/Dockerfile
+          # Each platform is built on a machine of its own kind, because building
+          # one platform's image by emulating it on another is many times slower.
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Sign in to the registry
+        if: needs.version.outputs.publish == 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/alkhatibdev/${{ matrix.image }}
+
+      - name: Build
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/${{ matrix.arch }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Pushed by its digest alone: the publish job joins the two platforms
+          # into one image and gives it its tags.
+          outputs: type=image,name=ghcr.io/alkhatibdev/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=${{ needs.version.outputs.publish }}
+          # The attestation that counts is GitHub's, made on the joined image.
+          provenance: false
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }},ignore-error=true
+
+      - name: Keep the digest for the publish job
+        if: needs.version.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - if: needs.version.outputs.publish == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: publish ${{ matrix.image }}
+    needs: [version, build]
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        image: [dpolens, dpolens-mcp, dpolens-dashboard, dpolens-postgres]
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digests-${{ matrix.image }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          # The registry reads the description and the source from the index.
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
+        with:
+          images: ghcr.io/alkhatibdev/${{ matrix.image }}
+          # 0.1.0, 0.1 and latest. A pre-release such as 0.1.0-rc.1 gets its
+          # own version only, and never latest.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Join the two platforms into one image
+        id: index
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ghcr.io/alkhatibdev/${{ matrix.image }}
+          VERSION: ${{ needs.version.outputs.version }}
+          META: ${{ steps.meta.outputs.json }}
+        run: |
+          arguments=()
+          while IFS= read -r tag; do arguments+=(--tag "$tag"); done < <(jq -r '.tags[]' <<< "$META")
+          while IFS= read -r note; do arguments+=(--annotation "$note"); done < <(jq -r '.annotations[]' <<< "$META")
+          for digest in *; do arguments+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${arguments[@]}"
+          digest=$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest where the image came from
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/alkhatibdev/${{ matrix.image }}
+          subject-digest: ${{ steps.index.outputs.digest }}
+          push-to-registry: true
+
+  release:
+    name: draft release
+    needs: [version, publish]
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Open a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          python3 scripts/release.py notes "$VERSION" > "$notes"
+          {
+            echo
+            echo "### Images"
+            echo
+            echo "Each is built for amd64 and arm64, and \`docker compose up\` in a checkout of this release pulls them."
+            echo
+            echo '```'
+            for image in dpolens dpolens-mcp dpolens-dashboard dpolens-postgres; do
+              echo "ghcr.io/alkhatibdev/$image:$VERSION"
+            done
+            echo '```'
+            echo
+            echo "To check that an image was built here, from this tag: \`gh attestation verify oci://ghcr.io/alkhatibdev/dpolens:$VERSION --repo $GITHUB_REPOSITORY\`."
+          } >> "$notes"
+          flags=(--draft --verify-tag --title "DPOLens $VERSION" --notes-file "$notes" --repo "$GITHUB_REPOSITORY")
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" "${flags[@]}"

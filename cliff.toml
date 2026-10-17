@@ -1,0 +1,33 @@
+# Drafts a release's notes from the titles of the commits since the last release:
+#
+#   uvx git-cliff --unreleased --tag v0.1.0
+#
+# The draft is edited by hand before it goes into CHANGELOG.md, because a release
+# note is read by somebody deciding whether to upgrade, and a list of titles does
+# not tell them that.
+
+[changelog]
+body = """
+## {{ version | trim_start_matches(pat="v") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first | trim | upper_first }}\
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+commit_preprocessors = [
+  # "(#36)" becomes a link to the pull request.
+  { pattern = '\(#(\d+)\)', replace = "([#${1}](https://github.com/alkhatibdev/dpolens/pull/${1}))" },
+]
+commit_parsers = [
+  { message = "^feat", group = "<!-- 0 -->New" },
+  { message = "^fix", group = "<!-- 1 -->Fixed" },
+  { message = "^docs", group = "<!-- 2 -->Documentation" },
+  { message = ".*", skip = true },
+]

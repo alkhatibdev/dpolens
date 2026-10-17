@@ -50,8 +50,8 @@ printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
 docker compose up -d
 ```
 
-The first `up` builds the images and loads GDPR and the UAE law, which takes a few minutes.
-After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
+The first `up` builds the images, or downloads them once the version has been released, and
+loads GDPR and the UAE law, which takes a few minutes. After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
 `dashboard` and `mcp` as healthy, and `worker` as running.
 
 **2. Create yourself an administrator**
@@ -375,7 +375,10 @@ instance is set up: how long a question is kept and what is taken out of it, whe
 ends, where assistants connect, and that no AI provider is used.
 [docs/configuration.md](docs/configuration.md) lists every setting and how to change it. The
 interface is English, built so an Arabic one can follow, and it works on a phone. There is no
-published image: `docker compose up` builds from source.
+published image yet: `docker compose up` builds from source, and once a version is released it
+downloads that version's images, built for amd64 and arm64 and attested.
+[docs/releases.md](docs/releases.md) says what a release publishes and how to check that an
+image was built here.
 
 ## Contributing
 
