@@ -62,6 +62,16 @@ npm test
 npm run format:check
 ```
 
+To run a whole instance from your checkout, build it: `docker compose up -d --build`. Without
+`--build`, Compose downloads the images of the version the checkout names once that version is
+released, and those are not your changes. Images are named after the version, so a second
+checkout on the same machine would share them. Give a branch a version and ports of its own:
+
+```bash
+DPOLENS_VERSION=my-branch DPOLENS_API_PORT=8010 DPOLENS_DASHBOARD_PORT=8090 DPOLENS_MCP_PORT=8775 \
+  docker compose -p my-branch up -d --build
+```
+
 The dashboard's API client is typed from `docs/openapi.json`. After changing a route, run
 `uv run python scripts/api_contract.py --write`, then `npm run api` in `dashboard/`, and
 commit both files: CI fails when either is stale.
@@ -94,7 +104,8 @@ The answer may be yes, but it should be a decision rather than a drift.
   [Developer Certificate of Origin](https://developercertificate.org/). It states that
   you have the right to submit the work. There is no CLA. CI rejects unsigned-off commits.
 - **[Conventional Commits](https://www.conventionalcommits.org/)**: `feat:`, `fix:`,
-  `docs:`, `chore:`. The changelog is generated from them.
+  `docs:`, `chore:`. A release's notes are drafted from them, which
+  [docs/releases.md](docs/releases.md) describes.
 - **One concern per pull request.** A refactor bundled with a fix is two reviews.
 - **Fill in the template**: what changed, why, and how you verified it. The "how you
   verified it" line is the one that gets a pull request merged quickly.

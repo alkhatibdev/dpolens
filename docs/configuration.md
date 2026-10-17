@@ -42,6 +42,7 @@ These are read by Compose itself:
 | `DPOLENS_OWNER_PASSWORD`, `DPOLENS_APP_PASSWORD` | none | The two database passwords. The database keeps the ones it was created with |
 | `DPOLENS_API_PORT`, `DPOLENS_DASHBOARD_PORT`, `DPOLENS_MCP_PORT` | `8000`, `8080`, `8765` | Where the API, the dashboard and the MCP server are published on the machine |
 | `DPOLENS_MCP_ALLOWED_HOSTS` | `[]` | The host names the MCP server answers to, as a JSON list. Empty means this machine only, and a shared instance names itself here |
+| `DPOLENS_VERSION` | the checkout's version | Which release's images Compose runs. A version with no images to download is built from source, which is how a branch built with `--build` gets images of its own. [releases.md](releases.md) says more |
 
 Outside Compose, running the API, the worker or the command line from a source checkout, one
 more setting matters:
