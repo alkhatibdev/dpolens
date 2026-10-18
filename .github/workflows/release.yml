@@ -2,20 +2,19 @@ name: Release
 
 # A release starts with its tag. `v0.1.0` publishes the four images to GitHub's
 # container registry, each built for amd64 and arm64 and attested, then opens a
-# draft release for a person to read and publish, with every law pack's file
-# attached. Nothing is published unless the tag is on main and every version in
-# the repository says the same.
+# draft release for a person to read and publish, with an archive of every law
+# pack attached. Nothing is published unless the tag is on main and every version
+# in the repository says the same. A law pack is released on its own, by
+# pack-release.yml.
 #
-# A law has releases of its own, because a law is amended on the legislature's
-# schedule and not on ours. `pack/gdpr/2026.2` publishes that pack's file, which
-# `dpolens pack update gdpr` loads into an instance.
-#
-# A pull request that changes how the images are built builds all four for both
-# platforms and pushes nothing. So does running this by hand from the Actions tab.
+# A pull request that changes how the images are built runs every job short of
+# publishing: it builds all four images for both platforms, checks each has its
+# two builds to join, and writes the pack archives and the release notes. So does
+# running this by hand from the Actions tab.
 
 on:
   push:
-    tags: ["v*", "pack/**"]
+    tags: ["v*"]
   pull_request:
     paths:
       - .github/workflows/release.yml
@@ -36,7 +35,6 @@ concurrency:
 jobs:
   version:
     name: version
-    if: ${{ !startsWith(github.ref, 'refs/tags/pack/') }}
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.check.outputs.version }}
@@ -144,17 +142,21 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.arch }},ignore-error=true
 
       - name: Keep the digest for the publish job
-        if: needs.version.outputs.publish == 'true'
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
+          if [ -z "$DIGEST" ]; then
+            echo "::error::The build gave no digest, so there is nothing to join."
+            exit 1
+          fi
           mkdir -p "$RUNNER_TEMP/digests"
           touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
 
-      - if: needs.version.outputs.publish == 'true'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      # Named with a separator no image name holds, so one image's digests can be
+      # found without picking up another's: `dpolens` begins `dpolens-mcp` too.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          name: digests__${{ matrix.image }}__${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -163,7 +165,6 @@ jobs:
     # Named without the matrix, which GitHub cannot fill in for a job it skips.
     name: publish
     needs: [version, build]
-    if: needs.version.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -171,24 +172,41 @@ jobs:
       id-token: write
       attestations: write
     strategy:
+      # An image already being published is finished rather than cancelled
+      # halfway when another fails.
+      fail-fast: false
       matrix:
         image: [dpolens, dpolens-mcp, dpolens-dashboard, dpolens-postgres]
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: digests-${{ matrix.image }}-*
+          pattern: digests__${{ matrix.image }}__*
           merge-multiple: true
           path: ${{ runner.temp }}/digests
 
+      # Runs on pull requests too, so a mix-up of digests shows before a tag does.
+      - name: Check there is one build for each platform
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          count=$(find "$RUNNER_TEMP/digests" -type f 2> /dev/null | wc -l)
+          if [ "$count" -ne 2 ]; then
+            echo "::error::$IMAGE has $count builds to join, not one for each of its two platforms."
+            exit 1
+          fi
+
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: needs.version.outputs.publish == 'true'
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        if: needs.version.outputs.publish == 'true'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tags
+        if: needs.version.outputs.publish == 'true'
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         env:
@@ -203,6 +221,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
 
       - name: Join the two platforms into one image
+        if: needs.version.outputs.publish == 'true'
         id: index
         working-directory: ${{ runner.temp }}/digests
         env:
@@ -219,6 +238,7 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Attest where the image came from
+        if: needs.version.outputs.publish == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/alkhatibdev/${{ matrix.image }}
@@ -228,7 +248,6 @@ jobs:
   release:
     name: draft release
     needs: [version, publish]
-    if: needs.version.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -241,25 +260,24 @@ jobs:
 
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
-      # Every law the release carries, as a file of its own, so an instance with no
-      # way to the internet can import the version this release was built with.
-      - name: Write each law pack's file
+      # Every law the release carries, as an archive of its own, so an instance with
+      # no way to the internet can import the version this release was built with.
+      - name: Write an archive of each law pack
         run: |
           for pack in packs/*/; do
             uv run --frozen --package dpolens dpolens pack archive "$pack" --out dist
           done
 
-      - name: Attest where the pack files came from
+      - name: Attest where the archives came from
+        if: needs.version.outputs.publish == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*.tar.gz
 
-      - name: Open a draft release
+      # Printed here too, so a pull request's run shows what the release would say.
+      - name: Write the release notes
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
           VERSION: ${{ needs.version.outputs.version }}
-          PRERELEASE: ${{ needs.version.outputs.prerelease }}
         run: |
           notes="$RUNNER_TEMP/notes.md"
           python3 scripts/release.py notes "$VERSION" > "$notes"
@@ -277,72 +295,17 @@ jobs:
             echo
             echo "To check that an image was built here, from this tag: \`gh attestation verify oci://ghcr.io/alkhatibdev/dpolens:$VERSION --repo $GITHUB_REPOSITORY\`."
           } >> "$notes"
-          flags=(--draft --verify-tag --title "DPOLens $VERSION" --notes-file "$notes" --repo "$GITHUB_REPOSITORY")
-          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
-          gh release create "$TAG" dist/* "${flags[@]}"
-
-  pack:
-    name: law pack
-    if: startsWith(github.ref, 'refs/tags/pack/')
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Release only what is on main
-        run: |
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "::error::$GITHUB_REF_NAME is not on main, and only main is released."
-            exit 1
-          fi
-
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-
-      # The command refuses a tag that does not name the pack's own version.
-      - name: Write the pack's file
-        id: archive
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          slug=$(cut -d/ -f2 <<< "$TAG")
-          uv run --frozen --package dpolens dpolens pack archive "packs/$slug" --tag "$TAG" --out dist
-          echo "slug=$slug" >> "$GITHUB_OUTPUT"
-
-      - name: Attest where the file came from
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: dist/*.tar.gz
+          cat "$notes"
 
       - name: Open a draft release
+        if: needs.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-          SLUG: ${{ steps.archive.outputs.slug }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
         run: |
           notes="$RUNNER_TEMP/notes.md"
-          uv run --frozen --package dpolens python - "packs/$SLUG/pack.yaml" "$GITHUB_REPOSITORY" > "$notes" <<'NOTES'
-          import sys
-          import yaml
-
-          pack = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
-          slug, version, repository = pack["slug"], pack["version"], sys.argv[2]
-          name = f"dpolens-pack-{slug}-{version}.tar.gz"
-          print(f"**{pack['name']}**, pack version {version}, in force from {pack['effective_date']:%-d %B %Y}.")
-          print()
-          print("To load it into an instance that has an earlier version of this pack:")
-          print()
-          print(f"    docker compose exec api dpolens pack update {slug}")
-          print()
-          print(f"On a server with no way to the internet, put {name} and its .sha256 side by side")
-          print(f"where the instance can read them, and run `dpolens pack import {name}`.")
-          print()
-          print(f"To check that the file was built here: `gh attestation verify {name} --repo {repository}`.")
-          NOTES
-          title=$(uv run --frozen --package dpolens python -c "import sys, yaml; p = yaml.safe_load(open(sys.argv[1])); print(f\"{p['name']}, pack {p['version']}\")" "packs/$SLUG/pack.yaml")
-          gh release create "$TAG" dist/* --draft --verify-tag --title "$title" --notes-file "$notes" --repo "$GITHUB_REPOSITORY"
+          flags=(--draft --verify-tag --title "DPOLens $VERSION" --notes-file "$notes" --repo "$GITHUB_REPOSITORY")
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" dist/* "${flags[@]}"
