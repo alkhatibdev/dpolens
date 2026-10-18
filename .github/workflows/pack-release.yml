@@ -1,0 +1,83 @@
+name: Pack release
+
+# A law has releases of its own, because a law is amended on the legislature's
+# schedule and not on ours. A tag `pack/<slug>/<version>`, such as
+# `pack/gdpr/2026.2`, opens a draft release of that pack's archive and its
+# checksum for a person to read and publish, and `dpolens pack update gdpr`
+# downloads it from there. The tag has to be on main and name the version in the
+# pack's own pack.yaml.
+
+on:
+  push:
+    tags: ["pack/**"]
+
+permissions:
+  contents: read
+
+# Each action is pinned to a commit, because this workflow writes releases, and
+# a tag can be moved to point at different code.
+jobs:
+  pack:
+    name: law pack
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Release only what is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME is not on main, and only main is released."
+            exit 1
+          fi
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      # The command refuses a tag that does not name the pack's own version.
+      - name: Write the pack archive
+        id: archive
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          slug=$(cut -d/ -f2 <<< "$TAG")
+          uv run --frozen --package dpolens dpolens pack archive "packs/$slug" --tag "$TAG" --out dist
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+
+      - name: Attest where the archive came from
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.tar.gz
+
+      - name: Open a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          SLUG: ${{ steps.archive.outputs.slug }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          uv run --frozen --package dpolens python - "packs/$SLUG/pack.yaml" "$GITHUB_REPOSITORY" > "$notes" <<'NOTES'
+          import sys
+          import yaml
+
+          pack = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
+          slug, version, repository = pack["slug"], pack["version"], sys.argv[2]
+          name = f"dpolens-pack-{slug}-{version}.tar.gz"
+          print(f"**{pack['name']}**, pack version {version}, in force from {pack['effective_date']:%-d %B %Y}.")
+          print()
+          print("To load it into an instance that has an earlier version of this pack:")
+          print()
+          print(f"    docker compose exec api dpolens pack update {slug}")
+          print()
+          print(f"On a server with no way to the internet, put {name} and its .sha256 side by side")
+          print(f"where the instance can read them, and run `dpolens pack import {name}`.")
+          print()
+          print(f"To check that the file was built here: `gh attestation verify {name} --repo {repository}`.")
+          NOTES
+          title=$(uv run --frozen --package dpolens python -c "import sys, yaml; p = yaml.safe_load(open(sys.argv[1])); print(f\"{p['name']}, pack {p['version']}\")" "packs/$SLUG/pack.yaml")
+          gh release create "$TAG" dist/* --draft --verify-tag --title "$title" --notes-file "$notes" --repo "$GITHUB_REPOSITORY"

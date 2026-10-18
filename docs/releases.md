@@ -71,9 +71,10 @@ prints which workflow it was and which commit it built.
    changelog's section as its notes and the archives attached.
 4. Somebody reads the draft and publishes it.
 
-A pull request that changes how the images are built runs the same workflow, which builds
-all four for both platforms and pushes nothing. So does starting it by hand from the Actions
-tab.
+A pull request that changes how the images are built runs the same workflow, short of
+publishing anything. It builds all four images for both platforms, checks that each has one
+build for each platform to join, and writes the pack archives and the release notes. So does
+starting it by hand from the Actions tab.
 
 ## Law packs
 
@@ -136,8 +137,9 @@ a Mac). The second says a workflow in this repository built it, and from which c
 1. A pull request changes the pack and gives it its next version in `pack.yaml`.
 2. Once that is merged, the commit on `main` is tagged `pack/<slug>/<version>`, for example
    `pack/gdpr/2026.2`, and the tag pushed.
-3. The release workflow refuses a tag that is not on `main` or does not name the version in
-   the pack's `pack.yaml`. It writes the archive and its checksum with
-   `dpolens pack archive`, attests the archive, and opens a draft release with both files.
+3. The pack release workflow (`.github/workflows/pack-release.yml`) refuses a tag that is not
+   on `main` or does not name the version in the pack's `pack.yaml`. It writes the archive and
+   its checksum with `dpolens pack archive`, attests the archive, and opens a draft release
+   with both files.
 4. Somebody reads the draft and publishes it.
 
