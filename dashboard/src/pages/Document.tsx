@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { ApiError, type Clause, type OutlineEntry } from "@/api/client";
 import { usePolicies, usePolicyFile, usePolicyVersions } from "@/api/policies";
 import { useDocument, useSubtrees } from "@/api/queries";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { FileAsRead } from "@/components/policies/FileAsRead";
 import { DraftBanner, OldVersionBanner, Versions } from "@/components/policies/Library";
 import { UploadDialog } from "@/components/policies/UploadDialog";
@@ -13,9 +14,10 @@ import { Reading } from "@/components/Reading";
 import { SegmentedChoice } from "@/components/Segmented";
 import { Chip, Failed, Loading, Missing, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
-import { formatDate, isRightToLeft, languageName, readingOrder } from "@/lib/format";
+import { formatDate, isRightToLeft, languageName } from "@/lib/format";
 import { DOCUMENTS_UPLOAD } from "@/lib/permissions";
 import { originalOf } from "@/lib/policies";
+import { useReadingLanguage } from "@/lib/readingLanguage";
 import { cn } from "@/lib/utils";
 import { usePermitted } from "@/session";
 
@@ -104,48 +106,30 @@ function Contents({
 }
 
 function Heading({
-  byLanguage,
-  order,
+  root,
   inline = false,
 }: {
-  byLanguage: Record<string, Clause[]>;
-  order: string[];
+  root: Clause | undefined;
   /** A policy's "4 Retention periods" reads on one line; a law's article above its title. */
   inline?: boolean;
 }) {
+  if (!root) {
+    return null;
+  }
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 border-b-2 border-ink pb-4 md:grid md:items-end md:gap-x-[18px]",
-        order.length > 1 ? "md:grid-cols-[minmax(0,1fr)_76px_minmax(0,1fr)]" : "md:grid-cols-1",
-      )}
+    <h2
+      lang={root.lang}
+      dir={isRightToLeft(root.lang) ? "rtl" : "ltr"}
+      className="border-b-2 border-ink pb-4 text-[22px] leading-tight font-semibold tracking-[-0.02em] sm:text-[26px]"
     >
-      {order.map((lang, index) => {
-        const root = byLanguage[lang]?.[0];
-        if (!root) {
-          return null;
-        }
-        return (
-          <h2
-            key={lang}
-            lang={lang}
-            dir={isRightToLeft(lang) ? "rtl" : "ltr"}
-            className={cn(
-              "text-[22px] leading-tight font-semibold tracking-[-0.02em] sm:text-[26px]",
-              index === 1 && "md:col-start-3",
-            )}
-          >
-            {root.label}
-            {root.heading ? (
-              <>
-                {inline ? " " : <br />}
-                {root.heading}
-              </>
-            ) : null}
-          </h2>
-        );
-      })}
-    </div>
+      {root.label}
+      {root.heading ? (
+        <>
+          {inline ? " " : <br />}
+          {root.heading}
+        </>
+      ) : null}
+    </h2>
   );
 }
 
@@ -162,11 +146,18 @@ export function DocumentPage() {
   const [uploading, setUploading] = useState(false);
 
   const detail = document.data;
-  const outline = detail?.outline ?? [];
-  const part = params.get("part") ?? outline[0]?.key ?? null;
   const languages = detail?.document.languages ?? [];
-  const reading = useSubtrees(detail ? part : null, languages, asOf);
-  const order = readingOrder(languages);
+  const [lang, setLang] = useReadingLanguage(
+    detail?.document.pack_slug ?? slug,
+    languages,
+    detail?.document.authoritative_language,
+  );
+  // The contents too, named in the language being read: the same answer when that is
+  // the dashboard's own.
+  const named = useDocument(slug, lang ?? i18n.language, asOf);
+  const outline = (named.data ?? detail)?.outline ?? [];
+  const part = params.get("part") ?? outline[0]?.key ?? null;
+  const reading = useSubtrees(detail ? part : null, lang ? [lang] : [], asOf);
   const policy = detail?.document.kind === "org_policy";
   const canUpload = can.has(DOCUMENTS_UPLOAD);
   const versions = usePolicyVersions(slug, policy);
@@ -199,7 +190,7 @@ export function DocumentPage() {
   const summary = detail.document;
   const prevailing = languages.length > 1 ? summary.authoritative_language : null;
   const currentEntry = outline.find((found) => found.key === part);
-  const shown = reading.byLanguage[order[0] ?? ""] ?? [];
+  const shown = reading.byLanguage[lang ?? ""] ?? [];
   const sections = sectionsOf(shown);
   const older = entry !== null && entry.state !== "in_force";
 
@@ -318,17 +309,22 @@ export function DocumentPage() {
         </section>
 
         <article className="min-w-0 flex-1 rounded-[20px] bg-white px-4 pt-5 pb-2 sm:px-6 sm:pt-6">
-          {policy && entry ? (
-            <div className="mb-3 flex justify-end">
-              <SegmentedChoice
-                label={t("document.view")}
-                value={view}
-                onChange={setView}
-                options={[
-                  { value: "clauses", label: t("document.clausesView") },
-                  { value: "file", label: t("document.fileView") },
-                ]}
-              />
+          {(policy && entry) || languages.length > 1 ? (
+            <div className="mb-3 flex flex-wrap justify-end gap-2">
+              {lang ? (
+                <LanguageSwitch languages={languages} value={lang} onChange={setLang} />
+              ) : null}
+              {policy && entry ? (
+                <SegmentedChoice
+                  label={t("document.view")}
+                  value={view}
+                  onChange={setView}
+                  options={[
+                    { value: "clauses", label: t("document.clausesView") },
+                    { value: "file", label: t("document.fileView") },
+                  ]}
+                />
+              ) : null}
             </div>
           ) : null}
           {view === "file" && policy && entry ? (
@@ -359,8 +355,8 @@ export function DocumentPage() {
               {reading.error ? <Failed onRetry={reading.refetch} /> : null}
               {!reading.isPending && !reading.error ? (
                 <>
-                  <Heading byLanguage={reading.byLanguage} order={order} inline={policy} />
-                  <Reading byLanguage={reading.byLanguage} languages={languages} breadcrumb={[]} />
+                  <Heading root={shown[0]} inline={policy} />
+                  <Reading clauses={shown} breadcrumb={[]} />
                 </>
               ) : null}
             </>

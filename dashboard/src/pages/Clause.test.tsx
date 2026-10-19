@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { article13, dpo, signedIn } from "@/test/fixtures";
@@ -45,6 +46,14 @@ describe("a clause", () => {
     expect(screen.getByRole("img", { name: /Cited each day this week: .*64/ })).toBeInTheDocument();
   });
 
+  it("names another rule under the key only when the rule moved", async () => {
+    serve(routes(signedIn));
+    renderAt(`/clauses/${encodeURIComponent(KEY)}`);
+
+    await screen.findByText("What your assistant receives");
+    expect(screen.queryByRole("heading", { name: "The same key, read today" })).toBeNull();
+  });
+
   it("leaves the count out for someone who may not", async () => {
     const { calls } = serve(routes(signedIn));
     renderAt(`/clauses/${encodeURIComponent(KEY)}`);
@@ -64,6 +73,42 @@ describe("a clause", () => {
     renderAt(`/clauses/${encodeURIComponent(KEY)}`);
 
     expect(await screen.findByText("Not in your selected laws")).toBeInTheDocument();
+  });
+
+  it("reads in one language, with a switch to the other that is remembered", async () => {
+    const arabic = (request: Request) => new URL(request.url).searchParams.get("lang") === "ar";
+    serve({
+      ...routes(signedIn),
+      [`GET /v1/clauses/${encodeURIComponent(KEY)}`]: (request) => ({
+        body: arabic(request)
+          ? {
+              ...detail,
+              clause: article13.ar[1],
+              breadcrumb: [article13.ar[0]],
+              children: [article13.ar[2]],
+            }
+          : detail,
+      }),
+      [`GET /v1/clauses/${encodeURIComponent(KEY)}/subtree`]: (request) => ({
+        body: (arabic(request) ? article13.ar : article13.en).slice(1),
+      }),
+    });
+    renderAt(`/clauses/${encodeURIComponent(KEY)}`);
+
+    expect(
+      await screen.findByRole("heading", { name: "Right to Receive Information" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/يحق لصاحب البيانات/)).not.toBeInTheDocument();
+    expect(screen.getByText("Arabic prevails")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "العربية" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "حق الحصول على المعلومات" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/يحق لصاحب البيانات/)).toHaveAttribute("dir", "rtl");
+    expect(screen.queryByText(/The Data Subject has the right/)).not.toBeInTheDocument();
+    expect(localStorage.getItem("dpolens.reading-language.uae-pdpl")).toBe("ar");
   });
 
   it("says nothing about the selection for one of the organisation's own laws", async () => {

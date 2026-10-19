@@ -97,15 +97,6 @@ function ResultCard({
           {clause.label ? <span className="font-semibold">{clause.label} </span> : null}
           {clause.text}
         </p>
-        {prevails && clause.authoritative_text ? (
-          <p
-            lang={prevails}
-            dir={isRightToLeft(prevails) ? "rtl" : "ltr"}
-            className="rounded-[14px] bg-panel px-4 py-3 text-base"
-          >
-            {clause.authoritative_text}
-          </p>
-        ) : null}
         <div className="mt-1 flex flex-wrap gap-2.5">
           <Button asChild variant="dark" size="sm">
             <Link to={`/clauses/${encodeURIComponent(clause.key)}`} state={{ results, query }}>

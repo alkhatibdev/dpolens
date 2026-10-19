@@ -11,6 +11,7 @@ import {
   retentionPart,
   retentionVersions,
 } from "@/test/policies";
+import { article13, signedIn, uae } from "@/test/fixtures";
 import { renderAt } from "@/test/render";
 import { serve } from "@/test/server";
 
@@ -134,5 +135,56 @@ describe("a policy in the library", () => {
     const lit = await screen.findByText(retentionPart[1]?.text ?? "");
     expect(lit.closest("[data-lit]")).not.toBeNull();
     expect(screen.getByText("5. Review").closest("[data-lit]")).toBeNull();
+  });
+});
+
+describe("a law in two languages", () => {
+  function law() {
+    const arabic = (request: Request) => new URL(request.url).searchParams.get("lang") === "ar";
+    return serve({
+      "GET /v1/sessions/current": { body: signedIn },
+      "GET /v1/documents/uae-pdpl": (request) => ({
+        body: {
+          document: uae,
+          outline: [
+            {
+              key: "uae-pdpl:art-13",
+              clause_type: "article",
+              label: arabic(request) ? "المادة (13)" : "Article (13)",
+              heading: arabic(request) ? "حق الحصول على المعلومات" : "Right to Receive Information",
+              is_normative: true,
+              children: 1,
+            },
+          ],
+        },
+      }),
+      [`GET /v1/clauses/${encodeURIComponent("uae-pdpl:art-13")}/subtree`]: (request) => ({
+        body: arabic(request) ? article13.ar : article13.en,
+      }),
+    });
+  }
+
+  it("reads in the dashboard's language, with a switch to the other", async () => {
+    law();
+    renderAt("/library/uae-pdpl");
+
+    expect(await screen.findByText(/The Data Subject has the right/)).toBeInTheDocument();
+    expect(screen.queryByText(/يحق لصاحب البيانات/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Arabic prevails")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "العربية" }));
+
+    expect(await screen.findByText(/يحق لصاحب البيانات/)).toHaveAttribute("dir", "rtl");
+    expect(screen.queryByText(/The Data Subject has the right/)).not.toBeInTheDocument();
+  });
+
+  it("opens in the language last chosen for that law", async () => {
+    localStorage.setItem("dpolens.reading-language.uae-pdpl", "ar");
+    law();
+    renderAt("/library/uae-pdpl");
+
+    expect(await screen.findByText(/يحق لصاحب البيانات/)).toBeInTheDocument();
+    expect(screen.queryByText(/The Data Subject has the right/)).not.toBeInTheDocument();
   });
 });

@@ -7,13 +7,15 @@ import { CitedThisWeek } from "@/components/CitedThisWeek";
 import { usePolicyVersions } from "@/api/policies";
 import { useClause, useSubtrees } from "@/api/queries";
 import { CopyCitationButton } from "@/components/CopyCitation";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { Notice } from "@/components/Notice";
 import { Reading } from "@/components/Reading";
 import { Chip, Failed, Loading, Missing, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { namesOf, prevailingLanguage } from "@/lib/citation";
-import { formatDate, isRightToLeft, languageName, readingOrder } from "@/lib/format";
+import { formatDate, isRightToLeft, languageName } from "@/lib/format";
 import { isolate } from "@/lib/policies";
+import { useReadingLanguage } from "@/lib/readingLanguage";
 
 interface FromSearch {
   query?: string;
@@ -175,13 +177,19 @@ export function ClausePage() {
         ),
       ]
     : [];
-  const other = languages.find((lang) => lang !== clause?.lang);
-  const otherDetail = useClause(key, other, other !== undefined, asOf);
-  const reading = useSubtrees(clause ? key : null, languages, asOf);
+  const [lang, setLang] = useReadingLanguage(
+    clause ? (clause.pack_slug ?? clause.document_slug) : null,
+    languages,
+    clause?.authoritative_language,
+  );
+  // The clause again in the language being read, when that is not the one it came in.
+  const switched = useClause(key, lang ?? undefined, lang !== null && lang !== clause?.lang, asOf);
+  const reading = useSubtrees(clause && lang ? key : null, lang ? [lang] : [], asOf);
   const now = detail.data?.now ?? null;
   const versions = usePolicyVersions(clause?.document_slug ?? "", now !== null);
   // The rule moved away from this key, so today the key may name another one.
-  const today = useClause(key, i18n.language, now !== null && now.key !== key);
+  const moved = now !== null && now.key !== key;
+  const today = useClause(key, i18n.language, moved);
 
   if (detail.isPending) {
     return <Loading />;
@@ -193,8 +201,9 @@ export function ClausePage() {
     return <Failed onRetry={() => void detail.refetch()} />;
   }
 
-  const breadcrumb = detail.data.breadcrumb;
-  const article = breadcrumb[0] ?? clause;
+  const read = (lang !== clause.lang ? switched.data : null) ?? detail.data;
+  const breadcrumb = read.breadcrumb;
+  const article = breadcrumb[0] ?? read.clause;
   const until =
     versions.data?.versions.find(
       (entry) => entry.state !== "draft" && entry.effective_date === clause.effective_date,
@@ -214,10 +223,8 @@ export function ClausePage() {
         <Notice tone="quiet">{t("clause.archived", { title: clause.document_title })}</Notice>
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <Title trail={breadcrumb} lang={clause.lang} />
-        {other && otherDetail.data ? (
-          <Title trail={otherDetail.data.breadcrumb} lang={other} />
-        ) : null}
+        <Title trail={breadcrumb} lang={read.clause.lang} />
+        {lang ? <LanguageSwitch languages={languages} value={lang} onChange={setLang} /> : null}
       </div>
       <div className="flex flex-wrap gap-2">
         {detail.data.in_selected_laws === false ? (
@@ -240,23 +247,20 @@ export function ClausePage() {
           {reading.isPending ? <Loading /> : null}
           {reading.error ? <Failed onRetry={reading.refetch} /> : null}
           {!reading.isPending && !reading.error ? (
-            <Reading
-              byLanguage={reading.byLanguage}
-              languages={readingOrder(languages)}
-              breadcrumb={breadcrumb}
-            />
+            <Reading clauses={reading.byLanguage[lang ?? ""] ?? []} breadcrumb={breadcrumb} />
           ) : null}
         </article>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 xl:max-w-[400px]">
-          {today.data ? <SameKeyToday today={today.data} /> : null}
+          {/* Its query is the page's own when nothing moved, so its answer alone says nothing. */}
+          {moved && today.data ? <SameKeyToday today={today.data} /> : null}
           <CitedThisWeek clauseKey={clause.key} />
           <section className="flex flex-col gap-3.5 rounded-[20px] bg-ink p-5 text-white sm:p-6">
             <h2 className="text-[19px] font-semibold">{t("clause.assistant")}</h2>
             <pre className="overflow-x-auto rounded-xl bg-[#222924] p-3.5 font-mono text-xs leading-7 whitespace-pre-wrap text-[#e4e9e5]">
-              {assistantView(clause)}
+              {assistantView(read.clause)}
             </pre>
-            <CopyCitationButton clause={clause} breadcrumb={breadcrumb} variant="primary" />
+            <CopyCitationButton clause={read.clause} breadcrumb={breadcrumb} variant="primary" />
             <Button asChild variant="ghost" size="sm" className="text-white hover:bg-white/10">
               <Link
                 to={`/library/${clause.document_slug}?part=${encodeURIComponent(article.key)}${asOf ? `&as_of=${asOf}` : ""}#${encodeURIComponent(clause.key)}`}
