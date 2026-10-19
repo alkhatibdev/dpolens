@@ -108,6 +108,7 @@ export const en = {
   },
   document: {
     contents: "Contents",
+    language: "Language",
     openSource: "Open the source",
     clauses_one: "{{count}} clause",
     clauses_other: "{{count}} clauses",
@@ -185,15 +186,12 @@ export const en = {
     identical: "The two versions are the same, clause for clause.",
   },
   clause: {
-    key: "Key",
     copy: "Copy the citation",
     copyKey: "Copy the citation {{key}}",
     copied: "Copied",
     assistant: "What your assistant receives",
     readArticle: "Read the whole article",
     alsoAnswers: "Also answers this question",
-    authoritative: "the text that prevails",
-    translation: "official translation",
     citedThisWeek: "Cited this week",
     citedByDay: "Cited each day this week: {{days}}",
     readingOld: "You are reading version {{label}}, in force from {{from}} to {{until}}.",

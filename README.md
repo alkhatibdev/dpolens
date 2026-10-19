@@ -371,9 +371,10 @@ The dashboard is a client of the same API. A person signs in with an email and a
 and the session lives in a cookie the page's scripts cannot read and no other site can
 send. It ends after 30 minutes idle or 8 hours in all, and the governance log records every
 sign-in. The library lists each document with the version in force and which of its
-languages prevails, and reads a law article by article, its official translation beside the
-text that prevails with the key between them. Every key copies the clause with the same
-citation the MCP server gives an assistant. Search covers the selected laws, with one of them
+languages prevails, and reads a law article by article in one language at a time: a law in
+two languages opens in the dashboard's language, with a switch to the other that the browser
+remembers for that law. Every key copies the clause with the same citation the MCP server
+gives an assistant. Search covers the selected laws, with one of them
 alone, a date or the recitals a click away.
 
 Whoever may read every question starts on the Overview: how much was asked over the last 7

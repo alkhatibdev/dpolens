@@ -7,6 +7,8 @@ import "@/i18n";
 
 afterEach(() => {
   cleanup();
+  // A remembered reading language would carry from one test into the next.
+  localStorage.clear();
 });
 
 // What jsdom leaves out and Radix's menus reach for.

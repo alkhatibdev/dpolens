@@ -21,7 +21,7 @@ const result: SearchResult = {
 };
 
 describe("search results", () => {
-  it("shows each clause with its key, where it sits and the text that prevails", async () => {
+  it("shows each clause with its key, where it sits and which text prevails", async () => {
     const { calls } = serve({
       "GET /v1/sessions/current": { body: signedIn },
       "GET /v1/documents": { body: { documents: [uae], total: 1, limit: 100, offset: 0 } },
@@ -34,7 +34,9 @@ describe("search results", () => {
       within(card).getByText(/Article \(13\) Right to Receive Information/),
     ).toBeInTheDocument();
     expect(within(card).getByText("Arabic prevails")).toBeInTheDocument();
-    expect(within(card).getByText(/يحق لصاحب البيانات/)).toHaveAttribute("dir", "rtl");
+    // In the language it was asked in, and that one only.
+    expect(within(card).getByText(/The Data Subject has the right/)).toBeInTheDocument();
+    expect(within(card).queryByText(/يحق لصاحب البيانات/)).not.toBeInTheDocument();
     expect(within(card).getByRole("link", { name: "Open the clause" })).toHaveAttribute(
       "href",
       "/clauses/uae-pdpl%3Aart-13%3Apara-1",

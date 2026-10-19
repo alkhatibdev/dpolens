@@ -14,18 +14,24 @@ beforeEach(() => {
   Object.defineProperty(window, "isSecureContext", { value: true, configurable: true });
 });
 
-describe("reading a clause in two languages", () => {
-  it("sets Arabic right to left, in its own language, beside the English", () => {
-    render(<Reading byLanguage={article13} languages={["ar", "en"]} breadcrumb={[]} />);
+describe("reading a clause", () => {
+  it("sets Arabic right to left, in its own language", () => {
+    render(<Reading clauses={article13.ar} breadcrumb={[]} />);
 
     const arabic = screen.getByText(/يحق لصاحب البيانات/);
     expect(arabic).toHaveAttribute("lang", "ar");
     expect(arabic).toHaveAttribute("dir", "rtl");
+  });
+
+  it("shows only the language it is given", () => {
+    render(<Reading clauses={article13.en} breadcrumb={[]} />);
+
     expect(screen.getByText(/The Data Subject has the right/)).toHaveAttribute("dir", "ltr");
+    expect(screen.queryByText(/يحق لصاحب البيانات/)).not.toBeInTheDocument();
   });
 
   it("copies a clause with the citation an assistant would give", async () => {
-    render(<Reading byLanguage={article13} languages={["ar", "en"]} breadcrumb={[]} />);
+    render(<Reading clauses={article13.en} breadcrumb={[]} />);
 
     await userEvent.click(
       screen.getByRole("button", { name: "Copy the citation uae-pdpl:art-13:para-1" }),
@@ -40,7 +46,7 @@ describe("reading a clause in two languages", () => {
   });
 
   it("leaves out clauses with no words of their own", () => {
-    render(<Reading byLanguage={article13} languages={["ar", "en"]} breadcrumb={[]} />);
+    render(<Reading clauses={article13.en} breadcrumb={[]} />);
 
     expect(screen.queryByRole("button", { name: /uae-pdpl:art-13$/ })).not.toBeInTheDocument();
   });
