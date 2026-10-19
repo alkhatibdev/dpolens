@@ -84,7 +84,13 @@ class Overview(BaseModel):
     answered: int
     found_nothing: int
     by_day: list[DayCount]
-    most_cited: list[Cited] = Field(description="First result of a search, or read by key")
+    most_cited: list[Cited] = Field(
+        description=(
+            "Clauses of the selected laws and the policies, each counted once a day for each "
+            "person who cited it: a search's first result, or a read by key from an assistant "
+            "or the API"
+        )
+    )
     sources: list[Source] = Field(
         description="Where the first result of an answered search came from"
     )
@@ -109,8 +115,8 @@ class Activity(BaseModel):
 )
 def describe(who: Reader, opened: Opened, days: Days = 7, tz: Zone = "UTC") -> Overview:
     assert who
-    week = reading.overview(opened, _window(days, tz))
     selected = set(selected_laws(opened) or ())
+    week = reading.overview(opened, _window(days, tz), laws=selected)
     return Overview(
         days=week.window.days,
         since=week.window.since,
@@ -151,7 +157,7 @@ def describe(who: Reader, opened: Opened, days: Days = 7, tz: Zone = "UTC") -> O
 
 @router.get(
     "/clauses/{key}/activity",
-    summary="How often one clause was cited, day by day",
+    summary="How often one clause was cited, day by day, counted as Most cited counts",
     responses=problems.responses(400),
 )
 def clause_activity(

@@ -9,13 +9,24 @@ the caller records that look in the governance log with `record_identities_viewe
 from __future__ import annotations
 
 import uuid
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import ColumnElement, Text, and_, cast, exists, func, or_, select, tuple_
+from sqlalchemy import (
+    ColumnElement,
+    Text,
+    and_,
+    cast,
+    distinct,
+    exists,
+    func,
+    or_,
+    select,
+    tuple_,
+)
 from sqlalchemy.orm import Session
 
 from dpolens.engine.auth.models import User
@@ -27,10 +38,6 @@ from dpolens.engine.packs.models import Pack
 MOST_CITED = 5
 LATEST_UNANSWERED = 4
 EXPORT_BATCH = 500
-
-CITING = ("search", "get_clause")
-"""What counts as citing a clause: a search that returned it first, or a read of
-that one clause by its key. Reading a whole article in the library does not."""
 
 
 @dataclass(frozen=True)
@@ -437,8 +444,38 @@ def _local_day(window: Window) -> ColumnElement[date]:
     return func.date(func.timezone(window.zone.key, QueryLogEntry.created_at))
 
 
-def overview(session: Session, window: Window) -> Week:
-    """What the Overview shows, for anyone who may read every question. Names never."""
+def _cited(window: Window) -> ColumnElement[bool]:
+    """A clause cited in the window: a search's first result, from anywhere, or a read
+    of that one clause by its key from an assistant or the API.
+
+    Reading a clause in the dashboard is browsing, not citing, and counting it would
+    let a clause climb Most cited from its own clicks. Reading a whole article never
+    counts.
+    """
+    return and_(
+        QueryLogResult.rank == 1,
+        QueryLogEntry.status == "ok",
+        or_(
+            QueryLogEntry.operation == "search",
+            and_(QueryLogEntry.operation == "get_clause", QueryLogEntry.surface != "dashboard"),
+        ),
+        QueryLogEntry.created_at >= window.since,
+        QueryLogEntry.created_at < window.until,
+    )
+
+
+def _people_a_day(window: Window) -> ColumnElement[int]:
+    """Each person, or service account, once a day, however many searches an assistant
+    runs for one question or a script runs on a schedule."""
+    return func.count(distinct(tuple_(QueryLogEntry.actor_user_id, _local_day(window))))
+
+
+def overview(session: Session, window: Window, *, laws: Collection[str]) -> Week:
+    """What the Overview shows, for anyone who may read every question. Names never.
+
+    `laws` are the organisation's selected laws. Most cited lists their clauses and the
+    policies' only, since it describes what applies now.
+    """
     searches = and_(
         QueryLogEntry.operation == "search",
         QueryLogEntry.created_at >= window.since,
@@ -485,24 +522,22 @@ def overview(session: Session, window: Window) -> Week:
         for local in window.dates()
     )
 
+    cited = _people_a_day(window)
     first = (
         select(
             QueryLogResult.canonical_key,
             # Postgres has no max() for a uuid; any version of the clause will do to name it.
             func.max(cast(QueryLogResult.document_version_id, Text)).label("version"),
             func.max(QueryLogResult.lang).label("lang"),
-            func.count().label("cited"),
+            cited.label("cited"),
         )
         .join(QueryLogEntry, QueryLogEntry.id == QueryLogResult.query_log_entry_id)
-        .where(
-            QueryLogResult.rank == 1,
-            QueryLogEntry.status == "ok",
-            QueryLogEntry.operation.in_(CITING),
-            QueryLogEntry.created_at >= window.since,
-            QueryLogEntry.created_at < window.until,
-        )
+        .join(DocumentVersion, DocumentVersion.id == QueryLogResult.document_version_id)
+        .join(Document, Document.id == DocumentVersion.document_id)
+        .outerjoin(Pack, Pack.id == Document.pack_id)
+        .where(_cited(window), or_(Document.pack_id.is_(None), Pack.slug.in_(laws)))
         .group_by(QueryLogResult.canonical_key)
-        .order_by(func.count().desc(), QueryLogResult.canonical_key)
+        .order_by(cited.desc(), QueryLogResult.canonical_key)
         .limit(MOST_CITED)
     )
     top = session.execute(first).all()
@@ -558,22 +593,15 @@ class Activity:
 
 
 def clause_activity(session: Session, key: str, window: Window) -> Activity:
-    """How often one clause was cited in the window, counted as the Overview counts."""
+    """How often one clause was cited in the window, counted as Most cited counts."""
     day = _local_day(window)
     counts: Mapping[date, int] = {
         local: int(count)
         for local, count in session.execute(
-            select(day, func.count())
+            select(day, _people_a_day(window))
             .select_from(QueryLogResult)
             .join(QueryLogEntry, QueryLogEntry.id == QueryLogResult.query_log_entry_id)
-            .where(
-                QueryLogResult.canonical_key == key,
-                QueryLogResult.rank == 1,
-                QueryLogEntry.status == "ok",
-                QueryLogEntry.operation.in_(CITING),
-                QueryLogEntry.created_at >= window.since,
-                QueryLogEntry.created_at < window.until,
-            )
+            .where(QueryLogResult.canonical_key == key, _cited(window))
             .group_by(day)
         ).all()
     }
