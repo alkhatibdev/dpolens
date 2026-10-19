@@ -104,7 +104,9 @@ beside it.
 | `/problems/not-found` | 404 | No such clause or document in the version in force |
 | `/problems/invalid-request` | 400, 422 | The request does not make sense. `errors` names the fields |
 | `/problems/unsupported-language` | 422 | The instance cannot search in that `lang`. `languages` lists the ones it can |
-| `/problems/unknown-law` | 422 | A law in `laws` is not loaded here. `laws` lists the ones that are |
+| `/problems/unknown-law` | 422 | A law in `laws` is not loaded here. `laws` lists the ones to choose from: the organisation's laws in a search, every loaded law when choosing them |
+| `/problems/law-not-selected` | 403 | A loaded law the organisation has not selected, named in `laws` or read by its slug or a key. `laws` names it |
+| `/problems/no-laws-selected` | 409 | Nobody has chosen which laws apply yet, so nothing is searched |
 | `/problems/too-many-requests` | 429 | The quota for the minute is spent. `Retry-After` says when |
 | `/problems/sign-in-refused` | 401 | That email and password do not match an account |
 | `/problems/too-many-attempts` | 429 | Too many failed sign-ins for that address. `Retry-After` says when |
@@ -160,7 +162,7 @@ does not reach the access log of a proxy in front of the instance.
 | `query` | required | The question, in words. At most 1000 characters |
 | `limit` | 10 | How many clauses to return, at most 50 |
 | `lang` | from the question | The language of the question, `en` or `ar`. Left out, it is read from the letters the question is written in |
-| `laws` | the selected laws | The laws to search instead, by slug, such as `gdpr` or `uae-pdpl` |
+| `laws` | the selected laws | Only these of the selected laws, by slug, such as `gdpr` or `uae-pdpl` |
 | `expand` | `none` | Also return each hit's `siblings` or its `parent` |
 | `as_of` | today | Read the corpus as it stood on this date |
 | `include_explanatory` | false | Include text that explains without obliging, such as a recital |
@@ -180,12 +182,11 @@ its English text, with `is_authoritative` false, `authoritative_language` saying
 that the Arabic prevails, and `authoritative_text` holding the Arabic, word for word,
 so the two can be read side by side.
 
-A search covers the laws the organisation has selected, and its own policies. Until
-an administrator chooses, with `dpolens laws select`, every loaded law counts as
-selected. `laws` searches others instead, and a clause from a law outside the
-selection has `in_selected_laws` false, so a reader can tell it does not apply. The
-response's `laws` lists what was searched, and the query log records whether a search
-reached outside the selection.
+A search covers the laws the organisation has selected and its own policies, and
+nothing else. `laws` keeps it to some of them. A loaded law outside the selection is
+refused with `403` and `/problems/law-not-selected`, which names it and says an
+administrator can add it, and until somebody has chosen, every search is refused with
+`409` and `/problems/no-laws-selected`. The response's `laws` lists what was searched.
 
 The fusion rule is not a parameter. It is chosen by measurement, and
 [retrieval.md](retrieval.md) publishes the measurement.
@@ -211,17 +212,21 @@ words changed. A clause whose key named a different rule in the version before c
 An archived policy's clauses still read, with `archived` true, so a citation of one still
 resolves. Nothing searches them.
 
+A clause of a law the organisation has not selected is refused to a token, as in a search.
+The dashboard still opens it, with `in_selected_laws` false, so a citation stays checkable
+after its law is unselected.
+
 ### Documents
 
-`GET /v1/documents` lists what can be cited today, with `limit` (at most 100),
-`offset` and `as_of`. `GET /v1/documents/{slug}` returns one document and its
+`GET /v1/documents` lists what can be cited today, the selected laws and the
+organisation's policies, with `limit` (at most 100), `offset` and `as_of`. `GET /v1/documents/{slug}` returns one document and its
 outline: the top level, without the text, each clause named in `lang` where it has text
 in that language. The words come from the clause routes, because a document of a
 thousand clauses does not belong in one response.
 
 A document says whether it is one of the organisation's selected laws,
-`in_selected_laws`, which is always true for the organisation's own policies, and for a
-law which language prevails, `authoritative_language`.
+`in_selected_laws`, false only for a law that a token cannot read and the dashboard opens by
+its slug, and for a law which language prevails, `authoritative_language`.
 
 ### Policies
 
@@ -450,16 +455,16 @@ by its key. No name appears in it.
 
 `GET /v1/laws` lists the laws loaded on the instance, for `settings.manage`: what each one is,
 its languages and which of them prevails, how many articles and recitals it holds, the
-document to read it by, and whether a search covers it without naming it. `selected` is the
-selection by slug, or null while nobody has chosen, when every loaded law is searched.
+document to read it by, whether a search covers it, and whether it is `new`: loaded in the
+last 30 days, after the laws were first chosen, as a law an upgrade brings is. `selected` is
+the selection by slug, or null while nobody has chosen and nothing is searched.
 `changed` is the latest change to the selection, who made it and when, or null if there has
 never been one.
 
-`PUT /v1/laws/selection` makes the laws in `laws` exactly the ones that apply, and
-`DELETE /v1/laws/selection` goes back to every law. Both answer as `GET` does, and each
-change is written to the governance log, as `laws.selected` or `laws.selection_cleared`. A
-selection names at least one law, and a law that is not loaded gets `422` and
-`/problems/unknown-law`.
+`PUT /v1/laws/selection` makes the laws in `laws` exactly the ones that apply. It answers as
+`GET` does, and each change is written to the governance log as `laws.selected`. A selection
+names at least one law, and there is no going back to searching every law. A law that is
+not loaded gets `422` and `/problems/unknown-law`.
 
 ### The instance
 
@@ -498,8 +503,7 @@ model, refuses to serve at all.
 
 Every call writes one row to the query log: the operation, the outcome, the
 developer and the token they used, what was returned, and the question with
-personal data taken out. A search also records whether it stayed inside the
-selected laws. Rows expire on the instance's retention, which defaults
+personal data taken out. Rows expire on the instance's retention, which defaults
 to 365 days, and the instance deletes them itself.
 
 Telemetry, the JSON the process writes to stdout, never carries the text of a

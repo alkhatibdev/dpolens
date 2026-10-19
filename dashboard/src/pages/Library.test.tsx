@@ -18,14 +18,15 @@ describe("the library", () => {
     renderAt("/library");
 
     const card = (await screen.findByText(uae.title)).closest("a")!;
-    expect(within(card).getByText("In your selected laws")).toBeInTheDocument();
+    expect(within(card).getByText("Law")).toBeInTheDocument();
+    expect(within(card).getByText("United Arab Emirates")).toBeInTheDocument();
     expect(within(card).getByText(/العربية · prevails/)).toHaveAttribute("lang", "ar");
     expect(within(card).getByText("199")).toBeInTheDocument();
     expect(within(card).getByText("2 Jan 2022")).toBeInTheDocument();
     expect(card).toHaveAttribute("href", "/library/uae-pdpl");
 
-    const other = screen.getByText(gdpr.title).closest("a")!;
-    expect(within(other).getByText("Not in your selected laws")).toBeInTheDocument();
+    // Every law the library lists is one the organisation chose, so none says so.
+    expect(screen.queryByText("Not in your selected laws")).not.toBeInTheDocument();
   });
 
   it("says where the organisation's policies will appear", async () => {

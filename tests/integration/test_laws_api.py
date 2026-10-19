@@ -2,7 +2,7 @@
 
 In a database of its own, with the two fixture laws loaded. Only one test changes the
 selection, because the first thing it checks is a state no instance returns to: nobody
-has ever chosen. The others leave the selection as they found it.
+has chosen yet. The others leave the selection as they found it.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from dpolens.engine.auth.catalog import bootstrap
 from dpolens.engine.auth.passwords import set_password
 from dpolens.engine.auth.users import create_user
 from dpolens.engine.instance import Instance
-from dpolens.engine.logs.governance import LAWS_SELECTED, LAWS_SELECTION_CLEARED, Actor
+from dpolens.engine.logs.governance import LAWS_SELECTED, Actor
 from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.session import session_from
@@ -80,7 +80,7 @@ def selection_entries(owner: Engine) -> list[GovernanceEntry]:
     with session_from(owner) as opened:
         rows = opened.scalars(
             select(GovernanceEntry)
-            .where(GovernanceEntry.action.in_((LAWS_SELECTED, LAWS_SELECTION_CLEARED)))
+            .where(GovernanceEntry.action == LAWS_SELECTED)
             .order_by(GovernanceEntry.seq)
         ).all()
         opened.expunge_all()
@@ -88,7 +88,7 @@ def selection_entries(owner: Engine) -> list[GovernanceEntry]:
 
 
 class TestSelectedLaws:
-    def test_from_nobody_choosing_to_a_choice_and_back_to_every_law(
+    def test_from_nobody_choosing_to_a_choice(
         self, app_client: TestClient, own: tuple[str, Engine]
     ) -> None:
         client = signed_in(app_client, ADMIN)
@@ -97,7 +97,9 @@ class TestSelectedLaws:
         assert fresh.status_code == 200, fresh.text
         assert fresh.json()["selected"] is None
         assert fresh.json()["changed"] is None
-        assert [law["searched"] for law in fresh.json()["laws"]] == [True, True]
+        # Nothing is searched until somebody chooses, and nothing has arrived since.
+        assert [law["searched"] for law in fresh.json()["laws"]] == [False, False]
+        assert [law["new"] for law in fresh.json()["laws"]] == [False, False]
 
         chosen = client.put("/v1/laws/selection", json={"laws": ["bilingual"]}, headers=SAME_ORIGIN)
         assert chosen.status_code == 200, chosen.text
@@ -109,22 +111,16 @@ class TestSelectedLaws:
         }
         assert body["changed"]["by"] == "Yousef Haddad"
         assert body["changed"]["via"] == "dashboard"
-        assert body["changed"]["cleared"] is False
-
-        cleared = client.delete("/v1/laws/selection", headers=SAME_ORIGIN)
-        assert cleared.status_code == 200, cleared.text
-        body = cleared.json()
-        assert body["selected"] is None
-        assert [law["searched"] for law in body["laws"]] == [True, True]
-        # Back to every law, and unlike a new instance, somebody decided it.
-        assert body["changed"]["cleared"] is True
-        assert body["changed"]["by"] == "Yousef Haddad"
 
         written = selection_entries(own[1])
-        assert [entry.action for entry in written] == [LAWS_SELECTED, LAWS_SELECTION_CLEARED]
+        assert [entry.action for entry in written] == [LAWS_SELECTED]
         assert written[0].details["after"] == ["bilingual"]
-        assert written[1].details["before"] == ["bilingual"]
-        assert {entry.details["via"] for entry in written} == {"dashboard"}
+        assert written[0].details["via"] == "dashboard"
+
+    def test_there_is_no_going_back_to_every_law(self, app_client: TestClient) -> None:
+        response = signed_in(app_client, ADMIN).delete("/v1/laws/selection", headers=SAME_ORIGIN)
+
+        assert response.status_code == 405
 
     def test_each_law_says_what_it_holds(self, app_client: TestClient) -> None:
         laws = signed_in(app_client, DPO).get("/v1/laws", headers=SAME_ORIGIN).json()["laws"]
@@ -165,7 +161,7 @@ class TestSelectedLaws:
 
     @pytest.mark.parametrize(
         ("method", "path"),
-        [("GET", "/v1/laws"), ("PUT", "/v1/laws/selection"), ("DELETE", "/v1/laws/selection")],
+        [("GET", "/v1/laws"), ("PUT", "/v1/laws/selection")],
     )
     def test_choosing_needs_the_permission_to_change_settings(
         self, app_client: TestClient, method: str, path: str

@@ -29,18 +29,18 @@ describe("the first run", () => {
     expect(await put.json()).toEqual({ laws: ["uae-pdpl"] });
   });
 
-  it("goes on without choosing when it is decided later", async () => {
-    const { calls } = serve({
+  it("cannot be put off, because nothing is searched until somebody chooses", async () => {
+    serve({
       "GET /v1/sessions/current": { body: admin },
       "GET /v1/laws": { body: lawsUnchosen },
-      "GET /v1/overview": { body: overview },
     });
-    const { router } = renderAt("/setup");
+    renderAt("/setup");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Decide later" }));
+    await screen.findByRole("heading", { name: "Which laws apply to your organisation?" });
 
-    await waitFor(() => expect(router.state.location.pathname).toBe("/overview"));
-    expect(calls.some((call) => call.method === "PUT")).toBe(false);
+    expect(screen.queryByRole("button", { name: "Decide later" })).not.toBeInTheDocument();
+    expect(screen.getByText("Nothing is searched until you choose.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save and continue" })).toBeDisabled();
   });
 
   it("is not asked again once somebody has chosen", async () => {

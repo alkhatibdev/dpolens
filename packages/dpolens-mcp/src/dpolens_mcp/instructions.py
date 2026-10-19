@@ -102,10 +102,10 @@ If nothing in the change touches personal data, say so and stop. Do not invent a
 POLICY_TOUR = """
 Show me what this DPOLens instance can do, in about two minutes.
 
-1. Call list_documents and tell me what is loaded: each document, its version and the date
+1. Call list_documents and tell me what it can cite: each document, its version and the date
    that version took effect, and whether it is a law or this organisation's own policy.
-2. Run one search against a law that is loaded, such as asking how long personal data may be
-   kept. Quote the clause that comes back and give its key, document and version.
+2. Run one search against one of this organisation's laws, such as asking how long personal
+   data may be kept. Quote the clause that comes back and give its key, document and version.
 3. Run one search against this organisation's own policies, if any are loaded, and show the
    same thing. Say so plainly if none are loaded yet.
 4. Take one key from a result and call get_clause on it, to show the clause in its context

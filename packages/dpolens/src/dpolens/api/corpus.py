@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from dpolens.api import problems
 from dpolens.api.dependencies import Configured, Delegated, Embedding, Opened, Reader
-from dpolens.api.logging import logged, surface_of
+from dpolens.api.logging import Asked, logged, surface_of
 from dpolens.api.schemas import (
     Clause,
     ClauseInContext,
@@ -29,6 +29,7 @@ from dpolens.api.schemas import (
     Result,
     Results,
 )
+from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.documents.read import (
     ClauseNotFound,
     get_clause,
@@ -37,9 +38,18 @@ from dpolens.engine.documents.read import (
     list_documents,
 )
 from dpolens.engine.logs.queries import Returned
-from dpolens.engine.packs.selection import UnknownLaw, scope_for
+from dpolens.engine.packs.selection import (
+    NothingSelected,
+    NotSelected,
+    UnknownLaw,
+    in_selection,
+    require_selected,
+    scope_for,
+    selected_laws,
+)
 from dpolens.engine.search import SEARCHABLE_LANGUAGES
 from dpolens.engine.search.engine import search
+from dpolens.engine.session import EngineSession
 
 router = APIRouter(
     prefix="/v1",
@@ -69,9 +79,9 @@ class SearchRequest(BaseModel):
         default=None,
         max_length=20,
         description=(
-            "The laws to search, by slug, such as gdpr or uae-pdpl. Left out, the "
-            "organisation's selected laws, or every loaded law until it has chosen. A law "
-            "outside the selection comes back with in_selected_laws false"
+            "The laws to search, by slug, such as gdpr or uae-pdpl, from the ones the "
+            "organisation has selected. Left out, all of them. Its own policies are searched "
+            "either way"
         ),
     )
     expand: Literal["none", "siblings", "parent"] = Field(
@@ -93,7 +103,40 @@ class SearchRequest(BaseModel):
     )
 
 
-@router.post("/search", summary="Find the clauses that answer a question")
+def _refusal(refused: NothingSelected | NotSelected | UnknownLaw) -> problems.Problem:
+    """What a caller is told when the laws it asked for are not the organisation's."""
+    if isinstance(refused, NothingSelected):
+        return problems.no_laws_selected(str(refused))
+    if isinstance(refused, NotSelected):
+        return problems.law_not_selected(str(refused), refused.slugs)
+    return problems.unknown_law(str(refused), refused.choices)
+
+
+def _reachable(
+    opened: EngineSession, who: Authenticated, pack_slug: str | None, asked: Asked
+) -> bool:
+    """Whether a document is the organisation's, refusing anything but the dashboard
+    when it is another law.
+
+    The dashboard still opens a law outside the selection, marked, so a citation
+    stays checkable after its law is unselected, and an administrator can read a
+    law before choosing it. A token reaches the organisation's laws only.
+    """
+    if who.session is not None:
+        return in_selection(opened, pack_slug)
+    try:
+        require_selected(opened, pack_slug)
+    except (NothingSelected, NotSelected) as refused:
+        asked.status = "refused"
+        raise _refusal(refused) from refused
+    return True
+
+
+@router.post(
+    "/search",
+    summary="Find the clauses that answer a question",
+    responses=problems.responses(409, 422),
+)
 def run_search(
     request: Request,
     body: SearchRequest,
@@ -108,8 +151,8 @@ def run_search(
         raise problems.unsupported_language(body.lang, SEARCHABLE_LANGUAGES)
     try:
         scope = scope_for(opened, body.laws)
-    except UnknownLaw as unknown:
-        raise problems.unknown_law(unknown.unknown, unknown.loaded) from unknown
+    except (NothingSelected, NotSelected, UnknownLaw) as refused:
+        raise _refusal(refused) from refused
 
     with logged(
         request,
@@ -119,7 +162,7 @@ def run_search(
         surface=surface_of(delegated, who),
         query=body.query,
     ) as asked:
-        asked.scope = "other" if scope.outside_selection else "selected"
+        asked.scope = "selected"
         found = search(
             opened,
             embedder,
@@ -142,7 +185,7 @@ def run_search(
 @router.get(
     "/clauses/{key}",
     summary="Read one clause by its canonical key",
-    responses=problems.responses(404),
+    responses=problems.responses(404, 409),
 )
 def read_clause(
     request: Request,
@@ -167,15 +210,16 @@ def read_clause(
         except ClauseNotFound as missing:
             asked.status = "no_match"
             raise problems.not_found(str(missing)) from missing
+        selected = _reachable(opened, who, detail.clause.pack_slug, asked)
         asked.found([Returned.of(detail.clause)])
 
-    return ClauseInContext.of(detail)
+    return ClauseInContext.of(detail, in_selected_laws=selected)
 
 
 @router.get(
     "/clauses/{key}/subtree",
     summary="Read a clause and everything beneath it",
-    responses=problems.responses(404),
+    responses=problems.responses(404, 409),
 )
 def read_subtree(
     request: Request,
@@ -201,12 +245,13 @@ def read_subtree(
         except ClauseNotFound as missing:
             asked.status = "no_match"
             raise problems.not_found(str(missing)) from missing
+        _reachable(opened, who, branch[0].pack_slug if branch else None, asked)
         asked.found([Returned.of(view) for view in branch])
 
     return [Clause.of(view) for view in branch]
 
 
-@router.get("/documents", summary="List the documents in force")
+@router.get("/documents", summary="List the selected laws and the policies in force")
 def list_corpus(
     request: Request,
     who: Reader,
@@ -220,15 +265,13 @@ def list_corpus(
     with logged(
         request, who, settings, operation="list_documents", surface=surface_of(delegated, who)
     ) as asked:
-        documents, total = list_documents(opened, limit=limit, offset=offset, as_of=as_of)
-        scope = scope_for(opened)
+        documents, total = list_documents(
+            opened, limit=limit, offset=offset, as_of=as_of, laws=selected_laws(opened) or ()
+        )
         asked.status = "ok" if documents else "no_match"
 
     return Documents(
-        documents=[
-            Document.of(summary, in_selected_laws=scope.is_selected(summary.pack_slug))
-            for summary in documents
-        ],
+        documents=[Document.of(summary, in_selected_laws=True) for summary in documents],
         total=total,
         limit=limit,
         offset=offset,
@@ -238,7 +281,7 @@ def list_corpus(
 @router.get(
     "/documents/{slug}",
     summary="One document and its top-level structure",
-    responses=problems.responses(404),
+    responses=problems.responses(404, 409),
 )
 def read_document(
     request: Request,
@@ -266,7 +309,7 @@ def read_document(
         except ClauseNotFound as missing:
             asked.status = "no_match"
             raise problems.not_found(str(missing)) from missing
+        selected = _reachable(opened, who, detail.summary.pack_slug, asked)
         asked.status = "ok"
 
-    selected = scope_for(opened).is_selected(detail.summary.pack_slug)
     return DocumentInDetail.of(detail, in_selected_laws=selected)

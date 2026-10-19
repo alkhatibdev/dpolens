@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -68,41 +68,24 @@ describe("selected laws", () => {
 
     await userEvent.click(await screen.findByRole("checkbox", { name: uae.title }));
 
-    expect(
-      screen.getByText("Removes UAE PDPL. Choose at least one law, or search every law instead."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Removes UAE PDPL. Choose at least one law.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save the selection" })).toBeDisabled();
   });
 
-  it("goes back to every law, and says who did", async () => {
-    const { calls } = serve({
+  it("offers no way back to searching every law", async () => {
+    serve({
       "GET /v1/sessions/current": { body: admin },
       "GET /v1/laws": { body: lawsChosen },
-      "DELETE /v1/laws/selection": {
-        body: {
-          ...lawsUnchosen,
-          changed: {
-            at: new Date().toISOString(),
-            cleared: true,
-            by: "Yousef Haddad",
-            via: "dashboard",
-          },
-        },
-      },
     });
     renderAt("/laws");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Go back to every law" }));
+    await screen.findByRole("heading", { name: "Searches cover UAE PDPL, and your policies" });
 
-    expect(
-      await screen.findByRole("heading", { name: "Searches cover every law loaded here" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/^Yousef Haddad went back to every law today at/)).toBeInTheDocument();
+    expect(screen.queryByText("Search every law instead")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Go back to every law" })).not.toBeInTheDocument();
-    expect(calls.filter((call) => call.method === "DELETE")).toHaveLength(1);
   });
 
-  it("ticks every law on a new instance, where nobody has chosen yet", async () => {
+  it("says nothing is searched on a new instance, where nobody has chosen yet", async () => {
     serve({
       "GET /v1/sessions/current": { body: admin },
       "GET /v1/laws": { body: lawsUnchosen },
@@ -110,13 +93,25 @@ describe("selected laws", () => {
     renderAt("/laws");
 
     expect(
-      await screen.findByRole("heading", {
-        name: "Searches cover every law loaded here, until someone chooses",
-      }),
+      await screen.findByRole("heading", { name: "Nothing is searched until someone chooses" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: GDPR })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: uae.title })).toBeChecked();
-    expect(screen.queryByText("Search every law instead")).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: GDPR })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: uae.title })).not.toBeChecked();
+  });
+
+  it("marks a law that arrived after the laws were chosen", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: admin },
+      "GET /v1/laws": {
+        body: { ...lawsChosen, laws: [{ ...gdprLaw, searched: false, new: true }, uaeLaw] },
+      },
+    });
+    renderAt("/laws");
+
+    const card = (await screen.findByRole("checkbox", { name: GDPR })).closest("label")!;
+    expect(within(card).getByText("New")).toBeInTheDocument();
+    const other = screen.getByRole("checkbox", { name: uae.title }).closest("label")!;
+    expect(within(other).queryByText("New")).not.toBeInTheDocument();
   });
 
   it("is not offered to somebody who may not change settings", async () => {

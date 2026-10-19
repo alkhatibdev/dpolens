@@ -49,9 +49,6 @@ class SearchResult:
     breadcrumb: tuple[ClauseView, ...]
     cross_references: tuple[tuple[str, str], ...]
     expanded: tuple[ClauseView, ...] = ()
-    in_selected_laws: bool = True
-    """False for a law the organisation has not selected, which a search reaches
-    only when it names that law."""
 
 
 def search(
@@ -71,12 +68,13 @@ def search(
 
     Without `lang`, the question's own letters say which language it is in.
     `keyword_indexes` swaps a language's keyword index for another, for the evals.
-    Without `scope`, the search covers the organisation's selected laws.
+    Without `scope`, the search covers the organisation's selected laws, and is
+    refused until somebody has chosen them.
     """
     lang = lang or language_of(query)
     scope = scope or scope_for(session)
-    # Nothing is filtered when no loaded law is left out, so the default on an
-    # instance where nobody has chosen runs exactly the search it always did.
+    # Nothing is filtered when no loaded law is left out, so an instance with one
+    # law, or with every law selected, runs exactly the search it always did.
     packs = list(scope.laws) if scope.narrowed else None
     lists = {
         "keyword": keyword_search(
@@ -133,7 +131,6 @@ def search(
             breadcrumb=detail.breadcrumb,
             cross_references=detail.cross_references,
             expanded=_expanded(session, detail, expand, lang, as_of),
-            in_selected_laws=scope.is_selected(detail.clause.pack_slug),
         )
         for candidate, detail in resolved[:limit]
     ]

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
 
 import type { Laws } from "@/api/client";
-import { useChooseLaws, useLaws, useSearchEveryLaw } from "@/api/laws";
+import { useChooseLaws, useLaws } from "@/api/laws";
 import { LawChoice } from "@/components/LawChoice";
 import { Notice } from "@/components/Notice";
 import { PageHeading } from "@/components/Page";
@@ -24,20 +24,15 @@ function named(slugs: readonly string[]): string {
 function Coverage({ laws }: { laws: Laws }) {
   const { t } = useTranslation();
   const changed = laws.changed;
-  let title: string;
-  if (laws.selected) {
-    title = t("laws.cover", { laws: named(laws.selected) });
-  } else {
-    title = changed ? t("laws.coverEvery") : t("laws.coverUntil");
-  }
+  const title = laws.selected
+    ? t("laws.cover", { laws: named(laws.selected) })
+    : t("laws.coverNone");
   let who = "";
   if (changed) {
     const when = formatWhen(changed.at);
-    if (changed.by) {
-      who = t(changed.cleared ? "laws.clearedBy" : "laws.chosenBy", { name: changed.by, when });
-    } else {
-      who = t(changed.cleared ? "laws.clearedOnCli" : "laws.chosenOnCli", { when });
-    }
+    who = changed.by
+      ? t("laws.chosenBy", { name: changed.by, when })
+      : t("laws.chosenOnCli", { when });
   }
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-[20px] bg-white px-5 py-[18px]">
@@ -64,7 +59,6 @@ export function SelectedLawsPage() {
   const permitted = can.has(SETTINGS_MANAGE);
   const laws = useLaws(permitted);
   const choose = useChooseLaws();
-  const every = useSearchEveryLaw();
   // The boxes ticked since the page was read, or null while nothing has changed.
   const [draft, setDraft] = useState<Set<string> | null>(null);
 
@@ -84,7 +78,7 @@ export function SelectedLawsPage() {
   const order = current.laws.map((law) => law.slug);
   const added = order.filter((slug) => shown.has(slug) && !start.has(slug));
   const removed = order.filter((slug) => start.has(slug) && !shown.has(slug));
-  const busy = choose.isPending || every.isPending;
+  const busy = choose.isPending;
 
   function toggle(slug: string, on: boolean) {
     const next = new Set(shown);
@@ -105,9 +99,7 @@ export function SelectedLawsPage() {
   const summary = [
     added.length ? t("laws.adds", { laws: named(added) }) : "",
     removed.length ? t("laws.removes", { laws: named(removed) }) : "",
-    shown.size
-      ? t("laws.appliesNow")
-      : t(current.selected ? "laws.noneTicked" : "laws.noneTickedYet"),
+    shown.size ? t("laws.appliesNow") : t("laws.noneTicked"),
   ]
     .filter(Boolean)
     .join(" ");
@@ -135,28 +127,6 @@ export function SelectedLawsPage() {
           <p className="text-muted">{t("laws.noneLoaded")}</p>
         )}
       </fieldset>
-
-      {current.selected ? (
-        <section className="flex flex-wrap items-center gap-4 rounded-[20px] bg-white p-5 sm:p-6">
-          <div className="min-w-0 flex-[1_1_360px]">
-            <h2 className="text-lg font-semibold">{t("laws.everyTitle")}</h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted">{t("laws.everyBody")}</p>
-          </div>
-          <Button
-            variant="quiet"
-            size="sm"
-            disabled={busy}
-            onClick={() => every.mutate(undefined, { onSuccess: () => setDraft(null) })}
-          >
-            {t("laws.everyAction")}
-          </Button>
-          {every.error ? (
-            <Notice tone="danger" className="basis-full">
-              {t("common.failed")}
-            </Notice>
-          ) : null}
-        </section>
-      ) : null}
 
       {draft ? (
         <div className="sticky bottom-4 flex flex-col gap-3 rounded-[20px] bg-ink p-4 text-white shadow-[0_18px_40px_rgba(17,22,19,0.25)] sm:px-6">

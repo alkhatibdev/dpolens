@@ -33,6 +33,7 @@ from dpolens.engine.embedding.index import build_index
 from dpolens.engine.logs.governance import Actor
 from dpolens.engine.logs.models import QueryLogEntry
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.selection import select_laws
 from dpolens.engine.session import session_from
 from dpolens.settings import Settings as EngineSettings
 from dpolens_mcp.api import Api
@@ -58,6 +59,7 @@ def corpus(committed_owner_url: str) -> Iterator[Engine]:
     with session_from(engine) as opened:
         bootstrap(opened, actor=ACTOR)
         load_pack(opened, TESTLAW)
+        select_laws(opened, ["testlaw"], actor=ACTOR)
     with Embedder(get_model(DEFAULT_MODEL)) as embedder, session_from(engine) as opened:
         build_index(opened, embedder)
     yield engine

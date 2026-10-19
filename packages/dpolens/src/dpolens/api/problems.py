@@ -139,19 +139,28 @@ def unsupported_language(lang: str, languages: Sequence[str]) -> Problem:
     )
 
 
-def unknown_law(unknown: Sequence[str], laws: Sequence[str]) -> Problem:
-    """A law that is not loaded, refused with the ones that are, so the caller can
-    ask again with one of them."""
+def unknown_law(detail: str, laws: Sequence[str]) -> Problem:
+    """A law that is not loaded, refused with the ones the caller may name instead:
+    the organisation's laws, so a law it has not selected is never listed."""
     return Problem(
-        kind="unknown-law",
-        title="Unknown law",
-        status=422,
-        detail=(
-            f"no law loaded here is called {', '.join(unknown)}. "
-            f"The loaded laws are: {', '.join(laws) or 'none'}"
-        ),
+        kind="unknown-law", title="Unknown law", status=422, detail=detail, laws=list(laws)
+    )
+
+
+def law_not_selected(detail: str, laws: Sequence[str]) -> Problem:
+    """A loaded law the organisation has not selected, named because the caller named it."""
+    return Problem(
+        kind="law-not-selected",
+        title="Not one of this organisation's laws",
+        status=403,
+        detail=detail,
         laws=list(laws),
     )
+
+
+def no_laws_selected(detail: str) -> Problem:
+    """Nobody has chosen which laws apply, so there is nothing to search yet."""
+    return Problem(kind="no-laws-selected", title="No laws chosen yet", status=409, detail=detail)
 
 
 def too_many_requests(retry_after: int) -> Problem:
@@ -407,7 +416,7 @@ TITLES = {
     401: "No usable credential",
     403: "The credential may not do this",
     404: "No such clause or document",
-    409: "The change conflicts with what is there",
+    409: "It conflicts with what is there, or no law has been chosen yet",
     410: "The link has been used or has run out",
     412: "Somebody changed it after it was read",
     413: "The request body is larger than the instance accepts",

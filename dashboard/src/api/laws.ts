@@ -13,9 +13,9 @@ export function useLaws(enabled = true) {
   return useQuery({ ...lawsQuery, enabled });
 }
 
-/** Nobody has ever chosen, not even to go back to every law: the dashboard asks at sign-in. */
+/** Nobody has chosen yet, so nothing is searched: the dashboard asks at sign-in. */
 export function neverChosen(laws: Laws): boolean {
-  return laws.selected === null && laws.changed === null;
+  return laws.selected === null;
 }
 
 /**
@@ -36,14 +36,6 @@ export function useChooseLaws() {
   const saved = useSaved();
   return useMutation({
     mutationFn: (laws: string[]) => unwrap(api.PUT("/v1/laws/selection", { body: { laws } })),
-    onSuccess: saved,
-  });
-}
-
-export function useSearchEveryLaw() {
-  const saved = useSaved();
-  return useMutation({
-    mutationFn: () => unwrap(api.DELETE("/v1/laws/selection")),
     onSuccess: saved,
   });
 }

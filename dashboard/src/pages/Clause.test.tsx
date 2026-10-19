@@ -13,6 +13,7 @@ const detail = {
   breadcrumb: [article13.en[0]],
   children: [article13.en[2]],
   cross_references: [],
+  in_selected_laws: true,
 };
 const week = {
   key: KEY,
@@ -52,6 +53,26 @@ describe("a clause", () => {
     expect(screen.queryByRole("region", { name: "Cited this week" })).not.toBeInTheDocument();
     expect(calls.some((call) => call.url.includes("/activity"))).toBe(false);
   });
+
+  it("still opens a law the organisation has not selected, and says so", async () => {
+    serve({
+      ...routes(signedIn),
+      [`GET /v1/clauses/${encodeURIComponent(KEY)}`]: {
+        body: { ...detail, in_selected_laws: false },
+      },
+    });
+    renderAt(`/clauses/${encodeURIComponent(KEY)}`);
+
+    expect(await screen.findByText("Not in your selected laws")).toBeInTheDocument();
+  });
+
+  it("says nothing about the selection for one of the organisation's own laws", async () => {
+    serve(routes(signedIn));
+    renderAt(`/clauses/${encodeURIComponent(KEY)}`);
+
+    await screen.findByText("What your assistant receives");
+    expect(screen.queryByText("Not in your selected laws")).not.toBeInTheDocument();
+  });
 });
 
 type Detail = components["schemas"]["ClauseInContext"];
@@ -80,6 +101,7 @@ describe("a policy's clause read in a version no longer in force", () => {
       changed: false,
     },
     formerly: null,
+    in_selected_laws: true,
   };
   const today: Detail = {
     clause: policyClause(
@@ -100,6 +122,7 @@ describe("a policy's clause read in a version no longer in force", () => {
       text: "When the 2 years have passed, a closed account is deleted…",
       now: "data-retention:4.3",
     },
+    in_selected_laws: true,
   };
   const versions = {
     slug: "data-retention",

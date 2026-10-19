@@ -20,7 +20,7 @@ from dpolens.api.logs import ClauseName
 from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.logs import reading
-from dpolens.engine.packs.selection import loaded_laws, scope_for
+from dpolens.engine.packs.selection import loaded_laws, selected_laws
 
 router = APIRouter(prefix="/v1", tags=["overview"], responses=problems.responses(401, 403, 429))
 
@@ -110,7 +110,7 @@ class Activity(BaseModel):
 def describe(who: Reader, opened: Opened, days: Days = 7, tz: Zone = "UTC") -> Overview:
     assert who
     week = reading.overview(opened, _window(days, tz))
-    selected = set(scope_for(opened).selected)
+    selected = set(selected_laws(opened) or ())
     return Overview(
         days=week.window.days,
         since=week.window.since,

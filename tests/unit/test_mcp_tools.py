@@ -77,15 +77,13 @@ class TestWhatASearchHandsBack:
             "testlaw, and the organisation's own policies, as they stand today"
         )
 
-    async def test_a_law_outside_the_selection_is_labelled(
-        self, connected: Client, stub: Stub
+    async def test_every_result_is_from_the_organisations_own_laws_and_policies(
+        self, connected: Client
     ) -> None:
-        stub.results[0]["in_selected_laws"] = False
-
+        """Nothing else is searched, so nothing needs marking as outside."""
         found = structured(await search(connected))
 
-        assert found["results"][0]["in_selected_laws"] is False
-        assert "not in your organisation's selected laws" in found["searched"]
+        assert "in_selected_laws" not in found["results"][0]
 
     async def test_a_date_is_reflected_in_what_was_searched(self, connected: Client) -> None:
         result = await search(connected, as_of="2019-06-01")
@@ -380,6 +378,40 @@ class TestWhenTheInstanceRefuses:
         assert result.is_error is True
         assert "documents.read" in said(result)
         assert "administers" in said(result)
+
+    async def test_a_law_outside_the_selection_says_who_can_add_it_once(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        detail = (
+            "uae-pdpl is loaded here but is not one of this organisation's laws. "
+            "An administrator can add it in Selected laws."
+        )
+        stub.refuse(
+            "/v1/search",
+            Refusal(
+                403, problem(403, "law-not-selected", "Not one of this organisation's laws", detail)
+            ),
+        )
+
+        result = await search(connected)
+
+        assert result.is_error is True
+        assert said(result).endswith(detail)
+        assert "can grant it" not in said(result)
+
+    async def test_before_any_law_is_chosen_the_model_is_told_how_to_choose(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        detail = "nobody has chosen which laws apply to this organisation yet"
+        stub.refuse(
+            "/v1/search",
+            Refusal(409, problem(409, "no-laws-selected", "No laws chosen yet", detail)),
+        )
+
+        result = await search(connected)
+
+        assert result.is_error is True
+        assert detail in said(result)
 
     async def test_a_spent_quota_says_how_long_to_wait(self, connected: Client, stub: Stub) -> None:
         stub.refuse(

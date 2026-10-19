@@ -16,7 +16,9 @@ from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding import Embedder, get_model
 from dpolens.engine.embedding.index import build_index
+from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.selection import select_laws
 from dpolens.engine.search import Fusion, search, vector_search
 
 pytestmark = pytest.mark.integration
@@ -31,6 +33,7 @@ def embedder() -> Iterator[Embedder]:
 @pytest.fixture
 def indexed(session: Session, testlaw_pack: Path, embedder: Embedder) -> Session:
     load_pack(session, testlaw_pack)
+    select_laws(session, ["testlaw"], actor=cli_actor())
     session.commit()
     build_index(session, embedder)
     session.commit()
@@ -40,6 +43,7 @@ def indexed(session: Session, testlaw_pack: Path, embedder: Embedder) -> Session
 @pytest.fixture
 def bilingual(session: Session, bilingual_pack: Path, embedder: Embedder) -> Session:
     load_pack(session, bilingual_pack)
+    select_laws(session, ["bilingual"], actor=cli_actor())
     session.commit()
     build_index(session, embedder)
     session.commit()

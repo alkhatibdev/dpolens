@@ -20,21 +20,19 @@ function DocumentCard({ document }: { document: Document }) {
       className="flex flex-col gap-3.5 rounded-[20px] bg-white p-5 text-ink hover:shadow-[0_8px_24px_rgba(17,22,19,0.07)] sm:p-6"
     >
       <div className="flex items-start justify-between gap-3">
-        {document.in_selected_laws ? (
-          <Chip tone="soft">{t("library.selected")}</Chip>
+        {document.kind === "law" ? (
+          <Chip tone="soft">{t("library.law")}</Chip>
         ) : (
-          <Chip tone="quiet">{t("library.notSelected")}</Chip>
+          <Chip tone="quiet">{t("library.policy")}</Chip>
         )}
         <span className="grid size-10 shrink-0 place-items-center rounded-full border-[1.5px] border-ink">
           <ArrowUpRight aria-hidden className="size-4" />
         </span>
       </div>
       <div>
-        <div className="text-sm text-muted">
-          {[document.jurisdiction, document.kind === "law" ? t("library.law") : t("library.policy")]
-            .filter(Boolean)
-            .join(" · ")}
-        </div>
+        {document.jurisdiction ? (
+          <div className="text-sm text-muted">{document.jurisdiction}</div>
+        ) : null}
         <h2 className="mt-1 text-[19px] leading-snug font-semibold sm:text-[21px]">
           {document.title}
         </h2>

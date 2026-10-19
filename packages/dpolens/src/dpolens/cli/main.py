@@ -50,7 +50,12 @@ from dpolens.engine.originals import OriginalsUnwritable, OriginalUnavailable
 from dpolens.engine.packs.archive import ArchiveError
 from dpolens.engine.packs.format import PackFormatError
 from dpolens.engine.packs.releases import ReleaseError as PackReleaseError
-from dpolens.engine.packs.selection import EmptySelection, UnknownLaw
+from dpolens.engine.packs.selection import (
+    EmptySelection,
+    NothingSelected,
+    NotSelected,
+    UnknownLaw,
+)
 from dpolens.engine.policies.blocks import UnreadablePolicy
 from dpolens.engine.policies.fixing import CannotFix
 from dpolens.engine.policies.library import SameVersion
@@ -99,6 +104,8 @@ EXPECTED = (
     UnknownToken,
     SurfaceOwnerIsAPerson,
     UnknownLaw,
+    NotSelected,
+    NothingSelected,
     WeakPassword,
     NoPasswordAllowed,
     EmptySelection,

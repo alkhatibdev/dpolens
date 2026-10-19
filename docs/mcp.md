@@ -18,13 +18,14 @@ date that version took effect, and for a law the jurisdiction, the trust tier an
 the text was taken from. A clause shown in translation also carries the text that prevails,
 in `prevailing_text`, and its citation says which language that is.
 
-`search_policies` searches the laws the organisation has selected, or every loaded law until
-an administrator has chosen with `dpolens laws select`, and the organisation's own policies.
-It takes `query`, `limit`, `lang`, `as_of`, `include_explanatory` and `laws`. `lang` can be
-left out: a question in Arabic letters is searched in Arabic, and any other in English. A date
-in `as_of` reads the documents as they stood then, which is how to answer a question about
-code written two years ago. `laws` searches other laws by slug, and a clause from a law
-outside the selection comes back with `in_selected_laws` false.
+`search_policies` searches the laws the organisation has selected and its own policies, and
+nothing else. It takes `query`, `limit`, `lang`, `as_of`, `include_explanatory` and `laws`.
+`lang` can be left out: a question in Arabic letters is searched in Arabic, and any other in
+English. A date in `as_of` reads the documents as they stood then, which is how to answer a
+question about code written two years ago. `laws` keeps a search to some of the selected laws,
+by slug. A law outside the selection is refused with a message saying an administrator can add
+it in Selected laws, and so is every search until somebody has chosen. `get_clause` and the
+document tools keep to the same laws.
 
 A policy's keys follow the numbers printed in it, so a new version that inserts a clause gives
 the clauses after it new keys. A citation names its version, which keeps it exact. `get_clause`,
@@ -38,7 +39,7 @@ Two prompts arrive as commands in the clients that show them:
 - **`policy_check`** reviews the change you are working on, names every place it touches
   personal data, and reports what each clause requires with its citation.
 - **`policy_tour`** demonstrates the instance with a few real searches, which is the quickest
-  way to see what is loaded.
+  way to see what it can cite.
 
 Claude Code shows them as `/dpolens:policy-check` and `/dpolens:policy-tour`, and VS Code as
 `/dpolens.policy_check` and `/dpolens.policy_tour`.

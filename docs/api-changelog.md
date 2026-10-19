@@ -20,18 +20,22 @@ First version of the API. Everything below is new rather than changed.
   `lang` is `en` or `ar`, and left out it is read from the letters the question is
   written in. A language the instance cannot search in is refused with `422` and the
   type `/problems/unsupported-language`, whose `languages` field lists the ones it can
-- A search covers the organisation's selected laws, or every loaded law until it has
-  chosen, and its own policies. `laws` names others to search instead; a clause from
-  a law outside the selection has `in_selected_laws` false. The response's `laws`
-  lists what was searched. A law that is not loaded is refused with `422` and the type
-  `/problems/unknown-law`, whose `laws` field lists the loaded ones
+- A search covers the organisation's selected laws and its own policies, and nothing
+  else. `laws` keeps it to some of them. A loaded law outside the selection is refused
+  with `403` and the type `/problems/law-not-selected`, and until somebody has chosen,
+  every search is refused with `409` and the type `/problems/no-laws-selected`. The
+  response's `laws` lists what was searched. A law that is not loaded is refused with
+  `422` and the type `/problems/unknown-law`, whose `laws` field lists the
+  organisation's laws
 - `GET /v1/clauses/{key}` and `GET /v1/clauses/{key}/subtree` read one clause and
   its branch
-- `GET /v1/documents` and `GET /v1/documents/{slug}` list what can be cited and
-  return one document's outline. The outline carries no text, and names each clause
-  in `lang` where it has text in that language. A document says whether it is in the
-  organisation's selected laws, `in_selected_laws`, and for a law which language
-  prevails, `authoritative_language`
+- `GET /v1/documents` and `GET /v1/documents/{slug}` list the selected laws and the
+  policies, and return one document's outline. The outline carries no text, and names
+  each clause in `lang` where it has text in that language. A document, and a clause
+  read by key, says whether it is in the organisation's selected laws,
+  `in_selected_laws`: a token is refused another law with `403` and
+  `/problems/law-not-selected`, and the dashboard opens it marked. For a law, a
+  document says which language prevails, `authoritative_language`
 - Every clause carries `authoritative_language`: for a law, the language whose text
   prevails where its texts disagree. A clause returned in an official translation has
   `is_authoritative` false, this field says which text to rely on instead, and
@@ -81,10 +85,10 @@ First version of the API. Everything below is new rather than changed.
   `governance.read`
 - `GET /v1/overview` and `GET /v1/clauses/{key}/activity` count what was asked and what was
   cited, in the reader's time zone, for `queries.read_all`
-- `GET /v1/laws` lists the loaded laws, which of them a search covers, and the latest change
-  to the selection. `PUT /v1/laws/selection` chooses which laws apply and
-  `DELETE /v1/laws/selection` goes back to every law, each written to the governance log, for
-  `settings.manage`. A law that is not loaded gets `422` and `/problems/unknown-law`
+- `GET /v1/laws` lists the loaded laws, which of them a search covers, which are new, and
+  the latest change to the selection. `PUT /v1/laws/selection` chooses which laws apply,
+  written to the governance log, for `settings.manage`. A law that is not loaded gets `422`
+  and `/problems/unknown-law`
 - `GET /v1/settings` says how the instance is set up, for `settings.manage`. No route changes
   a setting: each is fixed when the instance starts
 - `POST /v1/policies` uploads an organisation's policy, a Word or Markdown file sent as the

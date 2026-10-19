@@ -87,13 +87,6 @@ class Result(BaseModel):
             "A debugging aid whose meaning changes when the fusion rule does"
         ),
     )
-    in_selected_laws: bool = Field(
-        description=(
-            "False for a clause from a law the organisation has not selected, which a "
-            "search reaches only when its laws name it. Always true for the organisation's "
-            "own policies"
-        ),
-    )
 
     @classmethod
     def of(cls, found: SearchResult, *, explain: bool) -> Result:
@@ -106,7 +99,6 @@ class Result(BaseModel):
             ],
             expanded=[Clause.of(view) for view in found.expanded],
             ranks=dict(found.ranks) if explain else None,
-            in_selected_laws=found.in_selected_laws,
         )
 
 
@@ -152,9 +144,15 @@ class ClauseInContext(BaseModel):
         default=None,
         description="Set when this key named a different rule in the version before",
     )
+    in_selected_laws: bool = Field(
+        description=(
+            "False for a law the organisation has not selected, which only the dashboard "
+            "opens. Always true for the organisation's own policies"
+        )
+    )
 
     @classmethod
-    def of(cls, detail: ClauseDetail) -> ClauseInContext:
+    def of(cls, detail: ClauseDetail, *, in_selected_laws: bool) -> ClauseInContext:
         return cls(
             clause=Clause.of(detail.clause),
             breadcrumb=[Clause.of(view) for view in detail.breadcrumb],
@@ -164,6 +162,7 @@ class ClauseInContext(BaseModel):
             ],
             now=WhereItIsNow(**vars(detail.now)) if detail.now else None,
             formerly=Formerly(**vars(detail.formerly)) if detail.formerly else None,
+            in_selected_laws=in_selected_laws,
         )
 
 
@@ -184,8 +183,8 @@ class Document(BaseModel):
     )
     in_selected_laws: bool = Field(
         description=(
-            "False for a law the organisation has not selected. Always true for the "
-            "organisation's own policies"
+            "False for a law the organisation has not selected, which only the dashboard "
+            "opens. Always true for the organisation's own policies"
         )
     )
 

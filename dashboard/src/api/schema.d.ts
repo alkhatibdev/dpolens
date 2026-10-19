@@ -231,7 +231,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List the documents in force */
+    /** List the selected laws and the policies in force */
     get: operations["list_corpus_v1_documents_get"];
     put?: never;
     post?: never;
@@ -600,8 +600,7 @@ export interface paths {
     /** Choose which laws apply */
     put: operations["choose_v1_laws_selection_put"];
     post?: never;
-    /** Go back to searching every loaded law */
-    delete: operations["clear_v1_laws_selection_delete"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1019,6 +1018,11 @@ export interface components {
       now?: components["schemas"]["WhereItIsNow"] | null;
       /** @description Set when this key named a different rule in the version before */
       formerly?: components["schemas"]["Formerly"] | null;
+      /**
+       * In Selected Laws
+       * @description False for a law the organisation has not selected, which only the dashboard opens. Always true for the organisation's own policies
+       */
+      in_selected_laws: boolean;
     };
     /**
      * ClauseName
@@ -1146,7 +1150,7 @@ export interface components {
       authoritative_language: string | null;
       /**
        * In Selected Laws
-       * @description False for a law the organisation has not selected. Always true for the organisation's own policies
+       * @description False for a law the organisation has not selected, which only the dashboard opens. Always true for the organisation's own policies
        */
       in_selected_laws: boolean;
     };
@@ -1689,7 +1693,7 @@ export interface components {
     LawSelection: {
       /**
        * Laws
-       * @description The laws that apply, by slug. Going back to every law is a DELETE
+       * @description The laws that apply, by slug
        */
       laws: string[];
     };
@@ -1699,7 +1703,7 @@ export interface components {
       laws: components["schemas"]["LoadedLaw"][];
       /**
        * Selected
-       * @description The selected laws by slug, or null while nobody has chosen
+       * @description The selected laws by slug, or null while nobody has chosen and nothing is searched
        */
       selected: string[] | null;
       /** @description The latest change to the selection, or null when there has never been one */
@@ -1712,11 +1716,6 @@ export interface components {
        * Format: date-time
        */
       at: string;
-      /**
-       * Cleared
-       * @description Whether the change went back to every law
-       */
-      cleared: boolean;
       /**
        * By
        * @description Who made it, or null for the command line
@@ -1790,9 +1789,14 @@ export interface components {
       document: string | null;
       /**
        * Searched
-       * @description Whether a search covers it without naming it: it is selected, or nobody has chosen and every law is searched
+       * @description Whether it is selected, so a search covers it
        */
       searched: boolean;
+      /**
+       * New
+       * @description Loaded in the last 30 days, after the laws were first chosen, as a law an upgrade brings is
+       */
+      new: boolean;
     };
     /** NewPerson */
     NewPerson: {
@@ -2388,11 +2392,6 @@ export interface components {
       ranks?: {
         [key: string]: number;
       } | null;
-      /**
-       * In Selected Laws
-       * @description False for a clause from a law the organisation has not selected, which a search reaches only when its laws name it. Always true for the organisation's own policies
-       */
-      in_selected_laws: boolean;
     };
     /** Results */
     Results: {
@@ -2507,7 +2506,7 @@ export interface components {
       lang?: string | null;
       /**
        * Laws
-       * @description The laws to search, by slug, such as gdpr or uae-pdpl. Left out, the organisation's selected laws, or every loaded law until it has chosen. A law outside the selection comes back with in_selected_laws false
+       * @description The laws to search, by slug, such as gdpr or uae-pdpl, from the ones the organisation has selected. Left out, all of them. Its own policies are searched either way
        */
       laws?: string[] | null;
       /**
@@ -3559,13 +3558,24 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description Validation Error */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description The request body or parameters are not valid */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
         };
       };
       /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
@@ -3626,6 +3636,16 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description It conflicts with what is there, or no law has been chosen yet */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -3701,6 +3721,16 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description It conflicts with what is there, or no law has been chosen yet */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -3840,6 +3870,16 @@ export interface operations {
       };
       /** @description No such clause or document */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDocument"];
+          "application/json": components["schemas"]["ProblemDocument"];
+        };
+      };
+      /** @description It conflicts with what is there, or no law has been chosen yet */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -3991,7 +4031,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4086,7 +4126,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4181,7 +4221,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4445,7 +4485,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4595,7 +4635,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -4692,7 +4732,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -5563,56 +5603,6 @@ export interface operations {
       };
     };
   };
-  clear_v1_laws_selection_delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Laws"];
-        };
-      };
-      /** @description No usable credential */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDocument"];
-          "application/json": components["schemas"]["ProblemDocument"];
-        };
-      };
-      /** @description The credential may not do this */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDocument"];
-          "application/json": components["schemas"]["ProblemDocument"];
-        };
-      };
-      /** @description The credential has spent its quota for the minute, or too many sign-ins failed */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["ProblemDocument"];
-          "application/json": components["schemas"]["ProblemDocument"];
-        };
-      };
-    };
-  };
   list_all_v1_policies_get: {
     parameters: {
       query?: never;
@@ -5714,7 +5704,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -5878,7 +5868,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -6337,7 +6327,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -6540,7 +6530,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;
@@ -6644,7 +6634,7 @@ export interface operations {
           "application/json": components["schemas"]["ProblemDocument"];
         };
       };
-      /** @description The change conflicts with what is there */
+      /** @description It conflicts with what is there, or no law has been chosen yet */
       409: {
         headers: {
           [name: string]: unknown;

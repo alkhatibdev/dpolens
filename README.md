@@ -69,12 +69,11 @@ dashboard, and gets a one-time link to choose their own password.
 **3. Open the dashboard and make a token**
 
 Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
-password. The first time, it asks which laws apply to your organisation: tick them, or decide
-later, and until somebody chooses every search covers both. Under Tokens, create a token for
-your assistant. It starts with `dpol_` and is shown once, so copy it now.
+password. The first time, it asks which laws apply to your organisation. Tick them: nothing
+is searched until somebody has. Under Tokens, create a token for your assistant. It starts with `dpol_` and is shown once, so copy it now.
 
-The library holds every law loaded, clause by clause and in each of its languages, with a
-search box for asking it in your own words. Users and roles is where you add the people you
+The library holds the laws you chose, clause by clause and in each of their languages, with a
+search box for asking them in your own words. Users and roles is where you add the people you
 work with and decide what each role allows. Overview shows how much was asked, what answered
 it and what found nothing, and Logs holds every question asked and every change made to the
 instance. Selected laws changes which laws a search covers, and Settings shows how the
@@ -251,17 +250,17 @@ dpolens pack import dpolens-pack-gdpr-2026.2.tar.gz
 ```
 
 An administrator chooses which laws apply to the organisation. A search covers those and
-the organisation's own policies, so a company in Dubai with no EU customers is not answered
-from GDPR. Another law is searched only when a search names it, and its clauses come back
-marked as outside the choice. Every change to the choice is written to the governance log,
-and until somebody chooses, every loaded law is searched. The dashboard asks whoever may
-choose as they sign in, until somebody has, and Selected laws changes the choice later; the
+the organisation's own policies, and nothing else, so a company in Dubai with no EU customers
+is never answered from GDPR, and an assistant that asks for GDPR is told it is not one of the
+organisation's laws. Until somebody chooses, nothing is searched. The dashboard asks whoever
+may choose as they sign in, and Selected laws changes the choice later, marking a law that
+arrived with an upgrade as new. Every change is written to the governance log, and the
 command line does it too:
 
 ```bash
 dpolens laws list
 dpolens laws select uae-pdpl
-dpolens search "can we send customer data abroad" --law gdpr
+dpolens search "can we send customer data abroad"
 ```
 
 An organisation's own policy, a Word or Markdown file, is read into clauses too, each with a
@@ -374,8 +373,8 @@ send. It ends after 30 minutes idle or 8 hours in all, and the governance log re
 sign-in. The library lists each document with the version in force and which of its
 languages prevails, and reads a law article by article, its official translation beside the
 text that prevails with the key between them. Every key copies the clause with the same
-citation the MCP server gives an assistant. Search covers the selected laws, with another
-law, a date or the recitals a click away.
+citation the MCP server gives an assistant. Search covers the selected laws, with one of them
+alone, a date or the recitals a click away.
 
 Whoever may read every question starts on the Overview: how much was asked over the last 7
 or 30 days, how much of it found a clause in force, the clauses cited most, and the questions

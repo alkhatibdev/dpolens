@@ -9,8 +9,9 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
- * A loaded law to tick: whose law it is, its languages, what it holds and, unless
- * compact, how far it has been checked and where to read it.
+ * A loaded law to tick: whose law it is, whether it arrived since the laws were
+ * chosen, its languages, what it holds and, unless compact, how far it has been
+ * checked and where to read it.
  */
 export function LawChoice({
   law,
@@ -44,8 +45,11 @@ export function LawChoice({
     >
       <span className="flex items-start justify-between gap-3">
         <span className="min-w-0">
-          <span className="block text-sm text-muted">
-            {law.jurisdiction} · {t("laws.law")}
+          <span className="flex flex-wrap items-center gap-2 text-sm text-muted">
+            <span>
+              {law.jurisdiction} · {t("laws.law")}
+            </span>
+            {law.new ? <Chip tone="soft">{t("laws.new")}</Chip> : null}
           </span>
           <span
             id={`${id}-name`}

@@ -47,7 +47,7 @@ MAX_QUERY = 1000
 READING = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 """Every tool reads, nothing writes, and the corpus is this instance's own."""
 
-TOLD = (400, 403, 404, 422, 429)
+TOLD = (400, 403, 404, 409, 422, 429)
 """Refusals a caller can act on, which are the ones a model is told about.
 
 Anything else, including a credential problem belonging to whoever runs the
@@ -121,8 +121,8 @@ def build(settings: Settings, api: Api) -> MCPServer:
             list[str] | None,
             Field(
                 description=(
-                    "The laws to search instead, by slug, such as gdpr or uae-pdpl. Leave it "
-                    "out to search the laws this organisation has selected"
+                    "Only these of the laws this organisation has selected, by slug, such as "
+                    "gdpr or uae-pdpl. Leave it out to search all of them"
                 ),
                 max_length=20,
             ),
@@ -135,10 +135,9 @@ def build(settings: Settings, api: Api) -> MCPServer:
         law requires. What comes back is the clause itself, word for word, with the key,
         document and version to cite it by.
 
-        Searches the laws this organisation has selected, or every loaded law until it has
-        chosen, and its own policies. A law named in `laws` that it has not selected comes
-        back marked as outside the selection. Every call is recorded: who asked, which
-        clauses came back, and the question with personal data taken out.
+        Searches the laws this organisation has selected and its own policies, and nothing
+        else. Every call is recorded: who asked, which clauses came back, and the question
+        with personal data taken out.
         """
         caller = calling()
         with _answering():
@@ -153,7 +152,7 @@ def build(settings: Settings, api: Api) -> MCPServer:
             )
 
         results = [_match(result) for result in answer["results"]]
-        return Found(searched=_scope(answer["laws"], as_of, results), results=results)
+        return Found(searched=_scope(answer["laws"], as_of), results=results)
 
     @mcp.tool(title="Read one clause", annotations=READING)
     async def get_clause(
@@ -217,10 +216,10 @@ def build(settings: Settings, api: Api) -> MCPServer:
             Field(description="List the documents in force on this date"),
         ] = None,
     ) -> Documents:
-        """List the documents this instance can cite: the laws and the organisation's policies.
+        """List the documents this instance can cite: the organisation's laws and its policies.
 
-        Worth calling once before relying on a search, because it says which laws are
-        loaded and which version of each is in force. The call is recorded.
+        Worth calling once before relying on a search, because it says which laws apply
+        here and which version of each is in force. The call is recorded.
         """
         caller = calling()
         with _answering():
@@ -311,21 +310,17 @@ def _told(refused: Refused) -> ToolError:
     said = str(refused) or refused.title
     if refused.status == 429 and refused.retry_after is not None:
         return ToolError(f"{said}. Wait {refused.retry_after} seconds and ask again.")
-    if refused.status == 403:
+    # A law outside the selection already says who can add it; a permission does not.
+    if refused.status == 403 and refused.type != "/problems/law-not-selected":
         return ToolError(f"{said}. Whoever administers this DPOLens instance can grant it.")
     if refused.status == 404:
         return ToolError(f"{said}. list_documents shows what this instance can cite.")
     return ToolError(said)
 
 
-def _scope(laws: list[str], as_of: date | None, results: list[Match]) -> str:
+def _scope(laws: list[str], as_of: date | None) -> str:
     when = f"as they stood on {as_of.isoformat()}" if as_of else "as they stand today"
-    searched = f"{', '.join(laws) or 'no law'}, and the organisation's own policies, {when}"
-    if any(not result.in_selected_laws for result in results):
-        searched += (
-            ". A result with in_selected_laws false is not in your organisation's selected laws"
-        )
-    return searched
+    return f"{', '.join(laws) or 'no law'}, and the organisation's own policies, {when}"
 
 
 def _match(result: dict[str, Any]) -> Match:
@@ -335,5 +330,4 @@ def _match(result: dict[str, Any]) -> Match:
         **clause.model_dump(),
         score=result["score"],
         cross_references=[reference["key"] for reference in result["cross_references"]],
-        in_selected_laws=result["in_selected_laws"],
     )
