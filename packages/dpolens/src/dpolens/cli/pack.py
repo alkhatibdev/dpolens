@@ -16,6 +16,7 @@ from xml.etree import ElementTree
 
 import typer
 
+from dpolens.cli.ask import Asking
 from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.packs.archive import (
     CHECKSUM_SUFFIX,
@@ -45,7 +46,7 @@ def _checksum(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-@app.command()
+@app.command(cls=Asking)
 def build(
     out: Annotated[Path, typer.Option(help="Pack directory to write into")],
     articles: Annotated[Path, typer.Option(help="Formex XML holding the enacting terms")],
@@ -104,7 +105,7 @@ def _report_dangling(clauses: list[Clause], document_slug: str) -> None:
         typer.echo(f"  ... and {len(dangling) - 10} more")
 
 
-@app.command()
+@app.command(cls=Asking)
 def load(
     directory: Annotated[Path, typer.Argument(help="Pack directory, for example packs/gdpr")],
     unless_loaded: Annotated[
@@ -154,7 +155,7 @@ def _report(result: LoadResult, *, embedded_later: bool = False) -> None:
         typer.echo("Its words are searchable now, and its meaning once the worker has embedded it.")
 
 
-@app.command()
+@app.command(cls=Asking)
 def archive(
     directory: Annotated[Path, typer.Argument(help="Pack directory, for example packs/gdpr")],
     out: Annotated[Path, typer.Option(help="Where to write the file and its checksum")] = Path(
@@ -234,7 +235,7 @@ def update(
     _report(result, embedded_later=True)
 
 
-@app.command("import")
+@app.command("import", cls=Asking)
 def import_(
     file: Annotated[
         Path, typer.Argument(help="A pack archive, for example dpolens-pack-gdpr-2026.2.tar.gz")

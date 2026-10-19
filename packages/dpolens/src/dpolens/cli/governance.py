@@ -12,6 +12,7 @@ from typing import Annotated
 
 import typer
 
+from dpolens.cli.ask import Asking
 from dpolens.engine.logs.export import export, verify_export
 from dpolens.engine.logs.governance import cli_actor, read_entries, verify
 from dpolens.engine.session import governance_log_is_append_only, session_scope
@@ -85,7 +86,7 @@ def verify_(
     raise typer.Exit(code=1)
 
 
-@app.command(name="export")
+@app.command(cls=Asking, name="export")
 def export_(
     directory: Annotated[Path, typer.Argument(help="An empty or new directory to write into")],
     from_seq: Annotated[int | None, typer.Option(help="First entry to include")] = None,

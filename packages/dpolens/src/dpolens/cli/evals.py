@@ -10,6 +10,7 @@ from typing import Annotated, Any
 
 import typer
 
+from dpolens.cli.ask import Asking
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.evals import (
     Run,
@@ -49,7 +50,7 @@ def _published(question_set: str) -> bool:
     return question_set == PUBLISHED_SET or question_set.startswith(f"{PUBLISHED_SET}.")
 
 
-@app.command()
+@app.command(cls=Asking)
 def run(
     pack: Annotated[str, typer.Option(help="Pack slug, for example gdpr")],
     question_sets: Annotated[

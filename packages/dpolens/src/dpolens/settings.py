@@ -87,6 +87,15 @@ class Settings(BaseSettings):
         description="How long a dashboard session lasts at most, however much it is used",
     )
 
+    public_dashboard_url: str = Field(
+        default="http://localhost:8080",
+        max_length=500,
+        description=(
+            "The dashboard's address as people open it, which `dpolens init` names when it "
+            "is done. The default is the quickstart's"
+        ),
+    )
+
     public_mcp_url: str = Field(
         default="http://localhost:8765/mcp",
         max_length=500,

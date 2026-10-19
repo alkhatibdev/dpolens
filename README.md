@@ -54,23 +54,24 @@ The first `up` builds the images, or downloads them once the version has been re
 loads GDPR and the UAE law, which takes a few minutes. After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
 `dashboard` and `mcp` as healthy, and `worker` as running.
 
-**2. Create yourself an administrator**
+**2. Set it up**
 
 ```bash
-docker compose exec api dpolens user create --email you@example.com \
-  --name "Your Name" --role Admin
-
-docker compose exec api dpolens user set-password you@example.com
+docker compose exec api dpolens init
 ```
 
-This is the only account made on the command line. Everyone else is added in the
-dashboard, and gets a one-time link to choose their own password.
+It asks for your email address, your name and a password for the dashboard, then which laws
+apply to your organisation, picked from a list with the arrow keys and space. Nothing is
+searched until they are chosen. Run it again whenever you like: it only does what is still
+missing.
+
+You are the only person made on the command line. Everyone else is added in the dashboard,
+and gets a one-time link to choose their own password.
 
 **3. Open the dashboard and make a token**
 
 Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
-password. The first time, it asks which laws apply to your organisation. Tick them: nothing
-is searched until somebody has. Under Tokens, create a token for your assistant. It starts with `dpol_` and is shown once, so copy it now.
+password. Under Tokens, create a token for your assistant. It starts with `dpol_` and is shown once, so copy it now.
 
 The library holds the laws you chose, clause by clause and in each of their languages, with a
 search box for asking them in your own words. Users and roles is where you add the people you
@@ -309,7 +310,9 @@ what happens to a policy from its upload to its archive.
 
 Users, roles and the governance log are what every surface authenticates and records
 against. The dashboard manages people, roles and tokens, and checks and exports the
-governance log; the command line does too:
+governance log; the command line does too. Run in a terminal, a command asks for whatever it
+was not given, and lists such as roles and permissions are picked with the arrow keys and
+space; a script passes the same as flags:
 
 ```bash
 dpolens user create --email you@example.com --name "Your Name" --role Admin

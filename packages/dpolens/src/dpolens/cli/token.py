@@ -13,9 +13,13 @@ from typing import Annotated
 
 import typer
 
+from dpolens.cli import ask
+from dpolens.cli.ask import Asking
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.permissions import PERMISSIONS
 from dpolens.engine.auth.surface import SURFACE_EMAIL, SURFACE_NAME, ensure_surface
 from dpolens.engine.auth.tokens import list_tokens, mint, revoke, status_of
+from dpolens.engine.auth.users import get_user
 from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
@@ -28,13 +32,18 @@ app = typer.Typer(
 )
 
 
-@app.command()
+@app.command(cls=Asking)
 def create(
     email: Annotated[str, typer.Option(help="Whose token this is")],
     name: Annotated[str, typer.Option(help="What it is for, such as laptop or CI")],
     permission: Annotated[
         list[str] | None,
-        typer.Option(help="Permission to carry, repeatable. Must be one its owner holds"),
+        typer.Option(
+            help=(
+                "Permission to carry, repeatable. Must be one its owner holds. Left out, a "
+                "checklist in a terminal"
+            )
+        ),
     ] = None,
     expires_in_days: Annotated[
         int | None, typer.Option(help="Expire after this many days (default: until revoked)")
@@ -54,6 +63,11 @@ def create(
 
     with session_scope(settings) as session:
         bootstrap(session, actor=actor)
+        if permission is None and ask.interactive():
+            holds = sorted(get_user(session, email).effective_permissions())
+            permission = ask.checklist(
+                "What it may do", [(key, f"{key}, {PERMISSIONS[key]}") for key in holds]
+            )
         row, token = mint(
             session,
             email=email,
@@ -99,7 +113,7 @@ def list_(
             typer.echo(f"    permissions: {', '.join(row.permissions) or 'none'}")
 
 
-@app.command(name="revoke")
+@app.command(cls=Asking, name="revoke")
 def revoke_(
     prefix: Annotated[str, typer.Argument(help="The prefix `token list` prints")],
 ) -> None:

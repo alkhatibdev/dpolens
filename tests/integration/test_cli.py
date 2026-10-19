@@ -12,6 +12,7 @@ import click
 import pytest
 from typer.testing import CliRunner, Result
 
+from dpolens.cli import ask
 from dpolens.cli.main import app
 
 pytestmark = pytest.mark.integration
@@ -374,3 +375,61 @@ def test_a_policy_without_a_draft_says_so(instance: None, clean_tables: None) ->
 
     assert result.exit_code == 1
     assert "There is no policy called nothing-here." in said(result)
+
+
+def test_laws_select_names_what_it_needs_when_there_is_no_terminal(loaded: None) -> None:
+    result = runner.invoke(app, ["laws", "select"])
+
+    assert result.exit_code == 2
+    assert "no terminal to ask in" in said(result)
+
+
+def test_laws_select_in_a_terminal_is_a_checklist_of_the_loaded_laws(
+    loaded: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    offered: list[tuple[list[str], list[str], bool]] = []
+
+    def pick(
+        label: str,
+        choices: list[tuple[str, str]],
+        *,
+        checked: list[str] | tuple[str, ...] = (),
+        at_least_one: bool = False,
+    ) -> list[str]:
+        offered.append(([value for value, _ in choices], list(checked), at_least_one))
+        return ["gdpr"]
+
+    monkeypatch.setattr(ask, "interactive", lambda: True)
+    monkeypatch.setattr(ask, "checklist", pick)
+
+    result = runner.invoke(app, ["laws", "select"])
+
+    assert result.exit_code == 0, result.output
+    # The selection made already comes ticked.
+    assert offered == [(["gdpr"], ["gdpr"], True)]
+    assert "Selected: gdpr" in result.output
+
+
+def test_user_create_in_a_terminal_asks_for_what_is_missing_and_a_password(
+    instance: None, monkeypatch: pytest.MonkeyPatch, unique: str
+) -> None:
+    answers = iter([f"asked-{unique}@example.com", "Asked For"])
+    offered: list[list[str]] = []
+
+    def pick(label: str, choices: list[tuple[str, str]], **_: object) -> list[str]:
+        offered.append([value for value, _ in choices])
+        # None, because a role held in this shared database cannot be deleted by a later test.
+        return []
+
+    monkeypatch.setattr(ask, "interactive", lambda: True)
+    monkeypatch.setattr(ask, "text", lambda label: next(answers))
+    monkeypatch.setattr(ask, "checklist", pick)
+    monkeypatch.setattr(ask, "password", lambda: "correct horse battery staple")
+
+    result = runner.invoke(app, ["user", "create"])
+
+    assert result.exit_code == 0, result.output
+    assert {"Admin", "DPO", "Developer"} <= set(offered[0])
+    assert f"Created asked-{unique}@example.com (person)" in result.output
+    assert "roles: none yet" in result.output
+    assert "password: set, for the dashboard" in result.output
