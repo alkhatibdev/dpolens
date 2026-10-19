@@ -60,7 +60,7 @@ class NothingSelected(Exception):
         super().__init__(
             "nobody has chosen which laws apply to this organisation yet, so nothing is "
             "searched. An administrator chooses them at the first sign-in to the dashboard, "
-            "or with: dpolens laws select <slug>"
+            "or with: dpolens init"
         )
 
 

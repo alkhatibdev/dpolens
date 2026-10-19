@@ -12,8 +12,11 @@ from typing import Annotated
 
 import typer
 
+from dpolens.cli import ask
+from dpolens.cli.ask import Asking
 from dpolens.engine.auth.catalog import bootstrap
-from dpolens.engine.auth.passwords import MIN_LENGTH, set_password
+from dpolens.engine.auth.passwords import MIN_LENGTH, give_password, set_password
+from dpolens.engine.auth.roles import list_roles
 from dpolens.engine.auth.users import (
     activate,
     create_user,
@@ -30,22 +33,37 @@ from dpolens.settings import load_settings
 app = typer.Typer(name="user", help="Create users and manage their roles.", no_args_is_help=True)
 
 
-@app.command()
+@app.command(cls=Asking)
 def create(
     email: Annotated[str, typer.Option(help="Email address, which is the login name")],
     name: Annotated[str, typer.Option(help="Display name, shown in the logs")],
     role: Annotated[
-        list[str] | None, typer.Option(help="Role to hold, repeatable (default: none)")
+        list[str] | None,
+        typer.Option(help="Role to hold, repeatable. Left out, a checklist in a terminal"),
     ] = None,
     service: Annotated[
         bool, typer.Option("--service", help="Create a service account rather than a person")
     ] = False,
 ) -> None:
-    """Create a user. A service account cannot sign in and owns tokens instead."""
+    """Create a user. A service account cannot sign in and owns tokens instead.
+
+    In a terminal, a person is asked for a password for the dashboard as well.
+    """
     settings = load_settings()
     actor = cli_actor()
     with session_scope(settings) as session:
         bootstrap(session, actor=actor)
+        if role is None and ask.interactive():
+            role = ask.checklist(
+                "Roles to hold",
+                [
+                    (
+                        held.name,
+                        f"{held.name}, {held.description}" if held.description else held.name,
+                    )
+                    for held in list_roles(session)
+                ],
+            )
         user = create_user(
             session,
             email=email,
@@ -59,9 +77,13 @@ def create(
             typer.echo(f"  roles: {', '.join(held.name for held in user.roles)}")
         else:
             typer.echo("  roles: none yet, so this user can do nothing. Use `dpolens user grant`.")
+        if not service and ask.interactive():
+            session.flush()
+            give_password(session, user=user, password=ask.password(), actor=actor)
+            typer.echo("  password: set, for the dashboard")
 
 
-@app.command(name="set-password")
+@app.command(cls=Asking, name="set-password")
 def set_password_(
     email: Annotated[str, typer.Argument(help="Whose password to set")],
     stdin: Annotated[
@@ -72,6 +94,8 @@ def set_password_(
     """Set a person's password for the dashboard, and sign them out everywhere."""
     if stdin:
         password = sys.stdin.readline().rstrip("\n")
+    elif ask.interactive():
+        password = ask.password()
     else:
         password = typer.prompt(
             f"New password (at least {MIN_LENGTH} characters)",
@@ -101,7 +125,7 @@ def list_() -> None:
             typer.echo(f"{user.email}  [{user.status}]  {user.kind}  roles: {roles}")
 
 
-@app.command()
+@app.command(cls=Asking)
 def grant(
     email: Annotated[str, typer.Argument(help="Who gets the role")],
     role: Annotated[str, typer.Argument(help="Which role they get")],
@@ -115,7 +139,7 @@ def grant(
         typer.echo(f"{user.email} now holds: {', '.join(held.name for held in user.roles)}")
 
 
-@app.command()
+@app.command(cls=Asking)
 def revoke(
     email: Annotated[str, typer.Argument(help="Who loses the role")],
     role: Annotated[str, typer.Argument(help="Which role they lose")],
@@ -130,7 +154,7 @@ def revoke(
         typer.echo(f"{user.email} now holds: {remaining}")
 
 
-@app.command(name="deactivate")
+@app.command(cls=Asking, name="deactivate")
 def deactivate_(
     email: Annotated[str, typer.Argument(help="Whose access to block")],
 ) -> None:
@@ -143,7 +167,7 @@ def deactivate_(
         typer.echo(f"{user.email} is deactivated. Their tokens stop working with them.")
 
 
-@app.command(name="activate")
+@app.command(cls=Asking, name="activate")
 def activate_(email: Annotated[str, typer.Argument(help="Whose access to restore")]) -> None:
     """Let a deactivated user back in, with the roles they had."""
     settings = load_settings()

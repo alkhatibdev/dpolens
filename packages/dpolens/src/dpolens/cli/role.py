@@ -6,6 +6,8 @@ from typing import Annotated
 
 import typer
 
+from dpolens.cli import ask
+from dpolens.cli.ask import Asking
 from dpolens.engine.auth.catalog import bootstrap
 from dpolens.engine.auth.permissions import PERMISSIONS
 from dpolens.engine.auth.roles import (
@@ -47,11 +49,12 @@ def permissions() -> None:
         typer.echo(f"{key:28} {description}")
 
 
-@app.command()
+@app.command(cls=Asking)
 def create(
     name: Annotated[str, typer.Argument(help="Name of the new role")],
     permission: Annotated[
-        list[str] | None, typer.Option(help="Permission to include, repeatable")
+        list[str] | None,
+        typer.Option(help="Permission to include, repeatable. Left out, a checklist in a terminal"),
     ] = None,
     description: Annotated[str, typer.Option(help="What this role is for")] = "",
 ) -> None:
@@ -60,6 +63,11 @@ def create(
     actor = cli_actor()
     with session_scope(settings) as session:
         bootstrap(session, actor=actor)
+        if permission is None and ask.interactive():
+            permission = ask.checklist(
+                "What it allows",
+                [(key, f"{key}, {meaning}") for key, meaning in PERMISSIONS.items()],
+            )
         role = create_role(
             session,
             name=name,
@@ -70,7 +78,7 @@ def create(
         typer.echo(f"Created {role.name} with {len(role.permissions)} permissions")
 
 
-@app.command()
+@app.command(cls=Asking)
 def grant(
     name: Annotated[str, typer.Argument(help="Which role")],
     permission: Annotated[str, typer.Argument(help="Which permission to add")],
@@ -84,7 +92,7 @@ def grant(
         typer.echo(f"{role.name}: {', '.join(sorted(role.permission_keys()))}")
 
 
-@app.command()
+@app.command(cls=Asking)
 def revoke(
     name: Annotated[str, typer.Argument(help="Which role")],
     permission: Annotated[str, typer.Argument(help="Which permission to remove")],
@@ -98,7 +106,7 @@ def revoke(
         typer.echo(f"{role.name}: {', '.join(sorted(role.permission_keys())) or 'none'}")
 
 
-@app.command()
+@app.command(cls=Asking)
 def delete(name: Annotated[str, typer.Argument(help="Which role to delete")]) -> None:
     """Delete a role nobody holds."""
     settings = load_settings()

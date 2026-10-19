@@ -70,7 +70,8 @@ Signing in, signing out and a wrong password for an account that exists are writ
 There is no email, so a person chooses a password from a sign-in link instead: someone who
 manages people makes one for them, and it works once, for 72 hours. The same link resets a
 forgotten password. Anyone signed in can change their own password by giving the current one.
-The first administrator's password is set on the command line:
+The first administrator's password is set by `dpolens init`, and anyone's can be set on the
+command line:
 
 ```bash
 dpolens user set-password you@example.com

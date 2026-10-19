@@ -7,6 +7,7 @@ from typing import Annotated
 
 import typer
 
+from dpolens.cli.ask import Asking
 from dpolens.engine.documents.read import (
     ClauseNotFound,
     ClauseView,
@@ -28,7 +29,7 @@ app = typer.Typer(
 WRAP = 88
 
 
-@app.command()
+@app.command(cls=Asking)
 def show(
     key: Annotated[str, typer.Argument(help="Canonical key, for example gdpr:art-17")],
     subtree: Annotated[bool, typer.Option(help="Include everything beneath the clause")] = False,

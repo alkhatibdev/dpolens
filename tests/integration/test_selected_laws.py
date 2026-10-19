@@ -314,7 +314,7 @@ class TestOverHttp:
 
         assert response.status_code == 409
         assert response.json()["type"] == "/problems/no-laws-selected"
-        assert "dpolens laws select" in response.json()["detail"]
+        assert "dpolens init" in response.json()["detail"]
 
     def test_the_default_covers_the_selection_and_is_logged_as_inside_it(
         self, api: TestClient, testlaw_selected: Engine

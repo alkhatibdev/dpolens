@@ -13,6 +13,7 @@ from dpolens.cli import (
     evals,
     governance,
     index,
+    init,
     laws,
     model,
     pack,
@@ -24,6 +25,7 @@ from dpolens.cli import (
     user,
     worker,
 )
+from dpolens.cli.ask import Asking
 from dpolens.engine.auth.catalog import StalePermission
 from dpolens.engine.auth.passwords import NoPasswordAllowed, WeakPassword
 from dpolens.engine.auth.roles import DuplicateRole, RoleInUse, UnknownPermission
@@ -153,6 +155,7 @@ app = typer.Typer(
 )
 
 
+app.command(name="init")(init.run)
 app.add_typer(pack.app)
 app.add_typer(laws.app)
 app.add_typer(policy.app)
@@ -165,7 +168,7 @@ app.add_typer(queries.app)
 app.add_typer(index.app)
 app.add_typer(model.app)
 app.add_typer(evals.app)
-app.command(name="search")(search.run)
+app.command(name="search", cls=Asking)(search.run)
 app.command(name="worker")(worker.run)
 
 

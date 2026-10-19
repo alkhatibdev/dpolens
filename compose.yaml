@@ -5,14 +5,13 @@
 #     "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
 #   docker compose up -d
 #
-# Then create yourself an administrator, with a password for the dashboard:
+# Then set it up: it asks for your email address, your name and a password for
+# the dashboard, then which laws apply to your organisation.
 #
-#   docker compose exec api dpolens user create --email you@example.com \
-#     --name "Your Name" --role Admin
-#   docker compose exec api dpolens user set-password you@example.com
+#   docker compose exec api dpolens init
 #
-# The dashboard is at http://localhost:8080. Signing in the first time asks
-# which laws apply, and Tokens makes the token for your editor.
+# The dashboard is at http://localhost:8080, and Tokens makes the token for your
+# editor.
 #
 # Each service names the image of the version this checkout is, and `up`
 # downloads it from GitHub's container registry. A version with nothing to
@@ -79,6 +78,8 @@ services:
       # Shown next to a new token. Set it to the address assistants really use
       # when the MCP server sits behind a proxy or on another host.
       DPOLENS_PUBLIC_MCP_URL: ${DPOLENS_PUBLIC_MCP_URL:-http://localhost:${DPOLENS_MCP_PORT:-8765}/mcp}
+      # Where people open the dashboard, which `dpolens init` names when it is done.
+      DPOLENS_PUBLIC_DASHBOARD_URL: ${DPOLENS_PUBLIC_DASHBOARD_URL:-http://localhost:${DPOLENS_DASHBOARD_PORT:-8080}}
       # Passed on from .env when set there, and otherwise left to the defaults in
       # docs/configuration.md, which says what each one does.
       DPOLENS_QUERY_LOG_RETENTION_DAYS:

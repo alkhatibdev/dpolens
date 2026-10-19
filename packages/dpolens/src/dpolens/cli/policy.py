@@ -14,6 +14,7 @@ from typing import Annotated
 
 import typer
 
+from dpolens.cli.ask import Asking
 from dpolens.engine.logs.governance import cli_actor
 from dpolens.engine.originals import Directory
 from dpolens.engine.policies import library, store
@@ -61,7 +62,7 @@ Label = Annotated[
 ]
 
 
-@app.command()
+@app.command(cls=Asking)
 def parse(
     path: Annotated[
         Path, typer.Argument(help="A Word (.docx) or Markdown (.md) file", exists=True)
@@ -134,7 +135,7 @@ def _day(value: datetime | None) -> date | None:
     return value.date() if value else None
 
 
-@app.command()
+@app.command(cls=Asking)
 def upload(
     path: PolicyFile,
     slug: Annotated[
@@ -161,7 +162,7 @@ def upload(
     show_draft(draft)
 
 
-@app.command()
+@app.command(cls=Asking)
 def revise(
     slug: Slug,
     path: PolicyFile,
@@ -188,7 +189,7 @@ def revise(
     show_draft(draft)
 
 
-@app.command()
+@app.command(cls=Asking)
 def draft(slug: Slug) -> None:
     """Show a policy's draft: its clauses, what changed, and what a reviewer must check."""
     with session_scope(load_settings()) as session:
@@ -196,7 +197,7 @@ def draft(slug: Slug) -> None:
     show_draft(found)
 
 
-@app.command()
+@app.command(cls=Asking)
 def accept(
     slug: Slug,
     positions: Annotated[
@@ -216,7 +217,7 @@ def accept(
         typer.echo(f"Every flag is settled. Publish with: dpolens policy publish {slug}")
 
 
-@app.command(name="same-rule")
+@app.command(cls=Asking, name="same-rule")
 def same_rule(
     slug: Slug,
     key: Annotated[str, typer.Argument(help="The new clause in the draft, such as 4.4")],
@@ -248,7 +249,7 @@ def same_rule(
     typer.echo(f"{key} continues version {found.previous}'s {shown}{how}.")
 
 
-@app.command(name="reject-match")
+@app.command(cls=Asking, name="reject-match")
 def reject_match(
     slug: Slug,
     key: Annotated[str, typer.Argument(help="The clause in the draft, such as 4.3")],
@@ -283,7 +284,7 @@ def reject_match(
         )
 
 
-@app.command(name="fix")
+@app.command(cls=Asking, name="fix")
 def fix(
     slug: Slug,
     key: Annotated[str, typer.Argument(help="The clause in the draft, such as 4.1")],
@@ -344,7 +345,7 @@ def fix(
     )
 
 
-@app.command()
+@app.command(cls=Asking)
 def edit(
     slug: Slug,
     title: Annotated[str | None, typer.Option(help="A new title")] = None,
@@ -369,7 +370,7 @@ def edit(
     )
 
 
-@app.command()
+@app.command(cls=Asking)
 def publish(slug: Slug) -> None:
     """Publish a policy's draft. From its effective date, searches find it and cite it."""
     with session_scope(load_settings()) as session:
@@ -381,7 +382,7 @@ def publish(slug: Slug) -> None:
     )
 
 
-@app.command()
+@app.command(cls=Asking)
 def discard(slug: Slug) -> None:
     """Discard a policy's draft. It is kept as discarded, and nothing searches it."""
     with session_scope(load_settings()) as session:
@@ -389,7 +390,7 @@ def discard(slug: Slug) -> None:
     typer.echo(f"Discarded the draft of {slug}.")
 
 
-@app.command()
+@app.command(cls=Asking)
 def archive(slug: Slug) -> None:
     """Take a policy out of search. Its clauses still read by key, so citations still work."""
     with session_scope(load_settings()) as session:
@@ -425,7 +426,7 @@ STATES = {
 }
 
 
-@app.command()
+@app.command(cls=Asking)
 def versions(slug: Slug) -> None:
     """List a policy's versions: its draft, the version in force, and those it replaced."""
     with session_scope(load_settings()) as session:
@@ -443,7 +444,7 @@ def versions(slug: Slug) -> None:
         typer.echo(f"  {entry.label:>6}  {STATES[entry.state]:<10} {when}{by}")
 
 
-@app.command()
+@app.command(cls=Asking)
 def compare(
     slug: Slug,
     first: Annotated[int, typer.Argument(help="One version, by its number")],
