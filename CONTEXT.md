@@ -287,9 +287,9 @@ _Avoid_: Reference, source, result
 
 **Selected laws**:
 The packs an admin has chosen for the organisation. Search covers them plus the
-organisation's published policies; anything else is searched only on request and labelled
-"not in your selected laws". Until somebody chooses, every loaded law is searched. Selecting a
-law is a setting, not a legal finding.
+organisation's published policies, and nothing else. Another loaded law opens only in the
+dashboard, labelled "not in your selected laws", so a citation of it stays checkable. Until
+somebody chooses, nothing is searched. Selecting a law is a setting, not a legal finding.
 _Avoid_: Applicable laws, active laws, enabled packs
 
 **Starter question**:

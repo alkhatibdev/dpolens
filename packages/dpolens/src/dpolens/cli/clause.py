@@ -15,10 +15,15 @@ from dpolens.engine.documents.read import (
     get_clause,
     get_subtree,
 )
+from dpolens.engine.packs.selection import require_selected
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
-app = typer.Typer(name="clause", help="Read clauses by canonical key.", no_args_is_help=True)
+app = typer.Typer(
+    name="clause",
+    help="Read clauses of the selected laws and the policies by canonical key.",
+    no_args_is_help=True,
+)
 
 WRAP = 88
 
@@ -40,6 +45,7 @@ def show(
     try:
         with session_scope(load_settings()) as session:
             detail = get_clause(session, key, lang, on)
+            require_selected(session, detail.clause.pack_slug)
             descendants = get_subtree(session, key, lang, on)[1:] if subtree else []
     except ClauseNotFound as missing:
         typer.secho(str(missing), fg=typer.colors.RED, err=True)

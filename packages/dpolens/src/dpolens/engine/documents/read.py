@@ -9,7 +9,7 @@ is never returned at all.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from datetime import date
 
@@ -474,12 +474,18 @@ def _summary(session: Session, document: Document, version: DocumentVersion) -> 
 
 
 def list_documents(
-    session: Session, *, limit: int = 50, offset: int = 0, as_of: date | None = None
+    session: Session,
+    *,
+    limit: int = 50,
+    offset: int = 0,
+    as_of: date | None = None,
+    laws: Collection[str] | None = None,
 ) -> tuple[list[DocumentSummary], int]:
     """The documents in force, and how many there are in total.
 
     A document with no published version in force is not listed: a corpus shows
-    what can be cited today, and a draft cannot.
+    what can be cited today, and a draft cannot. `laws` keeps the laws listed to
+    those packs, and the organisation's own policies are always listed.
     """
     moment = as_of or date.today()
     documents = session.scalars(
@@ -489,7 +495,8 @@ def list_documents(
     summaries = [
         _summary(session, document, version)
         for document in documents
-        if (version := _version_in_force(session, document.id, moment)) is not None
+        if (laws is None or document.pack is None or document.pack.slug in laws)
+        and (version := _version_in_force(session, document.id, moment)) is not None
     ]
     return summaries[offset : offset + limit], len(summaries)
 

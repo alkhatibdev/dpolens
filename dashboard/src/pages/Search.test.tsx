@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { SearchResult } from "@/api/client";
-import { article13, signedIn, uae } from "@/test/fixtures";
+import { admin, article13, signedIn, uae } from "@/test/fixtures";
 import { renderAt } from "@/test/render";
 import { serve } from "@/test/server";
 
@@ -18,7 +18,6 @@ const result: SearchResult = {
   cross_references: [],
   expanded: [],
   ranks: null,
-  in_selected_laws: true,
 };
 
 describe("search results", () => {
@@ -62,5 +61,67 @@ describe("search results", () => {
     expect(router.state.location.search).toContain("explanatory=1");
     const posts = calls.filter((call) => call.method === "POST");
     expect(await posts.at(-1)!.json()).toMatchObject({ include_explanatory: true });
+  });
+
+  it("offers the organisation's own laws to narrow to, and no other", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: signedIn },
+      "GET /v1/documents": { body: { documents: [uae], total: 1, limit: 100, offset: 0 } },
+      "POST /v1/search": { body: { laws: ["uae-pdpl"], results: [result] } },
+    });
+    renderAt("/search?q=consent");
+    await screen.findByText("uae-pdpl:art-13:para-1");
+
+    await userEvent.click(screen.getByRole("button", { name: "All your laws" }));
+
+    const offered = screen.getAllByRole("menuitem").map((item) => item.textContent);
+    expect(offered).toEqual(["All your laws", "UAE-PDPL"]);
+  });
+
+  it("says when no law has been chosen yet, and where an administrator chooses them", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: admin },
+      "GET /v1/documents": { body: { documents: [], total: 0, limit: 100, offset: 0 } },
+      "POST /v1/search": {
+        status: 409,
+        body: {
+          type: "/problems/no-laws-selected",
+          title: "No laws chosen yet",
+          status: 409,
+          detail: "nobody has chosen which laws apply to this organisation yet",
+        },
+      },
+    });
+    renderAt("/search?q=consent");
+
+    expect(
+      await screen.findByText(/^Nobody has chosen which laws apply yet, so there is nothing/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Choose them in Selected laws." })).toHaveAttribute(
+      "href",
+      "/laws",
+    );
+  });
+
+  it("tells somebody who cannot choose the laws who can", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: signedIn },
+      "GET /v1/documents": { body: { documents: [], total: 0, limit: 100, offset: 0 } },
+      "POST /v1/search": {
+        status: 409,
+        body: {
+          type: "/problems/no-laws-selected",
+          title: "No laws chosen yet",
+          status: 409,
+          detail: "nobody has chosen which laws apply to this organisation yet",
+        },
+      },
+    });
+    renderAt("/search?q=consent");
+
+    expect(
+      await screen.findByText(/An administrator chooses them in Selected laws\.$/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Choose them in Selected laws." })).toBeNull();
   });
 });

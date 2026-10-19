@@ -1,8 +1,8 @@
 """Which laws apply to the organisation, and so what a search covers.
 
-A search covers the selected laws and the organisation's own policies. Until
-somebody chooses, every loaded law is searched. Choosing needs `settings.manage`,
-and each change is written to the governance log, as it is from the command line.
+A search covers the selected laws and the organisation's own policies, and until
+somebody chooses, nothing is searched. Choosing needs `settings.manage`, and each
+change is written to the governance log, as it is from the command line.
 """
 
 from __future__ import annotations
@@ -19,10 +19,10 @@ from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.documents.read import list_laws
 from dpolens.engine.logs import governance_view
-from dpolens.engine.logs.governance import LAWS_SELECTED, LAWS_SELECTION_CLEARED
+from dpolens.engine.logs.governance import LAWS_SELECTED
 from dpolens.engine.packs.selection import (
     UnknownLaw,
-    clear_selection,
+    newly_arrived,
     select_laws,
     selected_laws,
 )
@@ -47,17 +47,17 @@ class LoadedLaw(BaseModel):
     articles: int
     recitals: int
     document: str | None = Field(description="The document that holds its articles, by slug")
-    searched: bool = Field(
+    searched: bool = Field(description="Whether it is selected, so a search covers it")
+    new: bool = Field(
         description=(
-            "Whether a search covers it without naming it: it is selected, or nobody has "
-            "chosen and every law is searched"
+            "Loaded in the last 30 days, after the laws were first chosen, as a law an "
+            "upgrade brings is"
         )
     )
 
 
 class LawsChange(BaseModel):
     at: datetime
-    cleared: bool = Field(description="Whether the change went back to every law")
     by: str | None = Field(description="Who made it, or null for the command line")
     via: Via
 
@@ -65,7 +65,9 @@ class LawsChange(BaseModel):
 class Laws(BaseModel):
     laws: list[LoadedLaw]
     selected: list[str] | None = Field(
-        description="The selected laws by slug, or null while nobody has chosen"
+        description=(
+            "The selected laws by slug, or null while nobody has chosen and nothing is searched"
+        )
     )
     changed: LawsChange | None = Field(
         description="The latest change to the selection, or null when there has never been one"
@@ -76,13 +78,14 @@ class LawSelection(BaseModel):
     laws: list[Annotated[str, Field(max_length=100)]] = Field(
         min_length=1,
         max_length=50,
-        description="The laws that apply, by slug. Going back to every law is a DELETE",
+        description="The laws that apply, by slug",
     )
 
 
 def _laws(opened: EngineSession) -> Laws:
-    selected = selected_laws(opened)
-    latest = governance_view.latest_of(opened, (LAWS_SELECTED, LAWS_SELECTION_CLEARED))
+    selected = selected_laws(opened) or []
+    arrived = newly_arrived(opened)
+    latest = governance_view.latest_of(opened, (LAWS_SELECTED,))
     return Laws(
         laws=[
             LoadedLaw(
@@ -97,15 +100,15 @@ def _laws(opened: EngineSession) -> Laws:
                 articles=law.articles,
                 recitals=law.recitals,
                 document=law.document,
-                searched=selected is None or law.slug in selected,
+                searched=law.slug in selected,
+                new=law.slug in arrived,
             )
             for law in list_laws(opened)
         ],
-        selected=selected,
+        selected=selected or None,
         changed=(
             LawsChange(
                 at=latest.occurred_at,
-                cleared=latest.action == LAWS_SELECTION_CLEARED,
                 by=latest.actor.display_name if latest.actor else None,
                 via=cast(Via, latest.details.get("via", "cli")),
             )
@@ -130,11 +133,5 @@ def choose(body: LawSelection, who: Chooser, opened: Opened) -> Laws:
     try:
         select_laws(opened, body.laws, actor=actor_of(who))
     except UnknownLaw as unknown:
-        raise problems.unknown_law(unknown.unknown, unknown.loaded) from unknown
-    return _laws(opened)
-
-
-@router.delete("/laws/selection", summary="Go back to searching every loaded law")
-def clear(who: Chooser, opened: Opened) -> Laws:
-    clear_selection(opened, actor=actor_of(who))
+        raise problems.unknown_law(str(unknown), unknown.choices) from unknown
     return _laws(opened)

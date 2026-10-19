@@ -31,6 +31,7 @@ from dpolens.engine.logs.governance import Actor, read_entries
 from dpolens.engine.logs.models import QueryLogEntry, QueryLogResult
 from dpolens.engine.logs.queries import QUERY_LOG_PURGED, count_entries, purge_expired
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.selection import select_laws
 from dpolens.engine.session import session_from
 from dpolens.settings import Settings
 from dpolens.telemetry import configure
@@ -47,6 +48,7 @@ def corpus(committed_owner_url: str) -> Iterator[Engine]:
     with session_from(engine) as opened:
         bootstrap(opened, actor=ACTOR)
         load_pack(opened, TESTLAW)
+        select_laws(opened, ["testlaw"], actor=ACTOR)
     with Embedder(get_model(DEFAULT_MODEL)) as embedder, session_from(engine) as opened:
         build_index(opened, embedder)
     yield engine

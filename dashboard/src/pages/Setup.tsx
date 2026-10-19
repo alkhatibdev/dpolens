@@ -14,8 +14,8 @@ import { usePermitted } from "@/session";
 
 /**
  * The one question a new instance asks, of whoever may answer it, as they sign in:
- * which laws apply. Deciding later goes on to where they were going, and the
- * question comes back at their next sign-in until somebody chooses.
+ * which laws apply. Nothing is searched until somebody answers, so there is no
+ * deciding later.
  */
 export function SetupPage() {
   const { t } = useTranslation();
@@ -64,14 +64,7 @@ export function SetupPage() {
       <main className="flex flex-1 justify-center rounded-[20px] bg-panel px-4 py-8 sm:rounded-[24px] sm:px-7 sm:py-12">
         <div className="w-full max-w-[900px]">
           {laws.isPending ? <Loading /> : null}
-          {laws.error ? (
-            <div className="flex flex-col items-start gap-3">
-              <Failed onRetry={() => void laws.refetch()} />
-              <Button type="button" variant="ghost" onClick={goOn}>
-                {t("setup.later")}
-              </Button>
-            </div>
-          ) : null}
+          {laws.error ? <Failed onRetry={() => void laws.refetch()} /> : null}
           {laws.data ? (
             <form onSubmit={submit} className="flex flex-col gap-6">
               <div>
@@ -102,9 +95,6 @@ export function SetupPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" disabled={choose.isPending || ticked.size === 0}>
                   {t("setup.save")}
-                </Button>
-                <Button type="button" variant="ghost" onClick={goOn}>
-                  {t("setup.later")}
                 </Button>
                 <span className="text-sm text-muted">{t("setup.note")}</span>
               </div>

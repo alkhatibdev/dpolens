@@ -69,7 +69,10 @@ prints which workflow it was and which commit it built.
    both platforms, each on a machine of that kind, publishes them with their tags, attests
    them, writes and attests a pack archive of every law, and opens a draft release with the
    changelog's section as its notes and the archives attached.
-4. Somebody reads the draft and publishes it.
+4. Somebody reads the draft and publishes it. GitHub's form offers None, Pre-release and
+   Latest: the app's release is published as Latest, so the repository's page shows it, and a
+   pre-release, such as `0.1.0-rc.1`, which the workflow has already marked as one, as
+   Pre-release.
 
 A pull request that changes how the images are built runs the same workflow, short of
 publishing anything. It builds all four images for both platforms, checks that each has one
@@ -141,5 +144,7 @@ a Mac). The second says a workflow in this repository built it, and from which c
    on `main` or does not name the version in the pack's `pack.yaml`. It writes the archive and
    its checksum with `dpolens pack archive`, attests the archive, and opens a draft release
    with both files.
-4. Somebody reads the draft and publishes it.
+4. Somebody reads the draft and publishes it as None. As Latest, it would take the
+   repository's page from the app's release, and as Pre-release it would never be offered:
+   `pack update` skips pre-releases.
 

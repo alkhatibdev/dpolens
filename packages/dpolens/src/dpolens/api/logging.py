@@ -34,7 +34,8 @@ class Asked:
     status: str = "ok"
     results: Sequence[Returned] = field(default_factory=tuple)
     scope: str | None = None
-    """For a search: selected, or other when it reached a law outside the selection."""
+    """For a search: selected. An older row can say other, from a search that named a law
+    outside the selection."""
 
     def found(self, results: Sequence[Returned]) -> None:
         self.results = results

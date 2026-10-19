@@ -289,17 +289,22 @@ class TestASignedInBrowser:
             assert logged is not None
             assert (logged.surface, logged.actor_pat_id) == ("dashboard", None)
 
-    def test_a_document_says_whether_it_is_in_the_selected_laws(
+    def test_the_dashboard_still_opens_a_law_outside_the_selection_marked(
         self, browser: TestClient, person: str
     ) -> None:
+        """Nobody has chosen here, so the library lists no law. A citation of one stays
+        checkable, and an administrator can read a law before choosing it."""
         signed_in(browser, person)
 
         documents = browser.get("/v1/documents", headers=SAME_ORIGIN).json()["documents"]
-        detail = browser.get("/v1/documents/testlaw", headers=SAME_ORIGIN).json()["document"]
+        detail = browser.get("/v1/documents/testlaw", headers=SAME_ORIGIN)
+        clause = browser.get("/v1/clauses/testlaw:art-5", headers=SAME_ORIGIN)
 
-        assert documents
-        assert all(document["in_selected_laws"] is True for document in documents)
-        assert detail["in_selected_laws"] is True
+        assert documents == []
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["document"]["in_selected_laws"] is False
+        assert clause.status_code == 200, clause.text
+        assert clause.json()["in_selected_laws"] is False
 
     def test_signing_out_ends_the_session_and_clears_the_cookie(
         self, browser: TestClient, person: str, owner: Engine

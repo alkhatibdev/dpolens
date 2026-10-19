@@ -415,6 +415,7 @@ export const gdprLaw: LoadedLaw = {
   recitals: 173,
   document: "gdpr",
   searched: true,
+  new: false,
 };
 
 export const uaeLaw: LoadedLaw = {
@@ -430,16 +431,24 @@ export const uaeLaw: LoadedLaw = {
   recitals: 0,
   document: "uae-pdpl",
   searched: true,
+  new: false,
 };
 
-/** A new instance: nobody has chosen, so every law is searched. */
-export const lawsUnchosen: Laws = { laws: [gdprLaw, uaeLaw], selected: null, changed: null };
+/** A new instance: nobody has chosen, so nothing is searched. */
+export const lawsUnchosen: Laws = {
+  laws: [
+    { ...gdprLaw, searched: false },
+    { ...uaeLaw, searched: false },
+  ],
+  selected: null,
+  changed: null,
+};
 
 /** The UAE law alone, chosen in the dashboard. */
 export const lawsChosen: Laws = {
   laws: [{ ...gdprLaw, searched: false }, uaeLaw],
   selected: ["uae-pdpl"],
-  changed: { at: "2026-10-14T12:20:00Z", cleared: false, by: "Yousef Haddad", via: "dashboard" },
+  changed: { at: "2026-10-14T12:20:00Z", by: "Yousef Haddad", via: "dashboard" },
 };
 
 export const settings: InstanceSettings = {

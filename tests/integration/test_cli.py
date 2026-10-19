@@ -42,6 +42,8 @@ def instance(migrated: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 def loaded(instance: None, clean_tables: None) -> None:
     result = runner.invoke(app, ["pack", "load", str(GDPR_PACK)])
     assert result.exit_code == 0, result.output
+    chosen = runner.invoke(app, ["laws", "select", "gdpr"])
+    assert chosen.exit_code == 0, chosen.output
 
 
 def test_loading_a_pack_reports_what_it_did(instance: None, clean_tables: None) -> None:
@@ -122,6 +124,7 @@ def test_a_translation_says_which_text_prevails(
     instance: None, clean_tables: None, bilingual_pack: Path
 ) -> None:
     assert runner.invoke(app, ["pack", "load", str(bilingual_pack)]).exit_code == 0
+    assert runner.invoke(app, ["laws", "select", "bilingual"]).exit_code == 0
 
     result = runner.invoke(app, ["clause", "show", "bilingual:art-2", "--lang", "en"])
 
@@ -134,6 +137,7 @@ def test_a_point_read_in_translation_shows_the_text_that_prevails(
     instance: None, clean_tables: None, bilingual_pack: Path
 ) -> None:
     assert runner.invoke(app, ["pack", "load", str(bilingual_pack)]).exit_code == 0
+    assert runner.invoke(app, ["laws", "select", "bilingual"]).exit_code == 0
 
     result = runner.invoke(app, ["clause", "show", "bilingual:art-2:para-1:pt-a", "--lang", "en"])
 
@@ -159,26 +163,43 @@ def test_an_eval_run_naming_a_modifier_nothing_reads_stops_before_it_starts() ->
     assert "+ligth" in said(result)
 
 
-def test_every_law_is_searched_until_one_is_chosen(loaded: None) -> None:
+def test_nothing_is_read_until_a_law_is_chosen(instance: None, clean_tables: None) -> None:
+    assert runner.invoke(app, ["pack", "load", str(GDPR_PACK)]).exit_code == 0
+
     listed = runner.invoke(app, ["laws", "list"])
+    shown = runner.invoke(app, ["clause", "show", "gdpr:art-17"])
     chosen = runner.invoke(app, ["laws", "select", "gdpr"])
     after = runner.invoke(app, ["laws", "list"])
-    cleared = runner.invoke(app, ["laws", "clear"])
 
     assert listed.exit_code == 0
-    assert "every search covers every loaded law" in listed.output
+    assert "nothing is searched" in listed.output
+    assert shown.exit_code == 1
+    assert "nobody has chosen which laws apply" in shown.output
     assert chosen.exit_code == 0, chosen.output
     assert "Selected: gdpr" in chosen.output
-    assert "every search covers every loaded law" not in after.output
-    assert cleared.exit_code == 0
-    assert "every search covers every loaded law" in cleared.output
+    assert "nothing is searched" not in after.output
 
 
-def test_choosing_a_law_that_is_not_loaded_fails_naming_the_loaded_ones(loaded: None) -> None:
+def test_there_is_no_going_back_to_every_law(loaded: None) -> None:
+    assert runner.invoke(app, ["laws", "clear"]).exit_code == 2
+
+
+def test_a_clause_of_a_law_outside_the_selection_is_refused(
+    loaded: None, bilingual_pack: Path
+) -> None:
+    assert runner.invoke(app, ["pack", "load", str(bilingual_pack)]).exit_code == 0
+
+    result = runner.invoke(app, ["clause", "show", "bilingual:art-2"])
+
+    assert result.exit_code == 1
+    assert "bilingual is loaded here but is not one of this organisation's laws" in result.output
+
+
+def test_choosing_a_law_that_is_not_loaded_fails_naming_the_ones_that_are(loaded: None) -> None:
     result = runner.invoke(app, ["laws", "select", "uae-pdpl"])
 
     assert result.exit_code == 1
-    assert "The loaded laws are: gdpr" in result.output
+    assert "The laws to choose from are: gdpr" in result.output
 
 
 def test_only_a_held_out_set_is_written_and_before_anything_runs() -> None:

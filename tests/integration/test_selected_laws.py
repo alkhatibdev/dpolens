@@ -1,17 +1,18 @@
 """Which laws apply, and what a search covers because of it.
 
-The default matters most: until somebody chooses, a search covers every loaded law,
-exactly as it did before there was anything to choose.
+A search covers the selected laws and the organisation's policies, and nothing else:
+not a law outside the selection named on purpose, and, until somebody chooses, no law.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, func, select, text
+from sqlalchemy import Engine, create_engine, delete, func, select, text, update
 from sqlalchemy.orm import Session
 
 from dpolens.api.app import create_app
@@ -22,13 +23,16 @@ from dpolens.engine.auth.users import create_user
 from dpolens.engine.embedding import Embedder, get_model
 from dpolens.engine.embedding.index import build_index
 from dpolens.engine.evals import Question, run_set
-from dpolens.engine.logs.governance import LAWS_SELECTED, LAWS_SELECTION_CLEARED, Actor
+from dpolens.engine.logs.governance import LAWS_SELECTED, Actor
 from dpolens.engine.logs.models import GovernanceEntry, QueryLogEntry
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.models import Pack, SelectedLaw
 from dpolens.engine.packs.selection import (
     EmptySelection,
+    NothingSelected,
+    NotSelected,
     UnknownLaw,
-    clear_selection,
+    newly_arrived,
     scope_for,
     select_laws,
     selected_laws,
@@ -68,12 +72,9 @@ def laws_of(results: Sequence[SearchResult]) -> set[str | None]:
 
 class TestTheSelection:
     def test_nobody_has_chosen_until_someone_does(self, two_laws: Session) -> None:
-        scope = scope_for(two_laws)
-
         assert selected_laws(two_laws) is None
-        assert scope.laws == ("bilingual", "testlaw")
-        assert not scope.narrowed
-        assert not scope.outside_selection
+        with pytest.raises(NothingSelected, match="nobody has chosen which laws apply"):
+            scope_for(two_laws)
 
     def test_choosing_narrows_what_a_search_covers(self, two_laws: Session) -> None:
         select_laws(two_laws, ["testlaw"], actor=ACTOR)
@@ -82,14 +83,21 @@ class TestTheSelection:
         assert scope.laws == ("testlaw",)
         assert scope.narrowed
 
+    def test_an_instance_with_no_law_searches_its_policies(self, session: Session) -> None:
+        """There is nothing to choose, so nothing to wait for."""
+        scope = scope_for(session)
+
+        assert scope.laws == ()
+        assert not scope.narrowed
+
     def test_a_law_that_is_not_loaded_cannot_be_chosen(self, two_laws: Session) -> None:
-        with pytest.raises(UnknownLaw, match="The loaded laws are: bilingual, testlaw"):
+        with pytest.raises(UnknownLaw, match="The laws to choose from are: bilingual, testlaw"):
             select_laws(two_laws, ["gdpr"], actor=ACTOR)
 
         assert selected_laws(two_laws) is None
 
     def test_a_selection_is_never_empty(self, two_laws: Session) -> None:
-        """Clearing is how to go back to every law, so "nobody chose" means one thing."""
+        """Once somebody has chosen, some law always applies."""
         with pytest.raises(EmptySelection):
             select_laws(two_laws, [], actor=ACTOR)
 
@@ -98,8 +106,6 @@ class TestTheSelection:
 
         select_laws(two_laws, ["testlaw"], actor=ACTOR)
         select_laws(two_laws, ["testlaw", "bilingual"], actor=ACTOR)
-        clear_selection(two_laws, actor=ACTOR)
-        clear_selection(two_laws, actor=ACTOR)
 
         written = two_laws.scalars(
             select(GovernanceEntry).where(GovernanceEntry.seq > last).order_by(GovernanceEntry.seq)
@@ -110,19 +116,15 @@ class TestTheSelection:
         ] == [
             (LAWS_SELECTED, None, ["testlaw"]),
             (LAWS_SELECTED, ["testlaw"], ["bilingual", "testlaw"]),
-            # The second clear had nothing to clear, so it wrote nothing.
-            (LAWS_SELECTION_CLEARED, ["bilingual", "testlaw"], None),
         ]
 
 
 class TestWhatASearchCovers:
-    def test_until_someone_chooses_every_law_is_searched(
+    def test_until_someone_chooses_nothing_is_searched(
         self, two_laws: Session, embedder: Embedder
     ) -> None:
-        found = search(two_laws, embedder, BOTH, limit=10)
-
-        assert laws_of(found) == {"bilingual", "testlaw"}
-        assert all(result.in_selected_laws for result in found)
+        with pytest.raises(NothingSelected):
+            search(two_laws, embedder, BOTH, limit=10)
 
     def test_a_search_covers_only_the_chosen_law(
         self, two_laws: Session, embedder: Embedder
@@ -133,18 +135,32 @@ class TestWhatASearchCovers:
 
         assert laws_of(found) == {"testlaw"}
 
-    def test_another_law_is_reached_by_naming_it_and_comes_back_marked(
+    def test_naming_one_of_the_chosen_laws_keeps_to_it(
         self, two_laws: Session, embedder: Embedder
     ) -> None:
-        select_laws(two_laws, ["testlaw"], actor=ACTOR)
-        scope = scope_for(two_laws, ["bilingual"])
+        select_laws(two_laws, ["testlaw", "bilingual"], actor=ACTOR)
 
-        found = search(two_laws, embedder, BOTH, limit=10, scope=scope)
+        found = search(two_laws, embedder, BOTH, limit=10, scope=scope_for(two_laws, ["bilingual"]))
 
-        assert scope.outside_selection
         assert found
         assert laws_of(found) == {"bilingual"}
-        assert not any(result.in_selected_laws for result in found)
+
+    def test_a_law_outside_the_selection_is_refused_by_name(self, two_laws: Session) -> None:
+        select_laws(two_laws, ["testlaw"], actor=ACTOR)
+
+        with pytest.raises(
+            NotSelected, match="bilingual is loaded here but is not one of this organisation's"
+        ):
+            scope_for(two_laws, ["bilingual"])
+
+    def test_a_law_that_is_not_loaded_is_refused_with_the_organisations_laws(
+        self, two_laws: Session
+    ) -> None:
+        """Never with every loaded law, which would name the ones nobody chose."""
+        select_laws(two_laws, ["testlaw"], actor=ACTOR)
+
+        with pytest.raises(UnknownLaw, match=r"The laws to choose from are: testlaw$"):
+            scope_for(two_laws, ["gdpr"])
 
     def test_both_retrievers_keep_to_the_laws_they_are_given(
         self, two_laws: Session, embedder: Embedder
@@ -186,6 +202,43 @@ class TestWhatASearchCovers:
         returned = run.outcomes[0].returned
         assert returned
         assert {key.split(":")[0] for key in returned} <= {"testlaw", "testlaw-recitals"}
+
+
+@pytest.fixture(scope="module")
+def arrivals(database_of_its_own: Callable[[str], tuple[str, str]]) -> Iterator[Engine]:
+    """A governance log of its own, since what is new depends on its first choice."""
+    _, owner_url = database_of_its_own("dpolens_new_laws")
+    owner = create_engine(owner_url)
+    yield owner
+    owner.dispose()
+
+
+def test_a_law_that_arrives_after_the_first_choice_is_new_for_30_days(arrivals: Engine) -> None:
+    with session_from(arrivals) as opened:
+        load_pack(opened, FIXTURE_PACKS / "testlaw")
+        load_pack(opened, FIXTURE_PACKS / "bilingual")
+    with session_from(arrivals) as opened:
+        assert newly_arrived(opened) == frozenset()
+        select_laws(opened, ["testlaw"], actor=ACTOR)
+    with session_from(arrivals) as opened:
+        chosen = opened.scalars(
+            select(GovernanceEntry.occurred_at).where(GovernanceEntry.action == LAWS_SELECTED)
+        ).one()
+        # Set by hand, because the database and this process each keep their own clock.
+        opened.execute(
+            update(Pack)
+            .where(Pack.slug == "testlaw")
+            .values(loaded_at=chosen - timedelta(minutes=5))
+        )
+        opened.execute(
+            update(Pack)
+            .where(Pack.slug == "bilingual")
+            .values(loaded_at=chosen + timedelta(minutes=5))
+        )
+    with session_from(arrivals) as opened:
+        assert newly_arrived(opened) == {"bilingual"}
+        later = datetime.now(UTC) + timedelta(days=31)
+        assert newly_arrived(opened, now=later) == frozenset()
 
 
 FIXTURE_PACKS = Path(__file__).parents[1] / "fixtures" / "packs"
@@ -239,45 +292,103 @@ def testlaw_selected(own_instance: tuple[str, Engine]) -> Iterator[Engine]:
     with session_from(owner) as opened:
         select_laws(opened, ["testlaw"], actor=ACTOR)
     yield owner
+    # Back to nobody having chosen, which no instance returns to but every test starts from.
     with session_from(owner) as opened:
-        clear_selection(opened, actor=ACTOR)
+        opened.execute(delete(SelectedLaw))
 
 
-def latest_scope(owner: Engine) -> str | None:
+def latest(owner: Engine) -> tuple[str, str | None]:
+    """The newest query log row's status and scope."""
     with session_from(owner) as opened:
-        return opened.scalar(
-            select(QueryLogEntry.scope).order_by(QueryLogEntry.created_at.desc()).limit(1)
-        )
+        row = opened.execute(
+            select(QueryLogEntry.status, QueryLogEntry.scope)
+            .order_by(QueryLogEntry.created_at.desc())
+            .limit(1)
+        ).one()
+        return row.status, row.scope
 
 
 class TestOverHttp:
+    def test_before_anybody_chooses_a_search_is_refused(self, api: TestClient) -> None:
+        response = api.post("/v1/search", json={"query": BOTH})
+
+        assert response.status_code == 409
+        assert response.json()["type"] == "/problems/no-laws-selected"
+        assert "dpolens laws select" in response.json()["detail"]
+
     def test_the_default_covers_the_selection_and_is_logged_as_inside_it(
         self, api: TestClient, testlaw_selected: Engine
     ) -> None:
         response = api.post("/v1/search", json={"query": BOTH})
 
         assert response.status_code == 200, response.text
-        assert response.json()["laws"] == ["testlaw"]
-        assert all(result["in_selected_laws"] for result in response.json()["results"])
-        assert latest_scope(testlaw_selected) == "selected"
+        found = response.json()
+        assert found["laws"] == ["testlaw"]
+        assert found["results"]
+        assert all("in_selected_laws" not in result for result in found["results"])
+        assert latest(testlaw_selected) == ("ok", "selected")
 
-    def test_a_law_outside_the_selection_is_marked_and_logged_as_other(
+    def test_a_law_outside_the_selection_is_refused_by_name(
         self, api: TestClient, testlaw_selected: Engine
     ) -> None:
         response = api.post("/v1/search", json={"query": BOTH, "laws": ["bilingual"]})
 
-        assert response.status_code == 200, response.text
-        found = response.json()
-        assert found["laws"] == ["bilingual"]
-        assert found["results"]
-        assert not any(result["in_selected_laws"] for result in found["results"])
-        assert latest_scope(testlaw_selected) == "other"
+        assert response.status_code == 403
+        refused = response.json()
+        assert refused["type"] == "/problems/law-not-selected"
+        assert refused["laws"] == ["bilingual"]
+        assert refused["detail"] == (
+            "bilingual is loaded here but is not one of this organisation's laws. "
+            "An administrator can add it in Selected laws."
+        )
 
-    def test_a_law_that_is_not_loaded_is_refused_with_the_loaded_ones(
-        self, api: TestClient
+    def test_a_law_that_is_not_loaded_is_refused_with_the_organisations_laws(
+        self, api: TestClient, testlaw_selected: Engine
     ) -> None:
         response = api.post("/v1/search", json={"query": BOTH, "laws": ["gdpr"]})
 
         assert response.status_code == 422
         assert response.json()["type"] == "/problems/unknown-law"
-        assert response.json()["laws"] == ["bilingual", "testlaw"]
+        assert response.json()["laws"] == ["testlaw"]
+
+    def test_the_library_lists_only_the_organisations_laws(
+        self, api: TestClient, testlaw_selected: Engine
+    ) -> None:
+        response = api.get("/v1/documents")
+
+        assert response.status_code == 200, response.text
+        documents = response.json()["documents"]
+        assert {document["pack_slug"] for document in documents} == {"testlaw"}
+        assert response.json()["total"] == len(documents)
+        assert all(document["in_selected_laws"] for document in documents)
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/v1/documents/bilingual",
+            "/v1/clauses/bilingual:art-1",
+            "/v1/clauses/bilingual:art-1/subtree",
+        ],
+    )
+    def test_a_token_cannot_read_a_law_outside_the_selection(
+        self, api: TestClient, testlaw_selected: Engine, path: str
+    ) -> None:
+        response = api.get(path)
+
+        assert response.status_code == 403
+        assert response.json()["type"] == "/problems/law-not-selected"
+        assert latest(testlaw_selected)[0] == "refused"
+
+    def test_a_token_reads_a_chosen_law_with_its_clause_marked_as_inside(
+        self, api: TestClient, testlaw_selected: Engine
+    ) -> None:
+        response = api.get("/v1/clauses/testlaw:art-5")
+
+        assert response.status_code == 200, response.text
+        assert response.json()["in_selected_laws"] is True
+
+    def test_before_anybody_chooses_a_token_reads_no_law(self, api: TestClient) -> None:
+        response = api.get("/v1/clauses/testlaw:art-5")
+
+        assert response.status_code == 409
+        assert response.json()["type"] == "/problems/no-laws-selected"

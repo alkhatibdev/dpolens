@@ -3,9 +3,10 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
-import type { SearchResult } from "@/api/client";
+import { ApiError, type SearchResult } from "@/api/client";
 import { useDocuments, useSearch, type SearchOptions } from "@/api/queries";
 import { CopyCitationButton } from "@/components/CopyCitation";
+import { Notice } from "@/components/Notice";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { namesOf, prevailingLanguage } from "@/lib/citation";
 import { formatDate, isRightToLeft, languageName } from "@/lib/format";
+import { SETTINGS_MANAGE } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { usePermitted } from "@/session";
 
 const QUERY_LANGUAGES = ["en", "ar"] as const;
 
@@ -76,7 +79,6 @@ function ResultCard({
             <h2 className="mt-1 text-base leading-snug font-semibold sm:text-[17px]">{where}</h2>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {!result.in_selected_laws ? <Chip tone="warn">{t("library.notSelected")}</Chip> : null}
             {prevails ? (
               <Chip tone="soft">
                 {t("document.prevails", { language: languageName(prevails) })}
@@ -124,8 +126,10 @@ export function SearchPage() {
   const [draft, setDraft] = useState(options.query);
   const search = useSearch(options);
   const documents = useDocuments();
+  const can = usePermitted();
 
-  const loadedLaws = [
+  // The library lists the organisation's laws only, so these are the ones to choose from.
+  const laws = [
     ...new Set(
       (documents.data?.documents ?? [])
         .map((document) => document.pack_slug)
@@ -178,23 +182,21 @@ export function SearchPage() {
       <div className="flex flex-wrap items-center gap-2">
         {searched.length ? (
           <span className="me-1 text-sm text-ink-2">
-            {options.laws.length
-              ? t("search.scopeOther", { laws: listOf(searched.map(lawName)) })
-              : t("search.scope", { laws: listOf(searched.map(lawName)) })}
+            {t("search.scope", { laws: listOf(searched.map(lawName)) })}
           </span>
         ) : null}
 
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line-strong bg-white px-3.5 text-[13px] font-medium hover:bg-field">
-            {t("search.anotherLaw")}
+            {options.laws.length ? listOf(options.laws.map(lawName)) : t("search.allLaws")}
             <ChevronDown aria-hidden className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem onSelect={() => update({ laws: null })}>
-              {t("search.selectedLaws")}
+              {t("search.allLaws")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {loadedLaws.map((slug) => (
+            {laws.map((slug) => (
               <DropdownMenuItem key={slug} onSelect={() => update({ laws: slug })}>
                 {lawName(slug)}
               </DropdownMenuItem>
@@ -250,7 +252,20 @@ export function SearchPage() {
 
       {!options.query ? <p className="text-muted">{t("search.prompt")}</p> : null}
       {options.query && search.isPending ? <Loading /> : null}
-      {search.error ? <Failed onRetry={() => void search.refetch()} /> : null}
+      {search.error instanceof ApiError && search.error.status === 409 ? (
+        <Notice tone="warn">
+          {t("search.noLaws")}{" "}
+          {can.has(SETTINGS_MANAGE) ? (
+            <Link to="/laws" className="font-medium text-brand-dark underline underline-offset-2">
+              {t("search.chooseLaws")}
+            </Link>
+          ) : (
+            t("search.askAdministrator")
+          )}
+        </Notice>
+      ) : search.error ? (
+        <Failed onRetry={() => void search.refetch()} />
+      ) : null}
       {search.data ? (
         <>
           <p className="text-sm text-muted" aria-live="polite">

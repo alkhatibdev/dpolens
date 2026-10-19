@@ -17,8 +17,6 @@ from dpolens.settings import load_settings
 SNIPPET = 400
 """Search shows enough to judge a result. `dpolens clause show` gives the rest."""
 
-OUTSIDE = "not in your organisation's selected laws"
-
 
 def run(
     query: Annotated[str, typer.Argument(help="A question, in your own words")],
@@ -33,10 +31,10 @@ def run(
     explain: Annotated[bool, typer.Option(help="Show which retriever found what")] = False,
     law: Annotated[
         list[str] | None,
-        typer.Option(help="A law to search instead of the selected ones, by slug, repeatable"),
+        typer.Option(help="Only this one of the selected laws, by slug, repeatable"),
     ] = None,
 ) -> None:
-    """Search the loaded law packs and policies."""
+    """Search the selected laws and the organisation's policies."""
     with (
         Embedder(get_model(model), cache_dir=cache_dir) as embedder,
         session_scope(load_settings()) as session,
@@ -65,8 +63,6 @@ def run(
                 f"{position}. {result.clause.document_slug}  {trail}".rstrip(),
                 fg=typer.colors.BRIGHT_BLACK,
             )
-            if not result.in_selected_laws:
-                typer.secho(f"   {OUTSIDE}", fg=typer.colors.YELLOW)
             print_clause(result.clause, indent=0, snippet=SNIPPET)
             if explain:
                 found = ", ".join(f"{name} #{rank}" for name, rank in sorted(result.ranks.items()))

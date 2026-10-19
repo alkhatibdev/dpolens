@@ -460,7 +460,7 @@ export const retentionDocument: DocumentInDetail = {
     trust_tier: null,
     source_url: null,
     authoritative_language: null,
-    in_selected_laws: false,
+    in_selected_laws: true,
   },
   outline: [
     {

@@ -220,6 +220,9 @@ export function ClausePage() {
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2">
+        {detail.data.in_selected_laws === false ? (
+          <Chip tone="warn">{t("library.notSelected")}</Chip>
+        ) : null}
         {clause.version_label ? (
           <Chip>{t("document.version", { version: clause.version_label })}</Chip>
         ) : null}

@@ -35,6 +35,7 @@ from dpolens.engine.logs.governance import (
 from dpolens.engine.logs.models import GovernanceEntry, QueryLogEntry
 from dpolens.engine.logs.queries import Returned, record_query
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.selection import select_laws
 from dpolens.engine.session import session_from
 from dpolens.settings import Settings
 
@@ -65,6 +66,7 @@ def own(database_of_its_own: Callable[[str], tuple[str, str]]) -> Iterator[tuple
     with session_from(owner) as opened:
         bootstrap(opened, actor=ACTOR)
         load_pack(opened, TESTLAW)
+        select_laws(opened, ["testlaw"], actor=ACTOR)
         # No seeded role may see who asked, so somebody is given it on purpose.
         create_role(
             opened,

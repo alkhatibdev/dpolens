@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.evals.score import Outcome, Score, score
-from dpolens.engine.packs.selection import Scope, scope_for
+from dpolens.engine.packs.selection import Scope, law_alone
 from dpolens.engine.search.engine import CANDIDATE_DEPTH, search
 from dpolens.engine.search.fuse import Fused, Fusion, fuse
 from dpolens.engine.search.keyword import ALTERNATIVES, Candidate, KeywordIndex, keyword_search
@@ -112,7 +112,7 @@ def run_set(
     search would.
     """
     check_configuration(configuration, reranker)
-    scope = scope_for(session, [pack]) if pack else None
+    scope = law_alone(session, pack) if pack else None
     outcomes = []
     for question in questions:
         returned = _retrieve(session, embedder, question, configuration, reranker, scope)

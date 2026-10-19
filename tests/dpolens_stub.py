@@ -125,7 +125,6 @@ class Stub:
                     "cross_references": [{"key": "testlaw:art-6", "text": "Article 6"}],
                     "expanded": [],
                     "ranks": None,
-                    "in_selected_laws": True,
                 }
             ]
         if not self.documents:

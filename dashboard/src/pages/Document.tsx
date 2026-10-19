@@ -251,6 +251,9 @@ export function DocumentPage() {
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2">
+        {summary.in_selected_laws === false ? (
+          <Chip tone="warn">{t("library.notSelected")}</Chip>
+        ) : null}
         {policy ? (
           <span className="rounded-full bg-ink px-3 py-1.5 text-[13px] font-semibold text-white">
             {t("document.yourPolicy")}
