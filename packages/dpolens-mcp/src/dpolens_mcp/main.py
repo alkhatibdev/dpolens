@@ -17,11 +17,11 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
 
 from dpolens_mcp.api import Api
+from dpolens_mcp.community import Limiting
 from dpolens_mcp.credential import Credential
 from dpolens_mcp.server import build
 from dpolens_mcp.settings import Settings
 
-PATH = "/mcp"
 """Where clients connect. The whole URL is http://host:port/mcp."""
 
 
@@ -42,12 +42,15 @@ def guarded(settings: Settings) -> TransportSecuritySettings:
 
 def asgi(settings: Settings, api: Api) -> Starlette:
     """The application a container serves, which is also the one the tests drive."""
-    return build(settings, api).streamable_http_app(
-        streamable_http_path=PATH,
+    app = build(settings, api).streamable_http_app(
+        streamable_http_path=settings.path,
         stateless_http=True,
         json_response=True,
         transport_security=guarded(settings),
     )
+    if settings.community:
+        app.add_middleware(Limiting, settings=settings)
+    return app
 
 
 def main() -> None:

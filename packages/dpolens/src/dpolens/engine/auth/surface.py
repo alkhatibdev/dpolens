@@ -96,7 +96,7 @@ def ensure_surface(
         actor=actor,
         trusted_surface=True,
     )
-    _write(path, secret)
+    write_shared(path, secret)
     return Provisioned(token=row, path=path, minted=True, prefix=row.prefix)
 
 
@@ -109,8 +109,8 @@ def _read(path: Path) -> str | None:
     return content.strip() or None
 
 
-def _write(path: Path, secret: str) -> None:
-    """Write the credential so no reader ever sees half of one.
+def write_shared(path: Path, secret: str) -> None:
+    """Write a file another process reads, so no reader ever sees half of one.
 
     Written to a neighbouring name and renamed, because a surface may be waiting
     on this file and a partial read is a token that does not work. The mode is

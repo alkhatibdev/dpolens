@@ -22,9 +22,21 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from dpolens_mcp import __version__
-from dpolens_mcp.api import Api, Refused, Unreachable
+from dpolens_mcp.api import Api, Caller, Refused, Unreachable
+from dpolens_mcp.community import Community, wait_for
 from dpolens_mcp.identity import Introspecting, calling
-from dpolens_mcp.instructions import INSTRUCTIONS, POLICY_CHECK, POLICY_TOUR
+from dpolens_mcp.instructions import (
+    COMMUNITY_CHECK,
+    COMMUNITY_LIST,
+    COMMUNITY_TOUR,
+    INSTRUCTIONS,
+    LIST,
+    POLICY_CHECK,
+    POLICY_TOUR,
+    SEARCH,
+    community_instructions,
+    community_search,
+)
 from dpolens_mcp.results import (
     Clause,
     ClauseInContext,
@@ -58,14 +70,31 @@ goes to the operator's log where somebody can act on it.
 
 def build(settings: Settings, api: Api) -> MCPServer:
     """One server over one client of the API, which is the only thing it talks to."""
+    community = settings.community
+    days = settings.query_log_retention_days
+    answering_as: Community | None = None
+
+    def identify() -> Caller:
+        """Who a call is made for: the Community account on a community version."""
+        if answering_as is not None:
+            return answering_as.caller()
+        return calling()
 
     @asynccontextmanager
     async def lifespan(server: MCPServer) -> AsyncIterator[None]:
         # Nothing is served until there is a credential to serve with, so a
         # container reports itself starting rather than answering calls it
         # cannot complete.
+        nonlocal answering_as
         await api.credential.wait(timeout=settings.credential_wait_seconds)
         logger.info("read a surface credential from %s", api.credential.path)
+        if community:
+            answering_as = await wait_for(
+                settings.community_file, timeout=settings.credential_wait_seconds
+            )
+            logger.info(
+                "answering everyone as the Community account in %s", settings.community_file
+            )
         try:
             yield
         finally:
@@ -75,9 +104,12 @@ def build(settings: Settings, api: Api) -> MCPServer:
         name="dpolens",
         title="DPOLens",
         version=__version__,
-        instructions=INSTRUCTIONS,
-        token_verifier=Introspecting(api),
-        auth=AuthSettings(
+        instructions=community_instructions(days) if community else INSTRUCTIONS,
+        # A community version asks nobody for a token, so it has nothing to check.
+        token_verifier=None if community else Introspecting(api),
+        auth=None
+        if community
+        else AuthSettings(
             # Where tokens come from, which for DPOLens is the instance's own
             # command line. No metadata document is served and no authorization
             # server exists, so leaving the resource unset keeps this server from
@@ -91,7 +123,11 @@ def build(settings: Settings, api: Api) -> MCPServer:
         lifespan=lifespan,
     )
 
-    @mcp.tool(title="Search the policies and the law", annotations=READING)
+    @mcp.tool(
+        title="Search the law" if community else "Search the policies and the law",
+        description=community_search(days) if community else SEARCH,
+        annotations=READING,
+    )
     async def search_policies(
         query: Annotated[
             str,
@@ -128,18 +164,7 @@ def build(settings: Settings, api: Api) -> MCPServer:
             ),
         ] = None,
     ) -> Found:
-        """Search this organisation's privacy policies and the privacy law that applies to it.
-
-        Call this before writing or changing code that collects, stores, logs, shares or
-        deletes personal data, and before answering a question about what a policy or the
-        law requires. What comes back is the clause itself, word for word, with the key,
-        document and version to cite it by.
-
-        Searches the laws this organisation has selected and its own policies, and nothing
-        else. Every call is recorded: who asked, which clauses came back, and the question
-        with personal data taken out.
-        """
-        caller = calling()
+        caller = identify()
         with _answering():
             answer = await api.search(
                 caller=caller,
@@ -183,7 +208,7 @@ def build(settings: Settings, api: Api) -> MCPServer:
         of an article rather than the part that matched. The call is recorded, with the
         key that was read rather than a question.
         """
-        caller = calling()
+        caller = identify()
         with _answering():
             answer = await api.clause(caller=caller, key=key, lang=lang, as_of=as_of)
             branch = (
@@ -207,7 +232,11 @@ def build(settings: Settings, api: Api) -> MCPServer:
             ),
         )
 
-    @mcp.tool(title="List what can be cited", annotations=READING)
+    @mcp.tool(
+        title="List what can be cited",
+        description=COMMUNITY_LIST if community else LIST,
+        annotations=READING,
+    )
     async def list_documents(
         limit: Annotated[int, Field(description="How many to return", ge=1, le=100)] = 50,
         offset: Annotated[int, Field(description="Skip this many first", ge=0)] = 0,
@@ -216,12 +245,7 @@ def build(settings: Settings, api: Api) -> MCPServer:
             Field(description="List the documents in force on this date"),
         ] = None,
     ) -> Documents:
-        """List the documents this instance can cite: the organisation's laws and its policies.
-
-        Worth calling once before relying on a search, because it says which laws apply
-        here and which version of each is in force. The call is recorded.
-        """
-        caller = calling()
+        caller = identify()
         with _answering():
             answer = await api.documents(caller=caller, limit=limit, offset=offset, as_of=as_of)
 
@@ -243,7 +267,7 @@ def build(settings: Settings, api: Api) -> MCPServer:
         The outline is where to find a clause key when you know roughly where to look.
         Read the words with get_clause. The call is recorded.
         """
-        caller = calling()
+        caller = identify()
         with _answering():
             answer = await api.document(caller=caller, slug=slug, as_of=as_of)
 
@@ -261,21 +285,26 @@ def build(settings: Settings, api: Api) -> MCPServer:
             ],
         )
 
-    @mcp.prompt(title="Check this change against the policies")
+    @mcp.prompt(
+        title="Check this change against the law"
+        if community
+        else "Check this change against the policies"
+    )
     def policy_check(
         focus: Annotated[
             str, Field(description="A file or area to look at, if you want to narrow it")
         ] = "",
     ) -> str:
         """Review the change you are working on against the policies and the law."""
+        check = COMMUNITY_CHECK if community else POLICY_CHECK
         if focus.strip():
-            return f"{POLICY_CHECK}\n\nStart with: {focus.strip()}"
-        return POLICY_CHECK
+            return f"{check}\n\nStart with: {focus.strip()}"
+        return check
 
     @mcp.prompt(title="Show me what this instance can do")
     def policy_tour() -> str:
         """Demonstrate this DPOLens instance with a few real searches."""
-        return POLICY_TOUR
+        return COMMUNITY_TOUR if community else POLICY_TOUR
 
     @mcp.custom_route("/live", methods=["GET"])  # type: ignore[untyped-decorator]
     async def live(request: Request) -> Response:

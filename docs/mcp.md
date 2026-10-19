@@ -112,9 +112,10 @@ uv run dpolens-mcp
 | `DPOLENS_MCP_REQUEST_TIMEOUT_SECONDS` | `30` | How long to wait for the API |
 | `DPOLENS_MCP_CREDENTIAL_WAIT_SECONDS` | `120` | How long to wait at startup for the credential file |
 | `DPOLENS_MCP_LOG_LEVEL` | `INFO` | How much the process says |
+| `DPOLENS_MCP_PATH` | `/mcp` | Where the MCP endpoint answers. A server with a hostname of its own can answer at `/` |
 
 `GET /live` answers 200 while the process runs and needs no credential. The MCP endpoint itself
-is `/mcp`.
+is `/mcp` unless `DPOLENS_MCP_PATH` says otherwise.
 
 The server answers to `localhost` and `127.0.0.1` and refuses any other name in the `Host`
 header. That is what keeps a page in a browser from reaching an instance on a private network.
@@ -123,6 +124,43 @@ An instance other people connect to has to name itself:
 ```bash
 DPOLENS_MCP_ALLOWED_HOSTS='["dpolens.example.com:8765"]'
 ```
+
+## A community version
+
+A community version answers anyone, with no token, from the law it holds and no
+organisation's policies. The settings below turn an instance into one.
+
+Every question is asked as one service account, Community, which may read documents and
+nothing else, so the questions log records nobody. The API makes the account when it starts
+with `DPOLENS_COMMUNITY=true`, and writes its id and its token's id to a file the MCP server
+reads. The file holds no secret: the server names the account with its own credential, as it
+names a person, and revoking the account's token closes the community version. On such an
+instance, setup publishes no sample policy.
+
+The server holds every caller to three limits, kept in memory and never written down: one for
+each address, a larger one shared by each range that carries many people's calls, and one for
+everybody together. claude.ai, Claude Desktop and ChatGPT call from their platforms' own
+servers, so every person using one of them arrives from the same few addresses: name those
+ranges in `DPOLENS_MCP_SHARED_RANGES`, from what each platform publishes. A refused call gets
+`429` and `Retry-After`. The assistant is told, in the server's instructions and the search
+tool's description, how long questions are kept.
+
+| Variable | Read by | Default | What it does |
+| --- | --- | --- | --- |
+| `DPOLENS_COMMUNITY` | API and setup | `false` | Make the Community account as the API starts, and publish no sample policy |
+| `DPOLENS_COMMUNITY_FILE` | API | `/run/dpolens/community` | Where the API writes the account's ids |
+| `DPOLENS_MCP_COMMUNITY` | MCP server | `false` | Answer anyone without a token, as the Community account |
+| `DPOLENS_MCP_COMMUNITY_FILE` | MCP server | `/run/dpolens/community` | Where the server reads the account's ids |
+| `DPOLENS_MCP_CLIENT_ADDRESS_HEADER` | MCP server | none | A header carrying the caller's address, such as `CF-Connecting-IP`, when a proxy in front always sets it |
+| `DPOLENS_MCP_SHARED_RANGES` | MCP server | `[]` | Address ranges that share one allowance, as a JSON list |
+| `DPOLENS_MCP_PER_ADDRESS_PER_MINUTE` | MCP server | `30` | Calls one address may make a minute |
+| `DPOLENS_MCP_PER_RANGE_PER_MINUTE` | MCP server | `120` | Calls one shared range may make a minute |
+| `DPOLENS_MCP_OVERALL_PER_MINUTE` | MCP server | `300` | Calls everybody together may make a minute |
+| `DPOLENS_QUERY_LOG_RETENTION_DAYS` | API and MCP server | none | How long questions are kept. The server reads the same variable, to tell the assistant |
+
+The API still limits each token, so on a community version `DPOLENS_RATE_LIMIT_PER_MINUTE`
+has to allow at least the overall limit, or the Community account's one token reaches its own
+limit first.
 
 ## When something does not work
 
