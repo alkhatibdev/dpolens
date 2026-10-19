@@ -17,7 +17,7 @@ import uuid
 import zipfile
 from collections.abc import Iterator
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal, cast
 
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -25,7 +25,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from dpolens.api import problems
-from dpolens.api.dependencies import Opened, actor_of, requires, requires_any
+from dpolens.api.dependencies import Configured, Opened, actor_of, requires, requires_any
 from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.models import PersonalAccessToken, User
 from dpolens.engine.auth.tokens import Authenticated
@@ -110,7 +110,12 @@ class Asker(BaseModel):
 class Question(BaseModel):
     id: str
     created_at: datetime
-    expires_at: datetime = Field(description="When the instance deletes it")
+    expires_at: datetime | None = Field(
+        description=(
+            "When the instance deletes it, the day it was asked plus the retention, or null "
+            "when questions are kept"
+        )
+    )
     surface: Surface
     operation: Operation
     question: str = Field(description="As stored: personal data replaced by placeholders")
@@ -123,12 +128,14 @@ class Question(BaseModel):
     asker: Asker | None = Field(description="Only when names were asked for, and allowed")
 
     @classmethod
-    def of(cls, logged: reading.LoggedQuestion) -> Question:
+    def of(cls, logged: reading.LoggedQuestion, *, retention_days: int | None) -> Question:
         asker = logged.asker
         return cls(
             id=str(logged.id),
             created_at=logged.created_at,
-            expires_at=logged.expires_at,
+            expires_at=(
+                logged.created_at + timedelta(days=retention_days) if retention_days else None
+            ),
             surface=cast(Surface, logged.surface),
             operation=cast(Operation, logged.operation),
             question=logged.query,
@@ -263,6 +270,7 @@ def list_questions(
     request: Request,
     who: QuestionReader,
     opened: Opened,
+    settings: Configured,
     given: Parameters,
     before: Annotated[str | None, Query(max_length=200)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 25,
@@ -282,7 +290,10 @@ def list_questions(
                 entry_ids=[question.id for question in page.questions],
             )
     return Questions(
-        questions=[Question.of(question) for question in page.questions],
+        questions=[
+            Question.of(question, retention_days=settings.query_log_retention_days)
+            for question in page.questions
+        ],
         total=page.total,
         next=_cursor(page.next_cursor),
         identities=identities,

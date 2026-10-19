@@ -99,7 +99,11 @@ def daily_purge(timestamp: int) -> dict[str, int]:
     with session_from(current.engine) as session:
         sessions = purge_ended(session, lifetimes=lifetimes_of(current.settings))
         links = purge_expired_links(session)
-        questions = purge_expired(session, actor=Actor(via="worker"))
+        questions = purge_expired(
+            session,
+            retention_days=current.settings.query_log_retention_days,
+            actor=Actor(via="worker"),
+        )
         referenced = set(
             session.scalars(
                 select(DocumentVersion.source_key).where(DocumentVersion.source_key.is_not(None))

@@ -64,7 +64,6 @@ class LoggedResult:
 class LoggedQuestion:
     id: uuid.UUID
     created_at: datetime
-    expires_at: datetime
     surface: str
     operation: str
     query: str
@@ -289,7 +288,6 @@ def _assemble(
         LoggedQuestion(
             id=entry.id,
             created_at=entry.created_at,
-            expires_at=entry.expires_at,
             surface=entry.surface,
             operation=entry.operation,
             query=entry.query_redacted,

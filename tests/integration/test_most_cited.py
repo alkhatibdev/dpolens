@@ -92,7 +92,6 @@ def cited(database_of_its_own: Callable[[str], tuple[str, str]]) -> Iterator[Eng
                 surface=surface,
                 operation=operation,
                 status="ok",
-                retention_days=365,
                 query="how long can we keep it" if searched else "",
                 target=None if searched else key,
                 results=[first(key)],

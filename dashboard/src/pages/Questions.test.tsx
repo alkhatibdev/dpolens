@@ -43,6 +43,21 @@ describe("the questions log", () => {
     await userEvent.click(within(row).getByRole("button", { name: "Show what it returned" }));
     expect(screen.getByText("What it returned")).toBeInTheDocument();
     expect(screen.getByText("1 × email")).toBeInTheDocument();
+    // Questions are kept unless the instance is set to delete them.
+    expect(screen.getByText("Not scheduled")).toBeInTheDocument();
+  });
+
+  it("says when a question goes, where a retention is set", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: dpo },
+      "GET /v1/queries": page([{ ...webhook, expires_at: "2026-11-18T09:00:00Z" }]),
+      "GET /v1/documents": { body: { documents: [], total: 0, limit: 100, offset: 0 } },
+    });
+    renderAt("/logs");
+
+    const row = (await screen.findByText(/can I log/)).closest("tr")!;
+    await userEvent.click(within(row).getByRole("button", { name: "Show what it returned" }));
+    expect(screen.getByText("18 November 2026")).toBeInTheDocument();
   });
 
   it("offers no names to the seeded admin, who starts without them", async () => {

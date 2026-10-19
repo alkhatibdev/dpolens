@@ -27,7 +27,7 @@ range stops the instance at startup, with a message naming the setting.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `DPOLENS_QUERY_LOG_RETENTION_DAYS` | `365` | How long a question is kept before the instance deletes it. A question's deletion date is fixed when it is stored, so a new value applies to questions asked from then on |
+| `DPOLENS_QUERY_LOG_RETENTION_DAYS` | none | How many days a question is kept before the instance deletes it, counted from the day it was asked. Left unset, questions are kept: they are the organisation's record of what its people needed to know. A new value applies to every question kept, so lowering it deletes the older ones at the next daily run |
 | `DPOLENS_REDACTION_PATTERNS` | none | More to take out of a question before it is stored, as names and regular expressions. See below |
 | `DPOLENS_SESSION_IDLE_MINUTES` | `30` | How long a dashboard session may go unused before it ends |
 | `DPOLENS_SESSION_LIFETIME_HOURS` | `8` | How long a dashboard session lasts at most, however much it is used. At most 168 |
@@ -64,7 +64,7 @@ new version's clauses, so that searching by meaning finds them; searching by wor
 from the start. A policy published while the worker was stopped is embedded when it starts.
 
 When it starts, and then every day at 03:17 UTC, it deletes questions past their retention,
-sessions that have ended, sign-in links that were used or ran out, and original files no
+when one is set, sessions that have ended, sign-in links that were used or ran out, and original files no
 version points at. An instance that only runs during the day, such as one on a laptop, still
 deletes them each time it starts.
 

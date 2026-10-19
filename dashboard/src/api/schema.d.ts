@@ -2280,10 +2280,9 @@ export interface components {
       created_at: string;
       /**
        * Expires At
-       * Format: date-time
-       * @description When the instance deletes it
+       * @description When the instance deletes it, the day it was asked plus the retention, or null when questions are kept
        */
-      expires_at: string;
+      expires_at: string | null;
       /**
        * Surface
        * @enum {string}
@@ -2345,9 +2344,9 @@ export interface components {
     QuestionsLogSettings: {
       /**
        * Retention Days
-       * @description How long a question is kept before it is deleted
+       * @description How many days a question is kept before it is deleted, counted from the day it was asked, or null when questions are kept
        */
-      retention_days: number;
+      retention_days: number | null;
       /**
        * Redacted
        * @description What every instance takes out of a question before storing it

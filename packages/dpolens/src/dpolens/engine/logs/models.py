@@ -68,15 +68,14 @@ class QueryLogEntry(Base):
     """One question asked of the corpus, redacted and with an expiry.
 
     The promise this table makes to a developer is that what they typed is stored
-    redacted and deleted on a schedule. That is why the raw text has no column:
-    there is nowhere for it to be kept by accident.
+    redacted, and deleted on the operator's schedule when there is one. That is why the
+    raw text has no column: there is nowhere for it to be kept by accident.
     """
 
     __tablename__ = "query_log_entries"
 
     id: Mapped[uuid.UUID] = uuid_pk()
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     actor_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     actor_pat_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("personal_access_tokens.id"), nullable=True

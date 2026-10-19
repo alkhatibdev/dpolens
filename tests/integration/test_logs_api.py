@@ -130,7 +130,6 @@ def own(database_of_its_own: Callable[[str], tuple[str, str]]) -> Iterator[tuple
                     surface=surface,
                     operation=operation,
                     status=status,
-                    retention_days=365,
                     query=query,
                     target=target,
                     results=results,
@@ -152,7 +151,6 @@ def own(database_of_its_own: Callable[[str], tuple[str, str]]) -> Iterator[tuple
             surface="mcp",
             operation="search",
             status="ok",
-            retention_days=365,
             query="a question from before the week",
             results=[hit("testlaw:art-6:para-1")],
             scope="selected",
@@ -231,6 +229,26 @@ class TestTheQuestionsLog:
         assert clause["document_title"]
         assert clause["version_label"] == "2026.1"
         assert len(clause["trail"]) == 2
+
+    def test_a_question_says_when_it_goes_only_when_a_retention_is_set(
+        self, app_client: TestClient, own: tuple[str, Engine]
+    ) -> None:
+        kept = (
+            signed_in(app_client, DPO)
+            .get("/v1/queries", params={"q": "webhook"}, headers=SAME_ORIGIN)
+            .json()["questions"][0]
+        )
+        settings = Settings.model_validate({"database_url": own[0], "query_log_retention_days": 30})
+        with TestClient(create_app(settings), base_url="https://testserver") as client:
+            going = (
+                signed_in(client, DPO)
+                .get("/v1/queries", params={"q": "webhook"}, headers=SAME_ORIGIN)
+                .json()["questions"][0]
+            )
+
+        assert kept["expires_at"] is None
+        asked = datetime.fromisoformat(going["created_at"])
+        assert datetime.fromisoformat(going["expires_at"]) == asked + timedelta(days=30)
 
     def test_someone_who_may_read_only_their_own_gets_only_their_own(
         self, app_client: TestClient

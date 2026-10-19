@@ -85,7 +85,6 @@ def _write(
             surface=surface,
             operation=operation,
             status=asked.status,
-            retention_days=settings.query_log_retention_days,
             query=query,
             target=target,
             results=asked.results,
