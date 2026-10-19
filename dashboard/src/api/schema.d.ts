@@ -562,7 +562,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** How often one clause was cited, day by day */
+    /** How often one clause was cited, day by day, counted as Most cited counts */
     get: operations["clause_activity_v1_clauses__key__activity_get"];
     put?: never;
     post?: never;
@@ -1903,7 +1903,7 @@ export interface components {
       by_day: components["schemas"]["DayCount"][];
       /**
        * Most Cited
-       * @description First result of a search, or read by key
+       * @description Clauses of the selected laws and the policies, each counted once a day for each person who cited it: a search's first result, or a read by key from an assistant or the API
        */
       most_cited: components["schemas"]["Cited"][];
       /**

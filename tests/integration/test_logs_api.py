@@ -445,8 +445,9 @@ class TestTheOverview:
         assert (
             sum(day["assistants"] + day["dashboard"] + day["other"] for day in body["by_day"]) == 3
         )
+        # Omar's first search cited it; Sara reading it in the dashboard did not.
         top = body["most_cited"][0]
-        assert (top["clause"]["key"], top["count"]) == ("testlaw:art-5:para-1", 2)
+        assert (top["clause"]["key"], top["count"]) == ("testlaw:art-5:para-1", 1)
         assert body["sources"] == [
             {"pack_slug": "testlaw", "title": body["sources"][0]["title"], "count": 2}
         ]
@@ -472,9 +473,9 @@ class TestTheOverview:
             .json()
         )
 
-        assert body["total"] == 2
+        assert body["total"] == 1
         assert len(body["by_day"]) == 7
-        assert body["by_day"][-1]["count"] == 2
+        assert body["by_day"][-1]["count"] == 1
 
 
 def test_the_seeded_people_exist(owner: Engine) -> None:

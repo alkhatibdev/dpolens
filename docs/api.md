@@ -446,8 +446,10 @@ and records the export in the log before the file is handed over.
 time zone `tz`, for `queries.read_all`: how many, how many the same number of days before,
 how many were answered and how many found nothing, by day and by surface, the clauses most
 often cited, where answers came from, the latest questions that found nothing, and the laws
-searches cover. A clause counts as cited when a search returned it first or someone read it
-by its key. No name appears in it.
+searches cover. A clause counts once a day for each person, or service account, that cited
+it: a search that returned it first, from anywhere, or a read by its key from an assistant or
+the API. Reading a clause in the dashboard never counts, and the clauses listed are the
+selected laws' and the policies'. No name appears in it.
 
 `GET /v1/clauses/{key}/activity` counts one clause the same way, day by day.
 

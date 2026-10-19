@@ -506,7 +506,7 @@ export const en = {
     today: "Today",
     mostCited: "Most cited",
     mostCitedNote:
-      "A clause counts when a search returns it first, or someone opens it by its key.",
+      "A clause counts once per person per day, when a search returns it first or an assistant opens it.",
     sources: "Where answers came from",
     sourcesLabel: "{{parts}}, and {{nothing}}% found nothing in force",
     foundAClause: "found a clause in force",
