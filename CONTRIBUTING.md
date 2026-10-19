@@ -23,7 +23,8 @@ discussion first: the project has a written architecture and a change that cuts 
 it will be hard to merge however good the code is.
 
 **Bug reports.** Open an issue with what you did, what happened and what you expected.
-Include the DPOLens version and the pack version if a citation is involved.
+Include the DPOLens version and the pack version if a citation is involved. A security problem
+is the exception: report it privately, as [SECURITY.md](SECURITY.md) says.
 
 ## Before you start
 

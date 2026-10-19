@@ -403,6 +403,9 @@ Law packs are the contribution that matters most, because nobody can structure a
 privacy law of every jurisdiction alone. See [CONTRIBUTING.md](CONTRIBUTING.md) for scope,
 the licensing gate, trust tiers and what a pack pull request needs.
 
+A security problem is reported privately, never in an issue: [SECURITY.md](SECURITY.md) says
+how.
+
 ## Licence
 
 Code is Apache-2.0, contributions certified by DCO sign-off, no CLA. `packs/` carries its
