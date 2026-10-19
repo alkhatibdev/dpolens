@@ -330,7 +330,8 @@ _Avoid_: Dump, backup, report
 
 **Query log**:
 The record of searches, clause lookups and (from v0.2) answers, with the query text
-PII-redacted and a retention period after which entries are deleted.
+PII-redacted. Entries are kept, unless the operator sets a retention, a number of days after
+which each is deleted.
 _Avoid_: Q&A log, audit log, usage log, history
 
 **Cited** (as the dashboard counts it):

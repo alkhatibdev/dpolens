@@ -78,7 +78,8 @@ First version of the API. Everything below is new rather than changed.
 - `GET /v1/instance` gives the version and the MCP server's address, `DPOLENS_PUBLIC_MCP_URL`
 - The signed-in account carries its `id`
 - `GET /v1/queries` and `GET /v1/queries/export` read the questions log, a page at a time or
-  as CSV, own questions only for `queries.read_own`. `identities=true` adds who asked, needs
+  as CSV, own questions only for `queries.read_own`. A question's `expires_at` is the day it
+  was asked plus the retention, or null while questions are kept, which is the default. `identities=true` adds who asked, needs
   `queries.read_identities`, and is recorded as `query_log.identities_viewed`
 - `GET /v1/governance/entries`, `GET /v1/governance/actors`, `GET /v1/governance/verification`
   and `POST /v1/governance/exports` read, check and export the governance log, for
@@ -93,7 +94,8 @@ First version of the API. Everything below is new rather than changed.
   written to the governance log, for `settings.manage`. A law that is not loaded gets `422`
   and `/problems/unknown-law`
 - `GET /v1/settings` says how the instance is set up, for `settings.manage`. No route changes
-  a setting: each is fixed when the instance starts
+  a setting: each is fixed when the instance starts. `questions_log.retention_days` is null
+  while questions are kept
 - `POST /v1/policies` uploads an organisation's policy, a Word or Markdown file sent as the
   request body (`application/octet-stream`) with its name in `filename`. It is read at once and
   comes back as a draft: its clauses, its flags, how much of the file reached a clause, and what

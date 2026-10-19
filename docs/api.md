@@ -415,8 +415,8 @@ returned anything from it) and `q`, words in the question. `limit` is at most 10
 in an answer is what to send as `before` for the page after.
 
 Each question comes as it was stored, with personal data replaced by placeholders such as
-`[redacted:email]`, how many items were taken out, when the instance deletes it, and every
-clause it returned, named as a citation names it.
+`[redacted:email]`, how many items were taken out, when the instance deletes it (null while
+questions are kept), and every clause it returned, named as a citation names it.
 
 `identities=true` adds who asked, and `asked_by` then narrows by their name or address. It
 needs `queries.read_identities`, and every such answer is written to the governance log
@@ -505,8 +505,8 @@ model, refuses to serve at all.
 
 Every call writes one row to the query log: the operation, the outcome, the
 developer and the token they used, what was returned, and the question with
-personal data taken out. Rows expire on the instance's retention, which defaults
-to 365 days, and the instance deletes them itself.
+personal data taken out. Rows are kept, unless the instance is set to delete them a number
+of days after they were asked, which it then does itself.
 
 Telemetry, the JSON the process writes to stdout, never carries the text of a
 question, a clause or a document. It carries identifiers, counts and durations,

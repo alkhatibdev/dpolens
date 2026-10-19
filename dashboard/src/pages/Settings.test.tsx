@@ -24,7 +24,8 @@ describe("settings", () => {
     });
     renderAt("/settings");
 
-    expect(await screen.findByText("365 days")).toBeInTheDocument();
+    // Questions are kept unless a retention is set.
+    expect(await screen.findByText("No limit")).toBeInTheDocument();
     expect(screen.getByText("Emirates ID numbers")).toBeInTheDocument();
     expect(screen.getByText("30 minutes without activity")).toBeInTheDocument();
     expect(screen.getByText("5 in 15 minutes")).toBeInTheDocument();
@@ -41,6 +42,19 @@ describe("settings", () => {
     );
   });
 
+  it("says how long a question is kept when a retention is set", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: admin },
+      "GET /v1/settings": {
+        body: { ...settings, questions_log: { ...settings.questions_log, retention_days: 30 } },
+      },
+      "GET /v1/governance/verification": { body: intact },
+    });
+    renderAt("/settings");
+
+    expect(await screen.findByText("30 days")).toBeInTheDocument();
+  });
+
   it("leaves out the governance log for somebody who may not read it", async () => {
     const { calls } = serve({
       "GET /v1/sessions/current": {
@@ -50,7 +64,7 @@ describe("settings", () => {
     });
     renderAt("/settings");
 
-    await screen.findByText("365 days");
+    await screen.findByText("No limit");
     expect(screen.queryByText("Governance log")).not.toBeInTheDocument();
     await waitFor(() =>
       expect(calls.some((call) => call.url.includes("/v1/governance/"))).toBe(false),

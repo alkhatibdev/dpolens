@@ -41,7 +41,12 @@ def describe(who: Caller, settings: Configured) -> Instance:
 
 
 class QuestionsLogSettings(BaseModel):
-    retention_days: int = Field(description="How long a question is kept before it is deleted")
+    retention_days: int | None = Field(
+        description=(
+            "How many days a question is kept before it is deleted, counted from the day it "
+            "was asked, or null when questions are kept"
+        )
+    )
     redacted: list[str] = Field(
         description="What every instance takes out of a question before storing it"
     )

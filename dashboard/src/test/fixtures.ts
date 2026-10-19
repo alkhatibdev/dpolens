@@ -328,7 +328,7 @@ export const erasure = logged("gdpr:art-17:para-1", [
 export function question(fields: Partial<Question> & Pick<Question, "id" | "question">): Question {
   return {
     created_at: new Date().toISOString(),
-    expires_at: "2027-10-15T08:00:00Z",
+    expires_at: null,
     surface: "mcp",
     operation: "search",
     target: null,
@@ -453,7 +453,7 @@ export const lawsChosen: Laws = {
 
 export const settings: InstanceSettings = {
   questions_log: {
-    retention_days: 365,
+    retention_days: null,
     redacted: ["card", "iban", "emirates_id", "email", "phone"],
     added_patterns: [],
   },

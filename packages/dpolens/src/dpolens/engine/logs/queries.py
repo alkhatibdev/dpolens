@@ -1,12 +1,14 @@
-"""Writing the query log, and deleting from it when its time is up.
+"""Writing the query log, and deleting from it when the operator has set a retention.
 
 Every call is recorded, including the ones that found nothing. A question the
 corpus failed to answer is the most useful row in this table: it is a developer's
 real phrasing, and the eval sets are supposed to grow from exactly that.
 
-The instance deletes expired rows itself rather than leaving it to somebody's
-cron, because a retention promise that depends on the operator having read the
-documentation is a promise most instances quietly break.
+Questions are kept unless a retention is set: they are the organisation's record of
+what its people needed to know. Where one is set, the instance deletes what is past it
+itself rather than leaving it to somebody's cron, because a retention promise that
+depends on the operator having read the documentation is a promise most instances
+quietly break.
 """
 
 from __future__ import annotations
@@ -65,7 +67,6 @@ def record_query(
     surface: str,
     operation: str,
     status: str,
-    retention_days: int,
     query: str = "",
     target: str | None = None,
     results: Sequence[Returned] = (),
@@ -79,10 +80,8 @@ def record_query(
     inside the selected laws.
     """
     hidden = redact(query, redaction_patterns) if query else redact("")
-    now = datetime.now(UTC)
 
     entry = QueryLogEntry(
-        expires_at=now + timedelta(days=retention_days),
         actor_user_id=user_id,
         actor_pat_id=pat_id,
         surface=surface,
@@ -134,20 +133,27 @@ def _version_ids(
     }
 
 
-def purge_expired(session: Session, *, actor: Actor) -> int:
-    """Delete the rows whose retention has run out, and record that it happened.
+def purge_expired(
+    session: Session, *, retention_days: int | None, actor: Actor, now: datetime | None = None
+) -> int:
+    """Delete the questions asked more than `retention_days` ago, and record that it happened.
 
-    Nothing is recorded when nothing expired: a daily entry saying no rows were
-    deleted would bury the ones that matter.
+    Without a retention nothing is deleted. A retention counts from the day each
+    question was asked, so a new one applies to every question kept, not only to the
+    ones asked after it. Nothing is recorded when nothing was deleted: a daily entry
+    saying no rows went would bury the ones that matter.
     """
+    if retention_days is None:
+        return 0
     session.execute(select(func.pg_advisory_xact_lock(PURGE_LOCK)))
 
-    now = datetime.now(UTC)
+    now = now or datetime.now(UTC)
+    asked_before = now - timedelta(days=retention_days)
     # The ORM's delete() returns a CursorResult here; the cast is for the type
     # checker, which only knows the general Result.
     outcome = cast(
         "CursorResult[Any]",
-        session.execute(delete(QueryLogEntry).where(QueryLogEntry.expires_at <= now)),
+        session.execute(delete(QueryLogEntry).where(QueryLogEntry.created_at < asked_before)),
     )
     deleted = outcome.rowcount
     if not deleted:

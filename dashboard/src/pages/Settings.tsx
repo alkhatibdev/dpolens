@@ -95,7 +95,9 @@ export function SettingsPage() {
         <div className="flex flex-wrap gap-4">
           <Group title={t("settings.questionsLog")}>
             <Row label={t("settings.keptFor")}>
-              {t("settings.days", { count: settings.data.questions_log.retention_days })}
+              {settings.data.questions_log.retention_days === null
+                ? t("settings.noLimit")
+                : t("settings.days", { count: settings.data.questions_log.retention_days })}
             </Row>
             <Row label={t("settings.takenOut")}>
               <span className="flex flex-wrap justify-end gap-1.5">

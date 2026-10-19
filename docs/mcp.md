@@ -87,7 +87,8 @@ need a restart.
 
 Every call writes one row to the query log, through the API: the operation, the outcome, the
 developer and the token they used, which clauses came back, and the question with personal data
-taken out. Rows expire on the instance's retention, which defaults to 365 days.
+taken out. Rows are kept, unless the instance is set to delete them a number of days after
+they were asked.
 
 Each tool's description says so too, where a developer reads it before calling anything.
 

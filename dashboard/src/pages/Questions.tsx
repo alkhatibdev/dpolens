@@ -136,7 +136,9 @@ function Details({ question }: { question: Question }) {
         </div>
         <div>
           <dt className="text-xs text-muted">{t("logs.deletedOn")}</dt>
-          <dd className="text-sm">{formatDate(question.expires_at)}</dd>
+          <dd className="text-sm">
+            {question.expires_at ? formatDate(question.expires_at) : t("logs.notScheduled")}
+          </dd>
         </div>
       </dl>
     </div>

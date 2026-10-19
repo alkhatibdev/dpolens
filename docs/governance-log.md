@@ -19,7 +19,7 @@ password for an account that exists, viewing or exporting who asked a question i
 query log, and exporting this log.
 
 The governance log is not the query log, and neither is telemetry. The query log
-holds redacted questions and expires on a retention schedule. Telemetry is the
+holds redacted questions, kept unless the operator sets a retention. Telemetry is the
 application's own output on stdout and never carries the text of a question, a
 clause or a document.
 

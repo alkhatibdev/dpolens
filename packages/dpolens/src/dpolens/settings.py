@@ -64,13 +64,13 @@ class Settings(BaseSettings):
         ),
     )
 
-    query_log_retention_days: int = Field(
-        default=365,
+    query_log_retention_days: int | None = Field(
+        default=None,
         ge=1,
         description=(
-            "How long a question is kept before the instance deletes it. Changing it "
-            "needs a restart, which is the right amount of friction for a promise with "
-            "legal weight"
+            "How many days a question is kept before the instance deletes it, counted from "
+            "the day it was asked. Left unset, questions are kept. Changing it needs a "
+            "restart, which is the right amount of friction for a promise with legal weight"
         ),
     )
 

@@ -187,7 +187,7 @@ class TestSettings:
         assert response.status_code == 200, response.text
         body = response.json()
         assert body["questions_log"] == {
-            "retention_days": 365,
+            "retention_days": None,
             "redacted": ["card", "iban", "emirates_id", "email", "phone"],
             "added_patterns": ["staff_id"],
         }

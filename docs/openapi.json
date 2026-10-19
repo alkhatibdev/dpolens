@@ -10128,10 +10128,17 @@
             "title": "Created At"
           },
           "expires_at": {
-            "type": "string",
-            "format": "date-time",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Expires At",
-            "description": "When the instance deletes it"
+            "description": "When the instance deletes it, the day it was asked plus the retention, or null when questions are kept"
           },
           "surface": {
             "type": "string",
@@ -10290,9 +10297,16 @@
       "QuestionsLogSettings": {
         "properties": {
           "retention_days": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Retention Days",
-            "description": "How long a question is kept before it is deleted"
+            "description": "How many days a question is kept before it is deleted, counted from the day it was asked, or null when questions are kept"
           },
           "redacted": {
             "items": {

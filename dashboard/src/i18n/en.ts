@@ -551,10 +551,10 @@ export const en = {
     export: "Export",
     hiddenTitle: "Names are hidden",
     hiddenBody:
-      "Questions are stored with personal data taken out, and deleted after they reach the end of their retention.",
+      "Questions are stored with personal data taken out, and kept unless this instance is set to delete them after a number of days.",
     yoursTitle: "Only you see your questions here",
     yoursBody:
-      "They are stored with personal data taken out, and deleted after they reach the end of their retention.",
+      "They are stored with personal data taken out, and kept unless this instance is set to delete them after a number of days.",
     showWho: "Show who asked",
     showTitle: "Show who asked?",
     showBody:
@@ -617,6 +617,7 @@ export const en = {
     takenOut: "Taken out before it was stored",
     nothingTakenOut: "Nothing",
     deletedOn: "Deleted on",
+    notScheduled: "Not scheduled",
     removed: "{{what}} removed",
     removedKinds: {
       email: "email",
@@ -1193,6 +1194,7 @@ export const en = {
     howTo: "How to change them",
     questionsLog: "Questions log",
     keptFor: "Kept for",
+    noLimit: "No limit",
     days_one: "{{count}} day",
     days_other: "{{count}} days",
     takenOut: "Taken out before storing",

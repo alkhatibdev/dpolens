@@ -181,15 +181,6 @@ class TestWhatIsRecorded:
         assert entry.actor_user_id
         assert entry.actor_pat_id
 
-    def test_an_expiry_is_set_from_the_retention(
-        self, api: TestClient, reader: str, opened: Session
-    ) -> None:
-        api.post("/v1/search", json={"query": "data"}, headers=auth(reader))
-
-        entry = latest(opened)
-        expected = datetime.now(UTC) + timedelta(days=365)
-        assert abs((entry.expires_at - expected).total_seconds()) < 60
-
 
 class TestRedaction:
     def test_an_address_in_a_question_is_not_stored(
@@ -269,7 +260,22 @@ class TestTelemetryNeverSeesTheQuestion:
 
 
 class TestRetention:
-    def test_an_expired_entry_is_deleted_and_a_fresh_one_is_kept(
+    def test_without_a_retention_nothing_is_deleted_however_old(
+        self, api: TestClient, reader: str, opened: Session
+    ) -> None:
+        api.post("/v1/search", json={"query": "kept for ever"}, headers=auth(reader))
+        old = latest(opened)
+        old_id = old.id
+        old.created_at = datetime.now(UTC) - timedelta(days=3650)
+        opened.commit()
+
+        assert purge_expired(opened, retention_days=None, actor=ACTOR) == 0
+        opened.commit()
+        opened.expunge_all()
+
+        assert opened.get(QueryLogEntry, old_id) is not None
+
+    def test_a_retention_deletes_what_was_asked_before_it_and_keeps_the_rest(
         self, api: TestClient, reader: str, opened: Session
     ) -> None:
         api.post("/v1/search", json={"query": "kept"}, headers=auth(reader))
@@ -278,10 +284,10 @@ class TestRetention:
         api.post("/v1/search", json={"query": "expired"}, headers=auth(reader))
         stale = latest(opened)
         stale_id = stale.id
-        stale.expires_at = datetime.now(UTC) - timedelta(days=1)
+        stale.created_at = datetime.now(UTC) - timedelta(days=31)
         opened.commit()
 
-        deleted = purge_expired(opened, actor=ACTOR)
+        deleted = purge_expired(opened, retention_days=30, actor=ACTOR)
         opened.commit()
         # A bulk delete does not tell the session what it removed, so the cached
         # objects have to be forgotten before asking again.
@@ -296,11 +302,11 @@ class TestRetention:
     ) -> None:
         api.post("/v1/search", json={"query": "to expire"}, headers=auth(reader))
         entry = latest(opened)
-        entry.expires_at = datetime.now(UTC) - timedelta(days=1)
+        entry.created_at = datetime.now(UTC) - timedelta(days=31)
         opened.commit()
         before = len(read_entries(opened))
 
-        purge_expired(opened, actor=ACTOR)
+        purge_expired(opened, retention_days=30, actor=ACTOR)
         opened.commit()
         after_one = read_entries(opened)[before:]
         assert [row.action for row in after_one] == [QUERY_LOG_PURGED]
@@ -309,7 +315,7 @@ class TestRetention:
         # A daily run with nothing to do writes nothing, or the log fills with
         # entries saying nothing happened.
         before = len(read_entries(opened))
-        assert purge_expired(opened, actor=ACTOR) == 0
+        assert purge_expired(opened, retention_days=30, actor=ACTOR) == 0
         opened.commit()
         assert len(read_entries(opened)) == before
 
@@ -323,9 +329,9 @@ class TestRetention:
         ).all()
         assert results
 
-        entry.expires_at = datetime.now(UTC) - timedelta(days=1)
+        entry.created_at = datetime.now(UTC) - timedelta(days=31)
         opened.commit()
-        purge_expired(opened, actor=ACTOR)
+        purge_expired(opened, retention_days=30, actor=ACTOR)
         opened.commit()
         opened.expunge_all()
 
