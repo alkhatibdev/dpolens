@@ -16,6 +16,7 @@ import typer
 from dpolens.cli import ask
 from dpolens.cli.ask import Asking
 from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.community import ensure_community
 from dpolens.engine.auth.permissions import PERMISSIONS
 from dpolens.engine.auth.surface import SURFACE_EMAIL, SURFACE_NAME, ensure_surface
 from dpolens.engine.auth.tokens import list_tokens, mint, revoke, status_of
@@ -25,6 +26,7 @@ from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
 SURFACE_PATH = Path("/run/dpolens/surface-token")
+COMMUNITY_PATH = Path("/run/dpolens/community")
 """Where a container writes the credential its MCP server reads."""
 
 app = typer.Typer(
@@ -158,3 +160,25 @@ def ensure_surface_(
         typer.echo("Any credential the service account held before it no longer works.")
     else:
         typer.echo(f"The surface credential at {done.path} still works: {done.prefix}...")
+
+
+@app.command(name="ensure-community")
+def ensure_community_(
+    out: Annotated[
+        Path, typer.Option(help="Where to write the account's ids, for the MCP server to read")
+    ] = COMMUNITY_PATH,
+) -> None:
+    """Make sure the Community account a community version answers everyone as exists.
+
+    Run on every start of a community version. It writes the account's id and its
+    token's id, not a secret: the MCP server names them when it acts for a caller.
+    """
+    settings = load_settings()
+    actor = cli_actor()
+
+    with session_scope(settings) as session:
+        bootstrap(session, actor=actor)
+        done = ensure_community(session, path=out, actor=actor)
+
+    made = "Made" if done.minted else "Kept"
+    typer.echo(f"{made} the Community account's token {done.token_prefix}..., named in {out}")

@@ -475,8 +475,14 @@ def compare(
 
 @app.command()
 def sample() -> None:
-    """Publish the made-up sample policy, unless it was published before."""
+    """Publish the made-up sample policy, unless it was published before.
+
+    A community version has no policies of its own, so it carries no sample either.
+    """
     settings = load_settings()
+    if settings.community:
+        typer.echo("A community version carries no sample policy.")
+        return
     with session_scope(settings) as session:
         published = store.load_sample(session, Directory(settings.originals_dir), actor=cli_actor())
     if published:

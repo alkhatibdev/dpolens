@@ -87,6 +87,14 @@ class Settings(BaseSettings):
         description="How long a dashboard session lasts at most, however much it is used",
     )
 
+    community: bool = Field(
+        default=False,
+        description=(
+            "Run as a community version: no sample policy, and the Community account the "
+            "MCP server answers everyone as, made when the API starts"
+        ),
+    )
+
     public_dashboard_url: str = Field(
         default="http://localhost:8080",
         max_length=500,

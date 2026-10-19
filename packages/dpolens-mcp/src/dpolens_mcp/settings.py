@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import AnyHttpUrl, Field, IPvAnyNetwork
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -68,6 +68,77 @@ class Settings(BaseSettings):
     )
 
     log_level: str = Field(default="INFO", description="Python logging level for the process")
+
+    path: str = Field(
+        default="/mcp",
+        pattern=r"^/",
+        description=(
+            "Where on this server's address the MCP endpoint answers. A server with a "
+            "hostname of its own, as the community version has, can answer at /"
+        ),
+    )
+
+    community: bool = Field(
+        default=False,
+        description=(
+            "Answer anyone without a token, as the Community account the instance names, "
+            "which is what a community version does. Every caller then counts against the "
+            "limits below, and is told how questions are kept"
+        ),
+    )
+
+    community_file: Path = Field(
+        default=Path("/run/dpolens/community"),
+        description=(
+            "The file naming the Community account and its token, written by the "
+            "instance. It holds their ids, not a secret"
+        ),
+    )
+
+    client_address_header: str | None = Field(
+        default=None,
+        description=(
+            "A header carrying the caller's address, such as CF-Connecting-IP, set by the "
+            "proxy in front of this server. Name it only when such a proxy always sets it; "
+            "otherwise the connection's own address is used"
+        ),
+    )
+
+    shared_ranges: list[IPvAnyNetwork] = Field(
+        default_factory=list,
+        description=(
+            "Address ranges that carry many people's calls, such as an assistant "
+            "platform's servers. Each range shares one larger allowance, rather than every "
+            "person behind it sharing a single address's"
+        ),
+    )
+
+    per_address_per_minute: int = Field(
+        default=30, ge=1, description="On a community version, calls one address may make a minute"
+    )
+
+    per_range_per_minute: int = Field(
+        default=120,
+        ge=1,
+        description="On a community version, calls one shared range may make a minute",
+    )
+
+    overall_per_minute: int = Field(
+        default=300,
+        ge=1,
+        description="On a community version, calls everybody together may make a minute",
+    )
+
+    query_log_retention_days: int | None = Field(
+        default=None,
+        ge=1,
+        validation_alias="DPOLENS_QUERY_LOG_RETENTION_DAYS",
+        description=(
+            "The instance's own retention, read from the variable the API reads, so a "
+            "community version says how long it keeps questions without a second number "
+            "to keep in step"
+        ),
+    )
 
     @property
     def hosts(self) -> list[str]:
