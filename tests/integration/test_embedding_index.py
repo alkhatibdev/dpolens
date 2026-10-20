@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import numpy as np
 import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from tokenizers import Tokenizer
 
-from dpolens.engine.embedding import Embedder, get_model
+from dpolens.engine.embedding import Embedder, encode, get_model
 from dpolens.engine.embedding.index import build_index
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.search.vector import NoActiveModel, vector_search
@@ -107,6 +110,29 @@ def test_a_text_is_placed_under_the_headings_of_its_own_language(bilingual: Sess
     assert "حالات المعالجة" not in stored["en"]
     assert "حالات المعالجة" in stored["ar"]
     assert "Cases of Processing" not in stored["ar"]
+
+
+def test_threads_share_one_tokenizer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A copy of this vocabulary holds over 250 MB, and the API answers on many
+    threads at once, so a copy for each thread grew until the process was killed."""
+    built: list[str] = []
+
+    class Counted:
+        @staticmethod
+        def from_file(path: str) -> Tokenizer:
+            built.append(path)
+            return Tokenizer.from_file(path)
+
+    monkeypatch.setattr(encode, "Tokenizer", Counted)
+    questions = ["how long can we keep data", "متى يجب الإبلاغ عن خرق البيانات", "consent"]
+
+    with Embedder(get_model(MODEL)) as fresh, ThreadPoolExecutor(max_workers=8) as pool:
+        together = list(pool.map(fresh.encode_query, questions * 8))
+        alone = [fresh.encode_query(question) for question in questions]
+
+    assert len(built) == 1
+    for index, vector in enumerate(together):
+        assert np.allclose(vector, alone[index % len(questions)], atol=1e-6)
 
 
 def test_the_passage_prefix_is_applied_at_encoding(embedder: Embedder) -> None:

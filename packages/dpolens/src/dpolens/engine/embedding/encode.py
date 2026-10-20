@@ -72,12 +72,18 @@ class Embedder:
         self.model = model
         cache = str(cache_dir) if cache_dir else None
 
-        # The session is shared across threads, which ONNX Runtime supports. The
-        # tokenizer is not: the Rust object raises "Already borrowed" when two
-        # threads reach it at once, on every build except the free-threaded one.
-        # It is small, so each thread gets its own from the same file.
-        self._tokenizer_path = hf_hub_download(model.repo, "tokenizer.json", cache_dir=cache)
-        self._local = threading.local()
+        # The session is shared across threads, which ONNX Runtime supports. So is
+        # the tokenizer, one thread at a time: the Rust object raises "Already
+        # borrowed" when two threads reach it at once, on every build except the
+        # free-threaded one, and a copy of a multilingual vocabulary holds over
+        # 250 MB, too much to give each thread its own. Tokenizing is the cheap
+        # step, so waiting a turn costs little.
+        self._tokenizer = Tokenizer.from_file(
+            hf_hub_download(model.repo, "tokenizer.json", cache_dir=cache)
+        )
+        self._tokenizer.enable_truncation(max_length=MAX_SEQUENCE)
+        self._tokenizer.enable_padding()
+        self._tokenizing = threading.Lock()
 
         weights = hf_hub_download(model.repo, model.onnx_file, cache_dir=cache)
         options = ort.SessionOptions()
@@ -88,17 +94,6 @@ class Embedder:
             options.intra_op_num_threads = intra_op_num_threads
         self.session = ort.InferenceSession(weights, options, providers=["CPUExecutionProvider"])
         self._inputs = {value.name for value in self.session.get_inputs()}
-
-    @property
-    def tokenizer(self) -> Tokenizer:
-        """This thread's tokenizer, built on first use and kept for the thread."""
-        existing = getattr(self._local, "tokenizer", None)
-        if existing is None:
-            existing = Tokenizer.from_file(self._tokenizer_path)
-            existing.enable_truncation(max_length=MAX_SEQUENCE)
-            existing.enable_padding()
-            self._local.tokenizer = existing
-        return existing
 
     def close(self) -> None:
         """Release the runtime session.
@@ -124,7 +119,8 @@ class Embedder:
 
     def count_tokens(self, text: str) -> int:
         """Token count without truncation, for the recipe's cap."""
-        return len(self.tokenizer.encode(text, add_special_tokens=True).ids)
+        with self._tokenizing:
+            return len(self._tokenizer.encode(text, add_special_tokens=True).ids)
 
     def encode_passages(self, texts: list[str]) -> np.ndarray:
         return self._encode([f"{self.model.passage_prefix}{text}" for text in texts])
@@ -134,7 +130,8 @@ class Embedder:
         return vector
 
     def _encode(self, texts: list[str]) -> np.ndarray:
-        encoded = self.tokenizer.encode_batch(texts)
+        with self._tokenizing:
+            encoded = self._tokenizer.encode_batch(texts)
         ids = np.array([item.ids for item in encoded], dtype=np.int64)
         mask = np.array([item.attention_mask for item in encoded], dtype=np.int64)
 
