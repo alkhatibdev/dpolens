@@ -1,4 +1,5 @@
-"""A per-token rate limit, a sign-in throttle, and a limit on the size of a request body.
+"""A per-token rate limit, a sign-in throttle, a limit on the size of a request body, and
+on how many requests run at once.
 
 The purpose is stopping a runaway integration from eating the instance, not
 enforcing a quota anybody has paid for, so an approximate limit inside each
@@ -13,6 +14,7 @@ are tokens that exist.
 
 from __future__ import annotations
 
+import asyncio
 import threading
 from collections import OrderedDict, deque
 from collections.abc import Callable
@@ -189,3 +191,34 @@ class BodyLimit:
         except _TooLarge:
             if not started:
                 await refusal()(scope, receive, send)
+
+
+CONNECTIONS_PER_REQUEST = 2
+"""The most database connections one request holds at once: its own, and the one that
+writes a record which has to outlive the request failing, such as its question in the
+query log."""
+
+HEALTH = frozenset({"/live", "/ready"})
+
+
+class InFlight:
+    """Runs at most `limit` requests at once, and keeps the rest waiting their turn.
+
+    A request holds its connection while it waits for a second one, so once every
+    connection is held by a request doing the same, none of them can go on until the
+    pool's timeout fails them all. Running no more requests than the pool can give two
+    connections each makes that impossible. A request waiting here holds neither a
+    connection nor a thread. Health checks go straight through, so a busy instance
+    still answers that it is alive and ready.
+    """
+
+    def __init__(self, app: ASGIApp, limit: int) -> None:
+        self.app = app
+        self.turns = asyncio.Semaphore(limit)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["path"] in HEALTH:
+            await self.app(scope, receive, send)
+            return
+        async with self.turns:
+            await self.app(scope, receive, send)

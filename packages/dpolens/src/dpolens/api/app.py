@@ -33,13 +33,21 @@ from dpolens.api import (
     tokens,
 )
 from dpolens.api.dependencies import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER
-from dpolens.api.limits import BodyLimit, RateLimiter, SignInThrottle
+from dpolens.api.limits import (
+    CONNECTIONS_PER_REQUEST,
+    BodyLimit,
+    InFlight,
+    RateLimiter,
+    SignInThrottle,
+)
 from dpolens.engine.auth.catalog import bootstrap
 from dpolens.engine.embedding import DEFAULT_MODEL, get_model
 from dpolens.engine.embedding.encode import Embedder, ensure_cached
 from dpolens.engine.logs.governance import Actor
 from dpolens.engine.policies.store import MAX_UPLOAD_BYTES
 from dpolens.engine.session import (
+    POOL_OVERFLOW,
+    POOL_SIZE,
     check_governance_privileges,
     create_db_engine,
     session_from,
@@ -114,6 +122,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_exception_handler(problems.Problem, _problem_handler)
     app.add_exception_handler(RequestValidationError, _validation_handler)
+    # Innermost, so a body that is too large is refused without waiting for a turn.
+    app.add_middleware(InFlight, limit=(POOL_SIZE + POOL_OVERFLOW) // CONNECTIONS_PER_REQUEST)
     # The largest body any route takes is a policy file. Added before the request id, so that a
     # refusal carries one too.
     app.add_middleware(BodyLimit, limit=MAX_UPLOAD_BYTES)
