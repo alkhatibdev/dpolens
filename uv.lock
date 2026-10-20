@@ -554,7 +554,7 @@ wheels = [
 
 [[package]]
 name = "dpolens"
-version = "0.1.0rc2"
+version = "0.1.0rc3"
 source = { editable = "packages/dpolens" }
 dependencies = [
     { name = "alembic" },
@@ -601,7 +601,7 @@ requires-dist = [
 
 [[package]]
 name = "dpolens-mcp"
-version = "0.1.0rc2"
+version = "0.1.0rc3"
 source = { editable = "packages/dpolens-mcp" }
 dependencies = [
     { name = "anyio" },

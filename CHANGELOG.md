@@ -5,6 +5,32 @@ whether to upgrade. A release's notes start from the titles of the pull requests
 are edited by hand. Changes to the HTTP API are listed one by one in
 [docs/api-changelog.md](docs/api-changelog.md), and law packs have versions of their own.
 
+## 0.1.0-rc.3
+
+The third release candidate for 0.1.0, with three fixes a load test found in 0.1.0-rc.2. The
+interfaces can still change before 1.0, and only the newest release gets fixes.
+
+Before upgrading from 0.1.0-rc.2:
+
+- **A retention now deletes.** Under Compose, 0.1.0-rc.2's worker was never given
+  `DPOLENS_QUERY_LOG_RETENTION_DAYS`, so an instance that set it kept every question. The first
+  daily purge after the upgrade deletes every question older than the retention.
+
+From 0.1.0-rc.1, 0.1.0-rc.2's steps below apply as well.
+
+What changed:
+
+- **The worker is given the questions retention**, so the daily purge deletes by it.
+  ([#50](https://github.com/alkhatibdev/dpolens/pull/50))
+- **Threads share one tokenizer.** Each thread that embedded text kept its own copy, about 280
+  MB, so the API's memory grew with concurrent searches until it ran out. In a load test it now
+  stays under 1 GB however many search at once.
+  ([#51](https://github.com/alkhatibdev/dpolens/pull/51))
+- **A burst of searches no longer stalls the API.** More than 15 searches at once each held one
+  database connection and waited for a second, until all of them failed after 30 seconds. The
+  API now runs at most 7 requests at once and the rest wait their turn: 40 at once are answered
+  within a few seconds. ([#52](https://github.com/alkhatibdev/dpolens/pull/52))
+
 ## 0.1.0-rc.2
 
 The second release candidate for 0.1.0. A search now keeps to the laws the organisation

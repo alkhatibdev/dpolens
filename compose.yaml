@@ -30,7 +30,7 @@ x-database: &database
 
 services:
   db:
-    image: ghcr.io/alkhatibdev/dpolens-postgres:${DPOLENS_VERSION:-0.1.0-rc.2}
+    image: ghcr.io/alkhatibdev/dpolens-postgres:${DPOLENS_VERSION:-0.1.0-rc.3}
     build: ./deploy/postgres
     environment:
       POSTGRES_DB: dpolens
@@ -54,7 +54,7 @@ services:
   # exits, which is why the API can run as a role that cannot rewrite its own
   # audit log.
   setup:
-    image: ghcr.io/alkhatibdev/dpolens:${DPOLENS_VERSION:-0.1.0-rc.2}
+    image: ghcr.io/alkhatibdev/dpolens:${DPOLENS_VERSION:-0.1.0-rc.3}
     build:
       context: .
       dockerfile: deploy/dpolens/Dockerfile
@@ -68,7 +68,7 @@ services:
     restart: "no"
 
   api:
-    image: ghcr.io/alkhatibdev/dpolens:${DPOLENS_VERSION:-0.1.0-rc.2}
+    image: ghcr.io/alkhatibdev/dpolens:${DPOLENS_VERSION:-0.1.0-rc.3}
     build:
       context: .
       dockerfile: deploy/dpolens/Dockerfile
@@ -120,7 +120,7 @@ services:
   # original files no version points at. It needs no port, and it connects as
   # the application role only.
   worker:
-    image: ghcr.io/alkhatibdev/dpolens:${DPOLENS_VERSION:-0.1.0-rc.2}
+    image: ghcr.io/alkhatibdev/dpolens:${DPOLENS_VERSION:-0.1.0-rc.3}
     build:
       context: .
       dockerfile: deploy/dpolens/Dockerfile
@@ -144,7 +144,7 @@ services:
   # The dashboard's files, and a forward from /v1 to the API, so the browser
   # sees one origin and the session cookie never crosses sites.
   dashboard:
-    image: ghcr.io/alkhatibdev/dpolens-dashboard:${DPOLENS_VERSION:-0.1.0-rc.2}
+    image: ghcr.io/alkhatibdev/dpolens-dashboard:${DPOLENS_VERSION:-0.1.0-rc.3}
     build:
       context: .
       dockerfile: deploy/dashboard/Dockerfile
@@ -156,7 +156,7 @@ services:
     restart: unless-stopped
 
   mcp:
-    image: ghcr.io/alkhatibdev/dpolens-mcp:${DPOLENS_VERSION:-0.1.0-rc.2}
+    image: ghcr.io/alkhatibdev/dpolens-mcp:${DPOLENS_VERSION:-0.1.0-rc.3}
     build:
       context: .
       dockerfile: deploy/mcp/Dockerfile
