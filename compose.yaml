@@ -127,6 +127,8 @@ services:
     command: ["dpolens", "worker"]
     environment:
       <<: *application
+      # The daily purge deletes by these, so they are the API's values.
+      DPOLENS_QUERY_LOG_RETENTION_DAYS:
       DPOLENS_SESSION_IDLE_MINUTES:
       DPOLENS_SESSION_LIFETIME_HOURS:
       DPOLENS_INTRA_OP_NUM_THREADS:
