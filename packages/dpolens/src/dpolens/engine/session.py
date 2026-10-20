@@ -116,8 +116,19 @@ def _why_not(said: str, url: URL) -> str:
     return f"could not connect to the database at {where} as {url.username}: {said}"
 
 
+POOL_SIZE = 5
+POOL_OVERFLOW = 10
+"""SQLAlchemy's defaults, written out because the API works out from them how many
+requests it runs at once."""
+
+
 def create_db_engine(settings: Settings, verify: bool = True) -> Engine:
-    engine = create_engine(str(settings.database_url), pool_pre_ping=True)
+    engine = create_engine(
+        str(settings.database_url),
+        pool_pre_ping=True,
+        pool_size=POOL_SIZE,
+        max_overflow=POOL_OVERFLOW,
+    )
     if verify:
         check_extensions(engine)
     return engine

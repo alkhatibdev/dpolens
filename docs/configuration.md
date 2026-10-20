@@ -54,8 +54,10 @@ more setting matters:
 | --- | --- | --- |
 | `DPOLENS_ORIGINALS_DIR` | `/var/lib/dpolens/originals` | Where uploaded policies' original files are kept. The API, the worker and the command line need the same folder, and need to be able to write to it. Compose mounts a volume there |
 
-Two things are not settings. Five wrong passwords for one address within fifteen minutes
-mean a wait before the next try. And every instance takes email addresses, phone numbers,
+Three things are not settings. Five wrong passwords for one address within fifteen minutes
+mean a wait before the next try. Each API worker runs at most 7 requests at once, as many as
+its 15 database connections can serve at two each, and the others wait their turn rather than
+being refused. And every instance takes email addresses, phone numbers,
 card numbers, IBANs and Emirates ID numbers out of a question before storing it, which
 nothing can switch off.
 
