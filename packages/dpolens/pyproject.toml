@@ -1,6 +1,6 @@
 [project]
 name = "dpolens"
-version = "0.1.0rc2"
+version = "0.1.0rc3"
 description = "Engine, HTTP API, worker and CLI for DPOLens"
 requires-python = ">=3.14"
 license = "Apache-2.0"

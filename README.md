@@ -27,7 +27,7 @@
 </p>
 
 > [!NOTE]
-> **Pre-release.** 0.1.0-rc.2 is a release candidate for 0.1.0, and `docker compose up`
+> **Pre-release.** 0.1.0-rc.3 is a release candidate for 0.1.0, and `docker compose up`
 > downloads its images. Interfaces (the HTTP API, the pack format, the database schema) change
 > without notice until 1.0. [What exists today](#what-exists-today) has the detail, and
 > watching the repository tells you when 0.1.0 lands.
