@@ -1,6 +1,6 @@
 [project]
 name = "dpolens-mcp"
-version = "0.1.0rc1"
+version = "0.1.0rc2"
 description = "MCP server for DPOLens. Talks to the HTTP API and nothing else."
 requires-python = ">=3.14"
 license = "Apache-2.0"
