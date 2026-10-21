@@ -98,23 +98,25 @@ class Settings(BaseSettings):
     client_address_header: str | None = Field(
         default=None,
         description=(
-            "A header carrying the caller's address, such as CF-Connecting-IP, set by the "
+            "A header carrying the caller's IP address, such as CF-Connecting-IP, set by the "
             "proxy in front of this server. Name it only when such a proxy always sets it; "
-            "otherwise the connection's own address is used"
+            "otherwise the connection's own IP address is used"
         ),
     )
 
     shared_ranges: list[IPvAnyNetwork] = Field(
         default_factory=list,
         description=(
-            "Address ranges that carry many people's calls, such as an AI assistant "
+            "IP address ranges that carry many people's calls, such as an AI assistant "
             "platform's servers. Each range shares one larger allowance, rather than every "
-            "person behind it sharing a single address's"
+            "person behind it sharing a single IP address's"
         ),
     )
 
     per_address_per_minute: int = Field(
-        default=30, ge=1, description="On a community version, calls one address may make a minute"
+        default=30,
+        ge=1,
+        description="On a community version, calls one IP address may make a minute",
     )
 
     per_range_per_minute: int = Field(

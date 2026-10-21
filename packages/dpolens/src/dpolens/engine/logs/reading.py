@@ -90,7 +90,7 @@ class QuestionFilter:
     """Words in the question, or in the key that was read."""
     only_user: uuid.UUID | None = None
     asked_by: str | None = None
-    """Words in the asker's name or address. Only meaningful with identities."""
+    """Words in the asker's name or email address. Only meaningful with identities."""
 
     def described(self) -> dict[str, Any]:
         """The filter as the governance log records it, beside a look at names."""

@@ -884,7 +884,7 @@ export interface components {
     AssistantSettings: {
       /**
        * Mcp Url
-       * @description The MCP server's address as AI assistants reach it
+       * @description The MCP server's URL as AI assistants reach it
        */
       mcp_url: string;
       /**
@@ -1610,7 +1610,7 @@ export interface components {
       version: string;
       /**
        * Mcp Url
-       * @description The MCP server's address, for an AI assistant's configuration
+       * @description The MCP server's URL, for an AI assistant's configuration
        */
       mcp_url: string;
     };
@@ -2577,7 +2577,7 @@ export interface components {
       lifetime_hours: number;
       /**
        * Wrong Passwords
-       * @description Wrong passwords for one address before it has to wait
+       * @description Wrong passwords for one email address before it has to wait
        */
       wrong_passwords: number;
       /** Wrong Password Window Minutes */
@@ -4941,7 +4941,7 @@ export interface operations {
         document?: string | null;
         /** @description Words in the question */
         q?: string | null;
-        /** @description Words in the asker's name or address */
+        /** @description Words in the asker's name or email address */
         asked_by?: string | null;
         /** @description Include who asked. Needs queries.read_identities, and is logged */
         identities?: boolean;
@@ -5026,7 +5026,7 @@ export interface operations {
         document?: string | null;
         /** @description Words in the question */
         q?: string | null;
-        /** @description Words in the asker's name or address */
+        /** @description Words in the asker's name or email address */
         asked_by?: string | null;
         /** @description Include who asked. Needs queries.read_identities, and is logged */
         identities?: boolean;

@@ -99,7 +99,7 @@ class Settings(BaseSettings):
         default="http://localhost:8080",
         max_length=500,
         description=(
-            "The dashboard's address as people open it, which `dpolens init` names when it "
+            "The dashboard's URL as people open it, which `dpolens init` names when it "
             "is done. The default is the quickstart's"
         ),
     )
@@ -108,7 +108,7 @@ class Settings(BaseSettings):
         default="http://localhost:8765/mcp",
         max_length=500,
         description=(
-            "The MCP server's address as people's AI assistants reach it, which the "
+            "The MCP server's URL as people's AI assistants reach it, which the "
             "dashboard shows next to a new token. The default is the quickstart's"
         ),
     )
