@@ -96,7 +96,8 @@ Two reasons this beats asking the model directly:
 
 - `docker compose up` with **no API keys and no LLM anywhere**. Search runs on a small
   multilingual embedding model on the CPU, inside the container
-- **GDPR and UAE PDPL** loaded on first start, plus a sample organisation policy
+- **Laws as packs**, loaded on first start with a sample organisation policy: GDPR and the UAE
+  PDPL today, and more as their packs are released
 - **MCP server**: `search_policies`, `get_clause`, `list_documents`, `get_document`,
   with one-command setup for Claude Code and Cursor
 - **Dashboard**: upload, review and publish DOCX and Markdown policies, with version
