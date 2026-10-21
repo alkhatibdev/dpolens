@@ -36,7 +36,7 @@ function Group({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
-function CopyAddress({ value }: { value: string }) {
+function CopyUrl({ value }: { value: string }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -140,7 +140,7 @@ export function SettingsPage() {
                 <code className="min-w-0 font-mono text-[13px] break-all">
                   {settings.data.assistants.mcp_url}
                 </code>
-                <CopyAddress value={settings.data.assistants.mcp_url} />
+                <CopyUrl value={settings.data.assistants.mcp_url} />
               </span>
             </Row>
             <Row label={t("settings.perToken")}>

@@ -91,7 +91,7 @@ export function TokenShownDialog({
               <p className="text-sm leading-relaxed text-ink-2">
                 {t("tokens.claudeThen", { command: "/plugin configure dpolens@dpolens" })}
               </p>
-              <CopyField value={url} label={t("tokens.copyAddress")} />
+              <CopyField value={url} label={t("tokens.copyUrl")} />
             </>
           ) : null}
           {assistant === "cursor" ? (

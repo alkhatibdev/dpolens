@@ -3151,10 +3151,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Words in the asker's name or address",
+              "description": "Words in the asker's name or email address",
               "title": "Asked By"
             },
-            "description": "Words in the asker's name or address"
+            "description": "Words in the asker's name or email address"
           },
           {
             "name": "identities",
@@ -3425,10 +3425,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Words in the asker's name or address",
+              "description": "Words in the asker's name or email address",
               "title": "Asked By"
             },
-            "description": "Words in the asker's name or address"
+            "description": "Words in the asker's name or email address"
           },
           {
             "name": "identities",
@@ -6785,7 +6785,7 @@
           "mcp_url": {
             "type": "string",
             "title": "Mcp Url",
-            "description": "The MCP server's address as AI assistants reach it"
+            "description": "The MCP server's URL as AI assistants reach it"
           },
           "requests_per_minute": {
             "type": "integer",
@@ -8614,7 +8614,7 @@
           "mcp_url": {
             "type": "string",
             "title": "Mcp Url",
-            "description": "The MCP server's address, for an AI assistant's configuration"
+            "description": "The MCP server's URL, for an AI assistant's configuration"
           }
         },
         "type": "object",
@@ -10822,7 +10822,7 @@
           "wrong_passwords": {
             "type": "integer",
             "title": "Wrong Passwords",
-            "description": "Wrong passwords for one address before it has to wait"
+            "description": "Wrong passwords for one email address before it has to wait"
           },
           "wrong_password_window_minutes": {
             "type": "integer",

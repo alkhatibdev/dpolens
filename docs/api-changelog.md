@@ -75,7 +75,7 @@ First version of the API. Everything below is new rather than changed.
   tokens. A token is made from a dashboard session only (`403`, `/problems/session-required`)
 - `/problems/permission-required` carries `permissions` when any of several would do, and a
   name or an address already taken gets `409` and `/problems/already-exists`
-- `GET /v1/instance` gives the version and the MCP server's address, `DPOLENS_PUBLIC_MCP_URL`
+- `GET /v1/instance` gives the version and the MCP server's URL, `DPOLENS_PUBLIC_MCP_URL`
 - The signed-in account carries its `id`
 - `GET /v1/queries` and `GET /v1/queries/export` read the questions log, a page at a time or
   as CSV, own questions only for `queries.read_own`. A question's `expires_at` is the day it

@@ -1,7 +1,7 @@
 """What a signed-in person needs to know about the instance itself.
 
-The MCP server's address is a setting rather than something the dashboard works
-out, because behind a proxy or on another port nothing on the page can know it.
+The MCP server's URL is a setting rather than something the dashboard works out,
+because behind a proxy or on another port nothing on the page can know it.
 
 The settings are read here and changed nowhere: each is fixed when the instance
 starts, so changing one is a change to its environment and a restart.
@@ -31,9 +31,7 @@ SettingsReader = Annotated[Authenticated, Depends(requires(catalog.SETTINGS_MANA
 
 class Instance(BaseModel):
     version: str
-    mcp_url: str = Field(
-        description="The MCP server's address, for an AI assistant's configuration"
-    )
+    mcp_url: str = Field(description="The MCP server's URL, for an AI assistant's configuration")
 
 
 @router.get("/instance", summary="The version, and where AI assistants connect")
@@ -61,13 +59,13 @@ class SignInSettings(BaseModel):
     idle_minutes: int = Field(description="How long a session may go unused before it ends")
     lifetime_hours: int = Field(description="How long a session lasts at most")
     wrong_passwords: int = Field(
-        description="Wrong passwords for one address before it has to wait"
+        description="Wrong passwords for one email address before it has to wait"
     )
     wrong_password_window_minutes: int
 
 
 class AssistantSettings(BaseModel):
-    mcp_url: str = Field(description="The MCP server's address as AI assistants reach it")
+    mcp_url: str = Field(description="The MCP server's URL as AI assistants reach it")
     requests_per_minute: int = Field(
         description="Requests one token may make each minute, counted in each API worker"
     )

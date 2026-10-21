@@ -231,7 +231,8 @@ class QuestionParameters:
         document: Annotated[str | None, Query(max_length=200)] = None,
         q: Annotated[str | None, Query(max_length=200, description="Words in the question")] = None,
         asked_by: Annotated[
-            str | None, Query(max_length=200, description="Words in the asker's name or address")
+            str | None,
+            Query(max_length=200, description="Words in the asker's name or email address"),
         ] = None,
         identities: Annotated[
             bool,
