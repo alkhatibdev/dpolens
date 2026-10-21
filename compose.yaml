@@ -80,8 +80,8 @@ services:
       DPOLENS_PUBLIC_MCP_URL: ${DPOLENS_PUBLIC_MCP_URL:-http://localhost:${DPOLENS_MCP_PORT:-8765}/mcp}
       # Where people open the dashboard, which `dpolens init` names when it is done.
       DPOLENS_PUBLIC_DASHBOARD_URL: ${DPOLENS_PUBLIC_DASHBOARD_URL:-http://localhost:${DPOLENS_DASHBOARD_PORT:-8080}}
-      # Passed on from .env when set there, and otherwise left to the defaults in
-      # docs/configuration.md, which says what each one does.
+      # Passed on from .env when set there, and otherwise left to the defaults that
+      # https://dpolens.com/docs/configuration lists, with what each one does.
       DPOLENS_QUERY_LOG_RETENTION_DAYS:
       DPOLENS_REDACTION_PATTERNS:
       DPOLENS_SESSION_IDLE_MINUTES:

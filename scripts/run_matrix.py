@@ -9,7 +9,7 @@ questions.
     uv run python scripts/run_matrix.py --set held_out --models e5-small,e5-base
 
 The table goes to stdout, so redirect it where you want it. matrix*.txt is
-ignored, and the conclusions belong in docs/retrieval.md rather than in a file.
+ignored, and the conclusions belong in evals/retrieval.md rather than in a file.
 
 The first run of a model downloads it. Everything after that is offline.
 """

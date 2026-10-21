@@ -13,7 +13,7 @@ import { formatDate, formatNumber } from "@/lib/format";
 import { GOVERNANCE_READ, SETTINGS_MANAGE } from "@/lib/permissions";
 import { usePermitted } from "@/session";
 
-const HOW_TO_CHANGE = "https://github.com/alkhatibdev/dpolens/blob/main/docs/configuration.md";
+const HOW_TO_CHANGE = "https://dpolens.com/docs/configuration";
 
 const KINDS = ["email", "phone", "card", "iban", "emirates_id"] as const;
 

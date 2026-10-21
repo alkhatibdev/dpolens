@@ -27,8 +27,8 @@ an instance you run yourself, never one that belongs to somebody else.
 
 ## Supported versions
 
-Only the newest release gets fixes, security fixes included, as [releases.md](docs/releases.md)
-says. An older release is fixed by moving to the newest.
+Only the newest release gets fixes, security fixes included, as
+[Releases and upgrades](https://dpolens.com/docs/releases) says. An older release is fixed by moving to the newest.
 
 ## What it covers
 
