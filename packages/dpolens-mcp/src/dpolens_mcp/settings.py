@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     shared_ranges: list[IPvAnyNetwork] = Field(
         default_factory=list,
         description=(
-            "Address ranges that carry many people's calls, such as an assistant "
+            "Address ranges that carry many people's calls, such as an AI assistant "
             "platform's servers. Each range shares one larger allowance, rather than every "
             "person behind it sharing a single address's"
         ),

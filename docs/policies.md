@@ -12,7 +12,7 @@ dpolens policy parse retention-policy.docx --slug acme-retention
 ```
 
 Uploading the file makes it a draft, which somebody reviews and publishes, and from then on
-assistants search it and cite it. [From a draft to a policy in force](#from-a-draft-to-a-policy-in-force)
+AI assistants search it and cite it. [From a draft to a policy in force](#from-a-draft-to-a-policy-in-force)
 describes those steps, and [Keys over time](#keys-over-time) what happens to a citation when
 a new version renumbers the clauses it points at.
 
@@ -314,7 +314,7 @@ In version 1, acme-retention:4.2 was a different rule, which is acme-retention:4
   Staff records are kept for 6 years after employment ends.
 ```
 
-The HTTP API and the MCP server say the same, as `now` and `formerly`, so an assistant reading
+The HTTP API and the MCP server say the same, as `now` and `formerly`, so an AI assistant reading
 an old citation is told where the rule went.
 
 ## Versions in the library

@@ -213,7 +213,7 @@ export interface paths {
     };
     /**
      * Read a clause and everything beneath it
-     * @description What an assistant wants once it has the top hit: the whole article, in order.
+     * @description What an AI assistant wants once it has the top hit: the whole article, in order.
      */
     get: operations["read_subtree_v1_clauses__key__subtree_get"];
     put?: never;
@@ -388,7 +388,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** The version, and where assistants connect */
+    /** The version, and where AI assistants connect */
     get: operations["describe_v1_instance_get"];
     put?: never;
     post?: never;
@@ -884,7 +884,7 @@ export interface components {
     AssistantSettings: {
       /**
        * Mcp Url
-       * @description The MCP server's address as assistants reach it
+       * @description The MCP server's address as AI assistants reach it
        */
       mcp_url: string;
       /**
@@ -1610,7 +1610,7 @@ export interface components {
       version: string;
       /**
        * Mcp Url
-       * @description The MCP server's address, for an assistant's configuration
+       * @description The MCP server's address, for an AI assistant's configuration
        */
       mcp_url: string;
     };
@@ -1903,7 +1903,7 @@ export interface components {
       by_day: components["schemas"]["DayCount"][];
       /**
        * Most Cited
-       * @description Clauses of the selected laws and the policies, each counted once a day for each person who cited it: a search's first result, or a read by key from an assistant or the API
+       * @description Clauses of the selected laws and the policies, each counted once a day for each person who cited it: a search's first result, or a read by key from an AI assistant or the API
        */
       most_cited: components["schemas"]["Cited"][];
       /**

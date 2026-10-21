@@ -1079,7 +1079,7 @@
           "corpus"
         ],
         "summary": "Read a clause and everything beneath it",
-        "description": "What an assistant wants once it has the top hit: the whole article, in order.",
+        "description": "What an AI assistant wants once it has the top hit: the whole article, in order.",
         "operationId": "read_subtree_v1_clauses__key__subtree_get",
         "parameters": [
           {
@@ -2752,7 +2752,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "The version, and where assistants connect",
+        "summary": "The version, and where AI assistants connect",
         "operationId": "describe_v1_instance_get",
         "responses": {
           "200": {
@@ -6785,7 +6785,7 @@
           "mcp_url": {
             "type": "string",
             "title": "Mcp Url",
-            "description": "The MCP server's address as assistants reach it"
+            "description": "The MCP server's address as AI assistants reach it"
           },
           "requests_per_minute": {
             "type": "integer",
@@ -8614,7 +8614,7 @@
           "mcp_url": {
             "type": "string",
             "title": "Mcp Url",
-            "description": "The MCP server's address, for an assistant's configuration"
+            "description": "The MCP server's address, for an AI assistant's configuration"
           }
         },
         "type": "object",
@@ -9288,7 +9288,7 @@
             },
             "type": "array",
             "title": "Most Cited",
-            "description": "Clauses of the selected laws and the policies, each counted once a day for each person who cited it: a search's first result, or a read by key from an assistant or the API"
+            "description": "Clauses of the selected laws and the policies, each counted once a day for each person who cited it: a search's first result, or a read by key from an AI assistant or the API"
           },
           "sources": {
             "items": {

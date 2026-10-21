@@ -87,8 +87,8 @@ class Overview(BaseModel):
     most_cited: list[Cited] = Field(
         description=(
             "Clauses of the selected laws and the policies, each counted once a day for each "
-            "person who cited it: a search's first result, or a read by key from an assistant "
-            "or the API"
+            "person who cited it: a search's first result, or a read by key from an AI "
+            "assistant or the API"
         )
     )
     sources: list[Source] = Field(

@@ -31,10 +31,12 @@ SettingsReader = Annotated[Authenticated, Depends(requires(catalog.SETTINGS_MANA
 
 class Instance(BaseModel):
     version: str
-    mcp_url: str = Field(description="The MCP server's address, for an assistant's configuration")
+    mcp_url: str = Field(
+        description="The MCP server's address, for an AI assistant's configuration"
+    )
 
 
-@router.get("/instance", summary="The version, and where assistants connect")
+@router.get("/instance", summary="The version, and where AI assistants connect")
 def describe(who: Caller, settings: Configured) -> Instance:
     assert who  # any signed-in caller
     return Instance(version=__version__, mcp_url=settings.public_mcp_url)
@@ -65,7 +67,7 @@ class SignInSettings(BaseModel):
 
 
 class AssistantSettings(BaseModel):
-    mcp_url: str = Field(description="The MCP server's address as assistants reach it")
+    mcp_url: str = Field(description="The MCP server's address as AI assistants reach it")
     requests_per_minute: int = Field(
         description="Requests one token may make each minute, counted in each API worker"
     )

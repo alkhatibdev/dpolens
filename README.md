@@ -21,7 +21,7 @@
 
 <p align="center">
   <a href="#getting-it-running">Get it running</a> ·
-  <a href="docs/mcp.md#connecting">Connect your assistant</a> ·
+  <a href="docs/mcp.md#connecting">Connect your AI assistant</a> ·
   <a href="#does-it-actually-find-the-right-clause">Search scores</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
@@ -34,7 +34,7 @@
 
 ## Getting it running
 
-You need Git, Docker with Compose, and an assistant that speaks MCP (Claude Code, Cursor or
+You need Git, Docker with Compose, and an AI assistant that speaks MCP (Claude Code, Cursor or
 VS Code).
 
 **1. Get the code and start an instance**
@@ -71,7 +71,7 @@ and gets a one-time link to choose their own password.
 **3. Open the dashboard and make a token**
 
 Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
-password. Under Tokens, create a token for your assistant. It starts with `dpol_` and is shown once, so copy it now.
+password. Under Tokens, create a token for your AI assistant. It starts with `dpol_` and is shown once, so copy it now.
 
 The library holds the laws you chose, clause by clause and in each of their languages, with a
 search box for asking them in your own words. Users and roles is where you add the people you
@@ -81,7 +81,7 @@ instance. Selected laws changes which laws a search covers, and Settings shows h
 instance is set up, with [docs/configuration.md](docs/configuration.md) saying how to change
 it.
 
-**4. Connect your assistant**
+**4. Connect your AI assistant**
 
 For Claude Code, install the plugin:
 
@@ -99,7 +99,7 @@ For Cursor and VS Code, [clients/](clients/) has the configuration.
 
 **5. Ask a question**
 
-Ask your assistant how long you may keep a deleted account, or whether you need consent to
+Ask your AI assistant how long you may keep a deleted account, or whether you need consent to
 log an IP address. The answer quotes the clause it relies on and cites it.
 
 **If `docker compose up` stops**
@@ -193,7 +193,7 @@ cross languages, and finds its clause far less often.
 [docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and the
 commands to reproduce the numbers yourself.
 
-## Does an assistant actually use it
+## Does an AI assistant actually use it
 
 Claude Code with the DPOLens plugin searched before writing code in **36 of 36 runs** of tasks
 that touch personal data, and in **3 of 45 runs** of tasks that do not: 30 held-out tasks, three
@@ -201,7 +201,7 @@ runs each, Claude Code 2.1.288 with `claude-sonnet-5-5`, measured 8 and 9 Octobe
 
 That means that asked to store the ID a driver checked, or to add a customer's email to an
 analytics event, it looked the rules up before touching the code, every time, and asked to sort
-the product list or add a dark theme, it did not. It does not mean every assistant behaves this
+the product list or add a dark theme, it did not. It does not mean every AI assistant behaves this
 way: only Claude Code was measured, and whether a task should trigger a search is a judgment,
 written down beside each one. [docs/trigger-test.md](docs/trigger-test.md) has the method, the
 tasks, and the commands to run it yourself.
@@ -252,7 +252,7 @@ dpolens pack import dpolens-pack-gdpr-2026.2.tar.gz
 
 An administrator chooses which laws apply to the organisation. A search covers those and
 the organisation's own policies, and nothing else, so a company in Dubai with no EU customers
-is never answered from GDPR, and an assistant that asks for GDPR is told it is not one of the
+is never answered from GDPR, and an AI assistant that asks for GDPR is told it is not one of the
 organisation's laws. Until somebody chooses, nothing is searched. The dashboard asks whoever
 may choose as they sign in, and Selected laws changes the choice later, marking a law that
 arrived with an upgrade as new. Every change is written to the governance log, and the
@@ -364,8 +364,8 @@ Every call writes one row to the query log, with personal data taken out of the 
 an expiry the instance enforces itself. Telemetry never carries the words. An instance that
 could rewrite its own governance log refuses to serve at all.
 
-The MCP server is the surface your assistant talks to: four tools, two commands, and the
-guidance that tells an assistant to look something up before writing code that touches
+The MCP server is the surface your AI assistant talks to: four tools, two commands, and the
+guidance that tells it to look something up before writing code that touches
 personal data. It never receives your token as its own credential. It asks the API whose
 token it is, then acts with its own and names you, so the query log records the question as
 yours. [docs/mcp.md](docs/mcp.md) covers the tools, the prompts and what each call records.
@@ -377,7 +377,7 @@ sign-in. The library lists each document with the version in force and which of 
 languages prevails, and reads a law article by article in one language at a time: a law in
 two languages opens in the dashboard's language, with a switch to the other that the browser
 remembers for that law. Every key copies the clause with the same citation the MCP server
-gives an assistant. Search covers the selected laws, with one of them
+gives an AI assistant. Search covers the selected laws, with one of them
 alone, a date or the recitals a click away.
 
 Whoever may read every question starts on the Overview: how much was asked over the last 7
@@ -389,7 +389,7 @@ written to the governance log. Somebody who may read only their own questions se
 those. The governance log reads as plain sentences, checks its hash chain each time it is
 opened, and exports the same files as `dpolens governance export`. Settings shows how the
 instance is set up: how long a question is kept and what is taken out of it, when a session
-ends, where assistants connect, and that no AI provider is used.
+ends, where AI assistants connect, and that no AI provider is used.
 [docs/configuration.md](docs/configuration.md) lists every setting and how to change it. The
 interface is English, built so an Arabic one can follow, and it works on a phone. Each
 release's images are published, built for amd64 and arm64 and attested, and `docker compose up`
