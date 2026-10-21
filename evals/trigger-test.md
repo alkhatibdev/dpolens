@@ -66,18 +66,18 @@ user, with an empty profile into which DPOLens is installed the way the
 `claude plugin configure`. Nothing else is in the profile: no `CLAUDE.md`, no memory, no other
 plugins. Claude Code's defaults stay as they are, including tool search, which shows the model
 only the names of MCP tools until it decides to look one up. The AI assistant works in a fresh
-checkout of [Larder](../evals/trigger/app/), a small shop backend with accounts, orders,
+checkout of [Larder](trigger/app/), a small shop backend with accounts, orders,
 logging, a Segment call and a Postmark email, and a catalogue and front page that hold no data
 about people. It talks to a throwaway DPOLens instance built from the DPOLens checkout under
 test, which for the published runs held GDPR alone.
 
-**The tasks.** [held_out.yaml](../evals/trigger/held_out.yaml) holds thirty: twelve coding
+**The tasks.** [held_out.yaml](trigger/held_out.yaml) holds thirty: twelve coding
 tasks that collect, store, log, share or delete data about a person, three questions about the
 rules, and fifteen tasks that do not touch personal data, six of them near misses, such as
 renaming the column a name is kept in. Each label says why it is what it is. No coding task
 names the subject: none says "privacy", "GDPR", "consent" or "compliant", because a task that
 did would trigger any AI assistant and the number would mean nothing. A separate set of twenty,
-[tuning.yaml](../evals/trigger/tuning.yaml), is the one to improve the guidance against, and the
+[tuning.yaml](trigger/tuning.yaml), is the one to improve the guidance against, and the
 held-out set is never used for that.
 
 **What counts.** A run searched if it called `search_policies` or `get_clause`, the two tools
@@ -112,7 +112,7 @@ uv run python scripts/run_trigger_test.py --set held_out --runs 3 --max-runs 90 
 ```
 
 Each batch of ninety runs takes about half an hour.
-[evals/trigger/README.md](../evals/trigger/README.md) covers resuming a batch, scoring one again,
+[evals/trigger/README.md](trigger/README.md) covers resuming a batch, scoring one again,
 and reading the full record each run leaves behind.
 
 ## What it does not show

@@ -72,8 +72,9 @@ is caught rather than quietly missing from every search.
 is never changed in place, because an instance that loaded it keeps it: a change is a new
 version. `effective_date` is the day the law's text took effect. A correction to how the pack
 holds the law, with the law itself unchanged, keeps the law's date, and the newer version is
-the one in force from that day. [docs/releases.md](../docs/releases.md#law-packs) says how a
-version is released and how an instance loads it.
+the one in force from that day. [Laws and their versions](https://dpolens.com/docs/laws) says how
+an instance loads a version, and [CONTRIBUTING.md](../CONTRIBUTING.md#a-law-pack) how one is
+released.
 
 ## A clause file
 

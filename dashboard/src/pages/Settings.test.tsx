@@ -38,7 +38,7 @@ describe("settings", () => {
     expect(await screen.findByText(/1,204 entries, intact/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /How to change them/ })).toHaveAttribute(
       "href",
-      "https://github.com/alkhatibdev/dpolens/blob/main/docs/configuration.md",
+      "https://dpolens.com/docs/configuration",
     );
   });
 

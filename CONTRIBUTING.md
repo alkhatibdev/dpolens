@@ -22,6 +22,12 @@ article it answers) are worth more than questions written from intuition.
 discussion first: the project has a written architecture and a change that cuts against
 it will be hard to merge however good the code is.
 
+**Docs.** The user docs are on [dpolens.com/docs](https://dpolens.com/docs/get-started), from
+the [alkhatibdev/dpolens.com](https://github.com/alkhatibdev/dpolens.com) repository, and every
+page links to its own source. A pull request here that changes a setting, a command, an API
+route, an MCP tool or a law pack changes that page too, in a pull request of its own there,
+merged when the release ships.
+
 **Bug reports.** Open an issue with what you did, what happened and what you expected.
 Include the DPOLens version and the pack version if a citation is involved. A security problem
 is the exception: report it privately, as [SECURITY.md](SECURITY.md) says.
@@ -105,8 +111,8 @@ The answer may be yes, but it should be a decision rather than a drift.
   [Developer Certificate of Origin](https://developercertificate.org/). It states that
   you have the right to submit the work. There is no CLA. CI rejects unsigned-off commits.
 - **[Conventional Commits](https://www.conventionalcommits.org/)**: `feat:`, `fix:`,
-  `docs:`, `chore:`. A release's notes are drafted from them, which
-  [docs/releases.md](docs/releases.md) describes.
+  `docs:`, `chore:`. A release's notes are drafted from them, as
+  [Releases](#releases) describes.
 - **One concern per pull request.** A refactor bundled with a fix is two reviews.
 - **Fill in the template**: what changed, why, and how you verified it. The "how you
   verified it" line is the one that gets a pull request merged quickly.
@@ -186,6 +192,49 @@ A pack is promoted when someone qualified adopts it. Maintainers are recorded in
 
 Looking for somewhere to start? Issues labelled `wanted-pack` list jurisdictions we would
 like covered.
+
+## Releases
+
+What a release publishes, and how to check an image or a pack archive, is on dpolens.com:
+[Releases and upgrades](https://dpolens.com/docs/releases) and
+[Laws and their versions](https://dpolens.com/docs/laws). This is how each is made.
+
+### The app
+
+1. A pull request sets the new version everywhere it is kept, the two Python packages, the
+   lock file and `compose.yaml`, with `python scripts/release.py bump 0.1.0`, and adds the
+   release's section to `CHANGELOG.md`. `uvx git-cliff --unreleased --tag v0.1.0` drafts it
+   from the titles of the pull requests since the last release, and the draft is edited by
+   hand into something a person deciding whether to upgrade can use.
+2. Once that is merged, the commit on `main` is tagged `v0.1.0` and the tag pushed.
+3. The release workflow (`.github/workflows/release.yml`) checks the tag against every
+   version in the repository and refuses to go on if one disagrees, if the tagged commit is
+   not on `main`, or if the changelog has no section for it. It builds the four images for
+   both platforms, each on a machine of that kind, publishes them with their tags, attests
+   them, writes and attests a pack archive of every law, and opens a draft release with the
+   changelog's section as its notes and the archives attached.
+4. Somebody reads the draft and publishes it. GitHub's form offers None, Pre-release and
+   Latest: the app's release is published as Latest, so the repository's page shows it, and a
+   pre-release, such as `0.1.0-rc.1`, which the workflow has already marked as one, as
+   Pre-release.
+
+A pull request that changes how the images are built runs the same workflow, short of
+publishing anything. It builds all four images for both platforms, checks that each has one
+build for each platform to join, and writes the pack archives and the release notes. So does
+starting it by hand from the Actions tab.
+
+### A law pack
+
+1. A pull request changes the pack and gives it its next version in `pack.yaml`.
+2. Once that is merged, the commit on `main` is tagged `pack/<slug>/<version>`, for example
+   `pack/gdpr/2026.2`, and the tag pushed.
+3. The pack release workflow (`.github/workflows/pack-release.yml`) refuses a tag that is not
+   on `main` or does not name the version in the pack's `pack.yaml`. It writes the archive and
+   its checksum with `dpolens pack archive`, attests the archive, and opens a draft release
+   with both files.
+4. Somebody reads the draft and publishes it as None. As Latest, it would take the
+   repository's page from the app's release, and as Pre-release it would never be offered:
+   `pack update` skips pre-releases.
 
 ## Code of conduct
 

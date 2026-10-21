@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong>Give your AI coding assistant access to your organisation's privacy policies and the
-  law, with exact, versioned citations. A self-hosted MCP server.</strong>
+  <strong>DPOLens is an open-source MCP server that gives your AI coding assistant your
+  organisation's privacy policies and the law, with exact, versioned citations.</strong>
 </p>
 
 <p align="center">
@@ -20,8 +20,9 @@
 </p>
 
 <p align="center">
-  <a href="#getting-it-running">Get it running</a> ·
-  <a href="docs/mcp.md#connecting">Connect your AI assistant</a> ·
+  <a href="#get-started">Get started</a> ·
+  <a href="https://dpolens.com/docs/get-started">Docs</a> ·
+  <a href="https://dpolens.com/docs/connect">Connect your AI assistant</a> ·
   <a href="#does-it-actually-find-the-right-clause">Search scores</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
@@ -32,97 +33,28 @@
 > without notice until 1.0. [What exists today](#what-exists-today) has the detail, and
 > watching the repository tells you when 0.1.0 lands.
 
-## Getting it running
+## Get started
 
 You need Git, Docker with Compose, and an AI assistant that speaks MCP (Claude Code, Cursor or
 VS Code).
 
-**1. Get the code and start an instance**
-
 ```bash
 git clone https://github.com/alkhatibdev/dpolens.git
-
 cd dpolens
 
 printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
   "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
 
 docker compose up -d
-```
-
-The first `up` builds the images, or downloads them once the version has been released, and
-loads GDPR and the UAE law, which takes a few minutes. After that it takes seconds. When it returns, `docker compose ps` shows `db`, `api`,
-`dashboard` and `mcp` as healthy, and `worker` as running.
-
-**2. Set it up**
-
-```bash
 docker compose exec api dpolens init
 ```
 
-It asks for your email address, your name and a password for the dashboard, then which laws
-apply to your organisation, picked from a list with the arrow keys and space. Nothing is
-searched until they are chosen. Run it again whenever you like: it only does what is still
-missing.
-
-You are the only person made on the command line. Everyone else is added in the dashboard,
-and gets a one-time link to choose their own password.
-
-**3. Open the dashboard and make a token**
-
-Go to [http://localhost:8080](http://localhost:8080) and sign in with that email and
-password. Under Tokens, create a token for your AI assistant. It starts with `dpol_` and is shown once, so copy it now.
-
-The library holds the laws you chose, clause by clause and in each of their languages, with a
-search box for asking them in your own words. Users and roles is where you add the people you
-work with and decide what each role allows. Overview shows how much was asked, what answered
-it and what found nothing, and Logs holds every question asked and every change made to the
-instance. Selected laws changes which laws a search covers, and Settings shows how the
-instance is set up, with [docs/configuration.md](docs/configuration.md) saying how to change
-it.
-
-**4. Connect your AI assistant**
-
-For Claude Code, install the plugin:
-
-```bash
-claude plugin marketplace add alkhatibdev/dpolens
-claude plugin install dpolens@dpolens
-```
-
-The plugin needs two settings, the server address and your token. Open Claude Code and run
-`/plugin configure dpolens@dpolens`, keep the default address (`http://localhost:8765/mcp`)
-and paste the token. The token is kept in your operating system's credential store, not in a
-file. Restart Claude Code, and `/mcp` lists `dpolens` as connected.
-
-For Cursor and VS Code, [clients/](clients/) has the configuration.
-
-**5. Ask a question**
-
-Ask your AI assistant how long you may keep a deleted account, or whether you need consent to
-log an IP address. The answer quotes the clause it relies on and cites it.
-
-**If `docker compose up` stops**
-
-`docker compose ps -a` shows which service stopped, and the end of its log says why, in one
-line that names the cause and what to do about it:
-
-```bash
-docker compose logs setup
-```
-
-The usual cause is a password the database refuses. The database keeps the passwords that
-were in `.env` when it was first created, so writing a new `.env` afterwards does not change
-them. Put that `.env` back if you still have it. If you don't, starting over deletes the local
-database, and with it every user, token and log entry on the instance:
-
-```bash
-docker compose down -v
-docker compose up -d
-```
-
-After pulling a newer version, start it with `docker compose up -d --build`. Without
-`--build`, Compose runs the images it built from the old code.
+`init` asks for your email address, your name, a password, and which laws apply to your
+organisation. Then sign in to the dashboard at [http://localhost:8080](http://localhost:8080),
+make a token under Tokens, and connect your AI assistant to `http://localhost:8765/mcp` with it.
+[Get started](https://dpolens.com/docs/get-started) has every step, and
+[Connect your AI assistant](https://dpolens.com/docs/connect) has the configuration for Claude
+Code, Cursor and VS Code.
 
 ## Why this exists
 
@@ -190,7 +122,7 @@ GDPR, the clause the guidance points at was among the top five answers 77% of th
 not mean DPOLens answers 77% of privacy questions correctly. Asked in Arabic alone, the UAE law
 scores 0.42, and in English 0.68. GDPR has no Arabic text, so an Arabic question about it has to
 cross languages, and finds its clause far less often.
-[docs/retrieval.md](docs/retrieval.md) has the method, every configuration measured, and the
+[evals/retrieval.md](evals/retrieval.md) has the method, every configuration measured, and the
 commands to reproduce the numbers yourself.
 
 ## Does an AI assistant actually use it
@@ -203,7 +135,7 @@ That means that asked to store the ID a driver checked, or to add a customer's e
 analytics event, it looked the rules up before touching the code, every time, and asked to sort
 the product list or add a dark theme, it did not. It does not mean every AI assistant behaves this
 way: only Claude Code was measured, and whether a task should trigger a search is a judgment,
-written down beside each one. [docs/trigger-test.md](docs/trigger-test.md) has the method, the
+written down beside each one. [evals/trigger-test.md](evals/trigger-test.md) has the method, the
 tasks, and the commands to run it yourself.
 
 ## What exists today
@@ -242,7 +174,7 @@ released as a pack archive. `dpolens pack update` says which laws have a newer v
 text still reads that text. A server with no way to the internet imports the archive
 instead. Nothing changes which version of a law an instance has unless somebody runs one of
 these, an upgrade of DPOLens included, and every version loaded is written to the governance
-log. [docs/releases.md](docs/releases.md#law-packs) says how:
+log. [Laws and their versions](https://dpolens.com/docs/laws) says how:
 
 ```bash
 dpolens pack update
@@ -305,7 +237,7 @@ dpolens policy compare acme-retention 1 2
 A new instance starts with a made-up sample policy, so there is one to search before
 yours are in.
 
-[docs/policies.md](docs/policies.md) explains how clauses, keys and flags are decided, and
+[Your own policies](https://dpolens.com/docs/policies) explains how clauses, keys and flags are decided, and
 what happens to a policy from its upload to its archive.
 
 Users, roles and the governance log are what every surface authenticates and records
@@ -356,7 +288,7 @@ Search, one clause, a clause and its subtree, and the documents in force, each r
 carrying the text verbatim with its key, its version, the date that version took effect and,
 for a law, the pack it came from and how far that pack has been checked. Policies are
 uploaded, reviewed, published and archived through it too, with the file as the request
-body. Failures are RFC 9457 problem details. [docs/api.md](docs/api.md) covers
+body. Failures are RFC 9457 problem details. [The HTTP API](https://dpolens.com/docs/api) covers
 authentication, the error shapes and every route, and [docs/openapi.json](docs/openapi.json)
 is the contract itself.
 
@@ -368,7 +300,7 @@ The MCP server is the surface your AI assistant talks to: four tools, two comman
 guidance that tells it to look something up before writing code that touches
 personal data. It never receives your token as its own credential. It asks the API whose
 token it is, then acts with its own and names you, so the query log records the question as
-yours. [docs/mcp.md](docs/mcp.md) covers the tools, the prompts and what each call records.
+yours. [The MCP server](https://dpolens.com/docs/mcp) covers the tools, the prompts and what each call records.
 
 The dashboard is a client of the same API. A person signs in with an email and a password,
 and the session lives in a cookie the page's scripts cannot read and no other site can
@@ -390,11 +322,11 @@ those. The governance log reads as plain sentences, checks its hash chain each t
 opened, and exports the same files as `dpolens governance export`. Settings shows how the
 instance is set up: how long a question is kept and what is taken out of it, when a session
 ends, where AI assistants connect, and that no AI provider is used.
-[docs/configuration.md](docs/configuration.md) lists every setting and how to change it. The
+[Configuration](https://dpolens.com/docs/configuration) lists every setting and how to change it. The
 interface is English, built so an Arabic one can follow, and it works on a phone. Each
 release's images are published, built for amd64 and arm64 and attested, and `docker compose up`
 downloads the ones the checkout names; only a version that has not been released is built from
-source. [docs/releases.md](docs/releases.md) says what a release publishes and how to check
+source. [Releases and upgrades](https://dpolens.com/docs/releases) says what a release publishes and how to check
 that an image was built here.
 
 ## Contributing

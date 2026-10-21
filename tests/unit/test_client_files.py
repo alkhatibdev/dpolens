@@ -137,7 +137,7 @@ class TestEveryClientPointsAtTheSameServer:
     def test_the_documentation_names_the_same_url(self) -> None:
         port, _ = ports("mcp")
 
-        for document in (REPO / "docs" / "mcp.md", CLIENTS / "README.md", REPO / "README.md"):
+        for document in (CLIENTS / "README.md", REPO / "README.md"):
             text = document.read_text(encoding="utf-8")
             if "localhost" in text and "/mcp" in text:
                 assert f"http://localhost:{port}/mcp" in text, document.name
