@@ -348,8 +348,8 @@ request is a review comment, not a failed build.
 
 - "Context" is not a word this project uses on its own. Say breadcrumb, subtree,
   cross-reference or **context recipe** (the versioned rule for building the string that
-  gets embedded), so that nothing is confused with an assistant's context
+  gets embedded), so that nothing is confused with an AI assistant's context
   window or with this file.
 - The MCP tool `search_policies` and the prompts `policy_check` and `policy_tour` search
-  laws as well as organisation policies. The names are kept, because they help an assistant
+  laws as well as organisation policies. The names are kept, because they help an AI assistant
   decide to call the tool, and they do not change what **organisation policy** means.

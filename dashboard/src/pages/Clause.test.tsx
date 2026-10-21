@@ -50,7 +50,7 @@ describe("a clause", () => {
     serve(routes(signedIn));
     renderAt(`/clauses/${encodeURIComponent(KEY)}`);
 
-    await screen.findByText("What your assistant receives");
+    await screen.findByText("What your AI assistant receives");
     expect(screen.queryByRole("heading", { name: "The same key, read today" })).toBeNull();
   });
 
@@ -58,7 +58,7 @@ describe("a clause", () => {
     const { calls } = serve(routes(signedIn));
     renderAt(`/clauses/${encodeURIComponent(KEY)}`);
 
-    await screen.findByText("What your assistant receives");
+    await screen.findByText("What your AI assistant receives");
     expect(screen.queryByRole("region", { name: "Cited this week" })).not.toBeInTheDocument();
     expect(calls.some((call) => call.url.includes("/activity"))).toBe(false);
   });
@@ -115,7 +115,7 @@ describe("a clause", () => {
     serve(routes(signedIn));
     renderAt(`/clauses/${encodeURIComponent(KEY)}`);
 
-    await screen.findByText("What your assistant receives");
+    await screen.findByText("What your AI assistant receives");
     expect(screen.queryByText("Not in your selected laws")).not.toBeInTheDocument();
   });
 });

@@ -10,7 +10,7 @@ Four images on GitHub's container registry, each built for amd64 and arm64:
 | Image | What it runs |
 | --- | --- |
 | `ghcr.io/alkhatibdev/dpolens` | The HTTP API, the worker, the one off setup and the command line, with the embedding model and the law packs inside |
-| `ghcr.io/alkhatibdev/dpolens-mcp` | The MCP server your assistant connects to |
+| `ghcr.io/alkhatibdev/dpolens-mcp` | The MCP server your AI assistant connects to |
 | `ghcr.io/alkhatibdev/dpolens-dashboard` | The dashboard, and the forward from `/v1` to the API |
 | `ghcr.io/alkhatibdev/dpolens-postgres` | PostgreSQL 17 with pgvector and pg_textsearch |
 

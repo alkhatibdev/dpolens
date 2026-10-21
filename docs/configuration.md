@@ -33,7 +33,7 @@ range stops the instance at startup, with a message naming the setting.
 | `DPOLENS_SESSION_LIFETIME_HOURS` | `8` | How long a dashboard session lasts at most, however much it is used. At most 168 |
 | `DPOLENS_RATE_LIMIT_PER_MINUTE` | `60` | Requests one token may make each minute. Each API worker counts on its own, so an instance running four workers allows four times as many |
 | `DPOLENS_INTRA_OP_NUM_THREADS` | `2` | Processor threads one embedding call may use |
-| `DPOLENS_PUBLIC_MCP_URL` | `http://localhost:8765/mcp` | The MCP server's address as assistants reach it, shown next to a new token. Set it when the server sits behind a proxy or on another host |
+| `DPOLENS_PUBLIC_MCP_URL` | `http://localhost:8765/mcp` | The MCP server's address as AI assistants reach it, shown next to a new token. Set it when the server sits behind a proxy or on another host |
 | `DPOLENS_COMMUNITY` | `false` | Run as a community version: the API makes the Community account the MCP server answers everyone as, and setup publishes no sample policy. [mcp.md](mcp.md#a-community-version) says how |
 | `DPOLENS_PUBLIC_DASHBOARD_URL` | `http://localhost:8080` | The dashboard's address as people open it, which `dpolens init` names when it is done. Compose sets it from `DPOLENS_DASHBOARD_PORT` |
 | `DPOLENS_PACKS_REPOSITORY` | `alkhatibdev/dpolens` | The GitHub repository, as owner and name, whose releases `dpolens pack update` reads. A fork that publishes its own packs is named here. [releases.md](releases.md#law-packs) says how an update works |

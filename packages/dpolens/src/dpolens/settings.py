@@ -108,8 +108,8 @@ class Settings(BaseSettings):
         default="http://localhost:8765/mcp",
         max_length=500,
         description=(
-            "The MCP server's address as people's assistants reach it, which the dashboard "
-            "shows next to a new token. The default is the quickstart's"
+            "The MCP server's address as people's AI assistants reach it, which the "
+            "dashboard shows next to a new token. The default is the quickstart's"
         ),
     )
 

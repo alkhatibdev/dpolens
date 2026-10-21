@@ -4,7 +4,7 @@ This is how an AI coding assistant reads your policies and the law while you wor
 four tools and two prompts, it answers over HTTP, and it reads the corpus through
 [the HTTP API](api.md), with no database connection of its own.
 
-## What the assistant gets
+## What the AI assistant gets
 
 | Tool | What it does |
 | --- | --- |
@@ -61,7 +61,7 @@ naming you and your token. The API checks that pair rather than believing it.
 
 So the query log names the developer who asked, not the server they went through, and your
 permissions are the ones that apply. A token with nothing on it is refused by the API, and the
-refusal reaches the assistant as a message it can read out.
+refusal reaches the AI assistant as a message it can read out.
 
 Nothing about a token is cached. Revoking one stops the next call.
 
@@ -142,7 +142,7 @@ each address, a larger one shared by each range that carries many people's calls
 everybody together. claude.ai, Claude Desktop and ChatGPT call from their platforms' own
 servers, so every person using one of them arrives from the same few addresses: name those
 ranges in `DPOLENS_MCP_SHARED_RANGES`, from what each platform publishes. A refused call gets
-`429` and `Retry-After`. The assistant is told, in the server's instructions and the search
+`429` and `Retry-After`. The AI assistant is told, in the server's instructions and the search
 tool's description, how long questions are kept.
 
 | Variable | Read by | Default | What it does |
@@ -156,7 +156,7 @@ tool's description, how long questions are kept.
 | `DPOLENS_MCP_PER_ADDRESS_PER_MINUTE` | MCP server | `30` | Calls one address may make a minute |
 | `DPOLENS_MCP_PER_RANGE_PER_MINUTE` | MCP server | `120` | Calls one shared range may make a minute |
 | `DPOLENS_MCP_OVERALL_PER_MINUTE` | MCP server | `300` | Calls everybody together may make a minute |
-| `DPOLENS_QUERY_LOG_RETENTION_DAYS` | API and MCP server | none | How long questions are kept. The server reads the same variable, to tell the assistant |
+| `DPOLENS_QUERY_LOG_RETENTION_DAYS` | API and MCP server | none | How long questions are kept. The server reads the same variable, to tell the AI assistant |
 
 The API still limits each token, so on a community version `DPOLENS_RATE_LIMIT_PER_MINUTE`
 has to allow at least the overall limit, or the Community account's one token reaches its own

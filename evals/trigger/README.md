@@ -1,6 +1,6 @@
 # The trigger test
 
-The retrieval evals measure whether search finds the right clause once an assistant asks. This
+The retrieval evals measure whether search finds the right clause once an AI assistant asks. This
 measures whether it asks: how often Claude Code calls DPOLens on its own when the work in front
 of it touches personal data, and how often it calls when the work does not.
 
@@ -8,7 +8,7 @@ of it touches personal data, and how often it calls when the work does not.
 
 | Path | What it is |
 | --- | --- |
-| `tuning.yaml` | 20 tasks used while improving the guidance DPOLens gives an assistant |
+| `tuning.yaml` | 20 tasks used while improving the guidance DPOLens gives an AI assistant |
 | `held_out.yaml` | 30 tasks that produce the published number and are never used to change anything |
 | `app/` | Larder, the small TypeScript shop every task runs against |
 | `container/` | The container one run happens in |
@@ -43,7 +43,7 @@ A set is half tasks that should search and half that should not. The ones that s
 cover every verb, the ones that should not include near misses, and a few questions about the
 rules sit in their own group. A coding task never names the subject: no "personal data",
 "privacy", "GDPR", "policy", "consent", "law", "legal" or "compliant". A task that says "make
-this compliant" would trigger any assistant and the number would mean nothing.
+this compliant" would trigger any AI assistant and the number would mean nothing.
 `tests/unit/test_trigger_tasks.py` checks all of this.
 
 ## What a run is
@@ -54,10 +54,10 @@ installs it, from the plugin marketplace, with `claude plugin configure`. Nothin
 profile: no `CLAUDE.md`, no memory, no other plugins. The runs talk to a throwaway DPOLens
 instance built from your checkout, with every pack in it loaded, which is removed afterwards.
 
-A run counts as a call when the assistant calls `search_policies` or `get_clause`, the two
+A run counts as a call when the AI assistant calls `search_policies` or `get_clause`, the two
 tools that return clause text. It counts as a call before editing when that happens before its
 first `Edit`, `Write`, `MultiEdit` or `NotebookEdit`. A run stops as soon as the first call
-comes back, since the outcome is known by then. Otherwise it goes until the assistant finishes,
+comes back, since the outcome is known by then. Otherwise it goes until the AI assistant finishes,
 25 turns or 10 minutes.
 
 A run that could not have called DPOLens is retried rather than scored: the plugin not loading,
@@ -114,5 +114,5 @@ together, since three runs of one task are not three tasks. It also gives how ma
 tasks that should search did so before editing, and how consistent each task was: searched in
 every run, in none, or in some.
 
-The second rate is the cost of the first. An assistant that searched before every task would
+The second rate is the cost of the first. An AI assistant that searched before every task would
 score perfectly on the first and be a nuisance, which is why both are published.

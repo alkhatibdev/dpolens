@@ -231,7 +231,7 @@ def read_subtree(
     lang: Annotated[str | None, Query(max_length=20)] = None,
     as_of: Annotated[date | None, Query()] = None,
 ) -> list[Clause]:
-    """What an assistant wants once it has the top hit: the whole article, in order."""
+    """What an AI assistant wants once it has the top hit: the whole article, in order."""
     with logged(
         request,
         who,

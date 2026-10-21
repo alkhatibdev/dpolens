@@ -280,7 +280,7 @@ baseline, and against that BM25 is worth about ten points of recall@5.
 
 Keyword search alone reaches 0.25, and meaning search reaches 0.60. That is not an argument
 for dropping it: it earns its place on quoted phrases, defined terms and article numbers,
-which is how a lawyer searches and how an assistant follows a citation. On the
+which is how a lawyer searches and how an AI assistant follows a citation. On the
 conversational questions in these sets, meaning search does the work.
 
 **A warning about small question sets.** On these 20 tuning questions, fusion scored

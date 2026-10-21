@@ -196,7 +196,7 @@ The fusion rule is not a parameter. It is chosen by measurement, and
 
 `GET /v1/clauses/{key}` returns one clause with its breadcrumb, its children and
 the cross-references its text states. `GET /v1/clauses/{key}/subtree` returns that
-clause and everything beneath it in reading order, which is what an assistant wants
+clause and everything beneath it in reading order, which is what an AI assistant wants
 once it has the top hit.
 
 Both take `lang` and `as_of`. Without `lang`, or for a language the clause has no
@@ -448,7 +448,7 @@ time zone `tz`, for `queries.read_all`: how many, how many the same number of da
 how many were answered and how many found nothing, by day and by surface, the clauses most
 often cited, where answers came from, the latest questions that found nothing, and the laws
 searches cover. A clause counts once a day for each person, or service account, that cited
-it: a search that returned it first, from anywhere, or a read by its key from an assistant or
+it: a search that returned it first, from anywhere, or a read by its key from an AI assistant or
 the API. Reading a clause in the dashboard never counts, and the clauses listed are the
 selected laws' and the policies'. No name appears in it.
 
@@ -473,7 +473,7 @@ not loaded gets `422` and `/problems/unknown-law`.
 
 `GET /v1/instance` tells anyone signed in the version and the MCP server's address, which
 the dashboard shows next to a new token. The address is `DPOLENS_PUBLIC_MCP_URL`, by default
-`http://localhost:8765/mcp`: set it to the address assistants really use when the MCP server
+`http://localhost:8765/mcp`: set it to the address AI assistants really use when the MCP server
 sits behind a proxy or on another host.
 
 `GET /v1/settings` says how the instance is set up, for `settings.manage`: how long a question

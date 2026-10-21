@@ -86,7 +86,7 @@ First version of the API. Everything below is new rather than changed.
   `governance.read`
 - `GET /v1/overview` and `GET /v1/clauses/{key}/activity` count what was asked and what was
   cited, in the reader's time zone, for `queries.read_all`. A clause counts once a day for each
-  person who cited it: a search's first result, or a read by key from an assistant or the
+  person who cited it: a search's first result, or a read by key from an AI assistant or the
   API, never a read in the dashboard. Most cited lists the selected laws' clauses and the
   policies'
 - `GET /v1/laws` lists the loaded laws, which of them a search covers, which are new, and
