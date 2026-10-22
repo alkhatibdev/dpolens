@@ -184,8 +184,8 @@ dpolens pack import dpolens-pack-gdpr-2026.2.tar.gz
 ```
 
 An administrator chooses which laws apply to the organisation. A search covers those and
-the organisation's own policies, and nothing else, so a company in Dubai with no EU customers
-is never answered from GDPR, and an AI assistant that asks for GDPR is told it is not one of the
+the organisation's own policies, and nothing else, so a company outside the EU with no customers
+there is never answered from GDPR, and an AI assistant that asks for GDPR is told it is not one of the
 organisation's laws. Until somebody chooses, nothing is searched. The dashboard asks whoever
 may choose as they sign in, and Selected laws changes the choice later, marking a law that
 arrived with an upgrade as new. Every change is written to the governance log, and the
