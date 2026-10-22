@@ -1,4 +1,4 @@
-"""The version a release is made from, which lives in six places.
+"""The version a release is made from, which lives in several places.
 
 A tag that does not match the repository, or two files that disagree, would
 publish images that say one version and run another. The release workflow stops

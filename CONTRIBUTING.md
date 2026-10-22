@@ -217,6 +217,13 @@ What a release publishes, and how to check an image or a pack archive, is on dpo
    Latest: the app's release is published as Latest, so the repository's page shows it, and a
    pre-release, such as `0.1.0-rc.1`, which the workflow has already marked as one, as
    Pre-release.
+5. Once the community version runs the release, its entry in the
+   [MCP Registry](https://registry.modelcontextprotocol.io) is published from `server.json`,
+   which `bump` gave the new version. The entry's name, `com.dpolens/dpolens`, is proven by a
+   TXT record on dpolens.com that holds the public half of the maintainer's key:
+   `mcp-publisher login dns --domain dpolens.com --private-key <key>`, then
+   `mcp-publisher publish` from the repository's root. A version the registry has seen is
+   refused, so each release is published once.
 
 A pull request that changes how the images are built runs the same workflow, short of
 publishing anything. It builds all four images for both platforms, checks that each has one

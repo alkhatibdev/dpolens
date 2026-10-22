@@ -1,0 +1,30 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.dpolens/dpolens",
+  "title": "DPOLens",
+  "description": "Privacy law your AI assistant can cite: the exact clause and its version. GDPR and UAE PDPL today.",
+  "version": "0.1.0-rc.3",
+  "websiteUrl": "https://dpolens.com",
+  "repository": {
+    "url": "https://github.com/alkhatibdev/dpolens",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://dpolens.com/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    },
+    {
+      "src": "https://dpolens.com/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.dpolens.com/"
+    }
+  ]
+}
