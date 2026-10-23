@@ -39,6 +39,16 @@ describe("tokens", () => {
     expect(body.permissions).toEqual(["documents.read"]);
     expect(body.expires_at).not.toBeNull();
 
+    await userEvent.click(within(shown).getByRole("button", { name: "Codex" }));
+    expect(
+      within(shown).getByText(
+        "codex mcp add dpolens --url https://dpolens.example.com/mcp --bearer-token-env-var DPOLENS_TOKEN",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(shown).getByText("export DPOLENS_TOKEN=dpol_Xk2fQ9vR3mT8bLw1zN6cYp"),
+    ).toBeInTheDocument();
+
     await userEvent.click(within(shown).getByRole("button", { name: "Done" }));
     expect(screen.queryByText("dpol_Xk2fQ9vR3mT8bLw1zN6cYp")).not.toBeInTheDocument();
   });

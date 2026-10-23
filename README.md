@@ -21,7 +21,7 @@
 
 <p align="center">
   <a href="#get-started">Get started</a> ·
-  <a href="https://dpolens.com/docs/get-started">Docs</a> ·
+  <a href="https://dpolens.com/docs/introduction">Docs</a> ·
   <a href="https://dpolens.com/docs/connect">Connect your AI assistant</a> ·
   <a href="#does-it-actually-find-the-right-clause">Search scores</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
@@ -33,10 +33,25 @@
 > without notice until 1.0. [What exists today](#what-exists-today) has the detail, and
 > watching the repository tells you when 0.1.0 lands.
 
+## What changes
+
+Say you ask your AI assistant to log failed sign-ins, so you can debug them.
+
+- **Without DPOLens,** it writes each user's email address into the log in plain text, and the
+  log is kept until someone remembers to delete it.
+- **With DPOLens,** it checks your company's privacy policy first. The policy says email
+  addresses in logs are masked, and logs are kept for 90 days. So it masks the email address,
+  sets the logs to be deleted after 90 days, and tells you which rule it followed, so whoever
+  reviews the code can check it.
+
+You don't have to learn the law or change how you work: the rules are applied while the code is
+being written, not after an audit or an incident. The
+[introduction](https://dpolens.com/docs/introduction) says more.
+
 ## Get started
 
-You need Git, Docker with Compose, and an AI assistant that speaks MCP (Claude Code, Cursor or
-VS Code).
+You need Git, Docker with Compose, and an AI assistant that speaks MCP (Claude Code, Codex, Cursor
+or GitHub Copilot in VS Code).
 
 ```bash
 git clone https://github.com/alkhatibdev/dpolens.git
@@ -54,7 +69,7 @@ organisation. Then sign in to the dashboard at [http://localhost:8080](http://lo
 make a token under Tokens, and connect your AI assistant to `http://localhost:8765/mcp` with it.
 [Get started](https://dpolens.com/docs/get-started) has every step, and
 [Connect your AI assistant](https://dpolens.com/docs/connect) has the configuration for Claude
-Code, Cursor and VS Code.
+Code, Codex, Cursor and GitHub Copilot in VS Code.
 
 ## Why this exists
 
@@ -70,7 +85,16 @@ has never seen your organisation's policies. What it knows about the law is a bl
 from training: close enough to sound right, not close enough to act on.
 
 So more code that touches personal data gets written, faster, by something that knows the
-rules less well than you do.
+rules less well than you do. A mistake in it is rarely caught in review. It is found later, by a
+customer, an auditor or an attacker, and by then it costs far more than the fix would have:
+
+- **Fines.** Privacy laws let regulators fine the company, under some up to 4% of its worldwide
+  yearly turnover.
+- **Deadlines.** A breach often has to be reported to the regulator within days, sometimes
+  within 72 hours, and to the people whose data it was.
+- **Clean-up.** Someone has to find every log, backup and copy the data reached, and delete it.
+- **Trust and sales.** Customers leave, and larger customers ask how you handle personal data
+  before they sign.
 
 ## What DPOLens does
 

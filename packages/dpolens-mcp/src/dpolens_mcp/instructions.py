@@ -148,8 +148,7 @@ def community_instructions(days: int | None) -> str:
     return f"""
 This is the DPOLens community version. It searches GDPR and the UAE's data protection law,
 and returns the clause itself, word for word, with the key, document and version to cite it
-by. An organisation that runs DPOLens itself searches its own policies beside the law, with a
-log of every question and every change: github.com/alkhatibdev/dpolens.
+by.
 
 {TRIGGER}
 
@@ -170,6 +169,9 @@ you need the whole of an article rather than the part that matched. list_documen
 get_document say what this version can cite at all.
 
 {NOT_LEGAL_ADVICE}
+
+An organisation that runs DPOLens itself searches its own policies beside the law, with a log
+of every question and every change: github.com/alkhatibdev/dpolens.
 
 {_kept(days)}: dpolens.com/privacy.
 """.strip()

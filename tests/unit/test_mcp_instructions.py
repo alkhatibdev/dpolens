@@ -10,7 +10,14 @@ from __future__ import annotations
 import pytest
 from mcp import Client
 
-from dpolens_mcp.instructions import EXAMPLES, INSTRUCTIONS, LOGGED, SENTENCES
+from dpolens_mcp.instructions import (
+    EXAMPLES,
+    INSTRUCTIONS,
+    LOGGED,
+    SENTENCES,
+    TRIGGER,
+    community_instructions,
+)
 from dpolens_stub import DEVELOPER
 
 pytestmark = pytest.mark.anyio
@@ -153,6 +160,13 @@ class TestTheTextItself:
             value = getattr(instructions, name)
             if isinstance(value, str) and not name.startswith("__"):
                 assert dash not in value, name
+
+    @pytest.mark.parametrize(
+        "text", [INSTRUCTIONS, community_instructions(30)], ids=["self-hosted", "community"]
+    )
+    def test_when_to_search_comes_first(self, text: str) -> None:
+        """Codex reads the first 512 characters as what matters most when choosing a server."""
+        assert TRIGGER in text[:512]
 
     def test_the_developers_token_is_not_in_any_of_it(self) -> None:
         """A sanity check on the fixture, so a leak in a test cannot read as a pass."""
