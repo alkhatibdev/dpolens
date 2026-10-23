@@ -9,7 +9,7 @@ import { SegmentedChoice } from "@/components/Segmented";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogActions, DialogClose, DialogContent } from "@/components/ui/dialog";
 
-type Assistant = "claude" | "cursor" | "vscode";
+type Assistant = "claude" | "codex" | "cursor" | "vscode";
 
 const FALLBACK_URL = "http://localhost:8765/mcp";
 
@@ -36,6 +36,7 @@ export function TokenShownDialog({
     return null;
   }
   const url = instance.data?.mcp_url ?? FALLBACK_URL;
+  const codex = `codex mcp add dpolens --url ${url} --bearer-token-env-var DPOLENS_TOKEN`;
   const cursor = JSON.stringify(
     { mcpServers: { dpolens: { url, headers: { Authorization: "Bearer ${env:DPOLENS_TOKEN}" } } } },
     null,
@@ -74,8 +75,10 @@ export function TokenShownDialog({
             label={t("tokens.assistants")}
             value={assistant}
             onChange={setAssistant}
+            className="max-sm:grid max-sm:grid-cols-2 max-sm:self-stretch max-sm:rounded-[24px]"
             options={[
               { value: "claude", label: t("tokens.claude") },
+              { value: "codex", label: t("tokens.codex") },
               { value: "cursor", label: t("tokens.cursor") },
               { value: "vscode", label: t("tokens.vscode") },
             ]}
@@ -92,6 +95,17 @@ export function TokenShownDialog({
                 {t("tokens.claudeThen", { command: "/plugin configure dpolens@dpolens" })}
               </p>
               <CopyField value={url} label={t("tokens.copyUrl")} />
+            </>
+          ) : null}
+          {assistant === "codex" ? (
+            <>
+              <p className="text-sm leading-relaxed text-ink-2">{t("tokens.codexFirst")}</p>
+              <Snippet>{codex}</Snippet>
+              <p className="text-sm leading-relaxed text-ink-2">{t("tokens.codexThen")}</p>
+              <CopyField
+                value={`export DPOLENS_TOKEN=${token.secret}`}
+                label={t("tokens.copySnippet")}
+              />
             </>
           ) : null}
           {assistant === "cursor" ? (

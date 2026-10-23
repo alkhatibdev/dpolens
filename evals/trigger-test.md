@@ -117,8 +117,9 @@ and reading the full record each run leaves behind.
 
 ## What it does not show
 
-- **Other AI assistants.** Only Claude Code was measured, on one model, on one date. Cursor and VS
-  Code read the same guidance, but how often they act on it has not been measured.
+- **Other AI assistants.** Only Claude Code was measured, on one model, on one date. Codex, Cursor
+  and GitHub Copilot in VS Code read the same guidance, but how often they act on it has not been
+  measured.
 - **Messier work.** The tasks are short, plainly phrased requests in a small app. In a large
   codebase, the code that handles people's data is harder to spot, and requests are rarely this
   clear.

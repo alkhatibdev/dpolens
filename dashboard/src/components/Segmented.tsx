@@ -3,7 +3,8 @@ import { NavLink } from "react-router";
 
 import { cn } from "@/lib/utils";
 
-const item = "inline-flex h-10 items-center rounded-full px-[18px] text-[15px] whitespace-nowrap";
+const item =
+  "inline-flex h-10 items-center justify-center rounded-full px-[18px] text-[15px] whitespace-nowrap";
 const on = "bg-ink font-semibold text-white";
 const off = "text-ink-2 hover:bg-field";
 
@@ -40,17 +41,20 @@ export function SegmentedChoice<T extends string>({
   value,
   onChange,
   options,
+  className,
 }: {
   label: string;
   value: T;
   onChange: (value: T) => void;
   options: { value: T; label: ReactNode }[];
+  /** For a choice that needs another shape, such as a grid on a narrow screen. */
+  className?: string;
 }) {
   return (
     <div
       role="group"
       aria-label={label}
-      className="inline-flex flex-wrap gap-1 self-start rounded-full bg-white p-1"
+      className={cn("inline-flex flex-wrap gap-1 self-start rounded-full bg-white p-1", className)}
     >
       {options.map((option) => (
         <button

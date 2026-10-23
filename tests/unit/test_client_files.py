@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -32,11 +33,18 @@ GUIDANCE = (
 )
 
 CONFIGURATIONS = (
+    CLIENTS / "codex" / "config.toml",
     CLIENTS / "cursor" / "mcp.json",
     CLIENTS / "vscode" / "mcp.json",
 )
 
 sys.path.insert(0, str(REPO / "scripts"))
+
+
+def codex() -> dict[str, Any]:
+    with (CLIENTS / "codex" / "config.toml").open("rb") as file:
+        server: dict[str, Any] = tomllib.load(file)["mcp_servers"]["dpolens"]
+    return server
 
 
 def compose() -> dict[str, Any]:
@@ -111,6 +119,7 @@ class TestNothingCarriesACredential:
 
         assert "${env:DPOLENS_TOKEN}" in cursor["mcpServers"]["dpolens"]["headers"]["Authorization"]
         assert "${input:dpolens-token}" in vscode["servers"]["dpolens"]["headers"]["Authorization"]
+        assert codex()["bearer_token_env_var"] == "DPOLENS_TOKEN"
         assert plugin["userConfig"]["token"]["sensitive"] is True
 
 
@@ -125,6 +134,7 @@ class TestEveryClientPointsAtTheSameServer:
 
         assert cursor["mcpServers"]["dpolens"]["url"] == expected
         assert vscode["servers"]["dpolens"]["url"] == expected
+        assert codex()["url"] == expected
         assert plugin["userConfig"]["url"]["default"] == expected
 
     def test_the_port_compose_publishes_is_the_one_the_server_listens_on(self) -> None:

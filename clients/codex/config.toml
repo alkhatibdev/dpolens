@@ -1,0 +1,6 @@
+# Goes in ~/.codex/config.toml, or in .codex/config.toml in a trusted project. The Codex CLI,
+# its IDE extension and the ChatGPT desktop app read the same file. The token comes from
+# DPOLENS_TOKEN, so this file holds none.
+[mcp_servers.dpolens]
+url = "http://localhost:8765/mcp"
+bearer_token_env_var = "DPOLENS_TOKEN"
