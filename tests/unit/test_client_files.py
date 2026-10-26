@@ -26,10 +26,18 @@ COMPOSE = REPO / "compose.yaml"
 DASHBOARD_SERVER = REPO / "deploy" / "dashboard" / "nginx.conf"
 MARKETPLACE = REPO / ".claude-plugin" / "marketplace.json"
 PLUGIN = CLIENTS / "claude-code" / ".claude-plugin" / "plugin.json"
+CURSOR_MARKETPLACE = REPO / ".cursor-plugin" / "marketplace.json"
+CURSOR_PLUGIN = CLIENTS / "cursor-plugin"
+SERVER_JSON = REPO / "server.json"
+
+CURSOR_RULES = (
+    CLIENTS / "cursor" / "dpolens.mdc",
+    CURSOR_PLUGIN / "rules" / "dpolens.mdc",
+)
 
 GUIDANCE = (
     CLIENTS / "claude-code" / "skills" / "dpolens" / "SKILL.md",
-    CLIENTS / "cursor" / "dpolens.mdc",
+    *CURSOR_RULES,
 )
 
 CONFIGURATIONS = (
@@ -75,7 +83,7 @@ class TestTheGuidanceIsTheSameEverywhere:
             "run `uv run python scripts/client_text.py --write` after changing the words"
         )
 
-    @pytest.mark.parametrize("path", GUIDANCE, ids=lambda path: path.parent.name)
+    @pytest.mark.parametrize("path", GUIDANCE, ids=lambda path: str(path.relative_to(CLIENTS)))
     @pytest.mark.parametrize("sentence", SENTENCES, ids=range(len(SENTENCES)))
     def test_every_surface_carries_every_sentence(self, path: Path, sentence: str) -> None:
         """Where the lines break is the file's business, so this ignores it."""
@@ -83,9 +91,10 @@ class TestTheGuidanceIsTheSameEverywhere:
 
         assert " ".join(sentence.split()) in written
 
-    def test_the_cursor_rule_is_always_applied(self) -> None:
+    @pytest.mark.parametrize("path", CURSOR_RULES, ids=lambda path: str(path.relative_to(CLIENTS)))
+    def test_the_cursor_rule_is_always_applied(self, path: Path) -> None:
         """A rule the agent has to ask for is a rule that does not fire in time."""
-        rule = (CLIENTS / "cursor" / "dpolens.mdc").read_text(encoding="utf-8")
+        rule = path.read_text(encoding="utf-8")
 
         assert rule.startswith("---")
         assert "alwaysApply: true" in rule
@@ -105,7 +114,15 @@ class TestTheGuidanceIsTheSameEverywhere:
 class TestNothingCarriesACredential:
     @pytest.mark.parametrize(
         "path",
-        [*CONFIGURATIONS, PLUGIN, MARKETPLACE, COMPOSE],
+        [
+            *CONFIGURATIONS,
+            PLUGIN,
+            MARKETPLACE,
+            CURSOR_MARKETPLACE,
+            CURSOR_PLUGIN / ".cursor-plugin" / "plugin.json",
+            CURSOR_PLUGIN / "mcp.json",
+            COMPOSE,
+        ],
         ids=lambda path: str(path.name),
     )
     def test_no_file_holds_a_token(self, path: Path) -> None:
@@ -179,6 +196,54 @@ class TestThePluginAndItsMarketplace:
         assert set(plugin["userConfig"]) == {"url", "token"}
         assert plugin["mcpServers"]["dpolens"]["url"] == "${user_config.url}"
         assert "${user_config.token}" in plugin["mcpServers"]["dpolens"]["headers"]["Authorization"]
+
+
+class TestTheCursorPlugin:
+    """Listed in Cursor's directories, so it connects to the community version, which anyone
+    can use with no token, rather than to an instance somebody has to run first."""
+
+    def test_the_marketplace_points_at_the_plugin_in_this_repository(self) -> None:
+        marketplace = json.loads(CURSOR_MARKETPLACE.read_text(encoding="utf-8"))
+
+        assert marketplace["name"] == "dpolens"
+        assert marketplace["owner"]["name"]
+        [entry] = marketplace["plugins"]
+        assert entry["name"] == "dpolens"
+        assert REPO / entry["source"].removeprefix("./") == CURSOR_PLUGIN
+
+    def test_the_marketplace_describes_the_plugin_as_the_plugin_does(self) -> None:
+        """cursor.directory lists a repository from its marketplace file, so the two agree."""
+        marketplace = json.loads(CURSOR_MARKETPLACE.read_text(encoding="utf-8"))
+        plugin = json.loads(
+            (CURSOR_PLUGIN / ".cursor-plugin" / "plugin.json").read_text(encoding="utf-8")
+        )
+
+        for field in ("description", "author", "homepage", "license", "keywords"):
+            assert marketplace[field] == plugin[field], field
+        assert REPO / marketplace["logo"] == CURSOR_PLUGIN / plugin["logo"]
+
+    def test_the_plugin_has_a_name_and_a_logo(self) -> None:
+        plugin = json.loads(
+            (CURSOR_PLUGIN / ".cursor-plugin" / "plugin.json").read_text(encoding="utf-8")
+        )
+
+        assert plugin["name"] == "dpolens"
+        assert plugin["license"] == "Apache-2.0"
+        assert (CURSOR_PLUGIN / plugin["logo"]).is_file()
+
+    def test_it_connects_to_the_community_version_the_registry_lists(self) -> None:
+        servers = json.loads((CURSOR_PLUGIN / "mcp.json").read_text(encoding="utf-8"))
+        registry = json.loads(SERVER_JSON.read_text(encoding="utf-8"))
+
+        assert servers["mcpServers"]["dpolens"] == {"url": registry["remotes"][0]["url"]}
+
+    def test_its_rule_does_not_promise_an_organisations_policies(self) -> None:
+        """The community version holds the law alone."""
+        rule = " ".join((CURSOR_PLUGIN / "rules" / "dpolens.mdc").read_text().split())
+
+        assert "community version" in rule
+        assert "this organisation's privacy policies" not in rule
+        assert "Search the organisation's own policies as well" not in rule
 
 
 class TestTheComposeFile:

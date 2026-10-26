@@ -139,6 +139,17 @@ which version of each is in force. The call is recorded.
 # questions without who asked. What it says has to match that, word for word.
 
 
+COMMUNITY_HOLDS = (
+    "It searches GDPR and the UAE's data protection law, and returns the clause itself, word for "
+    "word, with the key, document and version to cite it by."
+)
+
+RUN_IT_YOURSELF = (
+    "An organisation that runs DPOLens itself searches its own policies beside the law, with a "
+    "log of every question and every change: github.com/alkhatibdev/dpolens."
+)
+
+
 def _kept(days: int | None) -> str:
     kept = f"kept {days} days" if days else "kept"
     return f"Questions asked here are {kept}, with nothing about who asked"
@@ -146,9 +157,7 @@ def _kept(days: int | None) -> str:
 
 def community_instructions(days: int | None) -> str:
     return f"""
-This is the DPOLens community version. It searches GDPR and the UAE's data protection law,
-and returns the clause itself, word for word, with the key, document and version to cite it
-by.
+This is the DPOLens community version. {COMMUNITY_HOLDS}
 
 {TRIGGER}
 
@@ -170,8 +179,7 @@ get_document say what this version can cite at all.
 
 {NOT_LEGAL_ADVICE}
 
-An organisation that runs DPOLens itself searches its own policies beside the law, with a log
-of every question and every change: github.com/alkhatibdev/dpolens.
+{RUN_IT_YOURSELF}
 
 {_kept(days)}: dpolens.com/privacy.
 """.strip()

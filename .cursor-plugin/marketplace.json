@@ -1,0 +1,26 @@
+{
+  "name": "dpolens",
+  "owner": {
+    "name": "DPOLens",
+    "url": "https://github.com/alkhatibdev/dpolens"
+  },
+  "description": "Privacy law your AI assistant can cite: the exact clause, its key and its version. GDPR and the UAE PDPL today, more as packs. No sign-in.",
+  "author": {
+    "name": "DPOLens",
+    "url": "https://dpolens.com"
+  },
+  "homepage": "https://dpolens.com/community",
+  "license": "Apache-2.0",
+  "keywords": ["privacy", "gdpr", "compliance", "legal", "mcp"],
+  "logo": "clients/cursor-plugin/assets/logo.svg",
+  "metadata": {
+    "description": "DPOLens for Cursor: privacy law your AI assistant can cite, clause by clause."
+  },
+  "plugins": [
+    {
+      "name": "dpolens",
+      "source": "./clients/cursor-plugin",
+      "description": "Connects Cursor to the DPOLens community version, with the rule that says when to search it."
+    }
+  ]
+}
