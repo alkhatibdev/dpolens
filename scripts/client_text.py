@@ -2,7 +2,7 @@
 
 The same instruction has to reach an assistant three ways: sent on connect by
 the MCP server, carried by the Claude Code plugin, and written in the Cursor
-rules file, which is read without connecting to anything. The sentences live in
+rules files, which are read without connecting to anything. The sentences live in
 `dpolens_mcp.instructions`, and this writes the files that repeat them.
 
     uv run python scripts/client_text.py            # check, which is what the tests do
@@ -21,6 +21,7 @@ from pathlib import Path
 
 from dpolens_mcp.instructions import (
     CITE,
+    COMMUNITY_HOLDS,
     EXAMPLES,
     LOGGED,
     NO_MEMORY,
@@ -28,6 +29,7 @@ from dpolens_mcp.instructions import (
     PERSONAL_DATA,
     POLICY_CHECK,
     POLICY_TOUR,
+    RUN_IT_YOURSELF,
     TRIGGER,
 )
 
@@ -131,6 +133,45 @@ or `get_document` to see what this instance can cite.
 """
 
 
+def community_cursor_rule() -> str:
+    """The rule in the Cursor plugin, whose server is the community version: the law alone."""
+    return f"""---
+description: >-
+  How to use DPOLens, which holds the text of privacy law, and when to search it.
+alwaysApply: true
+---
+
+# DPOLens
+
+{wrapped("The `dpolens` MCP server is the DPOLens community version. " + COMMUNITY_HOLDS)}
+
+{TRIGGER_TEXT}
+
+{PERSONAL_DATA_TEXT}
+
+{NO_MEMORY_TEXT}
+
+{CITE_TEXT}
+
+Use the `dpolens` MCP server's tools: `search_policies` for a question in ordinary words,
+`get_clause` to read one clause by its key with the clauses around it, and `list_documents`
+or `get_document` to see which laws it can cite.
+
+Questions that work well:
+
+- {EXAMPLES[0]}
+- {EXAMPLES[1]}
+- {EXAMPLES[2]}
+
+{NOT_LEGAL_ADVICE_TEXT}
+
+{wrapped(RUN_IT_YOURSELF)}
+
+Questions asked of the community version are kept with nothing about who asked:
+dpolens.com/privacy.
+"""
+
+
 def policy_check_command() -> str:
     return f"""---
 description: Check the change you are working on against the policies and the law
@@ -158,6 +199,7 @@ def files() -> dict[Path, str]:
         CLIENTS / "claude-code" / "commands" / "policy-check.md": policy_check_command(),
         CLIENTS / "claude-code" / "commands" / "policy-tour.md": policy_tour_command(),
         CLIENTS / "cursor" / "dpolens.mdc": cursor_rule(),
+        CLIENTS / "cursor-plugin" / "rules" / "dpolens.mdc": community_cursor_rule(),
     }
 
 

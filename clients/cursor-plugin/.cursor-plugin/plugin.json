@@ -1,0 +1,14 @@
+{
+  "name": "dpolens",
+  "displayName": "DPOLens",
+  "description": "Privacy law your AI assistant can cite: the exact clause, its key and its version. GDPR and the UAE PDPL today, more as packs. No sign-in.",
+  "author": {
+    "name": "DPOLens",
+    "url": "https://dpolens.com"
+  },
+  "homepage": "https://dpolens.com/community",
+  "repository": "https://github.com/alkhatibdev/dpolens",
+  "license": "Apache-2.0",
+  "keywords": ["privacy", "gdpr", "compliance", "legal", "mcp"],
+  "logo": "assets/logo.svg"
+}
