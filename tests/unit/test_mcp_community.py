@@ -103,6 +103,13 @@ async def test_anyone_is_answered_without_a_token_as_the_community_account(
     assert stub.calls("/v1/tokens/introspect") == []
 
 
+async def test_a_search_says_it_searched_the_law_alone(anyone: Client) -> None:
+    """A community version holds no organisation's policies, so a search never claims it did."""
+    result = await anyone.call_tool("search_policies", {"query": "retention"})
+
+    assert structured(result)["searched"] == "testlaw, as they stand today"
+
+
 async def test_the_assistant_is_told_what_it_searches_and_how_questions_are_kept(
     anyone: Client,
 ) -> None:

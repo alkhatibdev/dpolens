@@ -177,7 +177,9 @@ def build(settings: Settings, api: Api) -> MCPServer:
             )
 
         results = [_match(result) for result in answer["results"]]
-        return Found(searched=_scope(answer["laws"], as_of), results=results)
+        return Found(
+            searched=_scope(answer["laws"], as_of, policies=not community), results=results
+        )
 
     @mcp.tool(title="Read one clause", annotations=READING)
     async def get_clause(
@@ -347,9 +349,13 @@ def _told(refused: Refused) -> ToolError:
     return ToolError(said)
 
 
-def _scope(laws: list[str], as_of: date | None) -> str:
+def _scope(laws: list[str], as_of: date | None, *, policies: bool) -> str:
+    """What a search covered. A community version holds no organisation's policies."""
     when = f"as they stood on {as_of.isoformat()}" if as_of else "as they stand today"
-    return f"{', '.join(laws) or 'no law'}, and the organisation's own policies, {when}"
+    searched = ", ".join(laws) or "no law"
+    if policies:
+        searched += ", and the organisation's own policies"
+    return f"{searched}, {when}"
 
 
 def _match(result: dict[str, Any]) -> Match:
