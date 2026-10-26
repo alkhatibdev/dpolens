@@ -49,8 +49,9 @@ this compliant" would trigger any AI assistant and the number would mean nothing
 ## What a run is
 
 Every run is a new container: Claude Code at a pinned version, a fresh checkout of Larder with
-its dependencies installed, and an empty profile with DPOLens installed the way the README
-installs it, from the plugin marketplace, with `claude plugin configure`. Nothing else is in the
+its dependencies installed, and an empty profile with DPOLens installed the way
+[Get started](https://dpolens.com/docs/get-started) installs it, from the plugin marketplace,
+with `claude plugin configure`. Nothing else is in the
 profile: no `CLAUDE.md`, no memory, no other plugins. The runs talk to a throwaway DPOLens
 instance built from your checkout, with every pack in it loaded, which is removed afterwards.
 

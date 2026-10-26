@@ -55,8 +55,9 @@ The server's instructions did the work: without the skill, every task that shoul
 did, before editing. The one difference is `product-viewed-event`, and the skill's description
 is the likely reason. It says to use DPOLens "when sending data to another service", which that
 task does with data about no one, where the server's instructions say "personal data". Without
-the plugin, the task never searched. The plugin is still what the README installs, for its
-commands and for keeping the token in the system's credential store.
+the plugin, the task never searched. The plugin is still what
+[Get started](https://dpolens.com/docs/get-started) installs, for its commands and for keeping
+the token in the system's credential store.
 
 ## How it is measured
 

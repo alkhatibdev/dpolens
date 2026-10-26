@@ -16,355 +16,68 @@
 
 <p align="center">
   <a href="https://github.com/alkhatibdev/dpolens/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/alkhatibdev/dpolens/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/alkhatibdev/dpolens/releases"><img alt="Release" src="https://img.shields.io/github/v/release/alkhatibdev/dpolens?filter=v*&sort=semver&label=release&color=12784E"></a>
   <a href="LICENSE"><img alt="Licence: Apache-2.0" src="https://img.shields.io/badge/licence-Apache--2.0-12784E"></a>
 </p>
 
 <p align="center">
-  <a href="#get-started">Get started</a> ·
   <a href="https://dpolens.com/docs/introduction">Docs</a> ·
-  <a href="https://dpolens.com/docs/connect">Connect your AI assistant</a> ·
-  <a href="#does-it-actually-find-the-right-clause">Search scores</a> ·
+  <a href="https://dpolens.com/docs/get-started">Get started</a> ·
+  <a href="https://dpolens.com/community">Community version</a> ·
+  <a href="https://dpolens.com/laws">Supported laws</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
-> [!NOTE]
-> **Pre-release.** 0.1.0-rc.3 is a release candidate for 0.1.0, and `docker compose up`
-> downloads its images. Interfaces (the HTTP API, the pack format, the database schema) change
-> without notice until 1.0. [What exists today](#what-exists-today) has the detail, and
-> watching the repository tells you when 0.1.0 lands.
-
-## What changes
-
-Say you ask your AI assistant to log failed sign-ins, so you can debug them.
-
-- **Without DPOLens,** it writes each user's email address into the log in plain text, and the
-  log is kept until someone remembers to delete it.
-- **With DPOLens,** it checks your company's privacy policy first. The policy says email
-  addresses in logs are masked, and logs are kept for 90 days. So it masks the email address,
-  sets the logs to be deleted after 90 days, and tells you which rule it followed, so whoever
-  reviews the code can check it.
-
-You don't have to learn the law or change how you work: the rules are applied while the code is
-being written, not after an audit or an incident. The
-[introduction](https://dpolens.com/docs/introduction) says more.
-
 ## Get started
 
-You need Git, Docker with Compose, and an AI assistant that speaks MCP (Claude Code, Codex, Cursor
-or GitHub Copilot in VS Code).
-
-```bash
-git clone https://github.com/alkhatibdev/dpolens.git
-cd dpolens
-
-printf 'DPOLENS_OWNER_PASSWORD=%s\nDPOLENS_APP_PASSWORD=%s\n' \
-  "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
-
-docker compose up -d
-docker compose exec api dpolens init
-```
-
-`init` asks for your email address, your name, a password, and which laws apply to your
-organisation. Then sign in to the dashboard at [http://localhost:8080](http://localhost:8080),
-make a token under Tokens, and connect your AI assistant to `http://localhost:8765/mcp` with it.
-[Get started](https://dpolens.com/docs/get-started) has every step, and
-[Connect your AI assistant](https://dpolens.com/docs/connect) has the configuration for Claude
+DPOLens runs on your own servers with Docker Compose, so your policies stay there.
+[Get started](https://dpolens.com/docs/get-started) takes you from the first command to your
+first question, and [Connect your AI assistant](https://dpolens.com/docs/connect) sets up Claude
 Code, Codex, Cursor and GitHub Copilot in VS Code.
 
-## Why this exists
+To try it first, add the community version to your AI assistant: public privacy law only, with
+no sign-in and no token.
 
-Most weeks you write code that touches someone's personal data. You log an email address to debug a problem. You add a phone number column. You decide that deleted accounts stay in the database for ninety days, because ninety sounded about right.
+<p>
+  <a href="https://cursor.com/install-mcp?name=dpolens&config=eyJ1cmwiOiJodHRwczovL21jcC5kcG9sZW5zLmNvbS8ifQ%3D%3D"><img alt="Install in Cursor" src="https://img.shields.io/badge/Cursor-Install-000000?logo=cursor&logoColor=white"></a>
+  <a href="https://vscode.dev/redirect/mcp/install?name=dpolens&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.dpolens.com%2F%22%7D"><img alt="Install in Copilot in VS Code" src="https://img.shields.io/badge/Copilot_in_VS_Code-Install-0098FF?logo=githubcopilot&logoColor=white"></a>
+  <a href="https://claude.ai/directory/dpolens"><img alt="Connect in Claude" src="https://img.shields.io/badge/Claude-Connect-D97757?logo=claude&logoColor=white"></a>
+</p>
 
-Every one of those is a decision with rules attached, and the organisation is on the hook
-for getting them wrong. Most developers have never read those rules. We are not lawyers,
-nobody hands us the retention policy on the first day, and the law is long and written for
-people who are.
+For Claude Code, Codex, ChatGPT and the others, [the community version's page](https://dpolens.com/community)
+has the line to add.
 
-Now the AI assistant writes a lot of that code. It is fast, it sounds sure of itself, and it
-has never seen your organisation's policies. What it knows about the law is a blurry memory
-from training: close enough to sound right, not close enough to act on.
+## What's inside
 
-So more code that touches personal data gets written, faster, by something that knows the
-rules less well than you do. A mistake in it is rarely caught in review. It is found later, by a
-customer, an auditor or an attacker, and by then it costs far more than the fix would have:
+- **An MCP server** with four tools to search and read the law and your policies, quoting each
+  clause word for word with its key, its version and the date that version took effect.
+  [The MCP server](https://dpolens.com/docs/mcp)
+- **Laws as packs**, each from its official source: GDPR and the UAE PDPL today, and more as
+  their packs are released. [Supported laws](https://dpolens.com/laws)
+- **Your own policies**, from Word or Markdown files, read into clauses without an AI model and
+  published as versions that never change. [Your own policies](https://dpolens.com/docs/policies)
+- **Search by words and by meaning**, in English and Arabic, on the CPU, with no LLM and no API
+  key.
+- **A dashboard and two logs:** a governance log that is append-only and hash-chained, and every
+  question asked, with personal data taken out. [The governance log](docs/governance-log.md)
+- **An HTTP API**, the same one the dashboard and the MCP server use.
+  [The HTTP API](https://dpolens.com/docs/api)
 
-- **Fines.** Privacy laws let regulators fine the company, under some up to 4% of its worldwide
-  yearly turnover.
-- **Deadlines.** A breach often has to be reported to the regulator within days, sometimes
-  within 72 hours, and to the people whose data it was.
-- **Clean-up.** Someone has to find every log, backup and copy the data reached, and delete it.
-- **Trust and sales.** Customers leave, and larger customers ask how you handle personal data
-  before they sign.
+## Measured
 
-## What DPOLens does
-
-It gives the AI assistant somewhere to look the rules up, and hands back the exact clause
-rather than a recollection of one.
-
-**For developers.** DPOLens runs an MCP server, so your AI assistant can search it while you
-work. What comes back is the clause itself, word for word, and where it came from: which
-document, which version, and the date that version took effect. A claim about Article 17 can
-be checked in one click, and a claim about *your* retention policy can be checked at all.
-
-**For the DPO, legal and policy owners.** A web dashboard to upload policies, review how
-they were parsed, publish immutable versions, choose which laws apply, and read the logs.
-
-Two reasons this beats asking the model directly:
-
-1. **It knows your organisation's own policies**: the one thing a general model cannot
-   know, however good it gets.
-2. **Its citations are real**: verbatim text from a versioned source, labelled with a
-   trust tier, not a model's memory of an article number.
-
-## Planned for v0.1
-
-- `docker compose up` with **no API keys and no LLM anywhere**. Search runs on a small
-  multilingual embedding model on the CPU, inside the container
-- **Laws as packs**, loaded on first start with a sample organisation policy: GDPR and the UAE
-  PDPL today, and more as their packs are released
-- **MCP server**: `search_policies`, `get_clause`, `list_documents`, `get_document`,
-  with one-command setup for Claude Code and Cursor
-- **Dashboard**: upload, review and publish DOCX and Markdown policies, with version
-  history and diffs
-- **Two logs**: a tamper-evident governance log, and a PII-redacted query log that shows
-  how the policies are being consulted without turning into developer surveillance
-- **Published eval scores**, in CI, measuring whether search actually finds the right
-  clause, including Arabic and cross-language questions
-
-Arabic and English are both first-class. UAE PDPL is authoritative in Arabic, and it is a
-launch pack.
-
-## Does it actually find the right clause
-
-| Law | Held-out questions | recall@5 | 95% interval |
-| --- | --- | --- | --- |
-| GDPR | 30, from ICO and EDPB guidance | **0.77** | 0.60 to 0.90 |
-| The UAE's data protection law | 19 topics, each asked in Arabic and in English | **0.55** | 0.37 to 0.74 |
-| GDPR asked in Arabic | the same 30, in Arabic | **0.30** | 0.13 to 0.47 |
-
-With multilingual-e5-small and convex fusion, measured 14 October 2026. That means that for
-GDPR, the clause the guidance points at was among the top five answers 77% of the time. It does
-not mean DPOLens answers 77% of privacy questions correctly. Asked in Arabic alone, the UAE law
-scores 0.42, and in English 0.68. GDPR has no Arabic text, so an Arabic question about it has to
-cross languages, and finds its clause far less often.
-[evals/retrieval.md](evals/retrieval.md) has the method, every configuration measured, and the
-commands to reproduce the numbers yourself.
-
-## Does an AI assistant actually use it
-
-Claude Code with the DPOLens plugin searched before writing code in **36 of 36 runs** of tasks
-that touch personal data, and in **3 of 45 runs** of tasks that do not: 30 held-out tasks, three
-runs each, Claude Code 2.1.288 with `claude-sonnet-5-5`, measured 8 and 9 October 2026.
-
-That means that asked to store the ID a driver checked, or to add a customer's email to an
-analytics event, it looked the rules up before touching the code, every time, and asked to sort
-the product list or add a dark theme, it did not. It does not mean every AI assistant behaves this
-way: only Claude Code was measured, and whether a task should trigger a search is a judgment,
-written down beside each one. [evals/trigger-test.md](evals/trigger-test.md) has the method, the
-tasks, and the commands to run it yourself.
-
-## What exists today
-
-The commands below are the command line, which runs inside the container
-(`docker compose exec api dpolens ...`) or from a source checkout.
-
-GDPR is converted from EUR-Lex's structured XML into a reviewable pack of 99 articles and
-173 recitals, loaded into Postgres as immutable versions, indexed for BM25 and meaning
-search, and searched:
-
-```bash
-dpolens pack load packs/gdpr
-dpolens index build
-dpolens search "how long can we keep a deleted user's data"
-dpolens clause show gdpr:art-17 --subtree
-```
-
-The UAE's Personal Data Protection Law, Federal Decree by Law No. (45) of 2021, is a pack of
-31 articles in Arabic, which prevails, and in the official English translation. Both texts
-sit under the same keys, so a citation points at the same clause in either language, and a
-clause read in English says that the Arabic prevails and carries the Arabic with it:
-
-```bash
-dpolens pack load packs/uae-pdpl
-dpolens clause show uae-pdpl:art-23 --lang en
-```
-
-The text follows the official PDFs from the UAE Legislations portal, and every article was
-checked against them, the English word by word and the Arabic letter by letter.
-[packs/uae-pdpl/SOURCE.md](packs/uae-pdpl/SOURCE.md) says how, and gives each PDF's checksum.
-
-A law gets new versions on its own schedule, apart from DPOLens's releases, and each is
-released as a pack archive. `dpolens pack update` says which laws have a newer version, and
-`dpolens pack update gdpr` loads it beside the version before it, so a citation of the old
-text still reads that text. A server with no way to the internet imports the archive
-instead. Nothing changes which version of a law an instance has unless somebody runs one of
-these, an upgrade of DPOLens included, and every version loaded is written to the governance
-log. [Laws and their versions](https://dpolens.com/docs/laws) says how:
-
-```bash
-dpolens pack update
-dpolens pack update gdpr
-dpolens pack import dpolens-pack-gdpr-2026.2.tar.gz
-```
-
-An administrator chooses which laws apply to the organisation. A search covers those and
-the organisation's own policies, and nothing else, so a company outside the EU with no customers
-there is never answered from GDPR, and an AI assistant that asks for GDPR is told it is not one of the
-organisation's laws. Until somebody chooses, nothing is searched. The dashboard asks whoever
-may choose as they sign in, and Selected laws changes the choice later, marking a law that
-arrived with an upgrade as new. Every change is written to the governance log, and the
-command line does it too:
-
-```bash
-dpolens laws list
-dpolens laws select uae-pdpl
-dpolens search "can we send customer data abroad"
-```
-
-An organisation's own policy, a Word or Markdown file, is read into clauses too, each with a
-key and its text word for word. No AI model builds the tree: it comes from the file's heading
-styles, automatic numbering and lists, then its type, then the numbers written into its
-text, and anything those disagree about is flagged for a reviewer rather than guessed.
-Tables become a clause for each row, and a cover page, a contents page or a version table is
-set aside rather than searched. The command line shows the result for a file on your
-computer, without storing anything:
-
-```bash
-dpolens policy parse retention-policy.docx --slug acme-retention
-```
-
-Uploaded, a policy becomes a draft that nothing searches. Somebody checks its flags against
-the file, which the dashboard shows beside the clauses as it was read, and settles them. Where
-the parser read a clause wrongly, they fix it without changing a word: split it, merge it with
-the one before, make it a heading or text, or move it a level. Once published, the version
-never changes: searches find it from the day it takes effect, by its words at once and by
-meaning once the worker has embedded it. A new
-version is matched to the one before it clause by clause, and every match a person should
-confirm, such as a clause whose number changed, is a flag for the reviewer, who can say a
-match is wrong as well as confirm it, and can say a new clause is the same rule as one that
-nothing continues, which the review asks about when the two share most of their words. Keys follow the
-numbers printed in the policy, and a citation names its version, so a citation of version
-1's 4.2 still reads the rule it quoted, and says where that rule is in the version in force
-today. The library lists every version, reads any of them as it stood, and compares any two. The file each version came from is kept and checked against its hash whenever it is
-read, archiving a policy takes it out of search without deleting anything, and every step is
-written to the governance log:
-
-```bash
-dpolens policy upload retention-policy.docx --slug acme-retention --effective-date 2026-01-01
-dpolens policy draft acme-retention
-dpolens policy fix acme-retention 4.1 split --before "4.2"
-dpolens policy accept acme-retention --all
-dpolens policy publish acme-retention
-dpolens policy revise acme-retention retention-policy-v2.docx --effective-date 2026-07-01
-dpolens policy compare acme-retention 1 2
-```
-
-A new instance starts with a made-up sample policy, so there is one to search before
-yours are in.
-
-[Your own policies](https://dpolens.com/docs/policies) explains how clauses, keys and flags are decided, and
-what happens to a policy from its upload to its archive.
-
-Users, roles and the governance log are what every surface authenticates and records
-against. The dashboard manages people, roles and tokens, and checks and exports the
-governance log; the command line does too. Run in a terminal, a command asks for whatever it
-was not given, and lists such as roles and permissions are picked with the arrow keys and
-space; a script passes the same as flags:
-
-```bash
-dpolens user create --email you@example.com --name "Your Name" --role Admin
-dpolens user set-password you@example.com
-dpolens token create --email you@example.com --name laptop --permission documents.read
-dpolens role list
-dpolens governance verify
-dpolens governance export ./export-2026-09
-```
-
-Permissions are a fixed list in code and roles are data, so an organisation can invent
-"Legal" without waiting for a release. Admin, DPO and Developer are seeded and editable,
-and no seeded role can see who asked a question, Admin included: that permission has to be
-granted to somebody on purpose. An administrator grants it by switching it on for a role,
-and the governance log records who did and when.
-
-The governance log is append-only and hash-chained. The application's database role holds
-`INSERT` and `SELECT` on it and nothing else, triggers refuse an update, a delete or a
-truncation whoever runs them, and an export verifies from its files alone with no DPOLens
-in the loop. [docs/governance-log.md](docs/governance-log.md) is the specification,
-including the hash recipe, so the export can be checked by something other than this
-project.
-
-A token is printed once and stored only as its SHA-256. What it may do is fixed when it is
-created and can only narrow afterwards: every request takes the token's permissions
-intersected with whatever its owner holds at that moment, so losing a role, or being
-deactivated, limits every token that person owns straight away.
-
-The HTTP API is the door every surface uses:
-
-```bash
-uvicorn --factory dpolens.api.app:create_app
-
-curl -X POST http://localhost:8000/v1/search \
-  -H "Authorization: Bearer dpol_..." \
-  -H "Content-Type: application/json" \
-  -d '{"query": "how long can we keep a deleted user'"'"'s data"}'
-```
-
-Search, one clause, a clause and its subtree, and the documents in force, each result
-carrying the text verbatim with its key, its version, the date that version took effect and,
-for a law, the pack it came from and how far that pack has been checked. Policies are
-uploaded, reviewed, published and archived through it too, with the file as the request
-body. Failures are RFC 9457 problem details. [The HTTP API](https://dpolens.com/docs/api) covers
-authentication, the error shapes and every route, and [docs/openapi.json](docs/openapi.json)
-is the contract itself.
-
-Every call writes one row to the query log, with personal data taken out of the question and
-an expiry the instance enforces itself. Telemetry never carries the words. An instance that
-could rewrite its own governance log refuses to serve at all.
-
-The MCP server is the surface your AI assistant talks to: four tools, two commands, and the
-guidance that tells it to look something up before writing code that touches
-personal data. It never receives your token as its own credential. It asks the API whose
-token it is, then acts with its own and names you, so the query log records the question as
-yours. [The MCP server](https://dpolens.com/docs/mcp) covers the tools, the prompts and what each call records.
-
-The dashboard is a client of the same API. A person signs in with an email and a password,
-and the session lives in a cookie the page's scripts cannot read and no other site can
-send. It ends after 30 minutes idle or 8 hours in all, and the governance log records every
-sign-in. The library lists each document with the version in force and which of its
-languages prevails, and reads a law article by article in one language at a time: a law in
-two languages opens in the dashboard's language, with a switch to the other that the browser
-remembers for that law. Every key copies the clause with the same citation the MCP server
-gives an AI assistant. Search covers the selected laws, with one of them
-alone, a date or the recitals a click away.
-
-Whoever may read every question starts on the Overview: how much was asked over the last 7
-or 30 days, how much of it found a clause in force, the clauses cited most, and the questions
-that found nothing, each of which may be a policy waiting to be written. The questions log
-shows every question as it was stored, with a mark where personal data was taken out. Names
-stay hidden unless you hold the permission to see who asked, and every look at them is
-written to the governance log. Somebody who may read only their own questions sees just
-those. The governance log reads as plain sentences, checks its hash chain each time it is
-opened, and exports the same files as `dpolens governance export`. Settings shows how the
-instance is set up: how long a question is kept and what is taken out of it, when a session
-ends, where AI assistants connect, and that no AI provider is used.
-[Configuration](https://dpolens.com/docs/configuration) lists every setting and how to change it. The
-interface is English, built so an Arabic one can follow, and it works on a phone. Each
-release's images are published, built for amd64 and arm64 and attested, and `docker compose up`
-downloads the ones the checkout names; only a version that has not been released is built from
-source. [Releases and upgrades](https://dpolens.com/docs/releases) says what a release publishes and how to check
-that an image was built here.
+- **Search:** on held-out questions, the clause the guidance points at is among the top five
+  answers 77% of the time for GDPR, and 55% for the UAE's law.
+  [How it was measured](evals/retrieval.md)
+- **Use:** Claude Code with the plugin searched before writing code in 36 of 36 runs of tasks
+  that touch personal data, and in 3 of 45 runs of tasks that do not.
+  [How it was measured](evals/trigger-test.md)
 
 ## Contributing
 
-Law packs are the contribution that matters most, because nobody can structure and verify the
-privacy law of every jurisdiction alone. See [CONTRIBUTING.md](CONTRIBUTING.md) for scope,
-the licensing gate, trust tiers and what a pack pull request needs.
-
-A security problem is reported privately, never in an issue: [SECURITY.md](SECURITY.md) says
-how.
+Law packs are the contribution that matters most, and [CONTRIBUTING.md](CONTRIBUTING.md) says
+what one needs. A security problem is reported privately, as [SECURITY.md](SECURITY.md) says.
 
 ## Licence
 
-Code is Apache-2.0, contributions certified by DCO sign-off, no CLA. `packs/` carries its
-own licence: law text keeps its source's licence, declared per pack, while the structural
-work around it (clause keys, the tree, eval questions) is CC-BY-4.0.
+The code is Apache-2.0, with DCO sign-off and no CLA. `packs/` carries its own licence: the law
+text keeps its source's, and the structure around it is CC-BY-4.0.
