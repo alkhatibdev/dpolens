@@ -245,6 +245,15 @@ class TestTheCursorPlugin:
         assert "this organisation's privacy policies" not in rule
         assert "Search the organisation's own policies as well" not in rule
 
+    def test_its_rule_is_described_on_one_line(self) -> None:
+        """cursor.directory reads the front matter a line at a time, so a description folded
+        over two lines is listed as ">-"."""
+        rule = (CURSOR_PLUGIN / "rules" / "dpolens.mdc").read_text(encoding="utf-8")
+        front = rule.split("---")[1]
+        [line] = [line for line in front.splitlines() if line.startswith("description:")]
+
+        assert line.removeprefix("description:").strip() == yaml.safe_load(front)["description"]
+
 
 class TestTheComposeFile:
     def test_it_starts_the_six_things_an_instance_is(self) -> None:
