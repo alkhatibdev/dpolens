@@ -7,7 +7,7 @@ the contract itself.
 Until 1.0, a release may change anything in this file's list. After 1.0, a
 breaking change needs a new major version.
 
-## Unreleased
+## 0.1.0
 
 First version of the API. Everything below is new rather than changed.
 

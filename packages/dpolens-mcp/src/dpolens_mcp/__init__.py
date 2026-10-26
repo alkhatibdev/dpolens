@@ -4,4 +4,4 @@ Speaks to the HTTP API over HTTP and never imports `dpolens`, which is what
 keeps a surface writable in any language.
 """
 
-__version__ = "0.1.0rc3"
+__version__ = "0.1.0"
