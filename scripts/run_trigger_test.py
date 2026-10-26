@@ -2,10 +2,10 @@
 
 Each task in evals/trigger is something a developer might ask for in the Larder
 app. Every run is a new container holding Claude Code, the app, and DPOLens
-installed the way the README installs it, talking to a throwaway instance of
-DPOLens built from this checkout. What is measured is whether the assistant
-calls search_policies or get_clause, and whether it does so before it edits a
-file.
+installed the way Get started on dpolens.com installs it, talking to a
+throwaway instance of DPOLens built from this checkout. What is measured is
+whether the assistant calls search_policies or get_clause, and whether it does
+so before it edits a file.
 
     uv run python scripts/run_trigger_test.py --set tuning                # the pilot
     uv run python scripts/run_trigger_test.py --set held_out --runs 3 --model <id>

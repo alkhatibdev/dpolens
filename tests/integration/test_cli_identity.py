@@ -1,7 +1,7 @@
 """The commands an operator runs on a fresh instance, in the order they run them.
 
-These go through Typer rather than calling the engine, because the quickstart in
-the README is these commands and their output.
+These go through Typer rather than calling the engine, because these commands and
+their output are what an operator sees.
 """
 
 from __future__ import annotations
