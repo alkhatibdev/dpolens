@@ -134,10 +134,13 @@ or `get_document` to see what this instance can cite.
 
 
 def community_cursor_rule() -> str:
-    """The rule in the Cursor plugin, whose server is the community version: the law alone."""
+    """The rule in the Cursor plugin, whose server is the community version: the law alone.
+
+    Its description stays on one line, because cursor.directory reads the front matter a line
+    at a time and would list a folded one as ">-".
+    """
     return f"""---
-description: >-
-  How to use DPOLens, which holds the text of privacy law, and when to search it.
+description: How to use DPOLens, which holds the text of privacy law, and when to search it.
 alwaysApply: true
 ---
 
