@@ -3,9 +3,9 @@
 DPOLens grounds AI coding assistants in an organisation's own policies and the privacy laws
 that apply to it, with citations that can be verified against a versioned source.
 
-> **Project status: pre-release.** v0.1 has not shipped. Interfaces change without
-> notice until 1.0, including the HTTP API, the pack format and the database schema. If
-> you build on DPOLens now, pin a commit.
+> **Project status: 0.1.** Until 1.0, a release can change the HTTP API, the pack format
+> and the database schema, and [CHANGELOG.md](CHANGELOG.md) says what each one changed. If
+> you build on DPOLens now, pin a release.
 
 ## Ways to contribute
 
@@ -35,8 +35,8 @@ is the exception: report it privately, as [SECURITY.md](SECURITY.md) says.
 ## Before you start
 
 Open a GitHub Discussion for anything that isn't a small, obvious fix. A short exchange
-before you write code is cheaper than a rejected pull request, especially while the
-project is pre-release and the shape is still moving.
+before you write code is cheaper than a rejected pull request, especially before 1.0,
+while the shape is still moving.
 
 ## Development setup
 

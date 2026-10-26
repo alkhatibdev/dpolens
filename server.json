@@ -3,7 +3,7 @@
   "name": "com.dpolens/dpolens",
   "title": "DPOLens",
   "description": "Privacy law your AI assistant can cite: the exact clause and its version. GDPR and UAE PDPL today.",
-  "version": "0.1.0-rc.3",
+  "version": "0.1.0",
   "websiteUrl": "https://dpolens.com",
   "repository": {
     "url": "https://github.com/alkhatibdev/dpolens",
