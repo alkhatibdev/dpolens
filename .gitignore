@@ -15,6 +15,9 @@ dist/
 .env.*
 !.env.example
 
+# Backups, which hold everything an instance does
+backups/
+
 # Coverage
 .coverage
 coverage.xml
