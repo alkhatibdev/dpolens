@@ -59,8 +59,8 @@ class NothingSelected(Exception):
     def __init__(self) -> None:
         super().__init__(
             "nobody has chosen which laws apply to this organisation yet, so nothing is "
-            "searched. An administrator chooses them at the first sign-in to the dashboard, "
-            "or with: dpolens init"
+            "searched. An administrator chooses them the next time they sign in to the "
+            "dashboard, or with: dpolens init"
         )
 
 

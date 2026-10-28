@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 import typer
 from typer.core import TyperGroup
@@ -172,8 +172,24 @@ app.command(name="search", cls=Asking)(search.run)
 app.command(name="worker")(worker.run)
 
 
+def _print_version(asked: bool) -> None:
+    if asked:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
 @app.callback()
-def cli() -> None:
+def cli(
+    show_version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=_print_version,
+            is_eager=True,
+            help="Print the DPOLens version and exit.",
+        ),
+    ] = False,
+) -> None:
     """Commands are grouped noun then verb: `dpolens pack load`, `dpolens clause show`."""
 
 

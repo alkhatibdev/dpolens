@@ -172,3 +172,29 @@ def test_with_an_administrator_already_it_asks_only_for_the_laws(
     assert "Searches cover bilingual" in result.output
     assert "Open the dashboard at http://localhost:8080." in result.output
     assert chosen(fresh) == ["bilingual"]
+
+
+def test_on_a_community_version_it_names_the_law_alone_and_no_token(
+    fresh: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A community version holds no organisation's policies, and answers anyone without one."""
+    monkeypatch.setenv("DPOLENS_COMMUNITY", "true")
+    monkeypatch.setenv("DPOLENS_PUBLIC_MCP_URL", "https://mcp.example.com/")
+
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--email", "operator@example.com",
+            "--name", "Operator",
+            "--password-stdin",
+            "--law", "testlaw",
+        ],
+        input=f"{PASSWORD}\n",
+    )  # fmt: skip
+
+    assert result.exit_code == 0, result.output
+    assert "Searches cover testlaw." in result.output
+    assert "your organisation's policies" not in result.output
+    assert "AI assistants connect to https://mcp.example.com/ with no token." in result.output
+    assert "Under Tokens" not in result.output

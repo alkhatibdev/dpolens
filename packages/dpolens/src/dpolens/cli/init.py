@@ -82,12 +82,17 @@ def run(
         newly_chosen = chosen is None and bool(loaded_laws(session))
         if newly_chosen:
             chosen = select_laws(session, _laws(session, law), actor=actor)
-            typer.echo(f"Searches cover {', '.join(chosen)} and your organisation's policies.")
+            # A community version holds the law alone, and answers anyone without a token.
+            covered = "" if settings.community else " and your organisation's policies"
+            typer.echo(f"Searches cover {', '.join(chosen)}{covered}.")
 
     if created or newly_chosen:
         sign_in = f" and sign in as {created}" if created else ""
         typer.echo(f"\nOpen the dashboard at {settings.public_dashboard_url}{sign_in}.")
-        typer.echo("Under Tokens, make the token your editor connects with.")
+        if settings.community:
+            typer.echo(f"AI assistants connect to {settings.public_mcp_url} with no token.")
+        else:
+            typer.echo("Under Tokens, make the token your editor connects with.")
         return
 
     covered = ", ".join(chosen or ()) or "no law yet"

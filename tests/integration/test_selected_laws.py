@@ -73,8 +73,11 @@ def laws_of(results: Sequence[SearchResult]) -> set[str | None]:
 class TestTheSelection:
     def test_nobody_has_chosen_until_someone_does(self, two_laws: Session) -> None:
         assert selected_laws(two_laws) is None
-        with pytest.raises(NothingSelected, match="nobody has chosen which laws apply"):
+        with pytest.raises(NothingSelected, match="nobody has chosen which laws apply") as refused:
             scope_for(two_laws)
+        # The dashboard asks at any sign-in while nothing is chosen, and an upgraded
+        # instance's first sign-in is long past.
+        assert "the next time they sign in to the dashboard" in str(refused.value)
 
     def test_choosing_narrows_what_a_search_covers(self, two_laws: Session) -> None:
         select_laws(two_laws, ["testlaw"], actor=ACTOR)

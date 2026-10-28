@@ -109,7 +109,8 @@ class Settings(BaseSettings):
         max_length=500,
         description=(
             "The MCP server's URL as people's AI assistants reach it, which the "
-            "dashboard shows next to a new token. The default is the quickstart's"
+            "dashboard shows next to a new token, and `dpolens init` names on a community "
+            "version. The default is the quickstart's"
         ),
     )
 
