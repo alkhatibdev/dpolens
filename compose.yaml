@@ -185,6 +185,47 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Backs up the database and the original files while the instance runs, each backup a folder
+  # of its own in backups/, and restores one into an instance that holds nothing yet. `up`
+  # never starts either; https://dpolens.com/docs/running says how to run them. Both run in the
+  # database's image, so pg_dump is the server's own version, and connect as the role that owns
+  # the tables, which a dump of the governance log and a restore of its privileges both need.
+  backup:
+    image: ghcr.io/alkhatibdev/dpolens-postgres:${DPOLENS_VERSION:-0.1.0}
+    build: ./deploy/postgres
+    profiles: [backup]
+    entrypoint: ["sh", "/opt/dpolens/backup/backup.sh"]
+    environment: &backup
+      PGHOST: db
+      PGDATABASE: dpolens
+      PGUSER: dpolens_owner
+      PGPASSWORD: ${DPOLENS_OWNER_PASSWORD:?generate one, see the top of this file}
+      DPOLENS_VERSION: ${DPOLENS_VERSION:-0.1.0}
+      DPOLENS_BACKUP_DIR: ${DPOLENS_BACKUP_DIR:-./backups}
+      DPOLENS_BACKUP_KEEP:
+      DPOLENS_QUERY_LOG_RETENTION_DAYS:
+    volumes:
+      - ./deploy/backup:/opt/dpolens/backup:ro
+      - originals:/var/lib/dpolens/originals:ro
+      - ${DPOLENS_BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+
+  restore:
+    image: ghcr.io/alkhatibdev/dpolens-postgres:${DPOLENS_VERSION:-0.1.0}
+    build: ./deploy/postgres
+    profiles: [backup]
+    entrypoint: ["sh", "/opt/dpolens/backup/restore.sh"]
+    environment: *backup
+    volumes:
+      - ./deploy/backup:/opt/dpolens/backup:ro
+      - originals:/var/lib/dpolens/originals
+      - ${DPOLENS_BACKUP_DIR:-./backups}:/backups:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   database:
   surface:

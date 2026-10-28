@@ -256,8 +256,10 @@ class TestTheCursorPlugin:
 
 
 class TestTheComposeFile:
-    def test_it_starts_the_six_things_an_instance_is(self) -> None:
-        assert set(compose()["services"]) == {
+    def test_up_starts_the_six_things_an_instance_is(self) -> None:
+        services = compose()["services"]
+
+        assert {name for name, service in services.items() if "profiles" not in service} == {
             "db",
             "setup",
             "api",
@@ -265,6 +267,31 @@ class TestTheComposeFile:
             "dashboard",
             "mcp",
         }
+
+    def test_backup_and_restore_run_only_when_asked(self) -> None:
+        services = compose()["services"]
+
+        assert {name for name, service in services.items() if "profiles" in service} == {
+            "backup",
+            "restore",
+        }
+        assert services["backup"]["profiles"] == services["restore"]["profiles"] == ["backup"]
+
+    def test_a_backup_reads_what_a_restore_writes(self) -> None:
+        """A backup cannot change the files it copies, and a restore cannot change a backup."""
+        services = compose()["services"]
+
+        assert "originals:/var/lib/dpolens/originals:ro" in services["backup"]["volumes"]
+        assert "originals:/var/lib/dpolens/originals" in services["restore"]["volumes"]
+        assert "${DPOLENS_BACKUP_DIR:-./backups}:/backups:ro" in services["restore"]["volumes"]
+
+    def test_backup_and_restore_run_in_the_database_image_as_its_owner(self) -> None:
+        """pg_dump has to be the server's version, and only the owner can read the whole log."""
+        services = compose()["services"]
+
+        for name in ("backup", "restore"):
+            assert services[name]["image"] == services["db"]["image"]
+            assert services[name]["environment"]["PGUSER"] == "dpolens_owner"
 
     def test_the_worker_connects_as_the_application_role_alone(self) -> None:
         """It embeds and purges, and neither needs the role that owns the tables."""
