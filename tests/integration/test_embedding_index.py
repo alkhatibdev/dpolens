@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from tokenizers import Tokenizer
 
 from dpolens.engine.embedding import Embedder, encode, get_model
-from dpolens.engine.embedding.index import build_index
+from dpolens.engine.embedding.index import build_index, unembedded
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.search.vector import NoActiveModel, vector_search
 
@@ -206,3 +206,19 @@ def test_rebuilding_replaces_vectors_rather_than_duplicating(
     indexed.commit()
 
     assert indexed.execute(text("SELECT count(*) FROM node_embeddings")).scalar_one() == before
+
+
+def test_what_is_left_to_embed_is_counted_without_the_model(
+    session: Session, testlaw_pack: Path, embedder: Embedder
+) -> None:
+    """It lets the worker leave the model unloaded when a job has nothing to embed."""
+    load_pack(session, testlaw_pack)
+    session.commit()
+    model = get_model(MODEL)
+    left = unembedded(session, model)
+
+    built = build_index(session, embedder, skip_embedded=True)
+    session.commit()
+
+    assert left == built.embedded > 0
+    assert unembedded(session, model) == 0

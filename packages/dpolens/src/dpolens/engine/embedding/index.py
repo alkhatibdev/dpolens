@@ -28,6 +28,24 @@ HNSW_M = 16
 HNSW_EF_CONSTRUCTION = 64
 EF_SEARCH = 100
 
+# The clauses a model embeds: every one with text, in a published version.
+_PUBLISHED_TEXT = """
+    FROM node_texts t
+    JOIN document_nodes n ON n.id = t.node_id
+    JOIN document_versions v ON v.id = n.document_version_id
+    JOIN documents d ON d.id = v.document_id
+    WHERE v.status = 'published' AND length(trim(t.body_text)) > 0
+"""
+# Of those, the ones a model has not embedded under the current recipe.
+_NOT_EMBEDDED = """
+    AND NOT EXISTS (
+        SELECT 1 FROM node_embeddings e
+        WHERE e.node_text_id = t.id
+          AND e.embedding_model_id = :model_id
+          AND e.context_recipe = :recipe
+    )
+"""
+
 
 @dataclass(frozen=True)
 class IndexResult:
@@ -82,25 +100,13 @@ def build_index(
     """
     model_id = register_model(session, embedder.model, activate=activate)
 
-    unchanged = """
-            AND NOT EXISTS (
-                SELECT 1 FROM node_embeddings e
-                WHERE e.node_text_id = t.id
-                  AND e.embedding_model_id = :model_id
-                  AND e.context_recipe = :recipe
-            )
-    """
     rows = session.execute(
         text(
             f"""
             SELECT t.id AS text_id, t.body_text, t.heading, t.lang, d.title AS document_title,
                    n.canonical_key, n.id AS node_id
-            FROM node_texts t
-            JOIN document_nodes n ON n.id = t.node_id
-            JOIN document_versions v ON v.id = n.document_version_id
-            JOIN documents d ON d.id = v.document_id
-            WHERE v.status = 'published' AND length(trim(t.body_text)) > 0
-            {unchanged if skip_embedded else ""}
+            {_PUBLISHED_TEXT}
+            {_NOT_EMBEDDED if skip_embedded else ""}
             ORDER BY n.canonical_key
             """
         ),
@@ -175,6 +181,22 @@ def build_index(
         embedded=embedded,
         skipped_without_text=int(skipped),
         skipped_already_embedded=int(already),
+    )
+
+
+def unembedded(session: Session, model: EmbeddingModel) -> int:
+    """How many clauses `build_index` with `skip_embedded` would embed, counted without the
+    model, so that a caller with nothing to embed need not load it."""
+    model_id = session.execute(
+        text("SELECT id FROM embedding_models WHERE name = :name"), {"name": model.name}
+    ).scalar()
+    if model_id is None:
+        return int(session.execute(text(f"SELECT count(*) {_PUBLISHED_TEXT}")).scalar_one())
+    return int(
+        session.execute(
+            text(f"SELECT count(*) {_PUBLISHED_TEXT} {_NOT_EMBEDDED}"),
+            {"model_id": model_id, "recipe": RECIPE_VERSION},
+        ).scalar_one()
     )
 
 
