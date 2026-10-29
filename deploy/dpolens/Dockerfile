@@ -44,7 +44,7 @@ COPY --chown=dpolens:dpolens packages/dpolens/pyproject.toml packages/dpolens/
 COPY --chown=dpolens:dpolens packages/dpolens-mcp/pyproject.toml packages/dpolens-mcp/
 RUN uv sync --frozen --no-dev --package dpolens --no-install-workspace
 
-# Then the model, which is 200 MB and depends on one file: the one that says
+# Then the model, which is 470 MB and depends on one file: the one that says
 # which model this version uses. Copying only that file keeps every later source
 # change from fetching it again.
 COPY --chown=dpolens:dpolens packages/dpolens/src/dpolens/engine/embedding/models.py \

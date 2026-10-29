@@ -7,6 +7,12 @@ the contract itself.
 Until 1.0, a release may change anything in this file's list. After 1.0, a
 breaking change needs a new major version.
 
+## Unreleased
+
+- `/docs` and `/redoc` are gone: the pages FastAPI adds by default loaded their
+  scripts and fonts from other sites. `/openapi.json` still describes the API, and
+  the reference is at https://dpolens.com/docs/api
+
 ## 0.1.0
 
 First version of the API. Everything below is new rather than changed.
