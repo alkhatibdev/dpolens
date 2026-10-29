@@ -10,6 +10,7 @@ import typer
 from sqlalchemy import text
 
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
+from dpolens.engine.embedding.encode import usable_cpus
 from dpolens.engine.embedding.index import build_index
 from dpolens.engine.session import maintenance_scope, session_scope
 from dpolens.settings import load_settings
@@ -36,8 +37,12 @@ def build(
     """
     typer.echo(f"Loading {model} ...")
     started = time.time()
+    # Embedding every clause is setup's one long step, and the API does not start until it
+    # is done, so it takes every processor the container may use.
     with (
-        Embedder(get_model(model), cache_dir=cache_dir) as embedder,
+        Embedder(
+            get_model(model), cache_dir=cache_dir, intra_op_num_threads=usable_cpus()
+        ) as embedder,
         maintenance_scope(load_settings()) as session,
     ):
         result = build_index(session, embedder, skip_embedded=skip_embedded)

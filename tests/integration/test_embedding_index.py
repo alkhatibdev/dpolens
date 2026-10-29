@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -157,6 +158,21 @@ def test_vectors_are_unit_length_and_the_right_width(indexed: Session, embedder:
     assert dimensions == embedder.model.dimensions
     # <#> is negative inner product, so a unit vector against itself is -1.
     assert float(norm) == -1.0
+
+
+def test_a_clause_embeds_the_same_whatever_shares_its_batch(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Batches are padded to their longest string, and padding is masked: a clause's vector
+    is the one it gets alone."""
+    rows = indexed.execute(
+        text("SELECT embedded_string, embedding::text AS embedding FROM node_embeddings")
+    ).all()
+
+    assert len(rows) > 1
+    for row in rows:
+        alone = embedder.encode_passages([row.embedded_string])[0]
+        assert np.allclose(json.loads(row.embedding), alone, atol=1e-6)
 
 
 def test_meaning_search_finds_a_clause_the_words_do_not_match(

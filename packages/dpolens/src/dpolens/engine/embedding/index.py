@@ -8,6 +8,7 @@ vector that matches everything weakly and drags on every query.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from sqlalchemy import text
@@ -17,7 +18,9 @@ from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.embedding.models import EmbeddingModel
 from dpolens.engine.embedding.recipe import RECIPE_VERSION, RecipeInput, build
 
-BATCH = 64
+# How much one batch may hold, as its clauses times the square of the longest, which is how the
+# memory for attention grows: 64 clauses of 64 tokens, 16 of 128, or one of 512.
+BATCH_BUDGET = 64 * 64 * 64
 
 # Chosen so the index is not what loses recall, and measured against a
 # brute-force scan in the evals.
@@ -122,21 +125,21 @@ def build_index(
         text("SELECT count(*) FROM node_texts WHERE length(trim(body_text)) = 0")
     ).scalar_one()
 
+    strings = [
+        build(
+            RecipeInput(
+                document_short_name=row.document_title,
+                ancestor_headings=_ancestor_headings(session, row.node_id, row.lang),
+                text=row.body_text,
+            ),
+            embedder.count_tokens,
+        )
+        for row in rows
+    ]
+
     embedded = 0
-    for start in range(0, len(rows), BATCH):
-        chunk = rows[start : start + BATCH]
-        strings = [
-            build(
-                RecipeInput(
-                    document_short_name=row.document_title,
-                    ancestor_headings=_ancestor_headings(session, row.node_id, row.lang),
-                    text=row.body_text,
-                ),
-                embedder.count_tokens,
-            )
-            for row in chunk
-        ]
-        vectors = embedder.encode_passages(strings)
+    for batch in batches([embedder.passage_tokens(string) for string in strings]):
+        vectors = embedder.encode_passages([strings[at] for at in batch])
 
         session.execute(
             text(
@@ -152,16 +155,16 @@ def build_index(
             ),
             [
                 {
-                    "text_id": row.text_id,
+                    "text_id": rows[at].text_id,
                     "model_id": model_id,
                     "recipe": RECIPE_VERSION,
-                    "embedded_string": string,
+                    "embedded_string": strings[at],
                     "embedding": str(vector.tolist()),
                 }
-                for row, string, vector in zip(chunk, strings, vectors, strict=True)
+                for at, vector in zip(batch, vectors, strict=True)
             ],
         )
-        embedded += len(chunk)
+        embedded += len(batch)
 
     if create_index:
         _create_index(session, model_id, embedder.model.dimensions)
@@ -173,6 +176,27 @@ def build_index(
         skipped_without_text=int(skipped),
         skipped_already_embedded=int(already),
     )
+
+
+def batches(tokens: Sequence[int]) -> list[list[int]]:
+    """The strings' positions in batches of similar length, shortest first.
+
+    A batch is padded to its longest string. In key order, a clause of twenty tokens would be
+    padded to the 512 of a long article beside it, and most of what the model reads would be
+    padding. Sorted, a batch holds strings of about one length, and the budget keeps the
+    longest few in small batches of their own, which bounds the memory any batch needs.
+    """
+    found: list[list[int]] = []
+    batch: list[int] = []
+    for at in sorted(range(len(tokens)), key=lambda position: tokens[position]):
+        # Sorted, so this string is the longest the batch would hold.
+        if batch and (len(batch) + 1) * tokens[at] ** 2 > BATCH_BUDGET:
+            found.append(batch)
+            batch = []
+        batch.append(at)
+    if batch:
+        found.append(batch)
+    return found
 
 
 def _ancestor_headings(session: Session, node_id: uuid.UUID, lang: str) -> list[str]:

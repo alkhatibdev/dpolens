@@ -7,6 +7,8 @@ is that one command starts it with nothing to configure.
 
 from __future__ import annotations
 
+import math
+import os
 import threading
 from pathlib import Path
 from types import TracebackType
@@ -19,6 +21,9 @@ from tokenizers import Tokenizer
 from dpolens.engine.embedding.models import EmbeddingModel
 
 MAX_SEQUENCE = 512
+
+CPU_MAX = Path("/sys/fs/cgroup/cpu.max")
+"""A container's CPU limit, as the quota and the period it is counted over."""
 
 
 class ModelNotCached(Exception):
@@ -58,6 +63,22 @@ def fetch(model: EmbeddingModel, cache_dir: Path | None = None) -> list[Path]:
         Path(hf_hub_download(model.repo, name, cache_dir=cache))
         for name in ("tokenizer.json", model.onnx_file)
     ]
+
+
+def usable_cpus(cpu_max: Path = CPU_MAX) -> int:
+    """The processors this process may use: its container's CPU limit, rounded up, or every
+    processor it may run on when there is no limit.
+
+    Left alone, ONNX Runtime starts a thread for each of the machine's cores, so in a
+    container allowed two and a half of ten cores, ten threads would take turns on them.
+    """
+    try:
+        quota, period = cpu_max.read_text(encoding="utf-8").split()
+        if quota != "max":
+            return max(1, math.ceil(int(quota) / int(period)))
+    except OSError, ValueError:
+        pass
+    return os.process_cpu_count() or 1
 
 
 class Embedder:
@@ -121,6 +142,11 @@ class Embedder:
         """Token count without truncation, for the recipe's cap."""
         with self._tokenizing:
             return len(self._tokenizer.encode(text, add_special_tokens=True).ids)
+
+    def passage_tokens(self, text: str) -> int:
+        """How many tokens the model reads for a passage: its prefix included, and no more
+        than the model takes."""
+        return min(self.count_tokens(f"{self.model.passage_prefix}{text}"), MAX_SEQUENCE)
 
     def encode_passages(self, texts: list[str]) -> np.ndarray:
         return self._encode([f"{self.model.passage_prefix}{text}" for text in texts])
