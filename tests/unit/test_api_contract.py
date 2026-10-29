@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from fastapi.testclient import TestClient
+
 from dpolens.api.app import create_app
 from dpolens.api.problems import MEDIA_TYPE
 from dpolens.settings import Settings
@@ -86,6 +88,16 @@ def test_every_route_is_under_v1_or_is_a_probe() -> None:
         "/v1/policies/{slug}/versions/{number}/file",
         "/v1/policies/{slug}/versions/{number}/original",
     }
+
+
+def test_the_api_serves_no_page_that_loads_from_another_site() -> None:
+    """FastAPI's own pages load their scripts and fonts from other sites, which an instance
+    with no internet cannot reach, and which every other instance would tell its address."""
+    client = TestClient(create_app(Settings.model_validate({"database_url": UNUSED})))
+
+    assert client.get("/docs").status_code == 404
+    assert client.get("/redoc").status_code == 404
+    assert client.get("/openapi.json").json()["info"]["title"] == "DPOLens"
 
 
 def test_the_error_shape_is_in_the_specification() -> None:

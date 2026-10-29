@@ -115,7 +115,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description=DESCRIPTION,
         summary="Policies and law, with citations a client can check",
         lifespan=lifespan,
-        docs_url="/docs",
+        # FastAPI's own pages, /docs and /redoc, load their scripts and fonts from other sites,
+        # and nothing an instance serves reaches outside it. The reference is on dpolens.com,
+        # and /openapi.json describes the API to any tool.
+        docs_url=None,
+        redoc_url=None,
         openapi_url="/openapi.json",
     )
     app.state.settings = settings or load_settings()
