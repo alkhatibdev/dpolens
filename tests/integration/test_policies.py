@@ -13,6 +13,7 @@ import time
 from collections.abc import Callable, Iterator
 from datetime import date, timedelta
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
 from sqlalchemy import Engine, create_engine, select, text
@@ -21,6 +22,7 @@ from sqlalchemy.orm import Session
 from dpolens.engine import jobs
 from dpolens.engine.documents.models import DocumentVersion
 from dpolens.engine.documents.read import ClauseNotFound, get_clause, list_documents
+from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.logs.governance import Actor
 from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.originals import Directory, OriginalUnavailable
@@ -83,8 +85,13 @@ def worker(own: Engine, originals: Directory) -> Iterator[jobs.Runtime]:
     jobs.running.append(runtime)
     yield runtime
     jobs.running.remove(runtime)
-    for loaded in runtime.loaded:
-        loaded.close()
+
+
+@pytest.fixture(scope="module")
+def embedder() -> Iterator[Embedder]:
+    """The model searches use, loaded once: the worker keeps none of its own."""
+    with Embedder(get_model(DEFAULT_MODEL)) as loaded:
+        yield loaded
 
 
 def upload_v1(own: Engine, originals: Directory) -> None:
@@ -173,7 +180,7 @@ class TestFirstVersion:
         assert entries(own, "document.flag_accepted")[-1].details["flags"][0]["position"] == 1
 
     def test_a_published_version_is_queued_to_embed_and_then_searched(
-        self, own: Engine, worker: jobs.Runtime
+        self, own: Engine, worker: jobs.Runtime, embedder: Embedder
     ) -> None:
         with session_from(own) as session:
             version = publish(session, "retention", actor=ACTOR)
@@ -187,7 +194,7 @@ class TestFirstVersion:
         assert embedded > 0
 
         with session_from(own) as session:
-            results = search(session, worker.embedder(), "how long do we keep staff records")
+            results = search(session, embedder, "how long do we keep staff records")
             assert results[0].clause.key == "retention:4.2"
             assert results[0].clause.document_title == "Retention policy"
 
@@ -301,6 +308,34 @@ class TestSecondVersion:
             edit_draft(session, "retention", version_label="", actor=ACTOR)
             assert publish(session, "retention", actor=ACTOR).label == "2"
 
+    def test_the_worker_frees_the_model_once_it_has_embedded(
+        self, worker: jobs.Runtime, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Searches never use the worker's copy, so it keeps none between jobs."""
+        closed: list[bool] = []
+
+        class Watched(Embedder):
+            def close(self) -> None:
+                closed.append(True)
+                super().close()
+
+        monkeypatch.setattr(jobs, "Embedder", Watched)
+
+        assert jobs.index_version(version_id="any") > 0
+        assert closed == [True]
+
+    def test_with_nothing_left_to_embed_the_worker_loads_no_model(
+        self, worker: jobs.Runtime, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An instance's first start queues a job for each version that setup has embedded."""
+
+        def refuse(*args: object, **kwargs: object) -> NoReturn:
+            raise AssertionError("the worker loaded the model with nothing to embed")
+
+        monkeypatch.setattr(jobs, "Embedder", refuse)
+
+        assert jobs.index_version(version_id="any") == 0
+
     def test_a_number_now_naming_another_rule_says_so(self, own: Engine) -> None:
         with session_from(own) as session:
             today = get_clause(session, "retention:4.2", as_of=SECOND)
@@ -341,7 +376,7 @@ class TestEndings:
             read_draft(session, "retention")
 
     def test_an_archived_policy_is_not_searched_but_still_reads(
-        self, own: Engine, worker: jobs.Runtime
+        self, own: Engine, embedder: Embedder
     ) -> None:
         with session_from(own) as session:
             archive(session, "council-data", actor=ACTOR)
@@ -349,7 +384,7 @@ class TestEndings:
             listed = [summary.slug for summary in list_documents(session)[0]]
             assert "council-data" not in listed
             assert "retention" in listed
-            found = search(session, worker.embedder(), "the right of access")
+            found = search(session, embedder, "the right of access")
             assert all(result.clause.document_slug != "council-data" for result in found)
             kept = get_clause(session, "council-data:individuals-rights:p1")
             assert kept.clause.archived

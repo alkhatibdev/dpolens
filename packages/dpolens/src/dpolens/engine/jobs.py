@@ -15,9 +15,11 @@ leaves no job behind, and its status is read the same way, synchronously, by any
 
 from __future__ import annotations
 
+import ctypes
+import gc
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from procrastinate import App, PsycopgConnector, RetryStrategy, SyncPsycopgConnector
 from procrastinate.exceptions import NoResult
@@ -29,7 +31,7 @@ from dpolens.engine.auth.sessions import lifetimes_of, purge_ended
 from dpolens.engine.documents.models import DocumentVersion
 from dpolens.engine.embedding import DEFAULT_MODEL, get_model
 from dpolens.engine.embedding.encode import Embedder, ensure_cached
-from dpolens.engine.embedding.index import build_index
+from dpolens.engine.embedding.index import build_index, unembedded
 from dpolens.engine.logs.governance import Actor
 from dpolens.engine.logs.queries import purge_expired
 from dpolens.engine.originals import Directory, strays
@@ -52,20 +54,10 @@ app = App(connector=SyncPsycopgConnector())
 
 @dataclass
 class Runtime:
-    """What the worker's jobs share: its settings, one engine, and the model once loaded."""
+    """What the worker's jobs share: its settings and one engine."""
 
     settings: Settings
     engine: Engine
-    loaded: list[Embedder] = field(default_factory=list)
-
-    def embedder(self) -> Embedder:
-        if not self.loaded:
-            model = get_model(DEFAULT_MODEL)
-            ensure_cached(model)
-            self.loaded.append(
-                Embedder(model, intra_op_num_threads=self.settings.intra_op_num_threads)
-            )
-        return self.loaded[0]
 
 
 running: list[Runtime] = []
@@ -83,12 +75,40 @@ def runtime() -> Runtime:
     retry=RetryStrategy(max_attempts=3, wait=30),
 )
 def index_version(version_id: str) -> int:
-    """Embed what is published and not yet embedded, which is the version just published."""
+    """Embed what is published and not yet embedded, which is the version just published.
+
+    The model is loaded for the job and freed after it. Searches never use the worker's copy,
+    so keeping it between jobs would hold a gigabyte for the next policy published. With
+    nothing left to embed, it is not loaded at all: an instance's first start queues a job for
+    each version it loads, and setup has embedded them all.
+    """
     current = runtime()
     with session_from(current.engine) as session:
-        result = build_index(session, current.embedder(), skip_embedded=True, create_index=False)
-    telemetry.info("worker.indexed", version=version_id, embedded=result.embedded)
-    return result.embedded
+        embedded = _embed_what_is_left(session, current.settings)
+    give_back_memory()
+    telemetry.info("worker.indexed", version=version_id, embedded=embedded)
+    return embedded
+
+
+def _embed_what_is_left(session: Session, settings: Settings) -> int:
+    model = get_model(DEFAULT_MODEL)
+    if not unembedded(session, model):
+        return 0
+    ensure_cached(model)
+    with Embedder(model, intra_op_num_threads=settings.intra_op_num_threads) as embedder:
+        return build_index(session, embedder, skip_embedded=True, create_index=False).embedded
+
+
+def give_back_memory() -> None:
+    """Hand what the process has freed back to the system.
+
+    glibc keeps freed memory for the process's next allocations, so a closed model still holds
+    about half of what it took. Elsewhere, such as on macOS, there is nothing to call.
+    """
+    gc.collect()
+    trim = getattr(ctypes.CDLL(None), "malloc_trim", None)
+    if trim is not None:
+        trim(0)
 
 
 @app.periodic(cron="17 3 * * *", periodic_id="daily-purge")
@@ -159,7 +179,5 @@ def run_worker(settings: Settings, queues: tuple[str, ...] = QUEUES) -> None:
             worker.run_worker(queues=list(queues), install_signal_handlers=True)
     finally:
         current = running.pop()
-        for loaded in current.loaded:
-            loaded.close()
         current.engine.dispose()
         telemetry.info("worker.stopped")
