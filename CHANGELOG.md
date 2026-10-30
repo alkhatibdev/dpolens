@@ -5,6 +5,74 @@ whether to upgrade. A release's notes start from the titles of the pull requests
 are edited by hand. Changes to the HTTP API are listed one by one in
 [docs/api-changelog.md](docs/api-changelog.md), and law packs have versions of their own.
 
+## 0.2.0
+
+The release for running an instance for real: backups taken while it answers, restores, a
+first start in a third of the memory, a worker that holds no model between jobs, and logs that
+keep nothing anybody asked. The interfaces (the HTTP API, the pack format, the database
+schema) can still change before 1.0, and only the newest release gets fixes.
+
+Before upgrading from 0.1.0:
+
+- **Take the backup from the new checkout.** 0.1.0 has no backup service, so check out
+  `v0.2.0` first and back up while 0.1.0 still runs, then start the new release:
+
+  ```bash
+  git fetch --tags
+  git checkout v0.2.0
+  DPOLENS_VERSION=0.1.0 docker compose run --rm --no-deps backup
+  docker compose pull
+  docker compose up -d --wait
+  ```
+
+  `DPOLENS_VERSION=0.1.0` takes the backup with the database image that is running and writes
+  0.1.0 into it, and `--no-deps` leaves the running database as it is. From 0.2.0 on,
+  [Upgrading](https://dpolens.com/docs/releases#upgrading) takes the backup first, as written.
+- **If `.env` sets `DPOLENS_VERSION`,** set it to 0.2.0 or take it out: otherwise the instance
+  keeps running the release it names.
+- **No table has changed**, so going back to 0.1.0 is `git checkout v0.1.0` and
+  `docker compose up -d`.
+- **The API no longer serves `/docs` and `/redoc`.** The reference is at
+  https://dpolens.com/docs/api, and `/openapi.json` describes the API to any tool.
+- **The API writes no access log.** Each request is one `api.request` line in its JSON
+  output, naming the route it matched rather than the address, and the dashboard's server logs
+  each path without its query string. Anything that reads the old access log lines needs to
+  read these instead.
+
+What changed since 0.1.0:
+
+- **Backups and restores.** `docker compose run --rm backup` copies the database and the
+  original files into a folder of its own, with their checksums, while the instance keeps
+  answering, and `DPOLENS_BACKUP_KEEP` keeps that many. `docker compose run --rm restore`
+  checks a backup and loads it into an instance that holds nothing yet.
+  ([#66](https://github.com/alkhatibdev/dpolens/pull/66))
+- **`dpolens --version`**, beside `dpolens version`. On a community version, `dpolens init`
+  names the laws and says that AI assistants connect with no token, and a search refused
+  before any law is chosen says an administrator chooses them the next time they sign in.
+  ([#67](https://github.com/alkhatibdev/dpolens/pull/67))
+- **The first start needs a third of the memory, and is up to five times faster.** Setup
+  embeds the laws in batches of clauses of about one length, with as many threads as its
+  container may use: it peaks at 1.2 GB, down from 3.4 GB, and takes about 4 minutes on 2
+  processors. The vectors and the search results are the same.
+  ([#68](https://github.com/alkhatibdev/dpolens/pull/68))
+- **The worker loads the model only to embed a policy, and frees it after**, so a running
+  instance uses about 1.2 GB, down from 2 GB.
+  ([#70](https://github.com/alkhatibdev/dpolens/pull/70))
+- **Nothing an instance serves loads from another site.** FastAPI's `/docs` and `/redoc`
+  pages are gone, and `.env.example` names `HTTPS_PROXY` and `NO_PROXY`, for the proxy
+  `dpolens pack update` downloads through.
+  ([#69](https://github.com/alkhatibdev/dpolens/pull/69))
+- **What somebody asks stays out of the logs.** A database error no longer prints the values
+  it was given, which put a failed search's question in the API's output word for word. The
+  API names each request's route instead of writing its address, the dashboard's server leaves
+  out query strings, and the MCP server no longer logs each call to the API or the words of a
+  refusal. The questions log redacts a key or a slug as it redacts a question, and a question
+  or an address carrying the NUL character is refused with 422 instead of failing.
+  ([#72](https://github.com/alkhatibdev/dpolens/pull/72))
+
+[Running an instance](https://dpolens.com/docs/running) says what machine an instance needs,
+what it connects to, how to run it behind a proxy or with no internet, and how to back it up.
+
 ## 0.1.0
 
 The first release of DPOLens, after three release candidates. Since 0.1.0-rc.3 it supports

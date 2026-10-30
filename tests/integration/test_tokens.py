@@ -1,8 +1,8 @@
 """Tokens against a real database: what authenticates, and what stops working when.
 
-A token is the only credential in v0.1, so the cases that matter are the ones
-where it must stop working: revoked, expired, an owner who left, a permission
-taken away from the role behind it.
+A token is what an AI assistant or a script holds in place of a password, so
+the cases that matter are the ones where it must stop working: revoked,
+expired, an owner who left, a permission taken away from the role behind it.
 """
 
 from __future__ import annotations

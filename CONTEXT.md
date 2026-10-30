@@ -281,8 +281,8 @@ language.
 _Avoid_: Hit, match, citation (when nothing quotes it)
 
 **Citation**:
-A result that an answer quotes or points to. Only generated answers produce citations, so
-v0.1 has none.
+A result that an answer quotes or points to. Only generated answers produce citations, and
+DPOLens generates none.
 _Avoid_: Reference, source, result
 
 **Selected laws**:
@@ -329,9 +329,8 @@ the ids, written so an auditor can verify it without running DPOLens.
 _Avoid_: Dump, backup, report
 
 **Query log**:
-The record of searches, clause lookups and (from v0.2) answers, with the query text
-PII-redacted. Entries are kept, unless the operator sets a retention, a number of days after
-which each is deleted.
+The record of searches and clause lookups, with the query text PII-redacted. Entries are
+kept, unless the operator sets a retention, a number of days after which each is deleted.
 _Avoid_: Q&A log, audit log, usage log, history
 
 **Cited** (as the dashboard counts it):
