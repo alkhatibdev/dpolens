@@ -6,4 +6,4 @@ import os
 # once when it loads, so it is set before any module here can import it.
 os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

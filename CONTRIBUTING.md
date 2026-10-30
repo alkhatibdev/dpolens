@@ -3,7 +3,7 @@
 DPOLens grounds AI coding assistants in an organisation's own policies and the privacy laws
 that apply to it, with citations that can be verified against a versioned source.
 
-> **Project status: 0.1.** Until 1.0, a release can change the HTTP API, the pack format
+> **Project status: 0.2.** Until 1.0, a release can change the HTTP API, the pack format
 > and the database schema, and [CHANGELOG.md](CHANGELOG.md) says what each one changed. If
 > you build on DPOLens now, pin a release.
 
@@ -54,7 +54,7 @@ because several of the guarantees DPOLens makes (the append-only governance log,
 immutability of published document versions) exist only in the database and cannot be
 tested against anything else.
 
-You do **not** need an API key for anything. DPOLens uses no LLM in v0.1.
+You do **not** need an API key for anything. DPOLens uses no LLM.
 
 The dashboard needs Node 24. With the API running on port 8000, the development server
 forwards `/v1` to it, so the browser sees one origin as it does in production:

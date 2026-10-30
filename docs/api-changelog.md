@@ -7,11 +7,14 @@ the contract itself.
 Until 1.0, a release may change anything in this file's list. After 1.0, a
 breaking change needs a new major version.
 
-## Unreleased
+## 0.2.0
 
 - `/docs` and `/redoc` are gone: the pages FastAPI adds by default loaded their
   scripts and fonts from other sites. `/openapi.json` still describes the API, and
   the reference is at https://dpolens.com/docs/api
+- A request carrying the NUL character, which Postgres cannot hold, is refused
+  with 422: in the search body's `query` or `laws`, or anywhere in the address. It
+  failed with a 500.
 
 ## 0.1.0
 

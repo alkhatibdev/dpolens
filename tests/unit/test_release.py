@@ -77,16 +77,17 @@ def test_bump_writes_every_place_and_nothing_else(repo: Path) -> None:
     lock_before = (repo / "uv.lock").read_text(encoding="utf-8")
     before = release.to_python(release.current(repo))
 
-    release.bump("0.2.0", repo)
+    # Never the repository's own version, or nothing would change.
+    release.bump("9.9.9", repo)
 
-    assert release.current(repo) == "0.2.0"
+    assert release.current(repo) == "9.9.9"
     lock_after = (repo / "uv.lock").read_text(encoding="utf-8")
     changed = [
         (old, new)
         for old, new in zip(lock_before.splitlines(), lock_after.splitlines(), strict=True)
         if old != new
     ]
-    assert changed == [(f'version = "{before}"', 'version = "0.2.0"')] * 2
+    assert changed == [(f'version = "{before}"', 'version = "9.9.9"')] * 2
 
 
 def test_bump_names_the_release_in_the_published_contract(repo: Path) -> None:
