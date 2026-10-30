@@ -76,10 +76,12 @@ def record_query(
     """Store what was asked, redacted, with what it returned.
 
     The raw question is redacted here and nowhere else, so there is no path by
-    which it reaches storage unredacted. `scope` says whether a search stayed
-    inside the selected laws.
+    which it reaches storage unredacted. So is the target: a key or a slug is
+    whatever the caller sent, and an AI assistant can send anything as a key.
+    `scope` says whether a search stayed inside the selected laws.
     """
     hidden = redact(query, redaction_patterns) if query else redact("")
+    named = redact(target, redaction_patterns) if target else None
 
     entry = QueryLogEntry(
         actor_user_id=user_id,
@@ -87,9 +89,9 @@ def record_query(
         surface=surface,
         operation=operation,
         query_redacted=hidden.text,
-        target=target,
-        redaction_count=hidden.count,
-        redaction_types=list(hidden.types),
+        target=named.text if named else None,
+        redaction_count=hidden.count + (named.count if named else 0),
+        redaction_types=list(dict.fromkeys((*hidden.types, *(named.types if named else ())))),
         status=status,
         scope=scope,
     )
