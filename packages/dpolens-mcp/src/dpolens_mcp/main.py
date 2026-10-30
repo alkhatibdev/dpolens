@@ -53,12 +53,28 @@ def asgi(settings: Settings, api: Api) -> Starlette:
     return app
 
 
+QUIET = ("httpx2", "mcp.server.mcpserver.server")
+"""Loggers held to warnings and errors, because their other lines carry what a caller sent.
+
+The HTTP client writes the address of each call to the API, which can hold a key as an AI
+assistant typed it, and the MCP library writes a tool's refusal as the caller reads it,
+which can repeat what the caller sent. The API writes its own line for each call, naming
+the route.
+"""
+
+
+def quiet() -> None:
+    for name in QUIET:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
+
 def main() -> None:
     settings = Settings()  # type: ignore[call-arg]
     logging.basicConfig(
         level=settings.log_level.upper(),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+    quiet()
     api = Api(
         base_url=settings.api,
         credential=Credential(settings.surface_token_file),

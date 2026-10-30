@@ -9,6 +9,8 @@ rather than to look like an empty result.
 from __future__ import annotations
 
 import json
+import logging
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -16,6 +18,7 @@ from mcp import Client
 
 from dpolens_mcp.api import Api, Refused
 from dpolens_mcp.credential import Credential
+from dpolens_mcp.main import QUIET, quiet
 from dpolens_stub import (
     DEVELOPER,
     PAT_ID,
@@ -33,6 +36,16 @@ pytestmark = pytest.mark.anyio
 
 async def search(connected: Client, **arguments: Any) -> Any:
     return await connected.call_tool("search_policies", {"query": "retention", **arguments})
+
+
+@pytest.fixture
+def quieted() -> Iterator[None]:
+    """The loggers as the server holds them, put back afterwards."""
+    levels = {name: logging.getLogger(name).level for name in QUIET}
+    quiet()
+    yield
+    for name, level in levels.items():
+        logging.getLogger(name).setLevel(level)
 
 
 class TestWhatASearchHandsBack:
@@ -475,6 +488,30 @@ class TestWhenTheInstanceRefuses:
         result = await search(connected)
 
         assert result.is_error is True
+
+    async def test_the_model_is_told_what_it_sent_and_the_log_is_not(
+        self,
+        connected: Client,
+        stub: Stub,
+        caplog: pytest.LogCaptureFixture,
+        quieted: None,
+    ) -> None:
+        """A refusal can repeat what the caller sent, which helps the model put it right.
+
+        The log is kept, so it gets none of that: neither the address of the call to the
+        API nor the refusal the model read.
+        """
+        sent = "hamad@example.com"
+        stub.refuse(
+            f"/v1/clauses/{sent}",
+            Refusal(404, problem(404, "not-found", "Not found", f"no document with slug {sent!r}")),
+        )
+        caplog.set_level(logging.INFO)
+
+        result = await connected.call_tool("get_clause", {"key": sent})
+
+        assert sent in said(result)
+        assert sent not in caplog.text
 
 
 class TestWhenTheCredentialIsReplaced:

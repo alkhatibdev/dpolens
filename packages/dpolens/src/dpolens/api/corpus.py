@@ -15,7 +15,7 @@ from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
 
 from dpolens.api import problems
 from dpolens.api.dependencies import Configured, Delegated, Embedding, Opened, Reader
@@ -63,8 +63,21 @@ MAX_QUERY = 1000
 instance's CPU by asking it to embed a megabyte."""
 
 
+def _storable(text: str) -> str:
+    """Refuse the NUL character, which Postgres cannot hold: a question or a law carrying it
+    could be neither searched nor kept in the query log."""
+    if "\x00" in text:
+        raise ValueError("cannot contain the NUL character")
+    return text
+
+
+Storable = Annotated[str, AfterValidator(_storable)]
+
+
 class SearchRequest(BaseModel):
-    query: str = Field(min_length=1, max_length=MAX_QUERY, description="The question, in words")
+    query: Storable = Field(
+        min_length=1, max_length=MAX_QUERY, description="The question, in words"
+    )
     limit: int = Field(default=10, ge=1, le=50)
     lang: str | None = Field(
         default=None,
@@ -75,7 +88,7 @@ class SearchRequest(BaseModel):
             "it, and otherwise in the language that prevails"
         ),
     )
-    laws: list[Annotated[str, Field(max_length=100)]] | None = Field(
+    laws: list[Annotated[Storable, Field(max_length=100)]] | None = Field(
         default=None,
         max_length=20,
         description=(

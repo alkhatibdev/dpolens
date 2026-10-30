@@ -10,6 +10,7 @@ audit trail has nothing to offer an auditor, so it declines to serve.
 
 from __future__ import annotations
 
+import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -131,6 +132,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # The largest body any route takes is a policy file. Added before the request id, so that a
     # refusal carries one too.
     app.add_middleware(BodyLimit, limit=MAX_UPLOAD_BYTES)
+    app.middleware("http")(_refuse_nul)
+    app.middleware("http")(_request_line)
     app.middleware("http")(_request_id)
 
     app.include_router(health.router)
@@ -192,6 +195,54 @@ async def _request_id(
         response = await call_next(request)
         response.headers[REQUEST_ID_HEADER] = request_id
         return response
+
+
+async def _request_line(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """One line for each request, in place of the server's access log.
+
+    An access log writes the whole address, and an address carries what somebody sent: the
+    words of a filter on the questions log, or a key as an AI assistant typed it. This line
+    names the route the request matched, such as /v1/clauses/{key}, and never its values.
+    """
+    started = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        route = request.scope.get("route")
+        telemetry.info(
+            "api.request",
+            method=request.method,
+            route=getattr(route, "path", None),
+            status=status,
+            duration_ms=round((time.perf_counter() - started) * 1000),
+        )
+
+
+async def _refuse_nul(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Refuse an address carrying the NUL character, which Postgres cannot hold.
+
+    A key, a slug or a filter carrying one could be neither looked up nor kept in the query
+    log, and would fail deep in a route as a server error.
+    """
+    if "\x00" in request.scope["path"] or b"%00" in request.scope["query_string"]:
+        return problems.render(
+            request,
+            problems.Problem(
+                kind="invalid-request",
+                title="Invalid request",
+                status=422,
+                detail="the address cannot contain the NUL character",
+                errors=[],
+            ),
+        )
+    return await call_next(request)
 
 
 def _is_uuid(value: str) -> bool:

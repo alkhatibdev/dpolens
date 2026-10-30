@@ -2,8 +2,8 @@
 
 Two promises are under test. What a developer typed is stored redacted, and it is
 stored at all only for as long as the retention allows. The third thing worth
-proving is that the question never reaches telemetry, which has no redaction, no
-permissions and no expiry.
+proving is that the question never reaches telemetry, or anything else the
+instance prints, which has no redaction, no permissions and no expiry.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, select, text
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
 from dpolens.api.app import create_app
@@ -141,7 +142,7 @@ class TestWhatIsRecorded:
     def test_reading_a_clause_records_the_key_and_no_question(
         self, api: TestClient, reader: str, opened: Session
     ) -> None:
-        """The key is not something somebody typed, so it is kept apart from it."""
+        """A lookup asks no question, so the key is kept apart from one."""
         found = api.post("/v1/search", json={"query": "data"}, headers=auth(reader)).json()
         key = found["results"][0]["clause"]["key"]
 
@@ -180,6 +181,39 @@ class TestWhatIsRecorded:
         entry = latest(opened)
         assert entry.actor_user_id
         assert entry.actor_pat_id
+
+
+class TestWhatIsRefused:
+    """The NUL character, which Postgres cannot hold, so nothing carrying it could be
+    looked up or kept."""
+
+    def test_a_question_carrying_it_is_refused_without_repeating_it(
+        self, api: TestClient, reader: str, opened: Session
+    ) -> None:
+        before = count_entries(opened)
+
+        response = api.post(
+            "/v1/search",
+            json={"query": "can we email hamad@example.com \u0000 about erasure"},
+            headers=auth(reader),
+        )
+
+        assert response.status_code == 422
+        assert response.json()["errors"] == [
+            {"field": "body.query", "problem": "Value error, cannot contain the NUL character"}
+        ]
+        assert "hamad@example.com" not in response.text
+        opened.expire_all()
+        assert count_entries(opened) == before
+
+    def test_an_address_carrying_it_is_refused(self, api: TestClient, reader: str) -> None:
+        """A key, a slug or a filter would otherwise fail deep in its route."""
+        key = api.get("/v1/clauses/testlaw:art-5%00", headers=auth(reader))
+        filtered = api.get("/v1/queries", params={"q": "erasure\u0000"}, headers=auth(reader))
+
+        for response in (key, filtered):
+            assert response.status_code == 422
+            assert response.json()["detail"] == "the address cannot contain the NUL character"
 
 
 class TestRedaction:
@@ -228,6 +262,18 @@ class TestRedaction:
         written = {name: value for name, value in stored.items() if isinstance(value, str | list)}
         assert "4242" not in json.dumps(written, default=str)
 
+    def test_an_address_in_a_key_is_not_stored(
+        self, api: TestClient, reader: str, opened: Session
+    ) -> None:
+        """A key is whatever the caller sent, and an AI assistant can send anything as one."""
+        api.get("/v1/clauses/hamad@example.com", headers=auth(reader))
+
+        entry = latest(opened)
+        assert entry.operation == "get_clause"
+        assert entry.target == "[redacted:email]"
+        assert entry.redaction_count == 1
+        assert entry.redaction_types == ["email"]
+
     def test_an_operators_own_pattern_is_applied_and_named(
         self, api: TestClient, reader: str, opened: Session
     ) -> None:
@@ -241,7 +287,7 @@ class TestRedaction:
         assert "case_number" in entry.redaction_types
 
 
-class TestTelemetryNeverSeesTheQuestion:
+class TestNothingPrintedCarriesTheQuestion:
     def test_the_question_does_not_reach_telemetry(
         self, api: TestClient, reader: str, capsys: pytest.CaptureFixture[str]
     ) -> None:
@@ -257,6 +303,42 @@ class TestTelemetryNeverSeesTheQuestion:
         assert secret not in printed
         assert "hamad@example.com" not in printed
         assert "erasure" not in printed
+
+    def test_a_failed_statement_carries_none_of_the_question(
+        self,
+        api: TestClient,
+        reader: str,
+        opened: Session,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A database error names the statement that failed, and is printed wherever it is
+        raised, so it must not name the values the statement was given."""
+        secret = "hamad@example.com asked about erasure"
+
+        def failing(session: Session, embedder: object, query: str, **_: object) -> None:
+            session.execute(text("SELECT CAST(:question AS text), 1 / 0"), {"question": query})
+
+        monkeypatch.setattr("dpolens.api.corpus.search", failing)
+
+        with pytest.raises(DBAPIError) as raised:
+            api.post("/v1/search", json={"query": secret}, headers=auth(reader))
+
+        assert "division by zero" in str(raised.value)
+        assert "hamad@example.com" not in str(raised.value)
+        assert latest(opened).status == "error"
+
+    def test_a_request_is_written_by_its_route_and_never_its_address(
+        self, api: TestClient, reader: str, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """In place of the server's access log, which writes the address whole."""
+        configure()
+
+        api.get("/v1/clauses/hamad@example.com", params={"lang": "en"}, headers=auth(reader))
+
+        printed = capsys.readouterr().out
+        assert '"route": "/v1/clauses/{key}"' in printed
+        assert '"status": 404' in printed
+        assert "hamad@example.com" not in printed
 
 
 class TestRetention:

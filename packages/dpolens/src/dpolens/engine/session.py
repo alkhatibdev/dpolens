@@ -128,6 +128,9 @@ def create_db_engine(settings: Settings, verify: bool = True) -> Engine:
         pool_pre_ping=True,
         pool_size=POOL_SIZE,
         max_overflow=POOL_OVERFLOW,
+        # A failed statement's error otherwise carries the values it was given, and a search's
+        # value is the question, unredacted, printed wherever the error is.
+        hide_parameters=True,
     )
     if verify:
         check_extensions(engine)

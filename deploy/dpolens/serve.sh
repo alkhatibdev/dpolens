@@ -15,7 +15,10 @@ case "${DPOLENS_COMMUNITY:-false}" in
         ;;
 esac
 
+# No access log: it writes each address whole, and an address can carry what somebody asked.
+# The API writes its own line for each request instead, naming the route.
 exec uvicorn --factory dpolens.api.app:create_app \
     --host "${DPOLENS_API_HOST:-0.0.0.0}" \
     --port "${DPOLENS_API_PORT:-8000}" \
-    --workers "${DPOLENS_API_WORKERS:-1}"
+    --workers "${DPOLENS_API_WORKERS:-1}" \
+    --no-access-log
