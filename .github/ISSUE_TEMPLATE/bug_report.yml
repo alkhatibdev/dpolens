@@ -1,0 +1,44 @@
+name: Bug report
+description: Something DPOLens does that it should not, or does not do that it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        A security problem is reported privately instead, as
+        [SECURITY.md](https://github.com/alkhatibdev/dpolens/blob/main/SECURITY.md) says.
+        Leave out anything personal and any token: an issue is public.
+  - type: input
+    id: version
+    attributes:
+      label: DPOLens version
+      description: "`docker compose exec api dpolens --version` prints it. On the community version, say so."
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: law
+    attributes:
+      label: The law and its version, if a clause or a citation is involved
+      description: "`docker compose exec api dpolens pack update` lists each law the instance has, with its version."
+      placeholder: "gdpr 2026.1"
+  - type: textarea
+    id: did
+    attributes:
+      label: What you did
+      description: The command, the search or the steps, so that somebody else can do the same.
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What you saw, with any error in full.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true

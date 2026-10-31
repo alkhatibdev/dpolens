@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: A security problem
+    url: https://github.com/alkhatibdev/dpolens/security/advisories/new
+    about: Report it privately, as SECURITY.md says, rather than in an issue.
+  - name: A question or an idea
+    url: https://github.com/alkhatibdev/dpolens/discussions
+    about: Discussions are the place for both.

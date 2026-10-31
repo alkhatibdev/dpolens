@@ -1,0 +1,66 @@
+name: Wanted pack
+description: A privacy law DPOLens should carry, and what its text needs before it can.
+title: "Wanted pack: "
+labels: ["wanted-pack"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        A pack is one statutory privacy law and its official companion texts, taken from the
+        text the state publishes.
+        [CONTRIBUTING.md](https://github.com/alkhatibdev/dpolens/blob/main/CONTRIBUTING.md#law-packs)
+        says what is accepted, and
+        [packs/BUILDING.md](https://github.com/alkhatibdev/dpolens/blob/main/packs/BUILDING.md)
+        how one is built. These are the questions a pack's pull request answers anyway.
+  - type: input
+    id: law
+    attributes:
+      label: The law
+      description: Its name and number, as its official text gives them.
+      placeholder: "Lei Geral de Proteção de Dados Pessoais, Lei nº 13.709/2018"
+    validations:
+      required: true
+  - type: input
+    id: jurisdiction
+    attributes:
+      label: Where it applies
+      placeholder: Brazil
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Official source
+      description: Where the state publishes the text. A law firm's copy or a commentary site does not count.
+    validations:
+      required: true
+  - type: textarea
+    id: republished
+    attributes:
+      label: Why its text may be republished
+      description: The provision that excludes laws from copyright, or the licence the state gives the text, with a link.
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: The language that prevails in law
+      placeholder: Portuguese
+    validations:
+      required: true
+  - type: textarea
+    id: translation
+    attributes:
+      label: An official English translation
+      description: Whether the state publishes one, where, and what it says the translation is. A law firm's or a commercial translation is not accepted.
+  - type: textarea
+    id: guidance
+    attributes:
+      label: Guidance that names articles
+      description: The regulator's own guidance that ties a question to an article, which the pack's eval questions are drawn from.
+  - type: checkboxes
+    id: building
+    attributes:
+      label: Building it
+      options:
+        - label: I would like to build this pack.
