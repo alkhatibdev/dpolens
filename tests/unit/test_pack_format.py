@@ -240,3 +240,28 @@ def test_a_translation_status_must_be_known(tmp_path: Path) -> None:
 
     with pytest.raises(PackFormatError, match="translation status must be one of"):
         read_pack_metadata(pack_dir)
+
+
+def test_a_licence_left_empty_is_refused(tmp_path: Path) -> None:
+    """The licensing gate checks what a field says, not only that it is there."""
+    pack_dir = bilingual_copy(tmp_path)
+    metadata = pack_dir / "pack.yaml"
+    metadata.write_text(
+        metadata.read_text().replace(
+            "license: Public domain, official documents are excluded from copyright.",
+            'license: ""',
+        )
+    )
+
+    with pytest.raises(PackFormatError, match="leaves required fields empty: license"):
+        read_pack_metadata(pack_dir)
+
+
+def test_a_translation_with_no_licence_is_refused(tmp_path: Path) -> None:
+    pack_dir = bilingual_copy(tmp_path)
+    metadata = pack_dir / "pack.yaml"
+    licence = "license: Public domain, under the same exclusion."
+    metadata.write_text(metadata.read_text().replace(licence, "license:"))
+
+    with pytest.raises(PackFormatError, match="each translation needs"):
+        read_pack_metadata(pack_dir)

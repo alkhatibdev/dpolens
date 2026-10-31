@@ -6,6 +6,18 @@ for itself, so whatever you produce here is what every installation will quote.
 This page takes you from an official source to a pack that is ready for review.
 [README.md](README.md) is the reference for the file format itself.
 
+Start the pack from the repository's root:
+
+```bash
+uv run dpolens pack scaffold lgpd --name "Lei Geral de Proteção de Dados Pessoais" \
+  --jurisdiction Brazil --lang pt
+```
+
+It writes `packs/lgpd/pack.yaml`, the folder the law's clause files go in, and the question
+sets in `evals/lgpd/`, in the law's language and in English. What only you can know, such as
+the official source and why its text may be republished, is left commented out in
+`pack.yaml`, and the pack does not load until you fill it in.
+
 ## 1. Find the official source
 
 Only the text published by the state counts. A law firm's reproduction, a booklet issued
@@ -162,7 +174,27 @@ Open three or four files next to the official text and read them:
 Then check that a deep key resolves the way a lawyer would cite it, and that the counts in
 `pack.yaml` match what the build printed.
 
-## 7. When the build refuses
+## 7. See it as a user will
+
+Start an instance from your checkout, with the `.env`
+[Get started](https://dpolens.com/docs/get-started) describes. Its first start loads every
+pack under `packs/`, yours included, and makes it searchable:
+
+```bash
+docker compose up -d --build --wait
+docker compose exec api dpolens init --law lgpd
+```
+
+`init` makes you the first administrator and chooses your law. Open the dashboard at
+http://localhost:8080: the library shows the law's structure with each clause's key segment
+beside its text, a clause opens with its whole key and what an AI assistant receives for it,
+and Search answers the questions from your sets. A pack that does not load stops the first
+start, and `docker compose logs setup` says why, in the words step 8 lists.
+
+An instance never reloads a version of a law it has, so after changing the pack, start
+again from nothing: `docker compose down -v`, then the two commands above.
+
+## 8. When the build refuses
 
 | Message | What it means |
 | --- | --- |
