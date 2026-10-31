@@ -1,0 +1,13 @@
+# Who reviews a change, by what it touches.
+#
+# A pack is reviewed by its maintainer, who has the local legal context to compare it with the
+# official source, and the project's maintainer reviews it until the pack has one of its own.
+# Somebody who adopts a pack replaces the name on its lines, for the law and for its questions.
+
+*                   @alkhatibdev
+
+/packs/gdpr/        @alkhatibdev
+/evals/gdpr/        @alkhatibdev
+
+/packs/uae-pdpl/    @alkhatibdev
+/evals/uae-pdpl/    @alkhatibdev
