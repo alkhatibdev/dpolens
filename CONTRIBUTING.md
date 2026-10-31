@@ -146,7 +146,8 @@ Every pack declares, in `pack.yaml`:
 - `source_url`: the official government or regulator source the text came from
 - `license`: the licence of the law text itself
 - `authoritative_language`: the language that is legally binding
-- `translation_source`: for each translation: official or unofficial, and its licence
+- `translations`: for each translation, its language, whether it is official or unofficial,
+  and its licence
 
 CI rejects a pack missing any of these. **Law-firm and commercial translations are not
 accepted**, however good they are: they are copyrighted works belonging to someone else.
@@ -166,9 +167,10 @@ Where the official source is already structured (EUR-Lex publishes EU law as For
 for instance), convert it rather than re-typing it. Where it is a PDF, expect careful
 manual work. No LLM builds pack structure, in either case.
 
-[packs/BUILDING.md](packs/BUILDING.md) walks through the whole process: finding the
-official text, fetching it, running the converter, what the converter does with
-paragraphs, footnotes and references, and what the automatic checks do and do not prove.
+`uv run dpolens pack scaffold <slug>` starts one, and [packs/BUILDING.md](packs/BUILDING.md)
+walks through the whole process: finding the official text, fetching it, running the
+converter, what the converter does with paragraphs, footnotes and references, what the
+automatic checks do and do not prove, and reading the result in the dashboard.
 
 ### Trust tiers
 

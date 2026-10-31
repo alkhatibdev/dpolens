@@ -1,7 +1,8 @@
 """Pack commands.
 
-`build` is maintainer tooling: a pack is converted once, reviewed by a person
-and committed, so no instance ever parses law text for itself. `archive` makes the
+`scaffold` and `build` are contributor tooling: a pack is started, converted once,
+reviewed by a person and committed, so no instance ever parses law text for itself.
+`archive` makes the
 file a release publishes. `update` and `import` load a newer version of a law
 from a release or from a file, and nothing else ever does: an upgrade of the app
 leaves the laws an instance has as they are.
@@ -35,6 +36,7 @@ from dpolens.engine.packs.load import (
     version_key,
 )
 from dpolens.engine.packs.releases import fetch, newest, pack_releases
+from dpolens.engine.packs.scaffold import NewPack, start_pack
 from dpolens.engine.packs.write import check_coverage, link_clauses, write_document
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
@@ -44,6 +46,30 @@ app = typer.Typer(name="pack", help="Build, inspect and load law packs.", no_arg
 
 def _checksum(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+@app.command(cls=Asking)
+def scaffold(
+    slug: Annotated[
+        str, typer.Argument(help="The pack's slug, named after its law, such as lgpd or sg-pdpa")
+    ],
+    name: Annotated[str, typer.Option(help="The law's name, as its official text gives it")],
+    jurisdiction: Annotated[str, typer.Option(help="Where the law applies, such as Brazil")],
+    lang: Annotated[str, typer.Option(help="The language whose text prevails in law, such as pt")],
+    packs: Annotated[Path, typer.Option(help="The folder packs are kept in")] = Path("packs"),
+    evals: Annotated[Path, typer.Option(help="The folder eval sets are kept in")] = Path("evals"),
+) -> None:
+    """Start a new pack: its pack.yaml, its first document's folder and its eval sets."""
+    written = start_pack(NewPack(slug, name, jurisdiction, lang), packs, evals)
+
+    typer.echo(f"Started {slug}:")
+    for path in written:
+        typer.echo(f"  {path}{'/' if path.is_dir() else ''}")
+    typer.echo(
+        "\nNext, packs/BUILDING.md: find the official text, write its clauses into "
+        f"{packs / slug / slug}/, fill in what pack.yaml leaves commented out, and write "
+        "the questions."
+    )
 
 
 @app.command(cls=Asking)

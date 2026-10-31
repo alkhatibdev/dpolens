@@ -146,6 +146,15 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
     missing = [name for name in REQUIRED_PACK_FIELDS if name not in raw]
     if missing:
         raise PackFormatError(f"{path} is missing required fields: {', '.join(missing)}")
+    # A licence or a source left empty is as missing as one left out, and both are what the
+    # licensing gate exists to check.
+    empty = [
+        name
+        for name in REQUIRED_PACK_FIELDS
+        if name != "documents" and not str(raw[name] or "").strip()
+    ]
+    if empty:
+        raise PackFormatError(f"{path} leaves required fields empty: {', '.join(empty)}")
 
     if raw["trust_tier"] not in TRUST_TIERS:
         raise PackFormatError(
@@ -156,7 +165,7 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
     if not isinstance(effective_date, date):
         raise PackFormatError(f"{path}: effective_date must be a date, for example 2018-05-25")
 
-    documents = tuple(_read_document_entry(path, entry) for entry in raw["documents"])
+    documents = tuple(_read_document_entry(path, entry) for entry in raw["documents"] or ())
     if not documents:
         raise PackFormatError(f"{path}: a pack needs at least one document")
 
@@ -178,7 +187,9 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
 def _read_translation_entries(path: Path, raw: dict[str, Any]) -> tuple[PackTranslation, ...]:
     translations = []
     for entry in raw.get("translations") or ():
-        if not isinstance(entry, dict) or not {"lang", "status", "license"} <= set(entry):
+        if not isinstance(entry, dict) or not all(
+            str(entry.get(name) or "").strip() for name in ("lang", "status", "license")
+        ):
             raise PackFormatError(
                 f"{path}: each translation needs a 'lang', a 'status' and a 'license'"
             )

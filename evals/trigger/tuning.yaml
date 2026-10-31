@@ -27,7 +27,8 @@ tasks:
     should_search: true
     verb: collect
     prompt: >-
-      We're starting to sell wine. Ask for date of birth at signup and refuse anyone under 18.
+      Our terms now say customers must be 18 or over. Ask for date of birth at signup and refuse
+      anyone under 18.
     reason: Collects date of birth from every new customer and makes a decision about them with it.
 
   - id: remember-address
@@ -90,11 +91,11 @@ tasks:
       account?
     reason: Asks what the rules require, which the guidance covers as well as code.
 
-  - id: wine-offers-question
+  - id: new-range-question
     kind: question
     should_search: true
     prompt: >-
-      Can we email everyone who has ever ordered from us about the new wine range, or do we
+      Can we email everyone who has ever ordered from us about the new coffee range, or do we
       have to ask them first?
     reason: Asks what the rules require before contacting customers.
 
