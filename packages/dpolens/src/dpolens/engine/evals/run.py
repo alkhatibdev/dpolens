@@ -18,6 +18,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding.encode import Embedder
+from dpolens.engine.embedding.recipe import RECIPE_VERSION
 from dpolens.engine.evals.score import Outcome, Score, score
 from dpolens.engine.packs.selection import Scope, law_alone
 from dpolens.engine.search.engine import CANDIDATE_DEPTH, search
@@ -129,7 +130,7 @@ def run_set(
         question_set=question_set,
         configuration=configuration,
         model=embedder.model.name,
-        recipe="v1",
+        recipe=RECIPE_VERSION,
         score=score(outcomes),
         outcomes=tuple(outcomes),
     )

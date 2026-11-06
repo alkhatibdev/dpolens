@@ -30,8 +30,9 @@ def upgrade() -> None:
         sa.Column("short_name", sa.Text(), nullable=False),
         sa.Column("jurisdiction", sa.Text(), nullable=False),
     )
-    # What a pack loaded before said, in English, until the instance loads the pack again:
-    # setup loads every pack in the image, so the first start after an upgrade does.
+    # What a pack loaded before said, in English, until a newer version of it is loaded. Setup
+    # leaves alone a law the instance already has, so that is `dpolens pack load` or
+    # `dpolens pack update`, run by hand.
     op.execute(
         """
         INSERT INTO pack_names (pack_id, lang, name, short_name, jurisdiction)

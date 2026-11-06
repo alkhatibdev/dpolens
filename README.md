@@ -66,7 +66,7 @@ has the line to add.
 ## Measured
 
 - **Search:** on held-out questions, the clause the guidance points at is among the top five
-  answers 77% of the time for GDPR, and 55% for the UAE's law.
+  answers 73% of the time for GDPR, and 53% for the UAE's law.
   [How it was measured](evals/retrieval.md)
 - **Use:** Claude Code with the plugin searched before writing code in 36 of 36 runs of tasks
   that touch personal data, and in 3 of 45 runs of tasks that do not.

@@ -18,9 +18,10 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-RECIPE_VERSION = "v2"
-"""v2 names the document in the clause's own language, as a law's pack names it there; v1 named
-it in English only."""
+RECIPE_VERSION = "v3"
+"""v3 opens with a law's short name in the clause's own language, as its pack gives it there, where
+v2 opened with the law's full title in that language and v1 with its English title. A policy opens
+with its title in all three."""
 MAX_TOKENS = 64
 SEPARATOR = " > "
 

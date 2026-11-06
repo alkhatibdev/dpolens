@@ -194,6 +194,20 @@ class TestFirstVersion:
         assert embedded > 0
 
         with session_from(own) as session:
+            opened = session.scalars(
+                text(
+                    """
+                    SELECT e.embedded_string FROM node_embeddings e
+                    JOIN node_texts t ON t.id = e.node_text_id
+                    JOIN document_nodes n ON n.id = t.node_id
+                    WHERE n.canonical_key LIKE 'retention:%'
+                    """
+                )
+            ).all()
+            # A policy has no short name, so its title places each of its clauses.
+            assert opened
+            assert all(string.startswith("Retention policy > ") for string in opened)
+
             results = search(session, embedder, "how long do we keep staff records")
             assert results[0].clause.key == "retention:4.2"
             assert results[0].clause.document_title == "Retention policy"
