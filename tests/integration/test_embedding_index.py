@@ -89,7 +89,7 @@ def test_the_stored_string_carries_the_ancestry_and_the_prefix(indexed: Session)
 
     assert stored.embedded_string.startswith("Test Data Protection Law > Right to erasure")
     assert stored.embedded_string.endswith("no other legal ground for the processing;")
-    assert stored.context_recipe == "v1"
+    assert stored.context_recipe == "v2"
 
 
 def test_a_text_is_placed_under_the_headings_of_its_own_language(bilingual: Session) -> None:
@@ -111,6 +111,10 @@ def test_a_text_is_placed_under_the_headings_of_its_own_language(bilingual: Sess
     assert "حالات المعالجة" not in stored["en"]
     assert "حالات المعالجة" in stored["ar"]
     assert "Cases of Processing" not in stored["ar"]
+
+    # And under the law's title in that language, as its pack names it there.
+    assert stored["en"].startswith("Test Bilingual Law > ")
+    assert stored["ar"].startswith("قانون تجريبي ثنائي اللغة > ")
 
 
 def test_threads_share_one_tokenizer(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,7 +1,16 @@
+format: 2
 slug: uae-pdpl
-name: Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data
-jurisdiction: United Arab Emirates
-version: "2026.1"
+name:
+  ar: مرسوم بقانون اتحادي رقم (45) لسنة 2021 بشأن حماية البيانات الشخصية
+  en: Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data
+short_name:
+  ar: قانون حماية البيانات الشخصية الإماراتي
+  en: UAE PDPL
+jurisdiction:
+  ar: الإمارات العربية المتحدة
+  en: United Arab Emirates
+region: Middle East
+version: "2026.2"
 effective_date: 2022-01-02
 trust_tier: community
 source_url: https://uaelegislation.gov.ae/ar/legislations/1972/download
@@ -25,7 +34,9 @@ translations:
 
 documents:
   - slug: uae-pdpl
-    title: Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data
+    title:
+      ar: مرسوم بقانون اتحادي رقم (45) لسنة 2021 بشأن حماية البيانات الشخصية
+      en: Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data
     normative: true
     expected_clauses: 31
     source_url: https://uaelegislation.gov.ae/ar/legislations/1972/download

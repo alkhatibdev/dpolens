@@ -28,14 +28,18 @@ export const signedIn: SignedIn = {
 
 export const uae: Document = {
   slug: "uae-pdpl",
-  title: "Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data",
+  title: {
+    ar: "مرسوم بقانون اتحادي رقم (45) لسنة 2021 بشأن حماية البيانات الشخصية",
+    en: "Federal Decree by Law No. (45) of 2021 Concerning the Protection of Personal Data",
+  },
   kind: "law",
   version_label: "2026.1",
   effective_date: "2022-01-02",
   clauses: 199,
   languages: ["ar", "en"],
   pack_slug: "uae-pdpl",
-  jurisdiction: "United Arab Emirates",
+  short_name: { ar: "قانون حماية البيانات الشخصية الإماراتي", en: "UAE PDPL" },
+  jurisdiction: { ar: "الإمارات العربية المتحدة", en: "United Arab Emirates" },
   trust_tier: "community",
   source_url: "https://uaelegislation.gov.ae/en/legislations/1972/download",
   authoritative_language: "ar",
@@ -45,12 +49,13 @@ export const uae: Document = {
 export const gdpr: Document = {
   ...uae,
   slug: "gdpr",
-  title: "General Data Protection Regulation",
+  title: { en: "Regulation (EU) 2016/679 (General Data Protection Regulation)" },
   effective_date: "2018-05-25",
   clauses: 867,
   languages: ["en"],
   pack_slug: "gdpr",
-  jurisdiction: "European Union",
+  short_name: { en: "GDPR" },
+  jurisdiction: { en: "European Union" },
   authoritative_language: "en",
   in_selected_laws: false,
 };
@@ -65,12 +70,18 @@ function clause(fields: Partial<Clause> & Pick<Clause, "key" | "text" | "lang">)
     authoritative_text: null,
     is_normative: true,
     depth: 1,
-    document_title: uae.title,
+    document_title: fields.lang === "ar" ? uae.title.ar! : uae.title.en!,
     document_slug: "uae-pdpl",
     version_label: "2026.1",
     effective_date: "2022-01-02",
+    in_force: true,
+    in_force_from: "2022-01-02",
+    in_force_until: null,
+    dates_set_by: null,
+    coming: null,
     pack_slug: "uae-pdpl",
-    jurisdiction: "United Arab Emirates",
+    law_short_name: fields.lang === "ar" ? "قانون حماية البيانات الشخصية الإماراتي" : "UAE PDPL",
+    jurisdiction: fields.lang === "ar" ? "الإمارات العربية المتحدة" : "United Arab Emirates",
     trust_tier: "community",
     source_url: uae.source_url,
     ...fields,
@@ -311,9 +322,10 @@ export const dpo: SignedIn = {
 export function logged(key: string, trail: [string | null, string | null][]): LoggedClause {
   return {
     key,
-    document_title: "General Data Protection Regulation",
+    document_title: "Regulation (EU) 2016/679 (General Data Protection Regulation)",
     document_slug: "gdpr",
     pack_slug: "gdpr",
+    law_short_name: { en: "GDPR" },
     version_label: "2026.1",
     lang: "en",
     trail: trail.map(([label, heading]) => ({ label, heading })),
@@ -361,8 +373,8 @@ export const overview: Overview = {
   ],
   most_cited: [{ clause: erasure, count: 148 }],
   sources: [
-    { pack_slug: "gdpr", title: "General Data Protection Regulation", count: 868 },
-    { pack_slug: "uae-pdpl", title: uae.title, count: 339 },
+    { pack_slug: "gdpr", short_name: { en: "GDPR" }, count: 868 },
+    { pack_slug: "uae-pdpl", short_name: uae.short_name, count: 339 },
   ],
   unanswered: [
     {
@@ -373,8 +385,12 @@ export const overview: Overview = {
     },
   ],
   laws: [
-    { slug: "gdpr", name: "General Data Protection Regulation" },
-    { slug: "uae-pdpl", name: uae.title },
+    {
+      slug: "gdpr",
+      name: { en: "Regulation (EU) 2016/679 (General Data Protection Regulation)" },
+      short_name: { en: "GDPR" },
+    },
+    { slug: "uae-pdpl", name: uae.title, short_name: uae.short_name! },
   ],
 };
 
@@ -404,8 +420,10 @@ export const yousef = {
 
 export const gdprLaw: LoadedLaw = {
   slug: "gdpr",
-  name: "General Data Protection Regulation",
-  jurisdiction: "European Union",
+  name: { en: "Regulation (EU) 2016/679 (General Data Protection Regulation)" },
+  short_name: { en: "GDPR" },
+  jurisdiction: { en: "European Union" },
+  region: "Europe",
   version: "2026.1",
   effective_date: "2018-05-25",
   trust_tier: "community",
@@ -421,7 +439,9 @@ export const gdprLaw: LoadedLaw = {
 export const uaeLaw: LoadedLaw = {
   slug: "uae-pdpl",
   name: uae.title,
-  jurisdiction: "United Arab Emirates",
+  short_name: uae.short_name!,
+  jurisdiction: uae.jurisdiction!,
+  region: "Middle East",
   version: "2026.1",
   effective_date: "2022-01-02",
   trust_tier: "community",

@@ -12,12 +12,21 @@ assembled from remembered fields is how a wrong one gets written.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 LANGUAGES = {"ar": "Arabic", "en": "English"}
 """Names for the languages packs carry, so a citation says Arabic rather than ar."""
+
+
+class Coming(BaseModel):
+    """The words an amendment gives a clause from a later day."""
+
+    text: str = Field(description="The words as the amendment gives them, word for word")
+    in_force_from: str
+    set_by: str | None = Field(description="The amendment that brings them")
 
 
 class Clause(BaseModel):
@@ -30,9 +39,34 @@ class Clause(BaseModel):
     obliges: bool = Field(
         description="False for text that explains without obliging, such as a recital"
     )
-    document: str
+    document: str = Field(description="The document's title, in the language of the text")
+    law: str | None = Field(
+        description="What people call the law, such as GDPR. Null for the organisation's policy"
+    )
     version: str | None
-    in_force_since: str = Field(description="The date this version took effect")
+    in_force: bool = Field(
+        description=(
+            "Whether this text applies on the day asked about. A provision can be returned "
+            "before it starts to apply, so a duty can be prepared for: say so when citing it"
+        )
+    )
+    in_force_from: str | None = Field(
+        description="The day this text starts to apply, or null while nothing has set it"
+    )
+    in_force_until: str | None = Field(
+        description="The day it stops applying, when a law or an amendment has set one"
+    )
+    dates_set_by: str | None = Field(
+        default=None,
+        description="What set those days, when anything other than the version's date did",
+    )
+    coming: Coming | None = Field(
+        default=None,
+        description=(
+            "The words an amendment gives this clause from a later day. Mention them when the "
+            "answer depends on what will apply then"
+        ),
+    )
     lang: str
     authoritative: bool = Field(description="Whether this language is the one that prevails in law")
     prevails: str | None = Field(
@@ -60,17 +94,38 @@ class Clause(BaseModel):
     )
 
     @classmethod
-    def of(cls, clause: dict[str, Any], breadcrumb: list[dict[str, Any]] | None = None) -> Clause:
+    def of(
+        cls,
+        clause: dict[str, Any],
+        breadcrumb: list[dict[str, Any]] | None = None,
+        as_of: date | None = None,
+    ) -> Clause:
         trail = [name for view in breadcrumb or [] if (name := _names(view))]
+        coming = clause.get("coming")
         return cls(
             key=clause["key"],
-            citation=citation_for(clause, trail),
+            citation=citation_for(clause, trail, as_of),
             text=clause["text"],
             breadcrumb=trail,
             obliges=clause["is_normative"],
             document=clause["document_title"],
+            law=clause.get("law_short_name"),
             version=clause["version_label"],
-            in_force_since=clause["effective_date"],
+            # An instance older than this server sends no days of its own: its texts apply
+            # from their version's date, and never stop.
+            in_force=clause.get("in_force", True),
+            in_force_from=clause.get("in_force_from", clause["effective_date"]),
+            in_force_until=clause.get("in_force_until"),
+            dates_set_by=clause.get("dates_set_by"),
+            coming=(
+                Coming(
+                    text=coming["text"],
+                    in_force_from=coming["in_force_from"],
+                    set_by=coming.get("dates_set_by"),
+                )
+                if coming
+                else None
+            ),
             lang=clause["lang"],
             authoritative=clause["is_authoritative"],
             prevails=_prevails(clause),
@@ -127,6 +182,9 @@ class Document(BaseModel):
 
     slug: str = Field(description="The name to pass to get_document")
     title: str
+    law: str | None = Field(
+        description="What people call the law, such as GDPR. Null for the organisation's policy"
+    )
     kind: str = Field(description="law, or org_policy for the organisation's own")
     version: str | None
     in_force_since: str
@@ -140,16 +198,25 @@ class Document(BaseModel):
     def of(cls, document: dict[str, Any]) -> Document:
         return cls(
             slug=document["slug"],
-            title=document["title"],
+            title=_english(document["title"]),
+            law=_english(document["short_name"]) if document.get("short_name") else None,
             kind=document["kind"],
             version=document["version_label"],
             in_force_since=document["effective_date"],
             clauses=document["clauses"],
             languages=list(document["languages"]),
-            jurisdiction=document["jurisdiction"],
+            jurisdiction=_english(document["jurisdiction"]) if document["jurisdiction"] else None,
             trust_tier=document["trust_tier"],
             source_url=document["source_url"],
         )
+
+
+def _english(by_lang: dict[str, str] | str) -> str:
+    """A name in English, which every law has, else the one a policy has in its language. An
+    instance older than this server sends the one name it has."""
+    if isinstance(by_lang, str):
+        return by_lang
+    return by_lang.get("en") or next(iter(by_lang.values()))
 
 
 class Documents(BaseModel):
@@ -180,13 +247,13 @@ class DocumentInDetail(BaseModel):
     outline: list[OutlineEntry]
 
 
-def citation_for(clause: dict[str, Any], trail: list[str]) -> str:
+def citation_for(clause: dict[str, Any], trail: list[str], as_of: date | None = None) -> str:
     """One line somebody can check, built from the fields rather than remembered."""
     where = " > ".join([*trail, _names(clause) or clause["key"]])
     version = clause["version_label"] or "unversioned"
     citation = (
         f"{clause['document_title']}, {where} ({clause['key']}), "
-        f"version {version}, in force since {clause['effective_date']}"
+        f"version {version}, {_in_force(clause, as_of or date.today())}"
     )
     prevails = _prevails(clause)
     if prevails:
@@ -213,6 +280,19 @@ def formerly(key: str, before: dict[str, Any]) -> str:
         f"In version {before['version_label']}, {key} was a different rule, {went}. A citation "
         f"of {key} that names version {before['version_label']} means that rule."
     )
+
+
+def _in_force(clause: dict[str, Any], as_of: date) -> str:
+    """When the text applies, as a citation says it."""
+    since = clause.get("in_force_from", clause["effective_date"])
+    until = clause.get("in_force_until")
+    if clause.get("in_force", True):
+        return f"in force since {since}" + (f", until {until}" if until else "")
+    if until is not None and date.fromisoformat(until) <= as_of:
+        return f"no longer in force since {until}"
+    if since is None:
+        return "not in force yet: no date set"
+    return f"in force from {since}" + (f" until {until}" if until else "")
 
 
 def _prevails(clause: dict[str, Any]) -> str | None:

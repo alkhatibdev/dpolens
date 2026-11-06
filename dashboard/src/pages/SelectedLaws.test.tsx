@@ -6,7 +6,7 @@ import { admin, gdprLaw, lawsChosen, lawsUnchosen, signedIn, uae, uaeLaw } from 
 import { renderAt } from "@/test/render";
 import { serve } from "@/test/server";
 
-const GDPR = "General Data Protection Regulation";
+const GDPR = "GDPR";
 
 describe("selected laws", () => {
   it("says what searches cover, and who chose it and when", async () => {
@@ -22,7 +22,7 @@ describe("selected laws", () => {
     expect(
       screen.getByText(/^Chosen by Yousef Haddad on 14 Oct at \d\d:\d\d\./),
     ).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: uae.title })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "UAE PDPL" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: GDPR })).not.toBeChecked();
     expect(screen.getByText("173")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Read it in the library" })[0]).toHaveAttribute(
@@ -66,7 +66,7 @@ describe("selected laws", () => {
     });
     renderAt("/laws");
 
-    await userEvent.click(await screen.findByRole("checkbox", { name: uae.title }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: "UAE PDPL" }));
 
     expect(screen.getByText("Removes UAE PDPL. Choose at least one law.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save the selection" })).toBeDisabled();
@@ -96,7 +96,7 @@ describe("selected laws", () => {
       await screen.findByRole("heading", { name: "Nothing is searched until someone chooses" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: GDPR })).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: uae.title })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "UAE PDPL" })).not.toBeChecked();
   });
 
   it("marks a law that arrived after the laws were chosen", async () => {
@@ -110,7 +110,7 @@ describe("selected laws", () => {
 
     const card = (await screen.findByRole("checkbox", { name: GDPR })).closest("label")!;
     expect(within(card).getByText("New")).toBeInTheDocument();
-    const other = screen.getByRole("checkbox", { name: uae.title }).closest("label")!;
+    const other = screen.getByRole("checkbox", { name: "UAE PDPL" }).closest("label")!;
     expect(within(other).queryByText("New")).not.toBeInTheDocument();
   });
 

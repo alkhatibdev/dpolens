@@ -8,7 +8,7 @@ import typer
 
 from dpolens.cli import ask
 from dpolens.engine.logs.governance import cli_actor
-from dpolens.engine.packs.selection import loaded_laws, select_laws, selected_laws
+from dpolens.engine.packs.selection import law_choice, loaded_laws, select_laws, selected_laws
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -28,7 +28,11 @@ def list_() -> None:
         selected = selected_laws(session) or []
         for pack in loaded_laws(session):
             covered = pack.slug in selected
-            typer.echo(f"{pack.slug:16} {'searched' if covered else '-':9} {pack.name}")
+            names = pack.named_in("en")
+            typer.echo(
+                f"{pack.slug:16} {'searched' if covered else '-':9} "
+                f"{names.short_name}: {names.name}"
+            )
     if not selected:
         typer.echo(f"\n{NOTHING_YET} Choose with: dpolens laws select")
 
@@ -50,7 +54,7 @@ def select(
                 )
             slugs = ask.checklist(
                 "Which laws apply to your organisation",
-                [(pack.slug, f"{pack.name}, {pack.jurisdiction}") for pack in loaded_laws(session)],
+                [(pack.slug, law_choice(pack)) for pack in loaded_laws(session)],
                 checked=selected_laws(session) or (),
                 at_least_one=True,
             )

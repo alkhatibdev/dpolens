@@ -25,7 +25,7 @@ from dpolens.engine.packs.archive import (
     read_checksum,
     write_archive,
 )
-from dpolens.engine.packs.format import Clause, PackFormatError, read_pack_metadata
+from dpolens.engine.packs.format import REGIONS, Clause, PackFormatError, read_pack_metadata
 from dpolens.engine.packs.formex import parse_articles, parse_recitals, text_of
 from dpolens.engine.packs.install import install_archive, loaded
 from dpolens.engine.packs.load import (
@@ -53,14 +53,23 @@ def scaffold(
     slug: Annotated[
         str, typer.Argument(help="The pack's slug, named after its law, such as lgpd or sg-pdpa")
     ],
-    name: Annotated[str, typer.Option(help="The law's name, as its official text gives it")],
-    jurisdiction: Annotated[str, typer.Option(help="Where the law applies, such as Brazil")],
+    name: Annotated[
+        str,
+        typer.Option(help="The law's official name, in the language whose text prevails"),
+    ],
+    short_name: Annotated[
+        str, typer.Option(help="What people call the law, such as LGPD, in that language")
+    ],
+    jurisdiction: Annotated[
+        str, typer.Option(help="Where the law applies, such as Brasil, in that language")
+    ],
     lang: Annotated[str, typer.Option(help="The language whose text prevails in law, such as pt")],
+    region: Annotated[str, typer.Option(help=f"Where the law is listed: {', '.join(REGIONS)}")],
     packs: Annotated[Path, typer.Option(help="The folder packs are kept in")] = Path("packs"),
     evals: Annotated[Path, typer.Option(help="The folder eval sets are kept in")] = Path("evals"),
 ) -> None:
     """Start a new pack: its pack.yaml, its first document's folder and its eval sets."""
-    written = start_pack(NewPack(slug, name, jurisdiction, lang), packs, evals)
+    written = start_pack(NewPack(slug, name, short_name, jurisdiction, lang, region), packs, evals)
 
     typer.echo(f"Started {slug}:")
     for path in written:

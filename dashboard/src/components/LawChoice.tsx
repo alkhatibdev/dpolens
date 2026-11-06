@@ -5,6 +5,7 @@ import type { LoadedLaw } from "@/api/client";
 import { LanguageChips } from "@/components/LanguageChips";
 import { Chip } from "@/components/States";
 import { Checkbox } from "@/components/ui/checkbox";
+import { inLanguage } from "@/lib/clauseName";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +48,7 @@ export function LawChoice({
         <span className="min-w-0">
           <span className="flex flex-wrap items-center gap-2 text-sm text-muted">
             <span>
-              {law.jurisdiction} · {t("laws.law")}
+              {inLanguage(law.jurisdiction)} · {t("laws.law")}
             </span>
             {law.new ? <Chip tone="soft">{t("laws.new")}</Chip> : null}
           </span>
@@ -58,7 +59,10 @@ export function LawChoice({
               compact ? "text-[19px]" : "text-[19px] sm:text-[21px]",
             )}
           >
-            {law.name}
+            {inLanguage(law.short_name)}
+          </span>
+          <span className="mt-0.5 block text-sm leading-snug text-muted">
+            {inLanguage(law.name)}
           </span>
         </span>
         <Checkbox

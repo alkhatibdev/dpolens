@@ -176,7 +176,7 @@ def build(settings: Settings, api: Api) -> MCPServer:
                 laws=laws,
             )
 
-        results = [_match(result) for result in answer["results"]]
+        results = [_match(result, as_of) for result in answer["results"]]
         return Found(
             searched=_scope(answer["laws"], as_of, policies=not community), results=results
         )
@@ -222,10 +222,10 @@ def build(settings: Settings, api: Api) -> MCPServer:
         breadcrumb = answer["breadcrumb"]
         beneath = [*breadcrumb, answer["clause"]]
         return ClauseInContext(
-            clause=Clause.of(answer["clause"], breadcrumb),
-            children=[Clause.of(child, beneath) for child in answer["children"]],
+            clause=Clause.of(answer["clause"], breadcrumb, as_of),
+            children=[Clause.of(child, beneath, as_of) for child in answer["children"]],
             cross_references=[reference["key"] for reference in answer["cross_references"]],
-            subtree=[Clause.of(view) for view in branch],
+            subtree=[Clause.of(view, as_of=as_of) for view in branch],
             now=where_now(answer["now"]) if answer.get("now") else None,
             formerly=(
                 formerly(answer["clause"]["key"], answer["formerly"])
@@ -358,9 +358,9 @@ def _scope(laws: list[str], as_of: date | None, *, policies: bool) -> str:
     return f"{searched}, {when}"
 
 
-def _match(result: dict[str, Any]) -> Match:
+def _match(result: dict[str, Any], as_of: date | None) -> Match:
     """One search result, flattened: a clause is easier to read than a clause in a box."""
-    clause = Clause.of(result["clause"], result["breadcrumb"])
+    clause = Clause.of(result["clause"], result["breadcrumb"], as_of)
     return Match(
         **clause.model_dump(),
         score=result["score"],

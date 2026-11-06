@@ -9,7 +9,7 @@ export function Citation({ clause, heading = false }: { clause: LoggedClause; he
   const title = heading ? headingOf(clause) : null;
   return (
     <>
-      {sourceName(clause.pack_slug, clause.document_title)} · <bdi>{numbering(clause)}</bdi>
+      {sourceName(clause.law_short_name, clause.document_title)} · <bdi>{numbering(clause)}</bdi>
       {title ? (
         <>
           , <bdi>{title}</bdi>

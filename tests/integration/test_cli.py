@@ -51,7 +51,7 @@ def test_loading_a_pack_reports_what_it_did(instance: None, clean_tables: None) 
     result = runner.invoke(app, ["pack", "load", str(GDPR_PACK)])
 
     assert result.exit_code == 0
-    assert "Loaded gdpr 2026.1" in result.output
+    assert "Loaded gdpr 2026.2" in result.output
     assert "2 documents" in result.output
 
 
@@ -69,7 +69,7 @@ def test_showing_an_article(loaded: None) -> None:
     assert "Article 17" in result.output
     assert "Right to erasure" in result.output
     assert "gdpr:art-17" in result.output
-    assert "in force 2018-05-25" in result.output
+    assert "in force since 2018-05-25" in result.output
 
 
 def test_showing_a_subtree_prints_the_points(loaded: None) -> None:

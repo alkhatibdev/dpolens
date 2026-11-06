@@ -7,6 +7,32 @@ the contract itself.
 Until 1.0, a release may change anything in this file's list. After 1.0, a
 breaking change needs a new major version.
 
+## 0.3.0
+
+- A law is named in the language of its text. Every clause carries `document_title`
+  in the language it is returned in, so an Arabic clause of the UAE PDPL carries the
+  law's Arabic title, and `jurisdiction` in that language too. The new
+  `law_short_name` is what people call the law, such as GDPR, also in that language
+- `GET /v1/documents` and `GET /v1/documents/{slug}`: a document's `title` is a map
+  from language to title. For a law it holds every language the pack names it in,
+  English among them, and the document carries `short_name` and `jurisdiction` as
+  maps too. A policy's `title` holds one entry, in its own language
+- `GET /v1/laws`: a law's `name` and `jurisdiction` are maps by language, beside the
+  new `short_name` and `region`, one of Africa, Americas, Asia Pacific, Europe and
+  Middle East
+- `GET /v1/overview`: a law carries `name` and `short_name` as maps by language, and
+  a source carries the law's `short_name` where it had `title`
+- Every clause says when its text applies. `in_force` is whether it applies on the
+  day asked about. `in_force_from` is the day it starts, which for a law that starts
+  in stages can be later than the version's `effective_date`, and is null while
+  nothing has set the day. `in_force_until` is the day it stops, when one is set, and
+  `dates_set_by` is what set those days, such as a commencement notice
+- A search returns a provision that does not apply yet, marked with `in_force` false,
+  so a duty can be prepared for. Words a law has ended are no longer returned by a
+  search, and still read by key
+- `coming` holds the words an amendment gives a clause from a later day, with that
+  day and the amendment, when one does
+
 ## 0.2.0
 
 - `/docs` and `/redoc` are gone: the pages FastAPI adds by default loaded their

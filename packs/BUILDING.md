@@ -9,14 +9,16 @@ This page takes you from an official source to a pack that is ready for review.
 Start the pack from the repository's root:
 
 ```bash
-uv run dpolens pack scaffold lgpd --name "Lei Geral de Proteção de Dados Pessoais" \
-  --jurisdiction Brazil --lang pt
+uv run dpolens pack scaffold lgpd \
+  --name "Lei nº 13.709, de 14 de agosto de 2018 (Lei Geral de Proteção de Dados Pessoais)" \
+  --short-name LGPD --jurisdiction Brasil --lang pt --region Americas
 ```
 
-It writes `packs/lgpd/pack.yaml`, the folder the law's clause files go in, and the question
-sets in `evals/lgpd/`, in the law's language and in English. What only you can know, such as
-the official source and why its text may be republished, is left commented out in
-`pack.yaml`, and the pack does not load until you fill it in.
+The names go in the language whose text prevails. It writes `packs/lgpd/pack.yaml`, the
+folder the law's clause files go in, and the question sets in `evals/lgpd/`, in the law's
+language and in English. What only you can know, such as the official source, why its text
+may be republished and the law's names in English, is left commented out in `pack.yaml`, and
+the pack does not load until you fill it in.
 
 ## 1. Find the official source
 
@@ -148,7 +150,8 @@ a rebuild can prove it used the same text:
 ```yaml
 documents:
   - slug: gdpr
-    title: General Data Protection Regulation
+    title:
+      en: Regulation (EU) 2016/679 (General Data Protection Regulation)
     normative: true
     expected_clauses: 99
     source_url: https://publications.europa.eu/resource/celex/02016R0679-20160504
@@ -158,6 +161,17 @@ documents:
 Set `effective_date` to the date the law applies from, not the date of the file. Set
 `trust_tier` to `community`. Put anything the portal says about authenticity into
 `license`, including which language prevails.
+
+Name the law in each language it has a text in, and in English: its official name, as people
+call it, and where it applies, as [README.md](README.md#how-a-law-is-named) describes. The
+official name is the law's number and the short title it gives itself, where it gives one. A
+short name that another pack uses, or one shared between countries without the place in it,
+fails CI.
+
+If the law, or a later notice, makes some provisions start on other days, or a provision has
+no day set yet, write those days in the document's `commencement` list, with what set them. If
+an amendment is law but applies later, add the clause as it words it beside the one in force,
+as `art-17@2027-01-17.md`. [README.md](README.md#when-each-text-applies) shows both.
 
 Recitals, guidance and other text that explains without obliging are marked
 `normative: false` on the document, so every result can say so.
@@ -204,6 +218,11 @@ again from nothing: `docker compose down -v`, then the two commands above.
 | `does not carry the source text exactly` | Text was dropped or duplicated. The message names the clause and shows the first difference |
 | `a heading opens a clause, so it needs a key segment anchor` | A hand-written file has a heading without `{#segment}` |
 | `unknown key segment` | A segment prefix outside the list in README.md |
+| `has nothing for en` | A name, short name, jurisdiction or title is missing for a language the pack needs |
+| `name the law in different languages` | `name`, `short_name` and `jurisdiction` do not list the same languages |
+| `says no pack format` | `pack.yaml` lacks `format: 2`, or was written for an earlier DPOLens |
+| `the commencement of ... names` | A `commencement` entry lists a key the document does not have |
+| `needs a 'source'` | A `commencement` entry or a coming text does not say what set its date |
 
 Everything above is a refusal rather than a warning, because a pack that loads with a
 provision missing is worse than a pack that does not load.

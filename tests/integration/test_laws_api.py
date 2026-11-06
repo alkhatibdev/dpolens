@@ -131,8 +131,11 @@ class TestSelectedLaws:
         assert bilingual["languages"] == ["ar", "en"]
         assert (bilingual["articles"], bilingual["recitals"]) == (3, 0)
         assert bilingual["document"] == "bilingual"
-        assert testlaw["name"] == "Test Data Protection Law"
-        assert testlaw["jurisdiction"] == "Example Republic"
+        assert testlaw["name"] == {"en": "Test Data Protection Law"}
+        assert testlaw["short_name"] == {"en": "TESTLAW"}
+        assert testlaw["jurisdiction"] == {"en": "Example Republic"}
+        assert testlaw["region"] == "Europe"
+        assert bilingual["short_name"] == {"ar": "القانون التجريبي", "en": "BILINGUAL"}
         assert (testlaw["version"], testlaw["effective_date"]) == ("2026.1", "2026-01-01")
         assert testlaw["trust_tier"] == "community"
         assert (testlaw["articles"], testlaw["recitals"]) == (2, 1)

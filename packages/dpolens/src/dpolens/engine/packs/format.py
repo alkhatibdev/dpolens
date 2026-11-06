@@ -16,23 +16,41 @@ from typing import Any
 
 import yaml
 
+FORMAT = 2
+"""The pack format this engine reads. A pack says which it is written in, so a pack written
+for another engine is refused by name rather than read wrongly."""
+
 SEGMENT_TYPES = {
     "art": "article",
     "para": "paragraph",
     "sub": "subparagraph",
     "pt": "point",
     "sec": "section",
+    "rule": "rule",
+    "reg": "regulation",
+    "sch": "schedule",
+    "cl": "clause",
+    "suppl": "supplementary provisions",
     "ch": "chapter",
     "rec": "recital",
     "annex": "annex",
 }
 
+REGIONS = ("Africa", "Americas", "Asia Pacific", "Europe", "Middle East")
+"""Where a law is listed. A fixed list, so an interface can name each in its own language."""
+
 FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n?(.*)\Z", re.DOTALL)
 ANY_HEADING = re.compile(r"^#{1,6}[ \t]")
 HEADING = re.compile(r"^(#{2,6})[ \t]+(.*?)[ \t]*\{#([a-z0-9][a-z0-9-]*)\}[ \t]*$")
 KEY = re.compile(r"^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)+$")
-TRANSLATION_FILE = re.compile(r"^(?P<stem>[^.]+)\.(?P<lang>[a-z]{2,3}(?:-[a-z0-9]+)?)\.md$")
+LANG = r"[a-z]{2,3}(?:-[a-z0-9]+)?"
+TRANSLATION_FILE = re.compile(rf"^(?P<stem>[^.@]+)\.(?P<lang>{LANG})\.md$")
 """`art-5.en.md` holds the English translation of `art-5.md`, under the same keys."""
+COMING_FILE = re.compile(
+    rf"^(?P<stem>[^.@]+)@(?P<date>\d{{4}}-\d{{2}}-\d{{2}})(?:\.(?P<lang>{LANG}))?\.md$"
+)
+"""`art-17@2027-01-17.md` holds Article 17 as an amendment words it from 17 January 2027, and
+`art-17@2027-01-17.en.md` its translation. The text in force until then stays in `art-17.md`."""
 
 TRANSLATION_STATUSES = {
     "official": "official_translation",
@@ -71,14 +89,70 @@ class Clause:
 
 
 @dataclass(frozen=True)
+class Commencement:
+    """When some provisions start or stop applying, as whatever set those dates says.
+
+    A key covers everything beneath it, and the most specific key wins, so a law can start
+    on one date while one of its sub-sections starts on another.
+    """
+
+    keys: tuple[str, ...]
+    source: str
+    """What set the dates: the law's own article, a separate notice, a rule of the text."""
+    starts: date | None = None
+    pending: bool = False
+    """The provisions do not apply yet, and nothing has set the day they will."""
+    ends: date | None = None
+
+
+@dataclass(frozen=True)
+class Dates:
+    """When one text applies. No start means from the pack's effective date."""
+
+    starts: date | None = None
+    pending: bool = False
+    ends: date | None = None
+    source: str | None = None
+    """What set these dates, when anything other than the pack's effective date did."""
+
+
+@dataclass(frozen=True)
 class PackDocument:
     slug: str
-    title: str
+    title: dict[str, str]
+    """The document's official title in each language the pack names it in."""
     normative: bool
     expected_clauses: int
     source_url: str | None = None
     source_sha256: str | None = None
     """Where this document's text came from, so a rebuild can prove it used the same file."""
+    commencement: tuple[Commencement, ...] = ()
+
+    def dates_of(self, key: str) -> Dates:
+        """When the text under `key` applies, from the most specific entry naming it."""
+        covering = [
+            (entry, named)
+            for entry in self.commencement
+            for named in entry.keys
+            if key == named or key.startswith(f"{named}:")
+        ]
+        starting = max(
+            ((entry, named) for entry, named in covering if entry.starts or entry.pending),
+            key=lambda pair: pair[1].count(":"),
+            default=None,
+        )
+        ending = max(
+            ((entry, named) for entry, named in covering if entry.ends),
+            key=lambda pair: pair[1].count(":"),
+            default=None,
+        )
+        sources = [pair[0].source for pair in (starting, ending) if pair is not None]
+        return Dates(
+            starts=starting[0].starts if starting else None,
+            pending=starting[0].pending if starting else False,
+            ends=ending[0].ends if ending else None,
+            source="; ".join(dict.fromkeys(sources)) or None,
+        )
 
 
 @dataclass(frozen=True)
@@ -99,8 +173,13 @@ class PackTranslation:
 @dataclass(frozen=True)
 class PackMetadata:
     slug: str
-    name: str
-    jurisdiction: str
+    name: dict[str, str]
+    """The law's official name in each language: its number and the short title it gives
+    itself, where it gives one, else its title as printed."""
+    short_name: dict[str, str]
+    """What people call the law and search for, such as GDPR or UAE PDPL."""
+    jurisdiction: dict[str, str]
+    region: str
     version: str
     effective_date: date
     trust_tier: str
@@ -110,11 +189,19 @@ class PackMetadata:
     documents: tuple[PackDocument, ...]
     translations: tuple[PackTranslation, ...] = field(default=())
 
+    @property
+    def languages(self) -> tuple[str, ...]:
+        """The languages the pack has text in, the one that prevails first."""
+        return (self.authoritative_language, *(t.lang for t in self.translations))
+
 
 REQUIRED_PACK_FIELDS = (
+    "format",
     "slug",
     "name",
+    "short_name",
     "jurisdiction",
+    "region",
     "version",
     "effective_date",
     "trust_tier",
@@ -123,6 +210,8 @@ REQUIRED_PACK_FIELDS = (
     "authoritative_language",
     "documents",
 )
+NAMED_FIELDS = ("name", "short_name", "jurisdiction")
+"""The fields written once per language, as a map from language to text."""
 TRUST_TIERS = ("verified", "community")
 
 
@@ -143,6 +232,18 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
         raise PackFormatError(f"{pack_dir} has no pack.yaml")
 
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(raw, dict):
+        raise PackFormatError(f"{path} holds a list or a value, where it holds fields by name")
+    if "format" not in raw:
+        raise PackFormatError(
+            f"{path} says no pack format, and this engine reads format {FORMAT}. A pack "
+            "without one was written for DPOLens 0.2.0 or earlier"
+        )
+    if raw["format"] != FORMAT:
+        raise PackFormatError(
+            f"{path} says pack format {raw['format']}, and this engine reads format {FORMAT}. "
+            "Use the DPOLens release it was written for"
+        )
     missing = [name for name in REQUIRED_PACK_FIELDS if name not in raw]
     if missing:
         raise PackFormatError(f"{path} is missing required fields: {', '.join(missing)}")
@@ -151,7 +252,7 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
     empty = [
         name
         for name in REQUIRED_PACK_FIELDS
-        if name != "documents" and not str(raw[name] or "").strip()
+        if name not in ("documents", *NAMED_FIELDS) and not str(raw[name] or "").strip()
     ]
     if empty:
         raise PackFormatError(f"{path} leaves required fields empty: {', '.join(empty)}")
@@ -160,19 +261,40 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
         raise PackFormatError(
             f"{path}: trust_tier must be one of {', '.join(TRUST_TIERS)}, not {raw['trust_tier']!r}"
         )
+    if raw["region"] not in REGIONS:
+        raise PackFormatError(
+            f"{path}: region must be one of {', '.join(REGIONS)}, not {raw['region']!r}"
+        )
 
     effective_date = raw["effective_date"]
     if not isinstance(effective_date, date):
         raise PackFormatError(f"{path}: effective_date must be a date, for example 2018-05-25")
 
-    documents = tuple(_read_document_entry(path, entry) for entry in raw["documents"] or ())
+    translations = _read_translation_entries(path, raw)
+    # Every interface is in English, so a law is named in English as well as in each
+    # language it has a text in.
+    languages = tuple(
+        dict.fromkeys((str(raw["authoritative_language"]), *(t.lang for t in translations), "en"))
+    )
+    names = {name: _named(path, name, raw[name], languages) for name in NAMED_FIELDS}
+    if len({frozenset(named) for named in names.values()}) > 1:
+        raise PackFormatError(
+            f"{path}: name, short_name and jurisdiction name the law in different languages. "
+            "Each names it in the same ones, so a screen in any of them has all three"
+        )
+
+    documents = tuple(
+        _read_document_entry(path, entry, languages) for entry in raw["documents"] or ()
+    )
     if not documents:
         raise PackFormatError(f"{path}: a pack needs at least one document")
 
     return PackMetadata(
         slug=str(raw["slug"]),
-        name=str(raw["name"]),
-        jurisdiction=str(raw["jurisdiction"]),
+        name=names["name"],
+        short_name=names["short_name"],
+        jurisdiction=names["jurisdiction"],
+        region=str(raw["region"]),
         version=str(raw["version"]),
         effective_date=effective_date,
         trust_tier=str(raw["trust_tier"]),
@@ -180,8 +302,32 @@ def read_pack_metadata(pack_dir: Path) -> PackMetadata:
         license=str(raw["license"]),
         authoritative_language=str(raw["authoritative_language"]),
         documents=documents,
-        translations=_read_translation_entries(path, raw),
+        translations=translations,
     )
+
+
+def _named(
+    path: Path, name: str, value: Any, languages: tuple[str, ...], what: str | None = None
+) -> dict[str, str]:
+    """A field written once per language, checked to name every language it has to."""
+    what = what or name
+    if not isinstance(value, dict):
+        raise PackFormatError(
+            f"{path}: {what} is written once per language, for example\n"
+            f"{name}:" + "".join(f"\n  {lang}: ..." for lang in languages)
+        )
+    named = {
+        str(lang): str(text).strip()
+        for lang, text in value.items()
+        if text is not None and str(text).strip()
+    }
+    missing = [lang for lang in languages if not named.get(lang)]
+    if missing:
+        raise PackFormatError(
+            f"{path}: {what} has nothing for {', '.join(missing)}. A pack names its law in "
+            "each language it has a text in, and in English, since every interface is English"
+        )
+    return named
 
 
 def _read_translation_entries(path: Path, raw: dict[str, Any]) -> tuple[PackTranslation, ...]:
@@ -213,17 +359,55 @@ def _read_translation_entries(path: Path, raw: dict[str, Any]) -> tuple[PackTran
     return tuple(translations)
 
 
-def _read_document_entry(path: Path, entry: dict[str, Any]) -> PackDocument:
+def _read_document_entry(
+    path: Path, entry: dict[str, Any], languages: tuple[str, ...]
+) -> PackDocument:
     for name in ("slug", "title", "expected_clauses"):
         if name not in entry:
             raise PackFormatError(f"{path}: document entry is missing '{name}'")
+    slug = str(entry["slug"])
     return PackDocument(
-        slug=str(entry["slug"]),
-        title=str(entry["title"]),
+        slug=slug,
+        title=_named(path, "title", entry["title"], languages, what=f"the title of {slug}"),
         normative=bool(entry.get("normative", True)),
         expected_clauses=int(entry["expected_clauses"]),
         source_url=str(entry["source_url"]) if entry.get("source_url") else None,
         source_sha256=str(entry["source_sha256"]) if entry.get("source_sha256") else None,
+        commencement=tuple(
+            _read_commencement(path, slug, item) for item in entry.get("commencement") or ()
+        ),
+    )
+
+
+def _read_commencement(path: Path, slug: str, item: Any) -> Commencement:
+    where = f"{path}: a commencement entry of {slug}"
+    if not isinstance(item, dict):
+        raise PackFormatError(f"{where} is a list of from or until, keys and source")
+    starts, ends = item.get("from"), item.get("until")
+    if starts is None and ends is None:
+        raise PackFormatError(f"{where} needs a 'from' date, 'from: pending', or an 'until' date")
+    pending = starts == "pending"
+    for name, value in (("from", None if pending else starts), ("until", ends)):
+        if value is not None and not isinstance(value, date):
+            raise PackFormatError(
+                f"{where}: '{name}' must be a date, for example 2027-05-13"
+                + (", or pending" if name == "from" else "")
+            )
+    keys = item.get("keys")
+    if not isinstance(keys, list) or not keys:
+        raise PackFormatError(f"{where} lists no keys")
+    if not str(item.get("source") or "").strip():
+        raise PackFormatError(
+            f"{where} needs a 'source': what set these dates, so they can be checked"
+        )
+    if isinstance(starts, date) and isinstance(ends, date) and ends <= starts:
+        raise PackFormatError(f"{where} ends on {ends}, which is not after it starts")
+    return Commencement(
+        keys=tuple(str(key) for key in keys),
+        source=str(item["source"]).strip(),
+        starts=starts if isinstance(starts, date) else None,
+        pending=pending,
+        ends=ends,
     )
 
 
@@ -401,9 +585,17 @@ def _build_tree(
     return tuple(roots)
 
 
-def law_order(path: Path) -> list[int | str]:
-    """Sort key that puts art-2 before art-10, the order the law itself uses."""
-    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", path.name)]
+def law_order(path: Path) -> tuple[list[int | str], str]:
+    """Sort key that puts art-2 before art-10 and art-5 before art-5-bis, the order the law
+    itself uses, with a file's translations and coming texts after it."""
+    stem = re.split(r"[.@]", path.name, maxsplit=1)[0]
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", stem)], path.name
+
+
+def _in_force_file(path: Path) -> bool:
+    """A clause file holding the text that prevails as the pack has it, not a translation of
+    it and not a text an amendment brings later."""
+    return TRANSLATION_FILE.match(path.name) is None and "@" not in path.name
 
 
 def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
@@ -417,7 +609,7 @@ def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
     clauses = [
         read_clause_file(path, document_normative=document.normative)
         for path in sorted(directory.glob("*.md"), key=law_order)
-        if TRANSLATION_FILE.match(path.name) is None
+        if _in_force_file(path)
     ]
     if len(clauses) != document.expected_clauses:
         raise PackFormatError(
@@ -432,6 +624,25 @@ def read_document(pack_dir: Path, document: PackDocument) -> list[Clause]:
             raise PackFormatError(
                 f"{directory}: key '{clause.key}' does not start with '{expected_prefix}', "
                 "so it would not resolve inside this document"
+            )
+
+    keys = {found.key for clause in clauses for found in clause.walk()}
+    named = [key for entry in document.commencement for key in entry.keys]
+    unknown = sorted(set(named) - keys)
+    if unknown:
+        raise PackFormatError(
+            f"{pack_dir / 'pack.yaml'}: the commencement of {document.slug} names {unknown}, "
+            "which the document does not have. A text an amendment brings later carries its "
+            "own date in its file name"
+        )
+    for key in sorted(set(named)):
+        entries = [entry for entry in document.commencement if key in entry.keys]
+        starting = [entry for entry in entries if entry.starts or entry.pending]
+        ending = [entry for entry in entries if entry.ends]
+        if len(starting) > 1 or len(ending) > 1:
+            raise PackFormatError(
+                f"{pack_dir / 'pack.yaml'}: the commencement of {document.slug} dates "
+                f"'{key}' twice, so which date applies would depend on the order"
             )
     return clauses
 
@@ -511,3 +722,105 @@ def read_translations(
             )
         found[lang] = aligned
     return found
+
+
+@dataclass(frozen=True)
+class ComingText:
+    """A clause as an amendment words it from a later date, with its translations.
+
+    The text in force until then stays in its own file and ends that day. A coming text
+    whose key the document does not have yet adds a clause from that day.
+    """
+
+    starts: date
+    source: str
+    """The amendment that brings it, so the date and the words can be checked."""
+    clause: Clause
+    translations: dict[str, Clause]
+
+
+def read_coming(pack_dir: Path, document: PackDocument, pack: PackMetadata) -> list[ComingText]:
+    """Every text an amendment brings later, in the law's order and then by date."""
+    directory = pack_dir / document.slug
+    declared = {translation.lang for translation in pack.translations}
+    grouped: dict[tuple[str, date], dict[str | None, Path]] = {}
+    for path in sorted(directory.glob("*@*.md"), key=law_order):
+        match = COMING_FILE.match(path.name)
+        if match is None:
+            raise PackFormatError(
+                f"{path}: a text an amendment brings later is named for the file it replaces "
+                "and the day it starts, such as art-17@2027-01-17.md"
+            )
+        try:
+            starts = date.fromisoformat(match.group("date"))
+        except ValueError as error:
+            raise PackFormatError(f"{path}: {match.group('date')} is not a date") from error
+        lang = match.group("lang")
+        if lang is not None and lang not in declared:
+            raise PackFormatError(
+                f"{path}: '{lang}' is not a translation pack.yaml declares. List it under "
+                "translations, with its status and licence"
+            )
+        grouped.setdefault((match.group("stem"), starts), {})[lang] = path
+
+    found: list[ComingText] = []
+    for (stem, starts), files in grouped.items():
+        original = files.get(None)
+        if original is None:
+            raise PackFormatError(
+                f"{directory}: {stem}@{starts} has a translation and no text in "
+                f"'{pack.authoritative_language}', the language that prevails"
+            )
+        if starts <= pack.effective_date:
+            raise PackFormatError(
+                f"{original}: starts on {starts}, which is not after the pack's effective_date "
+                f"{pack.effective_date}. A text already in force belongs in {stem}.md"
+            )
+        source = str(_front_matter(original).get("source") or "").strip()
+        if not source:
+            raise PackFormatError(
+                f"{original}: front matter needs a 'source', the amendment that brings this text"
+            )
+        clause = read_clause_file(original, document.normative)
+        if clause.lang != pack.authoritative_language:
+            raise PackFormatError(
+                f"{original}: is written in '{clause.lang}', and a file without a language "
+                f"suffix holds the text that prevails, '{pack.authoritative_language}'"
+            )
+        if not clause.key.startswith(f"{document.slug}:"):
+            raise PackFormatError(
+                f"{original}: key '{clause.key}' does not start with '{document.slug}:', so it "
+                "would not resolve inside this document"
+            )
+        translations: dict[str, Clause] = {}
+        for lang in sorted(declared):
+            in_lang = files.get(lang)
+            if in_lang is None:
+                raise PackFormatError(
+                    f"{directory}: {stem}@{starts} has no '{lang}' translation. A translation "
+                    "covers every clause, or it is not loaded"
+                )
+            translated = read_clause_file(in_lang, document.normative)
+            if translated.lang != lang:
+                raise PackFormatError(
+                    f"{in_lang}: the file name says '{lang}' and the front matter says "
+                    f"'{translated.lang}'"
+                )
+            if [c.key for c in translated.walk()] != [c.key for c in clause.walk()]:
+                raise PackFormatError(
+                    f"{in_lang}: does not have the same clauses in the same order as "
+                    f"{original.name}"
+                )
+            translations[lang] = translated
+        found.append(ComingText(starts, source, clause, translations))
+
+    repeated = Counter((coming.clause.key, coming.starts) for coming in found)
+    for (key, starts), count in repeated.items():
+        if count > 1:
+            raise PackFormatError(f"{directory}: more than one file words '{key}' from {starts}")
+    return found
+
+
+def _front_matter(path: Path) -> dict[str, Any]:
+    match = FRONT_MATTER.match(path.read_text(encoding="utf-8"))
+    return (yaml.safe_load(match.group(1)) or {}) if match else {}

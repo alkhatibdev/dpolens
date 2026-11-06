@@ -17,7 +17,8 @@ describe("the library", () => {
   it("shows each document with what a reader needs to choose it", async () => {
     renderAt("/library");
 
-    const card = (await screen.findByText(uae.title)).closest("a")!;
+    const card = (await screen.findByText("UAE PDPL")).closest("a")!;
+    expect(within(card).getByText(uae.title.en!)).toBeInTheDocument();
     expect(within(card).getByText("Law")).toBeInTheDocument();
     expect(within(card).getByText("United Arab Emirates")).toBeInTheDocument();
     expect(within(card).getByText(/العربية · prevails/)).toHaveAttribute("lang", "ar");
@@ -37,11 +38,12 @@ describe("the library", () => {
 
   it("filters by language", async () => {
     renderAt("/library");
-    await screen.findByText(uae.title);
+    await screen.findByText("UAE PDPL");
 
     await userEvent.click(screen.getByRole("button", { name: "العربية" }));
 
-    expect(screen.getByText(uae.title)).toBeInTheDocument();
-    expect(screen.queryByText(gdpr.title)).not.toBeInTheDocument();
+    expect(screen.getByText("UAE PDPL")).toBeInTheDocument();
+    expect(screen.queryByText(gdpr.title.en!)).not.toBeInTheDocument();
+    expect(screen.queryByText("GDPR")).not.toBeInTheDocument();
   });
 });

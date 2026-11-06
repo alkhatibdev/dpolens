@@ -963,7 +963,10 @@ export interface components {
       is_normative: boolean;
       /** Depth */
       depth: number;
-      /** Document Title */
+      /**
+       * Document Title
+       * @description In the language of the text, as a law is named wherever its words are
+       */
       document_title: string;
       /** Document Slug */
       document_slug: string;
@@ -972,14 +975,45 @@ export interface components {
       /**
        * Effective Date
        * Format: date
+       * @description The day the version took effect
        */
       effective_date: string;
+      /**
+       * In Force
+       * @description Whether this text applies on the day asked about
+       */
+      in_force: boolean;
+      /**
+       * In Force From
+       * @description The day this text starts to apply, which can be later than the version's for a provision that starts in stages. Null while nothing has set the day
+       */
+      in_force_from: string | null;
+      /**
+       * In Force Until
+       * @description The day it stops applying, when a law or an amendment has set one
+       */
+      in_force_until: string | null;
+      /**
+       * Dates Set By
+       * @description What set those days, such as a commencement notice or an amending act, when anything other than the version's effective date did
+       */
+      dates_set_by: string | null;
+      /** @description The words an amendment gives this clause from a later day, when one does */
+      coming: components["schemas"]["Coming"] | null;
       /**
        * Pack Slug
        * @description Null for an organisation's own policy
        */
       pack_slug: string | null;
-      /** Jurisdiction */
+      /**
+       * Law Short Name
+       * @description What people call the law, such as GDPR, in the language of the text
+       */
+      law_short_name: string | null;
+      /**
+       * Jurisdiction
+       * @description Where the law applies, in the language of the text
+       */
       jurisdiction: string | null;
       /**
        * Trust Tier
@@ -1031,7 +1065,10 @@ export interface components {
     ClauseName: {
       /** Key */
       key: string;
-      /** Document Title */
+      /**
+       * Document Title
+       * @description In the language the clause was returned in
+       */
       document_title: string;
       /** Document Slug */
       document_slug: string;
@@ -1040,6 +1077,13 @@ export interface components {
        * @description The law's pack, or null for a policy
        */
       pack_slug: string | null;
+      /**
+       * Law Short Name
+       * @description What people call the law, such as GDPR, by language. Null for a policy
+       */
+      law_short_name: {
+        [key: string]: string;
+      } | null;
       /** Version Label */
       version_label: string | null;
       /** Lang */
@@ -1049,6 +1093,29 @@ export interface components {
        * @description Label and heading, outermost first, down to it
        */
       trail: components["schemas"]["Step"][];
+    };
+    /**
+     * Coming
+     * @description The words an amendment gives a clause from a later day.
+     */
+    Coming: {
+      /** Heading */
+      heading: string | null;
+      /**
+       * Text
+       * @description The words as the amendment gives them, verbatim
+       */
+      text: string;
+      /**
+       * In Force From
+       * Format: date
+       */
+      in_force_from: string;
+      /**
+       * Dates Set By
+       * @description The amendment that brings them
+       */
+      dates_set_by: string | null;
     };
     /** ComparedClause */
     ComparedClause: {
@@ -1117,8 +1184,13 @@ export interface components {
     Document: {
       /** Slug */
       slug: string;
-      /** Title */
-      title: string;
+      /**
+       * Title
+       * @description By language. A law's in each language its pack names it in, English among them; a policy's in its own language
+       */
+      title: {
+        [key: string]: string;
+      };
       /**
        * Kind
        * @description law or org_policy
@@ -1137,8 +1209,20 @@ export interface components {
       languages: string[];
       /** Pack Slug */
       pack_slug: string | null;
-      /** Jurisdiction */
-      jurisdiction: string | null;
+      /**
+       * Short Name
+       * @description For a law, what people call it, by language. Null for a policy
+       */
+      short_name: {
+        [key: string]: string;
+      } | null;
+      /**
+       * Jurisdiction
+       * @description For a law, where it applies, by language. Null for a policy
+       */
+      jurisdiction: {
+        [key: string]: string;
+      } | null;
       /** Trust Tier */
       trust_tier: string | null;
       /** Source Url */
@@ -1686,8 +1770,20 @@ export interface components {
     Law: {
       /** Slug */
       slug: string;
-      /** Name */
-      name: string;
+      /**
+       * Name
+       * @description The law's official name, by language
+       */
+      name: {
+        [key: string]: string;
+      };
+      /**
+       * Short Name
+       * @description What people call the law, by language
+       */
+      short_name: {
+        [key: string]: string;
+      };
     };
     /** LawSelection */
     LawSelection: {
@@ -1754,10 +1850,32 @@ export interface components {
     LoadedLaw: {
       /** Slug */
       slug: string;
-      /** Name */
-      name: string;
-      /** Jurisdiction */
-      jurisdiction: string;
+      /**
+       * Name
+       * @description The law's official name by language: its number and the short title it gives itself, where it gives one, else its title as printed
+       */
+      name: {
+        [key: string]: string;
+      };
+      /**
+       * Short Name
+       * @description What people call the law, by language, such as GDPR
+       */
+      short_name: {
+        [key: string]: string;
+      };
+      /**
+       * Jurisdiction
+       * @description Where the law applies, by language
+       */
+      jurisdiction: {
+        [key: string]: string;
+      };
+      /**
+       * Region
+       * @description Where the law is listed. Null only for a pack loaded before packs said
+       */
+      region: ("Africa" | "Americas" | "Asia Pacific" | "Europe" | "Middle East") | null;
       /** Version */
       version: string;
       /**
@@ -2613,8 +2731,13 @@ export interface components {
        * @description The law's pack, or null for the organisation's policies
        */
       pack_slug: string | null;
-      /** Title */
-      title: string;
+      /**
+       * Short Name
+       * @description What people call the law, by language, or null for the policies
+       */
+      short_name: {
+        [key: string]: string;
+      } | null;
       /** Count */
       count: number;
     };

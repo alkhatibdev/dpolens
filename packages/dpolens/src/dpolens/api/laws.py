@@ -32,13 +32,25 @@ router = APIRouter(prefix="/v1", tags=["laws"], responses=problems.responses(401
 
 Chooser = Annotated[Authenticated, Depends(requires(catalog.SETTINGS_MANAGE))]
 TrustTier = Literal["verified", "community"]
+Region = Literal["Africa", "Americas", "Asia Pacific", "Europe", "Middle East"]
 Via = Literal["dashboard", "api", "cli"]
 
 
 class LoadedLaw(BaseModel):
     slug: str
-    name: str
-    jurisdiction: str
+    name: dict[str, str] = Field(
+        description=(
+            "The law's official name by language: its number and the short title it gives "
+            "itself, where it gives one, else its title as printed"
+        )
+    )
+    short_name: dict[str, str] = Field(
+        description="What people call the law, by language, such as GDPR"
+    )
+    jurisdiction: dict[str, str] = Field(description="Where the law applies, by language")
+    region: Region | None = Field(
+        description="Where the law is listed. Null only for a pack loaded before packs said"
+    )
     version: str
     effective_date: date = Field(description="The day the law took effect")
     trust_tier: TrustTier
@@ -91,7 +103,9 @@ def _laws(opened: EngineSession) -> Laws:
             LoadedLaw(
                 slug=law.slug,
                 name=law.name,
+                short_name=law.short_name,
                 jurisdiction=law.jurisdiction,
+                region=cast(Region | None, law.region),
                 version=law.version,
                 effective_date=law.effective_date,
                 trust_tier=cast(TrustTier, law.trust_tier),

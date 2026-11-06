@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from dpolens.engine.packs.format import PackFormatError
+from dpolens.engine.packs.format import REGIONS, PackFormatError
 
 PACK_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 """The first part of every key in the pack, so it takes what a key's parts take."""
@@ -24,11 +24,19 @@ LANGUAGE = re.compile(r"^[a-z]{2,3}(?:-[a-z0-9]+)?$")
 PACK_YAML = """\
 # A DPOLens pack. packs/README.md says what each field means, and packs/BUILDING.md
 # how to fill in the ones left commented out: the pack does not load until they are.
+format: 2
 slug: {slug}
-name: {name_value}
-jurisdiction: {jurisdiction_value}
+# The law as its official text names it, as people call it, and where it applies, in each
+# language the pack has a text in and in English.
+name:
+  {lang}: {name_value}{english_name}
+short_name:
+  {lang}: {short_name_value}{english_short_name}
+jurisdiction:
+  {lang}: {jurisdiction_value}{english_jurisdiction}
+region: {region}
 version: "{year}.1"
-# effective_date: the day the law's text took effect, such as 2018-05-25
+# effective_date: the day the law's text started to apply, such as 2018-05-25
 trust_tier: community
 # source_url: the official text, where the state publishes it
 # license: >-
@@ -39,10 +47,19 @@ translations: []
 
 documents:
   - slug: {slug}
-    title: {name_value}
+    title:
+      {lang}: {name_value}{english_title}
     normative: true
     # expected_clauses: how many clause files packs/{slug}/{slug}/ holds
 """
+
+IN_ENGLISH_TOO = {
+    "name": "\n  # en: the law's official name in English",
+    "short_name": "\n  # en: what people call the law in English, such as LGPD",
+    "jurisdiction": "\n  # en: where the law applies, in English",
+    "title": "\n      # en: the document's official title in English",
+}
+"""What a law whose text is not English still needs: every interface is in English."""
 
 EVAL_SETS = {
     "tuning": """\
@@ -73,9 +90,12 @@ questions: []
 class NewPack:
     slug: str
     name: str
+    """The law's official name, in the language whose text prevails."""
+    short_name: str
     jurisdiction: str
     lang: str
     """The language whose text prevails in law."""
+    region: str
 
 
 def start_pack(
@@ -89,6 +109,8 @@ def start_pack(
         )
     if not LANGUAGE.match(pack.lang):
         raise PackFormatError(f"'{pack.lang}' is not a language code, such as pt or ar")
+    if pack.region not in REGIONS:
+        raise PackFormatError(f"'{pack.region}' is not a region: one of {', '.join(REGIONS)}")
 
     pack_dir = packs_dir / pack.slug
     sets_dir = evals_dir / pack.slug
@@ -100,13 +122,17 @@ def start_pack(
     document = pack_dir / pack.slug
     document.mkdir(parents=True)
     metadata = pack_dir / "pack.yaml"
+    english = {} if pack.lang == "en" else IN_ENGLISH_TOO
     metadata.write_text(
         PACK_YAML.format(
             slug=pack.slug,
             name_value=_scalar(pack.name),
+            short_name_value=_scalar(pack.short_name),
             jurisdiction_value=_scalar(pack.jurisdiction),
+            region=pack.region,
             year=year,
             lang=pack.lang,
+            **{f"english_{name}": english.get(name, "") for name in IN_ENGLISH_TOO},
         ),
         encoding="utf-8",
     )

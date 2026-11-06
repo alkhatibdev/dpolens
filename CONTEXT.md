@@ -59,10 +59,26 @@ release publishes it, with its SHA-256 in a file beside it. `dpolens pack update
 one and `dpolens pack import` loads one brought by hand.
 _Avoid_: Pack file, bundle, tarball
 
+**Official name**:
+The name a citation starts with: the law's number and the short title it gives itself, where
+it gives one, else its title as printed, such as "Regulation (EU) 2016/679 (General Data
+Protection Regulation)". A pack writes it in each language it has a text in, and in English.
+_Avoid_: Full name, title (for a law)
+
+**Short name**:
+What people call a law and search for, such as GDPR or UAE PDPL. It is unique among the packs,
+and names the place wherever the abbreviation is shared.
+_Avoid_: Abbreviation, acronym, slug
+
 **Jurisdiction**:
-The place a law applies to, recorded on a pack as a description. Several packs can share
-one jurisdiction, and a jurisdiction never identifies a pack.
-_Avoid_: Region, country (when a sub-national area is meant)
+The place a law applies to, written on a pack in each language the pack names the law in.
+Several packs can share one jurisdiction, and a jurisdiction never identifies a pack.
+_Avoid_: Country (when a sub-national area is meant)
+
+**Region**:
+Where a law is listed: Africa, Americas, Asia Pacific, Europe or Middle East. A fixed list, so
+an interface names each in its own language.
+_Avoid_: Continent, area
 
 ### Clauses
 
@@ -124,8 +140,21 @@ _Avoid_: Released, live, active
 
 **In force**:
 The latest published version whose effective date has passed. This is the version search
-returns by default, for laws and organisation policies alike.
+returns by default, for laws and organisation policies alike. Within it, each text is in force
+from the day it applies, which is the version's effective date unless its commencement says
+otherwise, until any day it ends.
 _Avoid_: Current, active, live
+
+**Commencement**:
+The days provisions of a law start or stop applying, where they are not the pack's effective
+date, written in a document's commencement list with what set them. A provision no day has
+been set for yet is pending. Search returns a provision before it applies, marked.
+_Avoid_: Phasing, rollout
+
+**Coming text**:
+The words an amendment that is law gives a clause from a later day, held in the same pack
+beside the words in force, which end that day.
+_Avoid_: Future version, pending amendment
 
 **Scheduled**:
 A published version whose effective date has not arrived yet. It appears in the library

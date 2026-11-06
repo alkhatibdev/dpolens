@@ -14,6 +14,7 @@ import { Reading } from "@/components/Reading";
 import { SegmentedChoice } from "@/components/Segmented";
 import { Chip, Failed, Loading, Missing, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
+import { inLanguage, sourceName } from "@/lib/clauseName";
 import { formatDate, isRightToLeft, languageName } from "@/lib/format";
 import { DOCUMENTS_UPLOAD } from "@/lib/permissions";
 import { originalOf } from "@/lib/policies";
@@ -203,14 +204,27 @@ export function DocumentPage() {
         {summary.jurisdiction ? (
           <>
             <span aria-hidden> › </span>
-            {summary.jurisdiction}
+            {inLanguage(summary.jurisdiction)}
           </>
         ) : null}
       </div>
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h1 className="max-w-[760px] text-[26px] leading-tight font-semibold tracking-[-0.025em] sm:text-[34px]">
-          <bdi>{summary.title}</bdi>
-        </h1>
+        <div className="min-w-0">
+          <h1 className="max-w-[760px] text-[26px] leading-tight font-semibold tracking-[-0.025em] sm:text-[34px]">
+            <bdi>
+              {sourceName(
+                summary.short_name,
+                inLanguage(summary.title, lang ?? undefined),
+                lang ?? undefined,
+              )}
+            </bdi>
+          </h1>
+          {summary.short_name ? (
+            <p className="mt-1 max-w-[760px] text-muted">
+              <bdi>{inLanguage(summary.title, lang ?? undefined)}</bdi>
+            </p>
+          ) : null}
+        </div>
         {policy ? (
           <div className="flex flex-wrap gap-2.5">
             {entry ? (

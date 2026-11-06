@@ -121,6 +121,11 @@ export const en = {
     prevails: "{{language}} prevails",
     version: "Version {{version}}",
     inForce: "In force since {{date}}",
+    inForceUntil: "In force until {{date}}",
+    startsLater: "In force from {{date}}",
+    noDateYet: "Not in force yet: no date set",
+    ended: "No longer in force since {{date}}",
+    newWordsFrom: "New words from {{date}}",
     choose: "Choose a part of the document to read it.",
     yourPolicy: "Your policy",
     inForceFromTo: "In force from {{from}} to {{until}}",
@@ -210,6 +215,8 @@ export const en = {
     formerlyRemoved: "In version {{label}}, {{key}} was a different rule, since removed:",
     archived:
       "{{title}} is archived. Nothing searches it, and its clauses still read, so a citation of one can be checked.",
+    coming: "From {{date}}, an amendment gives it these words:",
+    comingBy: "Set by {{source}}",
   },
   languages: {
     en: "English",

@@ -54,7 +54,7 @@ def show(
 
     clause = detail.clause
     typer.secho(
-        f"{clause.document_title} ({clause.document_slug}), in force {clause.effective_date}",
+        f"{clause.document_title} ({clause.document_slug}), {in_force(clause, on or date.today())}",
         fg=typer.colors.BRIGHT_BLACK,
     )
     if detail.breadcrumb:
@@ -69,6 +69,16 @@ def show(
 
     typer.echo("")
     print_clause(clause, indent=0)
+
+    if clause.coming is not None:
+        typer.echo("")
+        typer.secho(
+            f"From {clause.coming.in_force_from.isoformat()}, an amendment gives it these words"
+            + (f" ({clause.coming.dates_set_by}):" if clause.coming.dates_set_by else ":"),
+            fg=typer.colors.YELLOW,
+        )
+        for line in _wrap(clause.coming.text, WRAP):
+            typer.echo(line)
 
     if detail.now is not None:
         typer.echo("")
@@ -105,6 +115,18 @@ def show(
         typer.secho("Refers to:", fg=typer.colors.BRIGHT_BLACK)
         for target, wording in detail.cross_references:
             typer.echo(f"  {target}  ({wording})")
+
+
+def in_force(clause: ClauseView, on: date) -> str:
+    """When the text applies, worded as a citation words it."""
+    since, until = clause.in_force_from, clause.in_force_until
+    if clause.in_force:
+        return f"in force since {since}" + (f", until {until}" if until else "")
+    if until is not None and until <= on:
+        return f"no longer in force since {until}"
+    if since is None:
+        return "not in force yet: no date set"
+    return f"in force from {since}" + (f" until {until}" if until else "")
 
 
 def where_now(now: Continuation) -> str:

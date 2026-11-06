@@ -22,6 +22,21 @@ describe("a citation", () => {
     );
   });
 
+  it("says when a provision starts later, or that no day is set", () => {
+    expect(citationFor({ ...paragraph!, in_force: false, in_force_from: "2999-05-13" })).toContain(
+      "version 2026.1, in force from 2999-05-13.",
+    );
+    expect(citationFor({ ...paragraph!, in_force: false, in_force_from: null })).toContain(
+      "version 2026.1, not in force yet: no date set.",
+    );
+  });
+
+  it("says when its words stop applying", () => {
+    expect(citationFor({ ...paragraph!, in_force_until: "2999-05-13" })).toContain(
+      "version 2026.1, in force since 2022-01-02, until 2999-05-13.",
+    );
+  });
+
   it("is copied under the text it cites", () => {
     const quotation = quotationFor(paragraph!, [article!]);
     expect(quotation.startsWith(paragraph!.text)).toBe(true);

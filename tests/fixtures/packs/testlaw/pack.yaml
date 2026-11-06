@@ -1,6 +1,12 @@
+format: 2
 slug: testlaw
-name: Test Data Protection Law
-jurisdiction: Example Republic
+name:
+  en: Test Data Protection Law
+short_name:
+  en: TESTLAW
+jurisdiction:
+  en: Example Republic
+region: Europe
 version: "2026.1"
 effective_date: 2026-01-01
 trust_tier: community
@@ -11,10 +17,12 @@ translations: []
 
 documents:
   - slug: testlaw
-    title: Test Data Protection Law
+    title:
+      en: Test Data Protection Law
     normative: true
     expected_clauses: 2
   - slug: testlaw-recitals
-    title: Test Data Protection Law recitals
+    title:
+      en: Test Data Protection Law, recitals
     normative: false
     expected_clauses: 1

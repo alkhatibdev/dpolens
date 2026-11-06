@@ -2,7 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { admin, lawsChosen, lawsUnchosen, overview, uae } from "@/test/fixtures";
+import { admin, lawsChosen, lawsUnchosen, overview } from "@/test/fixtures";
 import { renderAt } from "@/test/render";
 import { serve } from "@/test/server";
 
@@ -21,7 +21,7 @@ describe("the first run", () => {
     ).toBeInTheDocument();
     const save = screen.getByRole("button", { name: "Save and continue" });
     expect(save).toBeDisabled();
-    await userEvent.click(screen.getByRole("checkbox", { name: uae.title }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "UAE PDPL" }));
     await userEvent.click(save);
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/overview"));

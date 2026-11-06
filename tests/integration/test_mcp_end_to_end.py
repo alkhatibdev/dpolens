@@ -165,7 +165,8 @@ class TestAQuestionFromAnAssistant:
         assert found
         assert found[0]["key"].startswith("testlaw:")
         assert found[0]["text"]
-        assert found[0]["citation"].endswith(f"in force since {found[0]['in_force_since']}")
+        assert found[0]["in_force"] is True
+        assert found[0]["citation"].endswith(f"in force since {found[0]['in_force_from']}")
 
     async def test_a_key_from_a_search_can_be_read_back(self, connected: Client) -> None:
         """The loop an assistant actually walks: search, then read the clause."""

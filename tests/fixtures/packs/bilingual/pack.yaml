@@ -1,6 +1,15 @@
+format: 2
 slug: bilingual
-name: Test Bilingual Law
-jurisdiction: Example Republic
+name:
+  ar: قانون تجريبي ثنائي اللغة
+  en: Test Bilingual Law
+short_name:
+  ar: القانون التجريبي
+  en: BILINGUAL
+jurisdiction:
+  ar: جمهورية المثال
+  en: Example Republic
+region: Middle East
 version: "2026.1"
 effective_date: 2026-01-01
 trust_tier: community
@@ -14,6 +23,8 @@ translations:
 
 documents:
   - slug: bilingual
-    title: Test Bilingual Law
+    title:
+      ar: قانون تجريبي ثنائي اللغة
+      en: Test Bilingual Law
     normative: true
     expected_clauses: 3

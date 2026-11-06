@@ -53,6 +53,8 @@ export function summary(
 }
 
 const NOW = new Date().toISOString();
+/** A day a draft takes effect on, which has to stay ahead of the day the tests run. */
+export const LATER = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
 
 export const retentionSummary = summary({
   slug: "data-retention",
@@ -96,7 +98,7 @@ export const policies: PolicySummary[] = [
     in_force_since: "2026-01-15",
     in_force_number: 2,
     published: 3,
-    scheduled: { label: "3", effective_date: "2026-11-01" },
+    scheduled: { label: "3", effective_date: LATER },
     last_change: { by: "Yousef Haddad", at: "2026-10-02T10:00:00Z" },
   }),
   summary({
@@ -150,7 +152,7 @@ function version(
   return {
     label: null,
     status: "draft",
-    effective_date: "2026-11-01",
+    effective_date: LATER,
     source: { name: `${fields.slug}.docx`, format: "docx", size: 49_152 },
     created_at: NOW,
     created_by: "Mariam Al Amiri",
@@ -449,13 +451,14 @@ export const acceptableUseFile: PolicyFile = {
 export const retentionDocument: DocumentInDetail = {
   document: {
     slug: "data-retention",
-    title: "Data retention policy",
+    title: { en: "Data retention policy" },
     kind: "org_policy",
     version_label: "2",
     effective_date: "2026-02-01",
     clauses: 6,
     languages: ["en"],
     pack_slug: null,
+    short_name: null,
     jurisdiction: null,
     trust_tier: null,
     source_url: null,
@@ -500,7 +503,13 @@ export function policyClause(
     document_slug: "data-retention",
     version_label: version.label,
     effective_date: version.date,
+    in_force: true,
+    in_force_from: version.date,
+    in_force_until: null,
+    dates_set_by: null,
+    coming: null,
     pack_slug: null,
+    law_short_name: null,
     jurisdiction: null,
     trust_tier: null,
     source_url: null,
@@ -554,7 +563,7 @@ export const retentionVersions: PolicyVersions = {
       number: 3,
       label: "3",
       state: "draft",
-      effective_date: "2026-11-01",
+      effective_date: LATER,
       created_at: new Date().toISOString(),
       published_at: null,
       published_by: null,
