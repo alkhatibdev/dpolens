@@ -105,11 +105,18 @@ def build_index(
         text(
             f"""
             SELECT t.id AS text_id, t.body_text, t.heading, t.lang, t.applies_from,
-                   -- The title in the clause's language, else in English, else a policy's one.
-                   (SELECT dt.title FROM document_titles dt
-                    WHERE dt.document_id = d.id
-                    ORDER BY dt.lang = t.lang DESC, dt.lang = 'en' DESC, dt.lang
-                    LIMIT 1) AS document_title,
+                   -- A law's short name in the clause's language, else in English. A policy
+                   -- has no short name, so its title, chosen the same way.
+                   coalesce(
+                       (SELECT pn.short_name FROM pack_names pn
+                        WHERE pn.pack_id = d.pack_id
+                        ORDER BY pn.lang = t.lang DESC, pn.lang = 'en' DESC, pn.lang
+                        LIMIT 1),
+                       (SELECT dt.title FROM document_titles dt
+                        WHERE dt.document_id = d.id
+                        ORDER BY dt.lang = t.lang DESC, dt.lang = 'en' DESC, dt.lang
+                        LIMIT 1)
+                   ) AS document_short_name,
                    n.canonical_key, n.id AS node_id
             {_PUBLISHED_TEXT}
             {_NOT_EMBEDDED if skip_embedded else ""}
@@ -140,7 +147,7 @@ def build_index(
     strings = [
         build(
             RecipeInput(
-                document_short_name=row.document_title,
+                document_short_name=row.document_short_name,
                 ancestor_headings=_ancestor_headings(
                     session, row.node_id, row.lang, row.applies_from
                 ),

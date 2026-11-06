@@ -110,7 +110,8 @@ short_name:
   starts with it.
 - `short_name` is what people call the law and search for. It is unique across the packs,
   which CI checks, and it names the place wherever the abbreviation is shared: `UAE PDPL`,
-  never `PDPL`.
+  never `PDPL`. Search reads it as well: every clause is embedded with its law's short name in
+  front, in the clause's language.
 - A document's `title` follows the same rule as `name`. A document that is part of the same
   act adds the part: `..., recitals`.
 - Where no official text exists in English, the English names come from an official English

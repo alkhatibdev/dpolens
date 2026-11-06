@@ -41,10 +41,13 @@ where it has a text in it.
 
 **2. What gets embedded matters more than which model.**
 
-A clause is embedded with its ancestry in front of it: the document's short name, then the
-chain of headings above it, capped at 64 tokens by dropping the middle. Embedded alone, a
-sub-point is often unfindable; embedded with "GDPR, Right to erasure, 1." in front of it, it
-is. The bare text is what gets stored and quoted, so citations are unaffected.
+A clause is embedded with its ancestry in front of it: the law's short name in the language of
+the clause's text, then the chain of headings above it, capped at 64 tokens by dropping the
+middle. Embedded alone, a sub-point is often unfindable. With "GDPR > Right to erasure (‘right
+to be forgotten’) > 1." in front of it, it is found. The UAE law's Arabic clauses open with its
+Arabic short name, «قانون حماية البيانات الشخصية الإماراتي», and its English ones with UAE PDPL.
+A policy has no short name, so its title opens its clauses. The bare text is what gets stored
+and quoted, so citations are unaffected.
 
 The string the model saw is stored next to the vector, which means "why did this match" can
 be answered by reading rather than guessing. The recipe is versioned, and changing it is an
@@ -91,20 +94,20 @@ model are all fixed, so a drop has exactly one possible cause.
 ## The published scores
 
 Three scores, each on held-out questions that were never used to tune search, with
-multilingual-e5-small, context recipe v1, and convex combination at 0.5 with text that only
+multilingual-e5-small, context recipe v3, and convex combination at 0.5 with text that only
 explains excluded. Each was measured with both laws loaded and the run kept to its own law,
-which is what an organisation that has selected that law searches. Measured 14 October 2026.
+which is what an organisation that has selected that law searches. Measured 6 November 2026.
 
 | Score | Questions | recall@5 | 95% interval | MRR |
 | --- | --- | --- | --- | --- |
-| **GDPR** | 30 in English | **0.77** | 0.60 to 0.90 | 0.54 |
-| **The UAE law** | 19 topics, each asked in Arabic and in English | **0.55** | 0.37 to 0.74 | 0.35 |
-| **GDPR asked in Arabic** | 30 in Arabic | **0.30** | 0.13 to 0.47 | 0.19 |
+| **GDPR** | 30 in English | **0.73** | 0.57 to 0.90 | 0.50 |
+| **The UAE law** | 19 topics, each asked in Arabic and in English | **0.53** | 0.34 to 0.71 | 0.35 |
+| **GDPR asked in Arabic** | 30 in Arabic | **0.33** | 0.17 to 0.50 | 0.21 |
 
 The UAE law's score counts each topic once. Its 19 topics are asked in Arabic, the language that
 prevails, and in the official English, and the interval resamples the topics rather than the 38
 questions, so it is as wide as nineteen items make it. Asked in Arabic alone it reaches 0.42
-(0.21 to 0.63), and in English alone 0.68 (0.47 to 0.89). GDPR has no Arabic text, so an Arabic
+(0.21 to 0.63), and in English alone 0.63 (0.42 to 0.84). GDPR has no Arabic text, so an Arabic
 question about it has to cross languages to find its clause, which only meaning search can do.
 
 `evals/results/gdpr.json` and `evals/results/uae-pdpl.json` carry the same numbers in
@@ -112,28 +115,38 @@ machine-readable form, with the commit that produced them, and CI compares every
 each of them.
 
 Read those numbers strictly. The first says that on thirty questions drawn from regulator
-guidance, the clause the guidance points at was in the top five answers 77% of the time. It does
-not say that DPOLens answers 77% of privacy questions correctly.
+guidance, the clause the guidance points at was in the top five answers 73% of the time. It does
+not say that DPOLens answers 73% of privacy questions correctly.
 
-GDPR's score was first published on 26 September 2026, at the same 0.77. Two of its questions
-were reworded on 14 October 2026: "a breach" became "a breach on our system", and "personal data
-at rest" became "all personal data at rest". The set was measured again, and the score and its
-seven misses stayed the same; the reworded breach question is still one of them.
+GDPR's score was first published on 26 September 2026, at 0.77. Two of its questions were
+reworded on 14 October 2026: "a breach" became "a breach on our system", and "personal data at
+rest" became "all personal data at rest". The set was measured again, and the score and its seven
+misses stayed the same. The reworded breach question was still one of them.
+
+On 6 November 2026 the string embedded for each clause began to open with the law's short name in
+the language of its text, such as GDPR, where it had opened with the law's English title, such as
+General Data Protection Regulation. [Which name opens a clause](#which-name-opens-a-clause) says
+how that was chosen. Every published score was measured again, and none moved by more than one
+question. GDPR's fell to 0.73: "What information goes in a breach report to the regulator?" left
+the top five. The UAE law's fell to 0.53, because asked in English it lost the question on a user
+asking what personal data is held about them. Asked in Arabic, it found two questions it had
+missed and missed two it had found. GDPR asked in Arabic rose to 0.33, with one more question
+found. Each new score is inside the interval published before it.
 
 ### Every configuration, on GDPR's held-out set
 
 | Configuration | recall@5 | 95% interval | recall@10 | MRR |
 | --- | --- | --- | --- | --- |
 | Keyword only (BM25) | 0.33 | 0.17 to 0.50 | 0.53 | 0.27 |
-| Meaning only | 0.43 | 0.27 to 0.60 | 0.60 | 0.29 |
-| Meaning, explaining text excluded | 0.60 | 0.40 to 0.77 | 0.73 | 0.42 |
-| Reciprocal rank fusion, k=10 | 0.77 | 0.60 to 0.90 | 0.83 | 0.43 |
-| **Convex combination, 0.5** | **0.77** | 0.60 to 0.90 | 0.83 | **0.54** |
-| Convex combination, e5-base | 0.77 | 0.60 to 0.90 | 0.83 | 0.57 |
+| Meaning only | 0.43 | 0.27 to 0.60 | 0.63 | 0.35 |
+| Meaning, explaining text excluded | 0.57 | 0.40 to 0.73 | 0.73 | 0.46 |
+| Reciprocal rank fusion, k=10 | 0.73 | 0.57 to 0.90 | 0.83 | 0.46 |
+| **Convex combination, 0.5** | **0.73** | 0.57 to 0.90 | 0.80 | **0.50** |
+| Convex combination, e5-base | 0.77 | 0.60 to 0.90 | 0.83 | 0.56 |
 
 Both fusion rules exclude text that only explains, reach the same recall, and convex combination
-ranks the right clause higher, so it is the default. e5-base reaches the same recall and ranks the
-right clause a little higher still. It costs three times the first-start indexing, 108 seconds
+ranks the right clause higher, so it is the default. e5-base finds one question more and ranks the
+right clause higher still. It costs three times the first-start indexing, 108 seconds
 against 33 on GDPR alone, and a 1.1 GB download against 470 MB, so it is available as a setting
 rather than the default.
 
@@ -142,8 +155,8 @@ rather than the default.
 | Configuration | In Arabic (19) | In English (19) | Both (38) |
 | --- | --- | --- | --- |
 | Keyword only (BM25) | 0.32 | 0.42 | 0.37 |
-| Meaning only | 0.53 | 0.58 | 0.55 |
-| **Convex combination, 0.5** | **0.42** | **0.68** | **0.55** |
+| Meaning only | 0.58 | 0.58 | 0.58 |
+| **Convex combination, 0.5** | **0.42** | **0.63** | **0.53** |
 
 In Arabic, meaning search alone finds more of these nineteen than the published configuration
 does, and in English the published configuration finds more. The configuration was chosen on
@@ -283,12 +296,13 @@ for dropping it: it earns its place on quoted phrases, defined terms and article
 which is how a lawyer searches and how an AI assistant follows a citation. On the
 conversational questions in these sets, meaning search does the work.
 
-**A warning about small question sets.** On these 20 tuning questions, fusion scored
-*below* meaning search alone (0.45 against 0.60), and the opposite is true on the 30
-held-out questions (0.77 against 0.60). Same code, same corpus, different questions. Two
-sets of this size are not equally hard, so configurations can only be compared within a
-set, never across them. Had the tuning set alone been trusted, the conclusion would have
-been to drop fusion, which the held-out set shows would have cost 17 points of recall.
+**A warning about small question sets.** When fusion was first measured, on 26 September
+2026, it scored *below* meaning search alone on these 20 tuning questions (0.45 against
+0.60), and the opposite was true on the 30 held-out questions (0.77 against 0.60). Same
+code, same corpus, different questions. Two sets of this size are not equally hard, so
+configurations can only be compared within a set, never across them. Had the tuning set
+alone been trusted, the conclusion would have been to drop fusion, which the held-out set
+showed would have cost 17 points of recall.
 
 ### Which Arabic keyword index
 
@@ -321,6 +335,30 @@ uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+norma
 uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative+light"
 uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative+snowball"
 ```
+
+### Which name opens a clause
+
+What opens a clause's string was chosen on the tuning sets of both laws, in both languages, 70
+questions in all. Two openings were built: the law's full title in the language of the clause,
+such as "Regulation (EU) 2016/679 (General Data Protection Regulation)", and its short name in
+that language, such as GDPR. The rule was settled before either was measured: the higher
+recall@5 wins, and the short name on a tie, because it is how a question names a law. Measured 6
+November 2026, with multilingual-e5-small and the published configuration, both laws loaded.
+
+| Tuning set | Questions | Full title | Short name |
+| --- | --- | --- | --- |
+| GDPR | 20 in English | 0.50 | 0.55 |
+| GDPR | 20 in Arabic | 0.35 | 0.35 |
+| The UAE law | 20 in Arabic | 0.70 | 0.70 |
+| The UAE law | 10 in English | 0.60 | 0.70 |
+| All four | 70 | 0.53 | 0.56 |
+
+On every set each score is inside the other's interval, so by the rule this is a tie, and the
+short name opens a clause. The full title finds two questions the short name misses, and the
+short name finds four the full title misses. The full title finds three more in the top ten and
+ranks the right clause a little higher, at an MRR of 0.37 against 0.35. No clause's opening and
+headings pass the 64-token cap under either, so neither costs a heading. The full title is what
+commit `046b514` embeds, so both columns can be measured again from this repository's history.
 
 ## What is not solved
 

@@ -98,6 +98,16 @@ def test_a_run_scores_every_question(indexed: Session, embedder: Embedder) -> No
     assert run.configuration == "rrf:10"
 
 
+def test_a_run_names_the_recipe_its_vectors_were_built_with(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """So a published result says which embedded text it measured."""
+    run = run_set(indexed, embedder, read_questions(TUNING)[:1], "meaning")
+    built = indexed.scalars(text("SELECT DISTINCT context_recipe FROM node_embeddings")).all()
+
+    assert built == [run.recipe]
+
+
 def test_baselines_are_scored_the_same_way(indexed: Session, embedder: Embedder) -> None:
     """A fusion rule must never be adopted while being worse than half the system."""
     questions = read_questions(TUNING)

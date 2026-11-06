@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from tokenizers import Tokenizer
 
-from dpolens.engine.embedding import Embedder, encode, get_model
+from dpolens.engine.embedding import RECIPE_VERSION, Embedder, encode, get_model
 from dpolens.engine.embedding.index import build_index, unembedded
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.search.vector import NoActiveModel, vector_search
@@ -87,9 +87,9 @@ def test_the_stored_string_carries_the_ancestry_and_the_prefix(indexed: Session)
         )
     ).one()
 
-    assert stored.embedded_string.startswith("Test Data Protection Law > Right to erasure")
+    assert stored.embedded_string.startswith("TESTLAW > Right to erasure")
     assert stored.embedded_string.endswith("no other legal ground for the processing;")
-    assert stored.context_recipe == "v2"
+    assert stored.context_recipe == "v3"
 
 
 def test_a_text_is_placed_under_the_headings_of_its_own_language(bilingual: Session) -> None:
@@ -112,9 +112,26 @@ def test_a_text_is_placed_under_the_headings_of_its_own_language(bilingual: Sess
     assert "حالات المعالجة" in stored["ar"]
     assert "Cases of Processing" not in stored["ar"]
 
-    # And under the law's title in that language, as its pack names it there.
-    assert stored["en"].startswith("Test Bilingual Law > ")
-    assert stored["ar"].startswith("قانون تجريبي ثنائي اللغة > ")
+    # And under the law's short name in that language, as its pack gives it there.
+    assert stored["en"].startswith("BILINGUAL > ")
+    assert stored["ar"].startswith("القانون التجريبي > ")
+
+
+def test_a_law_named_in_english_alone_opens_every_text_with_that_name(
+    session: Session, bilingual_pack: Path, embedder: Embedder
+) -> None:
+    """How an instance upgraded from an older pack holds a law until a newer version of it is
+    loaded: named in English only, so its Arabic texts open with the English short name."""
+    load_pack(session, bilingual_pack)
+    session.execute(text("DELETE FROM pack_names WHERE lang = 'ar'"))
+    session.commit()
+    build_index(session, embedder)
+    session.commit()
+
+    strings = session.scalars(text("SELECT embedded_string FROM node_embeddings")).all()
+
+    assert strings
+    assert all(string.startswith("BILINGUAL > ") for string in strings)
 
 
 def test_threads_share_one_tokenizer(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -226,3 +243,26 @@ def test_what_is_left_to_embed_is_counted_without_the_model(
 
     assert left == built.embedded > 0
     assert unembedded(session, model) == 0
+
+
+def test_a_new_recipe_embeds_every_clause_again_in_place(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """What the first start after an upgrade that changes the recipe does: every clause once
+    more, each vector replacing the old one rather than standing beside it."""
+    before = indexed.execute(text("SELECT count(*) FROM node_embeddings")).scalar_one()
+    indexed.execute(text("UPDATE node_embeddings SET context_recipe = 'v0'"))
+    indexed.commit()
+
+    built = build_index(indexed, embedder, skip_embedded=True)
+    indexed.commit()
+
+    assert built.embedded == before
+    assert indexed.execute(
+        text(
+            """
+            SELECT count(*), count(DISTINCT node_text_id), min(context_recipe), max(context_recipe)
+            FROM node_embeddings
+            """
+        )
+    ).one() == (before, before, RECIPE_VERSION, RECIPE_VERSION)
