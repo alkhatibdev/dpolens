@@ -2509,6 +2509,11 @@ export interface components {
       ranks?: {
         [key: string]: number;
       } | null;
+      /**
+       * Returned With
+       * @description The key of the result this one follows, when it is the first paragraph of that result's article, returned because it states the rule a later paragraph qualifies. It takes that result's score. Null for every other result
+       */
+      returned_with?: string | null;
     };
     /** Results */
     Results: {

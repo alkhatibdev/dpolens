@@ -122,6 +122,14 @@ class Result(BaseModel):
             "A debugging aid whose meaning changes when the fusion rule does"
         ),
     )
+    returned_with: str | None = Field(
+        default=None,
+        description=(
+            "The key of the result this one follows, when it is the first paragraph of that "
+            "result's article, returned because it states the rule a later paragraph qualifies. "
+            "It takes that result's score. Null for every other result"
+        ),
+    )
 
     @classmethod
     def of(cls, found: SearchResult, *, explain: bool) -> Result:
@@ -134,6 +142,7 @@ class Result(BaseModel):
             ],
             expanded=[Clause.of(view) for view in found.expanded],
             ranks=dict(found.ranks) if explain else None,
+            returned_with=found.returned_with,
         )
 
 

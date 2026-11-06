@@ -365,4 +365,6 @@ def _match(result: dict[str, Any], as_of: date | None) -> Match:
         **clause.model_dump(),
         score=result["score"],
         cross_references=[reference["key"] for reference in result["cross_references"]],
+        # An instance older than this server sends no such field.
+        returned_with=result.get("returned_with"),
     )

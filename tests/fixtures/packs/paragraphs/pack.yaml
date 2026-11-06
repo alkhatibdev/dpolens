@@ -1,0 +1,23 @@
+format: 2
+slug: paragraphs
+name:
+  en: Test Paragraphs Law
+short_name:
+  en: PARAGRAPHS
+jurisdiction:
+  en: Example Republic
+region: Europe
+version: "2026.1"
+effective_date: 2026-01-01
+trust_tier: community
+source_url: https://example.invalid/paragraphs
+license: Public domain, official documents are excluded from copyright.
+authoritative_language: en
+translations: []
+
+documents:
+  - slug: paragraphs
+    title:
+      en: Test Paragraphs Law
+    normative: true
+    expected_clauses: 2

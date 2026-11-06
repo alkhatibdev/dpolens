@@ -67,6 +67,15 @@ Each result carries the clause, its breadcrumb, whether it is normative, the doc
 version and the date that version came into force. A clause that obliges someone outranks
 one that only explains where the retrievers cannot separate them.
 
+A result from a later paragraph of an article is followed by the article's first paragraph,
+because that is where an article states its rule. A question about getting a copy of one's data
+matches GDPR Article 15(3) and 15(4), on the copy and its limits, more closely than 15(1), which
+grants the right. Only an article made of paragraphs alone is read this way. One with words of its
+own before its paragraphs, such as "The Processor shall abide by the following:", lists duties,
+one in each paragraph, so its first paragraph is only the first of them. A policy is left as it
+is, since its sections follow no such convention. The first paragraph takes the score of the
+result it follows and counts towards the number of results asked for.
+
 ## How it is measured
 
 Two question sets per pack, kept apart: a tuning set used while improving retrieval, and a
@@ -359,6 +368,31 @@ short name finds four the full title misses. The full title finds three more in 
 ranks the right clause a little higher, at an MRR of 0.37 against 0.35. No clause's opening and
 headings pass the 64-token cap under either, so neither costs a heading. The full title is what
 commit `046b514` embeds, so both columns can be measured again from this repository's history.
+
+### An article's first paragraph
+
+Where a later paragraph of an article matches a question better than the first, the first
+paragraph is placed after it, as [the pipeline](#the-pipeline) describes. Three ways of doing it
+were compared on the tuning sets of both laws, 70 questions, with multilingual-e5-small and the
+published configuration, both laws loaded, measured 7 November 2026: after every result from a
+later paragraph, after the top result only, and after every result from a later paragraph of an
+article made of paragraphs alone. They found 43, 44 and 45 of the 70 in the top five, against 39
+before. The third is what search does, and every set gains from it:
+
+| Tuning set | Questions | recall@5 before | recall@5 after | recall@10 before | recall@10 after |
+| --- | --- | --- | --- | --- | --- |
+| GDPR | 20 in English | 0.55 | 0.65 | 0.70 | 0.80 |
+| GDPR | 20 in Arabic | 0.35 | 0.45 | 0.40 | 0.60 |
+| The UAE law | 20 in Arabic | 0.70 | 0.75 | 0.70 | 0.75 |
+| The UAE law | 10 in English | 0.70 | 0.80 | 0.70 | 0.80 |
+| All four | 70 | 0.56 | 0.64 | 0.61 | 0.73 |
+
+It finds eight questions the order before it missed, and misses two it found, one in each GDPR
+set: in both, first paragraphs placed above the right clause pushed it out of the top five. The
+version that also reads an article with words of its own before its paragraphs found 43, because
+in the UAE law those paragraphs are a list of duties or cases, and placing the first of them above
+the right clause cost two questions and found none. Every column can be measured again from
+commit `f3d99ee`, which is the order before.
 
 ## What is not solved
 

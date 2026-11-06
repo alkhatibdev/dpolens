@@ -9,6 +9,10 @@ breaking change needs a new major version.
 
 ## 0.3.0
 
+- `POST /v1/search`: a result from a later paragraph of an article is followed by the
+  article's first paragraph, which states the rule the later one qualifies. It takes
+  that result's score, counts towards `limit`, and carries the new `returned_with`,
+  the key of the result it follows. Every other result carries `returned_with` null
 - A law is named in the language of its text. Every clause carries `document_title`
   in the language it is returned in, so an Arabic clause of the UAE PDPL carries the
   law's Arabic title, and `jurisdiction` in that language too. The new

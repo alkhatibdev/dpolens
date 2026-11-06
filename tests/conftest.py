@@ -258,6 +258,12 @@ def bilingual_pack() -> Path:
     return FIXTURE_PACKS / "bilingual"
 
 
+@pytest.fixture
+def paragraphs_pack() -> Path:
+    """An article whose first paragraph states its rule, and one that lists duties instead."""
+    return FIXTURE_PACKS / "paragraphs"
+
+
 # The MCP server's tests drive the real server over a DPOLens instance that
 # answers from canned bodies, which needs no database and no socket.
 @pytest.fixture

@@ -460,6 +460,37 @@ def get_subtree(
     return found
 
 
+def first_paragraph(
+    session: Session, detail: ClauseDetail, as_of: date | None = None
+) -> str | None:
+    """The first paragraph of the article a clause sits in, when the clause is in a later one.
+
+    An article made of numbered paragraphs states its rule in the first: Article 15(1) of the
+    GDPR grants the right of access, and 15(3) and 15(4) say how the copy is given and what
+    limits it. An article with words of its own before its paragraphs lists cases or duties
+    instead, one in each paragraph, so none of them is its rule. That article, a clause in the
+    first paragraph or in none, and a policy, whose sections follow no such convention, all
+    get None.
+    """
+    if detail.clause.pack_slug is None:
+        return None
+    path = (*detail.breadcrumb, detail.clause)
+    at = next((i for i, view in enumerate(path) if view.clause_type == "paragraph"), None)
+    if at is None or at == 0:
+        return None
+    article, paragraph = path[at - 1], path[at]
+    if article.text.strip():
+        return None
+    node = _locate(session, article.key, as_of or date.today()).node
+    first = session.scalar(
+        select(DocumentNode.canonical_key)
+        .where(DocumentNode.parent_node_id == node.id, DocumentNode.node_type == "paragraph")
+        .order_by(DocumentNode.order_index)
+        .limit(1)
+    )
+    return first if first != paragraph.key else None
+
+
 def _children(session: Session, node: DocumentNode) -> list[DocumentNode]:
     return list(
         session.scalars(

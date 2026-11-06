@@ -83,6 +83,33 @@ class TestWhatASearchHandsBack:
 
         assert structured(result)["results"][0]["cross_references"] == ["testlaw:art-6"]
 
+    async def test_a_first_paragraph_says_which_result_it_follows(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        """So the model reads the rule beside the paragraph that qualifies it."""
+        first = stub.results[0]
+        later = {**first, "clause": {**first["clause"], "key": "testlaw:art-5:para-2"}}
+        stub.results = [
+            {**later, "returned_with": None},
+            {**first, "returned_with": "testlaw:art-5:para-2"},
+        ]
+
+        found = structured(await search(connected))["results"]
+
+        assert [(match["key"], match["returned_with"]) for match in found] == [
+            ("testlaw:art-5:para-2", None),
+            ("testlaw:art-5:para-1", "testlaw:art-5:para-2"),
+        ]
+
+    async def test_an_instance_that_sends_no_returned_with_still_answers(
+        self, connected: Client
+    ) -> None:
+        """One older than this server, whose results carry no such field."""
+        result = await search(connected)
+
+        assert result.is_error is False
+        assert structured(result)["results"][0]["returned_with"] is None
+
     async def test_it_says_what_was_searched(self, connected: Client) -> None:
         result = await search(connected)
 

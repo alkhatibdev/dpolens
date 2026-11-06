@@ -18,6 +18,7 @@ from dpolens.engine.documents.read import (
     ClauseDetail,
     ClauseNotFound,
     ClauseView,
+    first_paragraph,
     get_clause,
     get_subtree,
 )
@@ -49,6 +50,8 @@ class SearchResult:
     breadcrumb: tuple[ClauseView, ...]
     cross_references: tuple[tuple[str, str], ...]
     expanded: tuple[ClauseView, ...] = ()
+    returned_with: str | None = None
+    """The result this one follows, when it is the first paragraph of that result's article."""
 
 
 def search(
@@ -70,6 +73,9 @@ def search(
     `keyword_indexes` swaps a language's keyword index for another, for the evals.
     Without `scope`, the search covers the organisation's selected laws, and is
     refused until somebody has chosen them.
+
+    A result from a later paragraph of an article is followed by the article's first
+    paragraph, which states the rule the later one qualifies.
     """
     lang = lang or language_of(query)
     scope = scope or scope_for(session)
@@ -110,15 +116,9 @@ def search(
     for candidate in fused:
         if len(resolved) == limit + TIE_MARGIN:
             break
-        try:
-            detail = get_clause(session, candidate.key, lang=lang, as_of=as_of)
-        except ClauseNotFound:
-            continue
-        # An archived policy no longer applies, and nor do words a law has ended. Both still
-        # read by key, so an old citation can be checked, but nothing searches them.
-        if detail.clause.archived or _ended(detail.clause, as_of or date.today()):
-            continue
-        resolved.append((candidate, detail))
+        detail = _answer(session, candidate.key, lang, as_of)
+        if detail is not None:
+            resolved.append((candidate, detail))
 
     # A clause that obliges someone outranks one that only explains, where the
     # retrievers cannot separate them. A recital reads more like a question than
@@ -128,14 +128,71 @@ def search(
     return [
         SearchResult(
             clause=detail.clause,
-            score=candidate.score,
-            ranks=candidate.ranks,
+            score=score,
+            ranks=ranks,
             breadcrumb=detail.breadcrumb,
             cross_references=detail.cross_references,
             expanded=_expanded(session, detail, expand, lang, as_of),
+            returned_with=returned_with,
         )
-        for candidate, detail in resolved[:limit]
+        for detail, score, ranks, returned_with in _placed(
+            session, fused, resolved, limit, lang, as_of, normative_only
+        )
     ]
+
+
+def _answer(session: Session, key: str, lang: str, as_of: date | None) -> ClauseDetail | None:
+    """The clause as a result, or None when it is no answer on the day asked about."""
+    try:
+        detail = get_clause(session, key, lang=lang, as_of=as_of)
+    except ClauseNotFound:
+        return None
+    # An archived policy no longer applies, and nor do words a law has ended. Both still
+    # read by key, so an old citation can be checked, but nothing searches them.
+    if detail.clause.archived or _ended(detail.clause, as_of or date.today()):
+        return None
+    return detail
+
+
+def _placed(
+    session: Session,
+    fused: list[Fused],
+    resolved: list[tuple[Fused, ClauseDetail]],
+    limit: int,
+    lang: str,
+    as_of: date | None,
+    normative_only: bool,
+) -> list[tuple[ClauseDetail, float, dict[str, int], str | None]]:
+    """The results in the order they are read, each with its score, ranks and what it follows.
+
+    Asked for a copy of what is held about somebody, search ranks Article 15(4), on the copy,
+    above 15(1), which grants it, because 15(4) uses the question's words. So a result from a
+    later paragraph is followed by its article's first paragraph, at that result's score, so
+    the list still reads best first. One found lower comes up rather than appearing twice, and
+    the list still ends at `limit`.
+    """
+    found = {candidate.key: candidate for candidate in fused}
+    details = {candidate.key: detail for candidate, detail in resolved}
+    placed: list[tuple[ClauseDetail, float, dict[str, int], str | None]] = []
+    shown: set[str] = set()
+    for candidate, detail in resolved:
+        if len(placed) == limit:
+            break
+        if candidate.key in shown:
+            continue
+        placed.append((detail, candidate.score, candidate.ranks, None))
+        shown.add(candidate.key)
+
+        first = first_paragraph(session, detail, as_of)
+        if first is None or first in shown or len(placed) == limit:
+            continue
+        lead = details.get(first) or _answer(session, first, lang, as_of)
+        if lead is None or (normative_only and not lead.clause.is_normative):
+            continue
+        ranks = found[first].ranks if first in found else {}
+        placed.append((lead, candidate.score, ranks, candidate.key))
+        shown.add(first)
+    return placed
 
 
 def _ended(clause: ClauseView, as_of: date) -> bool:

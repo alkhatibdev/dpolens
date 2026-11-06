@@ -144,6 +144,14 @@ class Match(Clause):
     cross_references: list[str] = Field(
         description="Keys this clause's own words point at, to read with get_clause"
     )
+    returned_with: str | None = Field(
+        default=None,
+        description=(
+            "Set when this clause is the first paragraph of the article of the result before it: "
+            "that result's key. It is here because it states the rule that later paragraph "
+            "qualifies, so read the two together"
+        ),
+    )
 
 
 class Found(BaseModel):
