@@ -7,7 +7,7 @@
 export const SIGN_IN_CLAUSES = {
   gdpr: {
     key: "gdpr:art-17:para-1:pt-a",
-    version: "2026.1",
+    version: "2026.2",
     effective: "2018-05-25",
     text: "the personal data are no longer necessary in relation to the purposes for which they were collected or otherwise processed;",
   },

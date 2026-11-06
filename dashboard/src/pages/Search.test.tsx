@@ -77,7 +77,7 @@ describe("search results", () => {
     await userEvent.click(screen.getByRole("button", { name: "All your laws" }));
 
     const offered = screen.getAllByRole("menuitem").map((item) => item.textContent);
-    expect(offered).toEqual(["All your laws", "UAE-PDPL"]);
+    expect(offered).toEqual(["All your laws", "UAE PDPL"]);
   });
 
   it("says when no law has been chosen yet, and where an administrator chooses them", async () => {

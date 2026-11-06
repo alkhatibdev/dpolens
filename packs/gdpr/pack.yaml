@@ -1,7 +1,15 @@
+format: 2
 slug: gdpr
-name: General Data Protection Regulation
-jurisdiction: European Union
-version: "2026.1"
+# The official name is the act's number and the short title it gives itself. Its full title
+# runs to some fifty words, too long to start every citation.
+name:
+  en: Regulation (EU) 2016/679 (General Data Protection Regulation)
+short_name:
+  en: GDPR
+jurisdiction:
+  en: European Union
+region: Europe
+version: "2026.2"
 effective_date: 2018-05-25
 trust_tier: community
 source_url: https://eur-lex.europa.eu/eli/reg/2016/679/oj
@@ -17,13 +25,15 @@ translations: []
 
 documents:
   - slug: gdpr
-    title: General Data Protection Regulation
+    title:
+      en: Regulation (EU) 2016/679 (General Data Protection Regulation)
     normative: true
     expected_clauses: 99
     source_url: https://publications.europa.eu/resource/celex/02016R0679-20160504
     source_sha256: 28524c5589d9c80dee357fe96498302b4fefb29b3cc9ada7dcad52c967e3f15c
   - slug: gdpr-recitals
-    title: General Data Protection Regulation, recitals
+    title:
+      en: Regulation (EU) 2016/679 (General Data Protection Regulation), recitals
     normative: false
     expected_clauses: 173
     source_url: https://publications.europa.eu/resource/celex/32016R0679

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 import uuid
+from collections import Counter
 from collections.abc import Mapping, Sequence, Set
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime
@@ -27,6 +28,7 @@ from dpolens.engine.auth.models import User
 from dpolens.engine.documents.models import (
     Document,
     DocumentNode,
+    DocumentTitle,
     DocumentVersion,
     NodeText,
     ParseFlag,
@@ -482,6 +484,12 @@ def _parse(data: bytes, filename: str, slug: str) -> ParsedPolicy:
     return parse_policy(data, filename, slug)
 
 
+def _language_of(parsed: ParsedPolicy) -> str:
+    """The language most of a policy's text is in, which its title is filed under."""
+    counted = Counter(clause.lang for clause in parsed.walk())
+    return max(sorted(counted), key=counted.__getitem__) if counted else "en"
+
+
 def upload_policy(
     session: Session,
     originals: Originals,
@@ -508,7 +516,12 @@ def upload_policy(
     document = Document(
         kind="org_policy",
         slug=slug,
-        title=title or parsed.title or PurePath(filename).stem.replace("-", " ").strip(),
+        titles=[
+            DocumentTitle(
+                lang=_language_of(parsed),
+                title=title or parsed.title or PurePath(filename).stem.replace("-", " ").strip(),
+            )
+        ],
         status="active",
     )
     session.add(document)

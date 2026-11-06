@@ -85,6 +85,7 @@ def search(
             normative_only=normative_only,
             indexes=keyword_indexes,
             packs=packs,
+            as_of=as_of,
         ),
         "meaning": vector_search(
             session,
@@ -93,6 +94,7 @@ def search(
             limit=CANDIDATE_DEPTH,
             normative_only=normative_only,
             packs=packs,
+            as_of=as_of,
         ),
     }
     fused = fuse(lists, fusion)
@@ -112,9 +114,9 @@ def search(
             detail = get_clause(session, candidate.key, lang=lang, as_of=as_of)
         except ClauseNotFound:
             continue
-        # An archived policy no longer applies. Its clauses still read by key, so an old
-        # citation can be checked, but nothing searches them.
-        if detail.clause.archived:
+        # An archived policy no longer applies, and nor do words a law has ended. Both still
+        # read by key, so an old citation can be checked, but nothing searches them.
+        if detail.clause.archived or _ended(detail.clause, as_of or date.today()):
             continue
         resolved.append((candidate, detail))
 
@@ -134,6 +136,10 @@ def search(
         )
         for candidate, detail in resolved[:limit]
     ]
+
+
+def _ended(clause: ClauseView, as_of: date) -> bool:
+    return clause.in_force_until is not None and clause.in_force_until <= as_of
 
 
 def _expanded(

@@ -27,7 +27,9 @@ your code can check it.
 
 Call `search_policies` with the question in ordinary words, the way somebody would ask it.
 What comes back is the clause itself, with a citation line, the document, the version and the
-date that version took effect. Quote it rather than paraphrasing it.
+days it applies. Quote it rather than paraphrasing it. A provision can come back before it
+applies, marked `in_force` false with the day it starts: say so where you rely on it, since the
+duty is coming rather than in force.
 
 `get_clause` reads one clause by its key, with the clauses around it, which is what you want
 when a result points at another clause or when you need a whole article. `list_documents` and

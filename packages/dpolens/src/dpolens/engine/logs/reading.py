@@ -46,8 +46,11 @@ class ClauseName:
 
     key: str
     document_title: str
+    """In the language the clause was returned in."""
     document_slug: str
     pack_slug: str | None
+    law_short_name: dict[str, str] | None
+    """What people call the law, by language, so a screen can name it in its own."""
     version_label: str | None
     lang: str
     trail: tuple[tuple[str | None, str | None], ...]
@@ -211,11 +214,11 @@ def name_clauses(
         )
         .join(NodeText, NodeText.node_id == DocumentNode.id)
         .where(tuple_(DocumentNode.document_version_id, DocumentNode.canonical_key).in_(pairs))
+        # A clause is named by the words it has before any an amendment brings later.
+        .order_by(NodeText.applies_from.asc().nulls_first())
     ).all():
-        texts.setdefault((version_id, key), {})[lang] = (
-            label or node_label,
-            heading,
-            authoritative,
+        texts.setdefault((version_id, key), {}).setdefault(
+            lang, (label or node_label, heading, authoritative)
         )
 
     def words(version_id: uuid.UUID, key: str, lang: str) -> tuple[str | None, str | None] | None:
@@ -240,9 +243,10 @@ def name_clauses(
         )
         names[(version_id, key)] = ClauseName(
             key=key,
-            document_title=document.title,
+            document_title=document.title_in(lang),
             document_slug=document.slug,
             pack_slug=pack.slug if pack else None,
+            law_short_name={n.lang: n.short_name for n in pack.names} if pack else None,
             version_label=version.version_label,
             lang=lang,
             trail=trail,
@@ -421,7 +425,8 @@ class Source:
     """Where answers came from: a law, by its pack, or the organisation's policies."""
 
     pack_slug: str | None
-    title: str
+    short_name: dict[str, str] | None
+    """What people call the law, in each language its pack names it in."""
     count: int
 
 
@@ -548,19 +553,26 @@ def overview(session: Session, window: Window, *, laws: Collection[str]) -> Week
         if (uuid.UUID(row.version), row.canonical_key) in names
     )
 
+    counted = session.execute(
+        select(Pack.slug, func.count())
+        .select_from(QueryLogResult)
+        .join(QueryLogEntry, QueryLogEntry.id == QueryLogResult.query_log_entry_id)
+        .join(DocumentVersion, DocumentVersion.id == QueryLogResult.document_version_id)
+        .join(Document, Document.id == DocumentVersion.document_id)
+        .outerjoin(Pack, Pack.id == Document.pack_id)
+        .where(searches, QueryLogEntry.status == "ok", QueryLogResult.rank == 1)
+        .group_by(Pack.slug)
+        .order_by(func.count().desc())
+    ).all()
+    named = {
+        pack.slug: {names.lang: names.short_name for names in pack.names}
+        for pack in session.scalars(
+            select(Pack).where(Pack.slug.in_([slug for slug, _ in counted if slug]))
+        )
+    }
     sources = tuple(
-        Source(pack_slug=slug, title=title, count=int(count))
-        for slug, title, count in session.execute(
-            select(Pack.slug, func.min(Document.title), func.count())
-            .select_from(QueryLogResult)
-            .join(QueryLogEntry, QueryLogEntry.id == QueryLogResult.query_log_entry_id)
-            .join(DocumentVersion, DocumentVersion.id == QueryLogResult.document_version_id)
-            .join(Document, Document.id == DocumentVersion.document_id)
-            .outerjoin(Pack, Pack.id == Document.pack_id)
-            .where(searches, QueryLogEntry.status == "ok", QueryLogResult.rank == 1)
-            .group_by(Pack.slug)
-            .order_by(func.count().desc())
-        ).all()
+        Source(pack_slug=slug, short_name=named.get(slug) if slug else None, count=int(count))
+        for slug, count in counted
     )
 
     latest = session.scalars(

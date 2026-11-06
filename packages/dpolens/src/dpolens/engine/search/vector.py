@@ -29,10 +29,12 @@ def vector_search(
     limit: int = 100,
     normative_only: bool = False,
     packs: Sequence[str] | None = None,
+    as_of: date | None = None,
 ) -> list[Candidate]:
     """The clauses closest in meaning to the query, best first, each once.
 
     `packs` keeps the search to those laws and the organisation's own policies.
+    `as_of` is the day the text is read on, today unless given.
     """
     model_id = session.execute(
         text("SELECT id FROM embedding_models WHERE name = :name"), {"name": embedder.model.name}
@@ -67,6 +69,9 @@ def vector_search(
             WHERE e.embedding_model_id = :model_id
               AND v.status = 'published'
               AND v.effective_date <= :as_of
+              -- Words that stopped applying are not an answer. Words that start later
+              -- are, marked as such, so a duty can be prepared for.
+              AND (t.applies_until IS NULL OR t.applies_until > :as_of)
               AND (NOT :normative_only OR n.is_normative)
               {scope_condition}
             ORDER BY e.embedding::vector({embedder.model.dimensions}) <=> :vector
@@ -76,7 +81,7 @@ def vector_search(
         {
             "vector": str(vector.tolist()),
             "model_id": model_id,
-            "as_of": date.today(),
+            "as_of": as_of or date.today(),
             "limit": limit,
             "normative_only": normative_only,
             **({"packs": list(packs)} if packs is not None else {}),

@@ -75,9 +75,12 @@ class ClauseName(BaseModel):
     """A clause as a citation names it, in the language it was returned in."""
 
     key: str
-    document_title: str
+    document_title: str = Field(description="In the language the clause was returned in")
     document_slug: str
     pack_slug: str | None = Field(description="The law's pack, or null for a policy")
+    law_short_name: dict[str, str] | None = Field(
+        description="What people call the law, such as GDPR, by language. Null for a policy"
+    )
     version_label: str | None
     lang: str
     trail: list[Step] = Field(description="Label and heading, outermost first, down to it")
@@ -89,6 +92,7 @@ class ClauseName(BaseModel):
             document_title=name.document_title,
             document_slug=name.document_slug,
             pack_slug=name.pack_slug,
+            law_short_name=name.law_short_name,
             version_label=name.version_label,
             lang=name.lang,
             trail=[Step(label=label, heading=heading) for label, heading in name.trail],

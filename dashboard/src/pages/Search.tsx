@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router";
 import { ApiError, type SearchResult } from "@/api/client";
 import { useDocuments, useSearch, type SearchOptions } from "@/api/queries";
 import { CopyCitationButton } from "@/components/CopyCitation";
+import { InForce } from "@/components/InForce";
 import { Notice } from "@/components/Notice";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { namesOf, prevailingLanguage } from "@/lib/citation";
+import { inLanguage } from "@/lib/clauseName";
 import { formatDate, isRightToLeft, languageName } from "@/lib/format";
 import { SETTINGS_MANAGE } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -34,10 +36,6 @@ function optionsFrom(params: URLSearchParams): SearchOptions {
     lang: params.get("lang"),
     includeExplanatory: params.get("explanatory") === "1",
   };
-}
-
-function lawName(slug: string): string {
-  return slug.toUpperCase();
 }
 
 function listOf(names: string[]): string {
@@ -58,7 +56,7 @@ function ResultCard({
   const { t } = useTranslation();
   const { clause } = result;
   const prevails = prevailingLanguage(clause);
-  const where = [clause.document_title, ...result.breadcrumb.map(namesOf)]
+  const where = [clause.law_short_name ?? clause.document_title, ...result.breadcrumb.map(namesOf)]
     .filter(Boolean)
     .join(" › ");
 
@@ -87,6 +85,7 @@ function ResultCard({
             {clause.version_label ? (
               <Chip tone="quiet">{t("document.version", { version: clause.version_label })}</Chip>
             ) : null}
+            <InForce clause={clause} />
           </div>
         </div>
         <p
@@ -128,6 +127,15 @@ export function SearchPage() {
     ),
   ].sort();
   const searched = search.data?.laws ?? options.laws;
+  // A law by what people call it, as its pack names it.
+  const shortNames = new Map(
+    (documents.data?.documents ?? []).flatMap((document) =>
+      document.pack_slug && document.short_name
+        ? [[document.pack_slug, inLanguage(document.short_name)] as const]
+        : [],
+    ),
+  );
+  const lawName = (slug: string) => shortNames.get(slug) ?? slug;
 
   function update(
     changes: Partial<Record<"q" | "laws" | "as_of" | "lang" | "explanatory", string | null>>,

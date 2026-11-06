@@ -23,6 +23,7 @@ import { Chip, Failed, Loading, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { en } from "@/i18n/en";
+import { inLanguage } from "@/lib/clauseName";
 import { download, queryString } from "@/lib/download";
 import { formatDate, formatDayHeading, formatNumber, formatTime, languageName } from "@/lib/format";
 import { QUERIES_READ_ALL, QUERIES_READ_IDENTITIES, QUERIES_READ_OWN } from "@/lib/permissions";
@@ -349,7 +350,7 @@ export function QuestionsPage() {
             { value: "any", label: t("logs.anyDocument") },
             ...(documents.data?.documents ?? []).map((item) => ({
               value: item.slug,
-              label: item.title,
+              label: inLanguage(item.title),
             })),
           ]}
         />

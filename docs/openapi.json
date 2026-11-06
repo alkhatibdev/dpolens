@@ -6941,7 +6941,8 @@
           },
           "document_title": {
             "type": "string",
-            "title": "Document Title"
+            "title": "Document Title",
+            "description": "In the language of the text, as a law is named wherever its words are"
           },
           "document_slug": {
             "type": "string",
@@ -6961,7 +6962,62 @@
           "effective_date": {
             "type": "string",
             "format": "date",
-            "title": "Effective Date"
+            "title": "Effective Date",
+            "description": "The day the version took effect"
+          },
+          "in_force": {
+            "type": "boolean",
+            "title": "In Force",
+            "description": "Whether this text applies on the day asked about"
+          },
+          "in_force_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Force From",
+            "description": "The day this text starts to apply, which can be later than the version's for a provision that starts in stages. Null while nothing has set the day"
+          },
+          "in_force_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Force Until",
+            "description": "The day it stops applying, when a law or an amendment has set one"
+          },
+          "dates_set_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dates Set By",
+            "description": "What set those days, such as a commencement notice or an amending act, when anything other than the version's effective date did"
+          },
+          "coming": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Coming"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The words an amendment gives this clause from a later day, when one does"
           },
           "pack_slug": {
             "anyOf": [
@@ -6975,6 +7031,18 @@
             "title": "Pack Slug",
             "description": "Null for an organisation's own policy"
           },
+          "law_short_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law Short Name",
+            "description": "What people call the law, such as GDPR, in the language of the text"
+          },
           "jurisdiction": {
             "anyOf": [
               {
@@ -6984,7 +7052,8 @@
                 "type": "null"
               }
             ],
-            "title": "Jurisdiction"
+            "title": "Jurisdiction",
+            "description": "Where the law applies, in the language of the text"
           },
           "trust_tier": {
             "anyOf": [
@@ -7031,7 +7100,13 @@
           "document_slug",
           "version_label",
           "effective_date",
+          "in_force",
+          "in_force_from",
+          "in_force_until",
+          "dates_set_by",
+          "coming",
           "pack_slug",
+          "law_short_name",
           "jurisdiction",
           "trust_tier",
           "source_url"
@@ -7129,7 +7204,8 @@
           },
           "document_title": {
             "type": "string",
-            "title": "Document Title"
+            "title": "Document Title",
+            "description": "In the language the clause was returned in"
           },
           "document_slug": {
             "type": "string",
@@ -7146,6 +7222,21 @@
             ],
             "title": "Pack Slug",
             "description": "The law's pack, or null for a policy"
+          },
+          "law_short_name": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law Short Name",
+            "description": "What people call the law, such as GDPR, by language. Null for a policy"
           },
           "version_label": {
             "anyOf": [
@@ -7177,12 +7268,59 @@
           "document_title",
           "document_slug",
           "pack_slug",
+          "law_short_name",
           "version_label",
           "lang",
           "trail"
         ],
         "title": "ClauseName",
         "description": "A clause as a citation names it, in the language it was returned in."
+      },
+      "Coming": {
+        "properties": {
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The words as the amendment gives them, verbatim"
+          },
+          "in_force_from": {
+            "type": "string",
+            "format": "date",
+            "title": "In Force From"
+          },
+          "dates_set_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dates Set By",
+            "description": "The amendment that brings them"
+          }
+        },
+        "type": "object",
+        "required": [
+          "heading",
+          "text",
+          "in_force_from",
+          "dates_set_by"
+        ],
+        "title": "Coming",
+        "description": "The words an amendment gives a clause from a later day."
       },
       "ComparedClause": {
         "properties": {
@@ -7336,8 +7474,12 @@
             "title": "Slug"
           },
           "title": {
-            "type": "string",
-            "title": "Title"
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Title",
+            "description": "By language. A law's in each language its pack names it in, English among them; a policy's in its own language"
           },
           "kind": {
             "type": "string",
@@ -7382,16 +7524,35 @@
             ],
             "title": "Pack Slug"
           },
-          "jurisdiction": {
+          "short_name": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Jurisdiction"
+            "title": "Short Name",
+            "description": "For a law, what people call it, by language. Null for a policy"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jurisdiction",
+            "description": "For a law, where it applies, by language. Null for a policy"
           },
           "trust_tier": {
             "anyOf": [
@@ -7443,6 +7604,7 @@
           "clauses",
           "languages",
           "pack_slug",
+          "short_name",
           "jurisdiction",
           "trust_tier",
           "source_url",
@@ -8799,14 +8961,27 @@
             "title": "Slug"
           },
           "name": {
-            "type": "string",
-            "title": "Name"
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Name",
+            "description": "The law's official name, by language"
+          },
+          "short_name": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Short Name",
+            "description": "What people call the law, by language"
           }
         },
         "type": "object",
         "required": [
           "slug",
-          "name"
+          "name",
+          "short_name"
         ],
         "title": "Law"
       },
@@ -8958,12 +9133,47 @@
             "title": "Slug"
           },
           "name": {
-            "type": "string",
-            "title": "Name"
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Name",
+            "description": "The law's official name by language: its number and the short title it gives itself, where it gives one, else its title as printed"
+          },
+          "short_name": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Short Name",
+            "description": "What people call the law, by language, such as GDPR"
           },
           "jurisdiction": {
-            "type": "string",
-            "title": "Jurisdiction"
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Jurisdiction",
+            "description": "Where the law applies, by language"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Africa",
+                  "Americas",
+                  "Asia Pacific",
+                  "Europe",
+                  "Middle East"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region",
+            "description": "Where the law is listed. Null only for a pack loaded before packs said"
           },
           "version": {
             "type": "string",
@@ -9030,7 +9240,9 @@
         "required": [
           "slug",
           "name",
+          "short_name",
           "jurisdiction",
+          "region",
           "version",
           "effective_date",
           "trust_tier",
@@ -10887,9 +11099,20 @@
             "title": "Pack Slug",
             "description": "The law's pack, or null for the organisation's policies"
           },
-          "title": {
-            "type": "string",
-            "title": "Title"
+          "short_name": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name",
+            "description": "What people call the law, by language, or null for the policies"
           },
           "count": {
             "type": "integer",
@@ -10899,7 +11122,7 @@
         "type": "object",
         "required": [
           "pack_slug",
-          "title",
+          "short_name",
           "count"
         ],
         "title": "Source"

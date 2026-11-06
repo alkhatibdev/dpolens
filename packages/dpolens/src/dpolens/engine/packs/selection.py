@@ -85,6 +85,13 @@ def loaded_laws(session: Session) -> list[Pack]:
     return list(session.scalars(select(Pack).order_by(Pack.slug)))
 
 
+def law_choice(pack: Pack) -> str:
+    """A law as a list to choose from names it in English: what people call it, then its
+    official name and where it applies."""
+    names = pack.named_in("en")
+    return f"{names.short_name}: {names.name}, {names.jurisdiction}"
+
+
 def selected_laws(session: Session) -> list[str] | None:
     """The selected laws by slug, or None when nobody has chosen yet."""
     slugs = list(

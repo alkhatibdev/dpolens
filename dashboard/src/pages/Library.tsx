@@ -8,6 +8,7 @@ import { useDocuments } from "@/api/queries";
 import { FilterButton } from "@/components/Filters";
 import { LanguageChips } from "@/components/LanguageChips";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
+import { inLanguage, sourceName } from "@/lib/clauseName";
 import { formatDate, nativeLanguageName } from "@/lib/format";
 
 type Kind = "all" | "law" | "org_policy";
@@ -31,11 +32,14 @@ function DocumentCard({ document }: { document: Document }) {
       </div>
       <div>
         {document.jurisdiction ? (
-          <div className="text-sm text-muted">{document.jurisdiction}</div>
+          <div className="text-sm text-muted">{inLanguage(document.jurisdiction)}</div>
         ) : null}
         <h2 className="mt-1 text-[19px] leading-snug font-semibold sm:text-[21px]">
-          {document.title}
+          {sourceName(document.short_name, inLanguage(document.title))}
         </h2>
+        {document.short_name ? (
+          <div className="mt-0.5 text-sm leading-snug text-muted">{inLanguage(document.title)}</div>
+        ) : null}
       </div>
       <LanguageChips
         languages={document.languages}

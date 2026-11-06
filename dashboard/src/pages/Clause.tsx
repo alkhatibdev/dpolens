@@ -7,6 +7,7 @@ import { CitedThisWeek } from "@/components/CitedThisWeek";
 import { usePolicyVersions } from "@/api/policies";
 import { useClause, useSubtrees } from "@/api/queries";
 import { CopyCitationButton } from "@/components/CopyCitation";
+import { ComingWords, InForce } from "@/components/InForce";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { Notice } from "@/components/Notice";
 import { Reading } from "@/components/Reading";
@@ -30,7 +31,9 @@ function assistantView(clause: Clause): string {
     ["authoritative", String(clause.is_authoritative)],
     ["prevails", prevailingLanguage(clause) ?? "null"],
     ["version", clause.version_label ?? "null"],
-    ["in_force_since", clause.effective_date],
+    ["in_force", String(clause.in_force)],
+    ["in_force_from", clause.in_force_from ?? "null"],
+    ["in_force_until", clause.in_force_until ?? "null"],
     ["trust_tier", clause.trust_tier ?? "null"],
     ["obliges", String(clause.is_normative)],
   ];
@@ -215,7 +218,7 @@ export function ClausePage() {
     <Panel>
       <div className="text-sm text-muted">
         <Link to={`/library/${clause.document_slug}`} className="hover:text-ink">
-          {clause.document_title}
+          {clause.law_short_name ?? clause.document_title}
         </Link>
       </div>
       {now ? <OldVersion clause={clause} now={now} until={until} /> : null}
@@ -233,7 +236,7 @@ export function ClausePage() {
         {clause.version_label ? (
           <Chip>{t("document.version", { version: clause.version_label })}</Chip>
         ) : null}
-        <Chip>{t("document.inForce", { date: formatDate(clause.effective_date) })}</Chip>
+        <InForce clause={clause} always />
         {clause.trust_tier === "verified" || clause.trust_tier === "community" ? (
           <Chip>{t(`document.trust.${clause.trust_tier}`)}</Chip>
         ) : null}
@@ -243,13 +246,16 @@ export function ClausePage() {
       </div>
 
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-        <article className="min-w-0 flex-[2] rounded-[20px] bg-white px-4 pt-2 pb-2 sm:px-6">
-          {reading.isPending ? <Loading /> : null}
-          {reading.error ? <Failed onRetry={reading.refetch} /> : null}
-          {!reading.isPending && !reading.error ? (
-            <Reading clauses={reading.byLanguage[lang ?? ""] ?? []} breadcrumb={breadcrumb} />
-          ) : null}
-        </article>
+        <div className="flex min-w-0 flex-[2] flex-col gap-4">
+          <article className="rounded-[20px] bg-white px-4 pt-2 pb-2 sm:px-6">
+            {reading.isPending ? <Loading /> : null}
+            {reading.error ? <Failed onRetry={reading.refetch} /> : null}
+            {!reading.isPending && !reading.error ? (
+              <Reading clauses={reading.byLanguage[lang ?? ""] ?? []} breadcrumb={breadcrumb} />
+            ) : null}
+          </article>
+          {clause.coming ? <ComingWords coming={clause.coming} lang={clause.lang} /> : null}
+        </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 xl:max-w-[400px]">
           {/* Its query is the page's own when nothing moved, so its answer alone says nothing. */}

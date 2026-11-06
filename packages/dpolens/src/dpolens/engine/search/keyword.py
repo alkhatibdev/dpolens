@@ -89,12 +89,13 @@ def keyword_search(
     normative_only: bool = False,
     indexes: Mapping[str, KeywordIndex] | None = None,
     packs: Sequence[str] | None = None,
+    as_of: date | None = None,
 ) -> list[Candidate]:
     """The clauses whose text matches the query, best first.
 
     `indexes` replaces a language's index with another, which is how an eval run
     compares them. `packs` keeps the search to those laws and the organisation's
-    own policies.
+    own policies. `as_of` is the day the text is read on, today unless given.
     """
     index = {**INDEXES, **(indexes or {})}.get(lang)
     if index is None:
@@ -123,6 +124,9 @@ def keyword_search(
             WHERE t.lang = :lang
               AND v.status = 'published'
               AND v.effective_date <= :as_of
+              -- Words that stopped applying are not an answer. Words that start later
+              -- are, marked as such, so a duty can be prepared for.
+              AND (t.applies_until IS NULL OR t.applies_until > :as_of)
               AND (NOT :normative_only OR n.is_normative)
               {scope_condition}
               -- A clause that shares no term with the query scores zero, and
@@ -137,7 +141,7 @@ def keyword_search(
             "query": query,
             "index": index.name,
             "lang": lang,
-            "as_of": date.today(),
+            "as_of": as_of or date.today(),
             "limit": limit,
             "normative_only": normative_only,
             **({"packs": list(packs)} if packs is not None else {}),

@@ -48,7 +48,6 @@ class Document(Base):
     )
     kind: Mapped[str] = mapped_column(Enum("law", "org_policy", name="document_kind"))
     slug: Mapped[str] = mapped_column(String(100), unique=True)
-    title: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(
         Enum("active", "archived", name="document_status"), default="active"
     )
@@ -58,6 +57,38 @@ class Document(Base):
     # Joined, because every result a reader sees carries the pack's trust tier
     # and where the text came from.
     pack: Mapped[Pack | None] = relationship(lazy="joined")
+    titles: Mapped[list[DocumentTitle]] = relationship(
+        lazy="selectin", cascade="all, delete-orphan", order_by="DocumentTitle.lang"
+    )
+
+    def title_in(self, lang: str | None) -> str:
+        """The title in `lang`, else in English, which every pack names a law in. A policy has
+        one title, in its own language, whatever is asked."""
+        by_lang = {title.lang: title.title for title in self.titles}
+        return by_lang.get(lang or "en") or by_lang.get("en") or self.titles[0].title
+
+    @property
+    def title(self) -> str:
+        """A policy's title, or a law's in English."""
+        return self.title_in(None)
+
+    @title.setter
+    def title(self, value: str) -> None:
+        """Renames a policy. A law's titles are its pack's, and only loading a pack writes them."""
+        if self.titles:
+            self.titles[0].title = value
+        else:
+            self.titles.append(DocumentTitle(lang="en", title=value))
+
+
+class DocumentTitle(Base):
+    """A document's title in one language."""
+
+    __tablename__ = "document_titles"
+
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id"), primary_key=True)
+    lang: Mapped[str] = mapped_column(String(20), primary_key=True)
+    title: Mapped[str] = mapped_column(Text)
 
 
 class DocumentVersion(Base):
@@ -167,14 +198,17 @@ class DocumentNode(Base):
 
 
 class NodeText(Base):
-    """A clause's text in one language.
+    """A clause's text in one language, and the days it applies.
 
     A clause can hold several: an authoritative original and its official
-    translations, all under the same key.
+    translations, all under the same key, and in each language the words an
+    amendment gives it from a later day beside the words in force until then.
     """
 
     __tablename__ = "node_texts"
-    __table_args__ = (UniqueConstraint("node_id", "lang"),)
+    __table_args__ = (
+        UniqueConstraint("node_id", "lang", "applies_from", postgresql_nulls_not_distinct=True),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_column()
     node_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("document_nodes.id"))
@@ -193,6 +227,15 @@ class NodeText(Base):
     """The numbering in this language, such as Article (4) beside المادة (4)."""
     body_text: Mapped[str] = mapped_column(Text)
     """Verbatim. This is what citations quote and what verification checks against."""
+
+    applies_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    """The day this text starts to apply. Empty: the day its version took effect."""
+    applies_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    """The day it stops applying, when a law or an amendment has set one."""
+    pending: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    """It does not apply yet, and nothing has set the day it will."""
+    dated_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """What set these dates, when anything other than the version's effective date did."""
 
     search_text: Mapped[str] = mapped_column(
         Text, Computed("coalesce(heading, '') || ' ' || body_text")

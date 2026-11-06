@@ -4,6 +4,11 @@ Everything here resolves the version in force: the latest published version of a
 document whose effective date has passed. A version published for a future date
 is visible in the library but is not what a reader gets by default, and a draft
 is never returned at all.
+
+Within that version, each clause is read in the text that applies on the day asked
+about. A clause that does not apply yet is read in the text it will start with, and
+says so; a clause whose words an amendment changes later carries those words too.
+A law is named in the language its text is read in.
 """
 
 from __future__ import annotations
@@ -27,6 +32,16 @@ from dpolens.engine.packs.models import Pack
 
 
 @dataclass(frozen=True)
+class Coming:
+    """The words an amendment gives a clause from a later day."""
+
+    heading: str | None
+    text: str
+    in_force_from: date
+    dates_set_by: str | None
+
+
+@dataclass(frozen=True)
 class ClauseView:
     """One clause as a reader sees it."""
 
@@ -40,12 +55,24 @@ class ClauseView:
     is_normative: bool
     depth: int
     document_title: str
+    """In the language of the text, as a law's names are wherever its words are shown."""
     document_slug: str
     version_label: str | None
     effective_date: date
+    in_force: bool = True
+    """Whether this text applies on the day asked about."""
+    in_force_from: date | None = None
+    """The day this text starts to apply, or None while nothing has set it."""
+    in_force_until: date | None = None
+    """The day it stops applying, when a law or an amendment has set one."""
+    dates_set_by: str | None = None
+    """What set those days, when anything other than the version's effective date did."""
+    coming: Coming | None = None
+    """The words an amendment gives this clause later, when one does."""
     # Where the text came from, and how far it has been checked. Null for an
     # organisation's own policy, which is its own source and carries no tier.
     pack_slug: str | None = None
+    law_short_name: str | None = None
     jurisdiction: str | None = None
     trust_tier: str | None = None
     source_url: str | None = None
@@ -124,11 +151,13 @@ def _version_in_force(session: Session, document_id: object, as_of: date) -> Doc
 
 def _view(
     node: DocumentNode,
-    texts: tuple[NodeText, NodeText | None],
+    texts: _Texts,
     document: Document,
     version: DocumentVersion,
+    as_of: date,
 ) -> ClauseView:
-    text, prevailing = texts
+    text, prevailing = texts.shown, texts.prevailing
+    names = document.pack.named_in(text.lang) if document.pack else None
     return ClauseView(
         key=node.canonical_key,
         clause_type=node.node_type,
@@ -139,12 +168,27 @@ def _view(
         is_authoritative=text.is_authoritative,
         is_normative=node.is_normative,
         depth=node.depth,
-        document_title=document.title,
+        document_title=document.title_in(text.lang),
         document_slug=document.slug,
         version_label=version.version_label,
         effective_date=version.effective_date,
+        in_force=_applies(text, as_of),
+        in_force_from=None if text.pending else (text.applies_from or version.effective_date),
+        in_force_until=text.applies_until,
+        dates_set_by=text.dated_by,
+        coming=(
+            Coming(
+                heading=texts.coming.heading,
+                text=texts.coming.body_text,
+                in_force_from=texts.coming.applies_from,
+                dates_set_by=texts.coming.dated_by,
+            )
+            if texts.coming is not None and texts.coming.applies_from is not None
+            else None
+        ),
         pack_slug=document.pack.slug if document.pack else None,
-        jurisdiction=document.pack.jurisdiction if document.pack else None,
+        law_short_name=names.short_name if names else None,
+        jurisdiction=names.jurisdiction if names else None,
         trust_tier=document.pack.trust_tier if document.pack else None,
         source_url=document.pack.source_url if document.pack else None,
         authoritative_language=document.pack.authoritative_language if document.pack else None,
@@ -153,19 +197,67 @@ def _view(
     )
 
 
-def _texts_for(
-    session: Session, node: DocumentNode, lang: str | None
-) -> tuple[NodeText, NodeText | None]:
-    """The text to show, in `lang` where the clause has it, and the one that prevails
-    when the shown one is a translation. One query, since both may be needed."""
+@dataclass(frozen=True)
+class _Texts:
+    shown: NodeText
+    prevailing: NodeText | None
+    """The text that prevails, when the one shown is a translation."""
+    coming: NodeText | None
+    """The words an amendment gives the clause later, in the language shown."""
+
+
+def _applies(text: NodeText, as_of: date) -> bool:
+    """Whether a text applies on `as_of`. One with no start applies from its version's date,
+    which has passed for any version read."""
+    return (
+        not text.pending
+        and (text.applies_from is None or text.applies_from <= as_of)
+        and (text.applies_until is None or text.applies_until > as_of)
+    )
+
+
+def _ended(text: NodeText, as_of: date) -> bool:
+    return text.applies_until is not None and text.applies_until <= as_of
+
+
+def _on(texts: Sequence[NodeText], as_of: date) -> NodeText:
+    """The text to read on `as_of`: the one that applies, else the one that applies next,
+    else, for an old citation, the last that applied."""
+    applying = [text for text in texts if _applies(text, as_of)]
+    if applying:
+        return max(applying, key=lambda text: text.applies_from or date.min)
+    upcoming = [text for text in texts if not _ended(text, as_of)]
+    if upcoming:
+        return min(upcoming, key=lambda text: (text.pending, text.applies_from or date.max))
+    return max(texts, key=lambda text: text.applies_until or date.min)
+
+
+def _texts_for(session: Session, node: DocumentNode, lang: str | None, as_of: date) -> _Texts:
+    """The text to show on `as_of`, in `lang` where the clause has it, the one that prevails
+    when the shown one is a translation, and any words an amendment brings later. One query,
+    since all may be needed."""
     texts = session.scalars(select(NodeText).where(NodeText.node_id == node.id)).all()
     if not texts:
         raise ClauseNotFound(f"{node.canonical_key} has no stored text")
 
     # The authoritative text prevails in law, and it is what a missing language falls back to.
-    prevailing = next((text for text in texts if text.is_authoritative), texts[0])
-    shown = next((text for text in texts if text.lang == lang), prevailing) if lang else prevailing
-    return shown, None if shown is prevailing else prevailing
+    authoritative = [text for text in texts if text.is_authoritative] or list(texts)
+    prevailing = _on(authoritative, as_of)
+    in_lang = [text for text in texts if text.lang == lang] if lang else []
+    shown = _on(in_lang, as_of) if in_lang else prevailing
+    later = [
+        text
+        for text in texts
+        if text.lang == shown.lang
+        and text is not shown
+        and text.applies_from is not None
+        and text.applies_from > as_of
+    ]
+    return _Texts(
+        shown=shown,
+        prevailing=None if shown is prevailing else prevailing,
+        coming=min(later, key=lambda text: text.applies_from or date.max) if later else None,
+    )
 
 
 @dataclass(frozen=True)
@@ -204,15 +296,16 @@ def get_clause(
     session: Session, key: str, lang: str | None = None, as_of: date | None = None
 ) -> ClauseDetail:
     """One clause, with its breadcrumb, its children and the links its text states."""
-    found = _locate(session, key, as_of or date.today())
+    moment = as_of or date.today()
+    found = _locate(session, key, moment)
     document, version, node = found.document, found.version, found.node
     policy = document.kind == "org_policy"
 
     return ClauseDetail(
-        clause=_view(node, _texts_for(session, node, lang), document, version),
-        breadcrumb=_breadcrumb(session, node, document, version, lang),
+        clause=_view(node, _texts_for(session, node, lang, moment), document, version, moment),
+        breadcrumb=_breadcrumb(session, node, document, version, lang, moment),
         children=tuple(
-            _view(child, _texts_for(session, child, lang), document, version)
+            _view(child, _texts_for(session, child, lang, moment), document, version, moment)
             for child in _children(session, node)
         ),
         cross_references=tuple(
@@ -333,7 +426,8 @@ def get_subtree(
     a policy's 4.1 under 4 is keyed `slug:4.1`, not `slug:4:4.1`, because a number that
     continues its parent's stands alone.
     """
-    located = _locate(session, key, as_of or date.today())
+    moment = as_of or date.today()
+    located = _locate(session, key, moment)
     document, version, root = located.document, located.version, located.node
 
     beneath = (
@@ -354,11 +448,12 @@ def get_subtree(
     for node in descendants:
         by_parent.setdefault(node.parent_node_id, []).append(node)
 
-    found = [_view(root, _texts_for(session, root, lang), document, version)]
+    found = [_view(root, _texts_for(session, root, lang, moment), document, version, moment)]
 
     def walk(parent: DocumentNode) -> None:
         for child in by_parent.get(parent.id, []):
-            found.append(_view(child, _texts_for(session, child, lang), document, version))
+            texts = _texts_for(session, child, lang, moment)
+            found.append(_view(child, texts, document, version, moment))
             walk(child)
 
     walk(root)
@@ -381,6 +476,7 @@ def _breadcrumb(
     document: Document,
     version: DocumentVersion,
     lang: str | None,
+    as_of: date,
 ) -> tuple[ClauseView, ...]:
     ancestors: list[ClauseView] = []
     current = node
@@ -388,24 +484,31 @@ def _breadcrumb(
         parent = session.get(DocumentNode, current.parent_node_id)
         if parent is None:
             break
-        ancestors.append(_view(parent, _texts_for(session, parent, lang), document, version))
+        texts = _texts_for(session, parent, lang, as_of)
+        ancestors.append(_view(parent, texts, document, version, as_of))
         current = parent
     return tuple(reversed(ancestors))
 
 
 @dataclass(frozen=True)
 class DocumentSummary:
-    """One document as a list shows it, without any of its text."""
+    """One document as a list shows it, without any of its text.
+
+    Names come in every language there is one for, and the reader picks: an English screen
+    names a law in English, and one in the law's language would name it in that.
+    """
 
     slug: str
-    title: str
+    title: dict[str, str]
     kind: str
     version_label: str | None
     effective_date: date
     clauses: int
     languages: tuple[str, ...]
     pack_slug: str | None
-    jurisdiction: str | None
+    short_name: dict[str, str] | None
+    """For a law, what people call it, such as GDPR."""
+    jurisdiction: dict[str, str] | None
     trust_tier: str | None
     source_url: str | None
     authoritative_language: str | None = None
@@ -457,16 +560,18 @@ def _summary(session: Session, document: Document, version: DocumentVersion) -> 
         .distinct()
         .order_by(NodeText.lang)
     ).all()
+    pack = document.pack
     return DocumentSummary(
         slug=document.slug,
-        title=document.title,
+        title={title.lang: title.title for title in document.titles},
         kind=document.kind,
         version_label=version.version_label,
         effective_date=version.effective_date,
         clauses=int(clauses or 0),
         languages=tuple(languages),
-        pack_slug=document.pack.slug if document.pack else None,
-        jurisdiction=document.pack.jurisdiction if document.pack else None,
+        pack_slug=pack.slug if pack else None,
+        short_name={names.lang: names.short_name for names in pack.names} if pack else None,
+        jurisdiction={names.lang: names.jurisdiction for names in pack.names} if pack else None,
         trust_tier=document.pack.trust_tier if document.pack else None,
         source_url=document.pack.source_url if document.pack else None,
         authoritative_language=document.pack.authoritative_language if document.pack else None,
@@ -503,11 +608,14 @@ def list_documents(
 
 @dataclass(frozen=True)
 class LawSummary:
-    """A loaded law as somebody deciding whether it applies sees it."""
+    """A loaded law as somebody deciding whether it applies sees it, named in each language
+    its pack names it in."""
 
     slug: str
-    name: str
-    jurisdiction: str
+    name: dict[str, str]
+    short_name: dict[str, str]
+    jurisdiction: dict[str, str]
+    region: str | None
     version: str
     effective_date: date
     trust_tier: str
@@ -561,8 +669,10 @@ def list_laws(session: Session, *, as_of: date | None = None) -> list[LawSummary
         laws.append(
             LawSummary(
                 slug=pack.slug,
-                name=pack.name,
-                jurisdiction=pack.jurisdiction,
+                name={names.lang: names.name for names in pack.names},
+                short_name={names.lang: names.short_name for names in pack.names},
+                jurisdiction={names.lang: names.jurisdiction for names in pack.names},
+                region=pack.region,
                 version=pack.version,
                 effective_date=pack.effective_date,
                 trust_tier=pack.trust_tier,
@@ -620,7 +730,12 @@ def _outline(
     for row in session.execute(
         select(NodeText.node_id, NodeText.heading, NodeText.label)
         .where(NodeText.node_id.in_(ids))
-        .order_by((NodeText.lang == (lang or "")).desc(), NodeText.is_authoritative.desc())
+        .order_by(
+            (NodeText.lang == (lang or "")).desc(),
+            NodeText.is_authoritative.desc(),
+            # The words in force before any an amendment brings later.
+            NodeText.applies_from.asc().nulls_first(),
+        )
     ):
         names.setdefault(row.node_id, (row.heading, row.label))
 

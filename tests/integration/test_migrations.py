@@ -120,3 +120,75 @@ def test_a_table_added_later_is_reachable_by_the_application_role(
     finally:
         with owner.begin() as connection:
             connection.execute(text("DROP TABLE later_table"))
+
+
+def test_0019_names_what_was_stored_before(owner_url: str, app_role: str) -> None:
+    """A law keeps its name and title, in English as they were written, until its pack loads
+    again, and a policy keeps its title, in the language of its text."""
+    config = alembic(owner_url, app_role)
+    engine = create_engine(owner_url)
+    try:
+        command.downgrade(config, "base")
+        command.upgrade(config, "0018")
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO packs (id, slug, name, jurisdiction, version, effective_date,
+                                       trust_tier, source_url, license, authoritative_language)
+                    VALUES ('00000000-0000-0000-0000-000000000001', 'uae-pdpl',
+                            'Federal Decree by Law No. (45) of 2021', 'United Arab Emirates',
+                            '2026.1', '2022-01-02', 'community', 'https://example.invalid',
+                            'Not protected by copyright.', 'ar');
+                    INSERT INTO documents (id, kind, slug, title, status, pack_id)
+                    VALUES ('00000000-0000-0000-0000-000000000002', 'law', 'uae-pdpl',
+                            'Federal Decree by Law No. (45) of 2021', 'active',
+                            '00000000-0000-0000-0000-000000000001'),
+                           ('00000000-0000-0000-0000-000000000003', 'org_policy', 'retention',
+                            'سياسة الاحتفاظ', 'active', NULL);
+                    INSERT INTO document_versions (id, document_id, version_number, status,
+                                                   effective_date, source_ref)
+                    VALUES ('00000000-0000-0000-0000-000000000004',
+                            '00000000-0000-0000-0000-000000000003', 1, 'draft', '2026-01-01',
+                            'upload:retention');
+                    INSERT INTO document_nodes (id, document_version_id, canonical_key,
+                                                node_type, is_normative, order_index, depth)
+                    VALUES ('00000000-0000-0000-0000-000000000005',
+                            '00000000-0000-0000-0000-000000000004', 'retention:1', 'section',
+                            true, 0, 0);
+                    INSERT INTO node_texts (id, node_id, lang, is_authoritative,
+                                            translation_status, body_text)
+                    VALUES ('00000000-0000-0000-0000-000000000006',
+                            '00000000-0000-0000-0000-000000000005', 'ar', true, 'original',
+                            'تحفظ البيانات ثلاثين يوما.');
+                    """
+                )
+            )
+
+        command.upgrade(config, "head")
+
+        with engine.connect() as connection:
+            names = [
+                tuple(row)
+                for row in connection.execute(
+                    text("SELECT lang, name, short_name, jurisdiction FROM pack_names")
+                )
+            ]
+            titles: dict[str, str] = {
+                slug: title
+                for slug, title in connection.execute(
+                    text(
+                        "SELECT d.slug, t.lang || ': ' || t.title FROM document_titles t "
+                        "JOIN documents d ON d.id = t.document_id"
+                    )
+                )
+            }
+        assert names == [
+            ("en", "Federal Decree by Law No. (45) of 2021", "UAE PDPL", "United Arab Emirates")
+        ]
+        assert titles == {
+            "uae-pdpl": "en: Federal Decree by Law No. (45) of 2021",
+            "retention": "ar: سياسة الاحتفاظ",
+        }
+    finally:
+        engine.dispose()

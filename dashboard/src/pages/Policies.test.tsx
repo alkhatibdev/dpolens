@@ -2,8 +2,9 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
+import { formatDate } from "@/lib/format";
 import { signedIn } from "@/test/fixtures";
-import { acceptableUseDraft, dpo, policies, retentionDraft } from "@/test/policies";
+import { LATER, acceptableUseDraft, dpo, policies, retentionDraft } from "@/test/policies";
 import { renderAt } from "@/test/render";
 import { problem, serve } from "@/test/server";
 
@@ -31,7 +32,9 @@ describe("policies", () => {
     expect(within(acceptable).getByText("Not published yet")).toBeInTheDocument();
     expect(within(acceptable).getByRole("link", { name: "Open the draft" })).toBeInTheDocument();
     expect(
-      within(rowOf("Information security policy")).getByText("Version 3 from 1 Nov 2026"),
+      within(rowOf("Information security policy")).getByText(
+        `Version 3 from ${formatDate(LATER, "short")}`,
+      ),
     ).toBeInTheDocument();
     const sample = rowOf("Sample data protection policy");
     expect(within(sample).getByText("Made up, for a new instance to search")).toBeInTheDocument();

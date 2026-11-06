@@ -59,7 +59,9 @@ class Source(BaseModel):
     pack_slug: str | None = Field(
         description="The law's pack, or null for the organisation's policies"
     )
-    title: str
+    short_name: dict[str, str] | None = Field(
+        description="What people call the law, by language, or null for the policies"
+    )
     count: int
 
 
@@ -72,7 +74,8 @@ class Unanswered(BaseModel):
 
 class Law(BaseModel):
     slug: str
-    name: str
+    name: dict[str, str] = Field(description="The law's official name, by language")
+    short_name: dict[str, str] = Field(description="What people call the law, by language")
 
 
 class Overview(BaseModel):
@@ -135,7 +138,7 @@ def describe(who: Reader, opened: Opened, days: Days = 7, tz: Zone = "UTC") -> O
             Cited(clause=ClauseName.of(cited.name), count=cited.count) for cited in week.most_cited
         ],
         sources=[
-            Source(pack_slug=source.pack_slug, title=source.title, count=source.count)
+            Source(pack_slug=source.pack_slug, short_name=source.short_name, count=source.count)
             for source in week.sources
         ],
         unanswered=[
@@ -148,7 +151,11 @@ def describe(who: Reader, opened: Opened, days: Days = 7, tz: Zone = "UTC") -> O
             for question in week.unanswered
         ],
         laws=[
-            Law(slug=pack.slug, name=pack.name)
+            Law(
+                slug=pack.slug,
+                name={names.lang: names.name for names in pack.names},
+                short_name={names.lang: names.short_name for names in pack.names},
+            )
             for pack in loaded_laws(opened)
             if pack.slug in selected
         ],

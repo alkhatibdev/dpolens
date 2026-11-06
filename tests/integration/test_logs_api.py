@@ -467,7 +467,7 @@ class TestTheOverview:
         top = body["most_cited"][0]
         assert (top["clause"]["key"], top["count"]) == ("testlaw:art-5:para-1", 1)
         assert body["sources"] == [
-            {"pack_slug": "testlaw", "title": body["sources"][0]["title"], "count": 2}
+            {"pack_slug": "testlaw", "short_name": {"en": "TESTLAW"}, "count": 2}
         ]
         assert [question["question"] for question in body["unanswered"]] == [
             "retention period for cctv footage"

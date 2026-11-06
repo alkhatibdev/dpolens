@@ -18,7 +18,9 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-RECIPE_VERSION = "v1"
+RECIPE_VERSION = "v2"
+"""v2 names the document in the clause's own language, as a law's pack names it there; v1 named
+it in English only."""
 MAX_TOKENS = 64
 SEPARATOR = " > "
 

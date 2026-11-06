@@ -22,6 +22,15 @@ from dpolens.engine.documents.read import (
 from dpolens.engine.search.engine import SearchResult
 
 
+class Coming(BaseModel):
+    """The words an amendment gives a clause from a later day."""
+
+    heading: str | None
+    text: str = Field(description="The words as the amendment gives them, verbatim")
+    in_force_from: date
+    dates_set_by: str | None = Field(description="The amendment that brings them")
+
+
 class Clause(BaseModel):
     key: str = Field(description="The canonical key a citation points at")
     clause_type: str
@@ -46,12 +55,38 @@ class Clause(BaseModel):
         description="False for text that explains without obliging, such as a recital"
     )
     depth: int
-    document_title: str
+    document_title: str = Field(
+        description="In the language of the text, as a law is named wherever its words are"
+    )
     document_slug: str
     version_label: str | None
-    effective_date: date
+    effective_date: date = Field(description="The day the version took effect")
+    in_force: bool = Field(description="Whether this text applies on the day asked about")
+    in_force_from: date | None = Field(
+        description=(
+            "The day this text starts to apply, which can be later than the version's for a "
+            "provision that starts in stages. Null while nothing has set the day"
+        )
+    )
+    in_force_until: date | None = Field(
+        description="The day it stops applying, when a law or an amendment has set one"
+    )
+    dates_set_by: str | None = Field(
+        description=(
+            "What set those days, such as a commencement notice or an amending act, when "
+            "anything other than the version's effective date did"
+        )
+    )
+    coming: Coming | None = Field(
+        description="The words an amendment gives this clause from a later day, when one does"
+    )
     pack_slug: str | None = Field(description="Null for an organisation's own policy")
-    jurisdiction: str | None
+    law_short_name: str | None = Field(
+        description="What people call the law, such as GDPR, in the language of the text"
+    )
+    jurisdiction: str | None = Field(
+        description="Where the law applies, in the language of the text"
+    )
     trust_tier: str | None = Field(
         description="verified when a named maintainer checked the pack against the official "
         "source, community when it has passed validation only, null for a policy"
@@ -64,7 +99,7 @@ class Clause(BaseModel):
 
     @classmethod
     def of(cls, view: ClauseView) -> Clause:
-        return cls(**vars(view))
+        return cls(**{**vars(view), "coming": Coming(**vars(view.coming)) if view.coming else None})
 
 
 class CrossReference(BaseModel):
@@ -168,14 +203,24 @@ class ClauseInContext(BaseModel):
 
 class Document(BaseModel):
     slug: str
-    title: str
+    title: dict[str, str] = Field(
+        description=(
+            "By language. A law's in each language its pack names it in, English among them; "
+            "a policy's in its own language"
+        )
+    )
     kind: str = Field(description="law or org_policy")
     version_label: str | None
     effective_date: date
     clauses: int
     languages: list[str]
     pack_slug: str | None
-    jurisdiction: str | None
+    short_name: dict[str, str] | None = Field(
+        description="For a law, what people call it, by language. Null for a policy"
+    )
+    jurisdiction: dict[str, str] | None = Field(
+        description="For a law, where it applies, by language. Null for a policy"
+    )
     trust_tier: str | None
     source_url: str | None
     authoritative_language: str | None = Field(

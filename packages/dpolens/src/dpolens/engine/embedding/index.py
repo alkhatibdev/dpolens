@@ -10,6 +10,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -103,7 +104,12 @@ def build_index(
     rows = session.execute(
         text(
             f"""
-            SELECT t.id AS text_id, t.body_text, t.heading, t.lang, d.title AS document_title,
+            SELECT t.id AS text_id, t.body_text, t.heading, t.lang, t.applies_from,
+                   -- The title in the clause's language, else in English, else a policy's one.
+                   (SELECT dt.title FROM document_titles dt
+                    WHERE dt.document_id = d.id
+                    ORDER BY dt.lang = t.lang DESC, dt.lang = 'en' DESC, dt.lang
+                    LIMIT 1) AS document_title,
                    n.canonical_key, n.id AS node_id
             {_PUBLISHED_TEXT}
             {_NOT_EMBEDDED if skip_embedded else ""}
@@ -135,7 +141,9 @@ def build_index(
         build(
             RecipeInput(
                 document_short_name=row.document_title,
-                ancestor_headings=_ancestor_headings(session, row.node_id, row.lang),
+                ancestor_headings=_ancestor_headings(
+                    session, row.node_id, row.lang, row.applies_from
+                ),
                 text=row.body_text,
             ),
             embedder.count_tokens,
@@ -221,8 +229,11 @@ def batches(tokens: Sequence[int]) -> list[list[int]]:
     return found
 
 
-def _ancestor_headings(session: Session, node_id: uuid.UUID, lang: str) -> list[str]:
-    """The headings above a clause, outermost first, in the language of its text."""
+def _ancestor_headings(
+    session: Session, node_id: uuid.UUID, lang: str, applies_from: date | None
+) -> list[str]:
+    """The headings above a clause, outermost first, in the language of its text, each from
+    the words its parent has on the day the text starts, where an amendment changes them."""
     rows = session.execute(
         text(
             """
@@ -232,15 +243,17 @@ def _ancestor_headings(session: Session, node_id: uuid.UUID, lang: str) -> list[
                 SELECT n.id, n.parent_node_id, up.depth + 1
                 FROM document_nodes n JOIN up ON n.id = up.parent_node_id
             )
-            SELECT coalesce(t.heading, t.label, n.label) AS heading
+            SELECT DISTINCT ON (up.depth) coalesce(t.heading, t.label, n.label) AS heading
             FROM up
             JOIN document_nodes n ON n.id = up.id
             LEFT JOIN node_texts t ON t.node_id = n.id AND t.lang = :lang
             WHERE up.depth > 0
-            ORDER BY up.depth DESC
+            ORDER BY up.depth DESC,
+                     t.applies_from IS NOT DISTINCT FROM CAST(:applies_from AS date) DESC,
+                     t.applies_from ASC NULLS FIRST
             """
         ),
-        {"node_id": node_id, "lang": lang},
+        {"node_id": node_id, "lang": lang, "applies_from": applies_from},
     ).all()
     return [row.heading for row in rows if row.heading]
 

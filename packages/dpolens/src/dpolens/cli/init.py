@@ -19,7 +19,7 @@ from dpolens.engine.auth.passwords import give_password
 from dpolens.engine.auth.permissions import ADMIN
 from dpolens.engine.auth.users import create_user, managers
 from dpolens.engine.logs.governance import cli_actor
-from dpolens.engine.packs.selection import loaded_laws, select_laws, selected_laws
+from dpolens.engine.packs.selection import law_choice, loaded_laws, select_laws, selected_laws
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -40,7 +40,7 @@ def _laws(session: Session, given: list[str] | None) -> list[str]:
     if ask.interactive():
         return ask.checklist(
             "Which laws apply to your organisation",
-            [(pack.slug, f"{pack.name}, {pack.jurisdiction}") for pack in loaded_laws(session)],
+            [(pack.slug, law_choice(pack)) for pack in loaded_laws(session)],
             at_least_one=True,
         )
     raise typer.BadParameter("needed, and there is no terminal to ask in", param_hint="'--law'")

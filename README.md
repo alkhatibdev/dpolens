@@ -50,8 +50,8 @@ has the line to add.
 ## What's inside
 
 - **An MCP server** with four tools to search and read the law and your policies, quoting each
-  clause word for word with its key, its version and the date that version took effect.
-  [The MCP server](https://dpolens.com/docs/mcp)
+  clause word for word with its key, its version and the days it applies, including a duty that
+  starts later. [The MCP server](https://dpolens.com/docs/mcp)
 - **Laws as packs**, each from its official source: GDPR and the UAE PDPL today, and more as
   their packs are released. [Supported laws](https://dpolens.com/laws)
 - **Your own policies**, from Word or Markdown files, read into clauses without an AI model and

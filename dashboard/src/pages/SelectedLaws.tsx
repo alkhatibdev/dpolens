@@ -10,14 +10,15 @@ import { Notice } from "@/components/Notice";
 import { PageHeading } from "@/components/Page";
 import { Failed, Loading, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
-import { sourceName } from "@/lib/clauseName";
+import { inLanguage } from "@/lib/clauseName";
 import { formatList, formatWhen } from "@/lib/format";
 import { SETTINGS_MANAGE } from "@/lib/permissions";
 import { usePermitted } from "@/session";
 
-/** "GDPR and UAE PDPL": laws as a citation names them. */
-function named(slugs: readonly string[]): string {
-  return formatList(slugs.map((slug) => sourceName(slug, slug)));
+/** "GDPR and UAE PDPL": laws by what people call them. */
+function named(laws: Laws, slugs: readonly string[]): string {
+  const bySlug = new Map(laws.laws.map((law) => [law.slug, inLanguage(law.short_name)]));
+  return formatList(slugs.map((slug) => bySlug.get(slug) ?? slug));
 }
 
 /** What searches cover now, and who last decided it. */
@@ -25,7 +26,7 @@ function Coverage({ laws }: { laws: Laws }) {
   const { t } = useTranslation();
   const changed = laws.changed;
   const title = laws.selected
-    ? t("laws.cover", { laws: named(laws.selected) })
+    ? t("laws.cover", { laws: named(laws, laws.selected) })
     : t("laws.coverNone");
   let who = "";
   if (changed) {
@@ -97,8 +98,8 @@ export function SelectedLawsPage() {
   }
 
   const summary = [
-    added.length ? t("laws.adds", { laws: named(added) }) : "",
-    removed.length ? t("laws.removes", { laws: named(removed) }) : "",
+    added.length ? t("laws.adds", { laws: named(current, added) }) : "",
+    removed.length ? t("laws.removes", { laws: named(current, removed) }) : "",
     shown.size ? t("laws.appliesNow") : t("laws.noneTicked"),
   ]
     .filter(Boolean)

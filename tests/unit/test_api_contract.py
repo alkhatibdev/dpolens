@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 from fastapi.testclient import TestClient
 
 from dpolens.api.app import create_app
+from dpolens.api.laws import Region
 from dpolens.api.problems import MEDIA_TYPE
+from dpolens.engine.packs.format import REGIONS
 from dpolens.settings import Settings
 
 SPEC = Path(__file__).parents[2] / "docs" / "openapi.json"
@@ -142,3 +144,8 @@ def test_the_outline_carries_no_text() -> None:
 
     assert "text" not in schema["properties"]
     assert "children" in schema["properties"]
+
+
+def test_a_law_s_region_is_one_the_pack_format_knows() -> None:
+    """The API names the regions a pack may say, so the two lists cannot drift apart."""
+    assert get_args(Region) == REGIONS

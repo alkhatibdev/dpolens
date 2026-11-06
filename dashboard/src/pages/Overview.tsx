@@ -16,7 +16,7 @@ import { PillSelect } from "@/components/PillSelect";
 import { UploadDialog } from "@/components/policies/UploadDialog";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
-import { sourceName } from "@/lib/clauseName";
+import { inLanguage } from "@/lib/clauseName";
 import { formatNumber, formatSince, formatWhen } from "@/lib/format";
 import {
   DOCUMENTS_PUBLISH,
@@ -205,9 +205,7 @@ function Sources({ overview }: { overview: Overview }) {
   const { t } = useTranslation();
   const total = Math.max(1, overview.questions);
   const parts = overview.sources.map((source, index) => ({
-    name: source.pack_slug
-      ? sourceName(source.pack_slug, source.title)
-      : t("overview.yourPolicies"),
+    name: source.short_name ? inLanguage(source.short_name) : t("overview.yourPolicies"),
     share: source.count / total,
     colour: SOURCE_COLOURS[index % SOURCE_COLOURS.length] ?? "var(--color-brand)",
   }));
@@ -536,7 +534,7 @@ export function OverviewPage() {
             <Tile
               label={t("overview.laws")}
               value={String(data.laws.length)}
-              note={data.laws.map((law) => sourceName(law.slug, law.name)).join(", ")}
+              note={data.laws.map((law) => inLanguage(law.short_name)).join(", ")}
               to="/library"
               linkLabel={t("overview.openLaws")}
             />
