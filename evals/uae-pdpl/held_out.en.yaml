@@ -1,9 +1,9 @@
 # UAE PDPL held-out set, asked in English.
 #
-# The same questions as held_out.yaml, which asks them in Arabic, under the same ids
+# The same questions as held_out.ar.yaml, which asks them in Arabic, under the same ids
 # and labels. The English text of the law is the official translation, so these
 # questions are answered from it, and the Arabic prevails where the two differ.
-# See held_out.yaml for how the topics were chosen and where the labels come from.
+# See held_out.ar.yaml for how the topics were chosen and where the labels come from.
 
 questions:
   - id: access-request

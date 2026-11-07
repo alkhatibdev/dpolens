@@ -7,18 +7,17 @@ packs themselves.
 ## Layout
 
 ```
-evals/<pack>/tuning.yaml      used while improving retrieval
-evals/<pack>/held_out.yaml    produces the published score, and nothing else
-evals/<pack>/tuning.ar.yaml   the same questions, asked in another language
-evals/<pack>/held_out.en.yaml the held-out questions, asked in another language
-evals/results/<pack>.json     the published held-out scores, committed
+evals/<pack>/tuning.<lang>.yaml    used while improving retrieval
+evals/<pack>/held_out.<lang>.yaml  produces the published score, and nothing else
+evals/results/<pack>.json          the published held-out scores, committed
 ```
 
-A set without a language suffix is asked in the language the pack's text prevails in:
-English for GDPR, Arabic for the UAE PDPL. The same set asked in another language sits
-beside it with that language before `.yaml`, as a pack's translations do, and keeps the
-same ids, labels and sources, so the two can be compared question by question. It is
-written the way people ask in that language, not translated word for word.
+Every set names the language it is asked in before `.yaml`, such as `tuning.ar.yaml`. A
+pack's sets are asked in the law's own language and in English, and can be asked in more:
+GDPR's in English and Arabic, the UAE PDPL's in Arabic and English. The same set in two
+languages keeps the same ids, labels and sources, so the two can be compared question by
+question, and each is written the way people ask in that language, not translated word for
+word.
 
 `evals/results` is committed, because CI compares every change against it and because it
 is the evidence behind any number in the README. It holds **held-out runs only**, in any
@@ -94,13 +93,13 @@ are measured with every pack loaded, and so is CI's gate.
 ```bash
 uv run dpolens evals run --pack gdpr --set tuning
 uv run dpolens evals run --pack gdpr --set tuning.ar
-uv run dpolens evals run --pack gdpr --set held_out --set held_out.ar --baselines --write
-uv run dpolens evals run --pack uae-pdpl --set held_out --set held_out.en --together \
-  --baselines --write
+uv run dpolens evals run --pack gdpr --set held_out --baselines --write
+uv run dpolens evals run --pack uae-pdpl --set held_out --together --baselines --write
 ```
 
-`--set` can be given more than once, and each set is scored on its own; `--together` adds
-the sets scored as one.
+A set named without its language, such as `tuning`, is every language it is asked in, and
+`tuning.ar` is one of them. Each set is scored on its own, `--set` can be given more than
+once, and `--together` adds the sets scored as one. Left out, `--set` is `tuning`.
 
 `--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`), a single
 retriever (`keyword`, `meaning`), and a `+normative` suffix on any of them to exclude text

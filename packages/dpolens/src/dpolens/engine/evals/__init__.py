@@ -9,6 +9,7 @@ from dpolens.engine.evals.run import (
     read_questions,
     run_set,
     run_together,
+    sets_named,
 )
 from dpolens.engine.evals.score import (
     Interval,
@@ -35,4 +36,5 @@ __all__ = [
     "recall_at",
     "run_set",
     "run_together",
+    "sets_named",
 ]

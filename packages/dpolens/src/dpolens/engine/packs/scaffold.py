@@ -140,7 +140,7 @@ def start_pack(
     sets_dir.mkdir(parents=True)
     written = [metadata, document]
     for kind, template in EVAL_SETS.items():
-        path = sets_dir / f"{kind}.yaml"
+        path = sets_dir / f"{kind}.{pack.lang}.yaml"
         path.write_text(template.format(lang=pack.lang), encoding="utf-8")
         written.append(path)
         if pack.lang != "en":

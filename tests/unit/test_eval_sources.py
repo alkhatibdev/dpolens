@@ -35,7 +35,7 @@ def one_page(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def checked(tmp_path: Path, **question: Any) -> tuple[int, int, list[str]]:
     asked = {"id": "q", "source": "https://example.org/guide", **question}
-    path = tmp_path / "tuning.yaml"
+    path = tmp_path / "tuning.en.yaml"
     path.write_text(yaml.safe_dump({"questions": [asked]}), encoding="utf-8")
     return check(path)
 

@@ -38,9 +38,9 @@ def test_a_new_pack_holds_what_a_contributor_fills_in(tmp_path: Path) -> None:
     assert [path.relative_to(tmp_path).as_posix() for path in written] == [
         "packs/lgpd/pack.yaml",
         "packs/lgpd/lgpd",
-        "evals/lgpd/tuning.yaml",
+        "evals/lgpd/tuning.pt.yaml",
         "evals/lgpd/tuning.en.yaml",
-        "evals/lgpd/held_out.yaml",
+        "evals/lgpd/held_out.pt.yaml",
         "evals/lgpd/held_out.en.yaml",
     ]
     raw = yaml.safe_load((tmp_path / "packs/lgpd/pack.yaml").read_text(encoding="utf-8"))
@@ -67,7 +67,7 @@ def test_it_does_not_load_until_what_only_the_contributor_knows_is_filled_in(
     fill_in_the_facts(tmp_path / "packs" / "lgpd" / "pack.yaml")
     with pytest.raises(PackFormatError, match="name has nothing for en"):
         read_pack_metadata(tmp_path / "packs" / "lgpd")
-    for name in ("tuning.yaml", "held_out.en.yaml"):
+    for name in ("tuning.pt.yaml", "held_out.en.yaml"):
         with pytest.raises(EvalSetError, match="holds no questions"):
             read_questions(tmp_path / "evals" / "lgpd" / name)
 
@@ -127,8 +127,8 @@ def test_a_law_in_english_is_asked_in_english_alone(tmp_path: Path) -> None:
     )
 
     assert sorted(path.name for path in (tmp_path / "evals" / "sg-pdpa").iterdir()) == [
-        "held_out.yaml",
-        "tuning.yaml",
+        "held_out.en.yaml",
+        "tuning.en.yaml",
     ]
     assert "# en:" not in (tmp_path / "packs" / "sg-pdpa" / "pack.yaml").read_text("utf-8")
 

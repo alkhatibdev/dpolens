@@ -48,11 +48,11 @@ def test_a_pack_is_asked_in_its_language_and_in_english(pack_dir: Path) -> None:
         for top in read_document(pack_dir, document)
         for clause in top.walk()
     }
-    languages = [""] if pack.authoritative_language == "en" else ["", ".en"]
+    languages = dict.fromkeys([pack.authoritative_language, "en"])
 
     for kind in ("tuning", "held_out"):
         for language in languages:
-            name = f"{kind}{language}.yaml"
+            name = f"{kind}.{language}.yaml"
             questions = read_questions(REPO / "evals" / pack.slug / name)
             expected = {key for question in questions for key in question.expected_keys}
             assert expected <= keys, f"{name} expects what {pack.slug} lacks: {expected - keys}"

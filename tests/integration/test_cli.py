@@ -17,7 +17,8 @@ from dpolens.cli.main import app
 
 pytestmark = pytest.mark.integration
 
-GDPR_PACK = Path(__file__).parents[2] / "packs" / "gdpr"
+REPO = Path(__file__).parents[2]
+GDPR_PACK = REPO / "packs" / "gdpr"
 POLICIES = Path(__file__).parents[1] / "fixtures" / "policies"
 runner = CliRunner()
 BORDERS = str.maketrans(dict.fromkeys("│╭╮╰╯─", " "))
@@ -30,6 +31,12 @@ def said(result: Result) -> str:
     width, so a sentence can arrive split by colour codes, borders and line breaks.
     """
     return " ".join(click.unstyle(result.output).translate(BORDERS).split())
+
+
+@pytest.fixture
+def in_the_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`dpolens evals` reads its sets from the checkout it is run in."""
+    monkeypatch.chdir(REPO)
 
 
 @pytest.fixture
@@ -203,7 +210,7 @@ def test_choosing_a_law_that_is_not_loaded_fails_naming_the_ones_that_are(loaded
     assert "The laws to choose from are: gdpr" in result.output
 
 
-def test_only_a_held_out_set_is_written_and_before_anything_runs() -> None:
+def test_only_a_held_out_set_is_written_and_before_anything_runs(in_the_checkout: None) -> None:
     result = runner.invoke(
         app,
         ["evals", "run", "--pack", "gdpr", "--set", "held_out", "--set", "tuning.ar", "--write"],
@@ -213,13 +220,22 @@ def test_only_a_held_out_set_is_written_and_before_anything_runs() -> None:
     assert "--write is for held-out sets, not 'tuning.ar'" in said(result)
 
 
-def test_scoring_together_needs_two_sets() -> None:
+def test_scoring_together_needs_two_sets(in_the_checkout: None) -> None:
     result = runner.invoke(
-        app, ["evals", "run", "--pack", "gdpr", "--set", "held_out", "--together"]
+        app, ["evals", "run", "--pack", "gdpr", "--set", "held_out.en", "--together"]
     )
 
     assert result.exit_code == 2
     assert "at least two sets" in said(result)
+
+
+def test_a_set_the_pack_does_not_have_is_named_before_anything_runs(
+    in_the_checkout: None,
+) -> None:
+    result = runner.invoke(app, ["evals", "run", "--pack", "gdpr", "--set", "held-out"])
+
+    assert result.exit_code == 2
+    assert "evals/gdpr holds no set named held-out" in said(result)
 
 
 def test_a_policy_goes_from_a_file_to_a_citation(

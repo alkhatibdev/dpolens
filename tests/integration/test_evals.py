@@ -18,7 +18,7 @@ pytestmark = pytest.mark.integration
 
 REPO = Path(__file__).parents[2]
 GDPR_PACK = REPO / "packs" / "gdpr"
-TUNING = REPO / "evals" / "gdpr" / "tuning.yaml"
+TUNING = REPO / "evals" / "gdpr" / "tuning.en.yaml"
 
 
 @pytest.fixture(scope="session")
@@ -89,7 +89,7 @@ def test_an_empty_question_set_is_refused(tmp_path: Path) -> None:
 def test_a_run_scores_every_question(indexed: Session, embedder: Embedder) -> None:
     questions = read_questions(TUNING)
 
-    run = run_set(indexed, embedder, questions, "rrf:10", pack="gdpr", question_set="tuning")
+    run = run_set(indexed, embedder, questions, "rrf:10", pack="gdpr", question_set="tuning.en")
 
     assert run.score.questions == len(questions)
     assert 0.0 <= run.score.recall_at_5 <= 1.0

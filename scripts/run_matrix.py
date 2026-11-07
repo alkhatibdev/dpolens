@@ -8,6 +8,9 @@ questions.
     uv run python scripts/run_matrix.py --set tuning > matrix.txt
     uv run python scripts/run_matrix.py --set held_out --models e5-small,e5-base
 
+A set named without its language, such as tuning, is scored in every language it is
+asked in, each on its own row.
+
 The table goes to stdout, so redirect it where you want it. matrix*.txt is
 ignored, and the conclusions belong in evals/retrieval.md rather than in a file.
 
@@ -26,7 +29,7 @@ sys.path.insert(0, str(REPO / "packages" / "dpolens" / "src"))
 
 from dpolens.engine.embedding import MODELS, Embedder, get_model  # noqa: E402
 from dpolens.engine.embedding.index import build_index  # noqa: E402
-from dpolens.engine.evals import read_questions, run_set  # noqa: E402
+from dpolens.engine.evals import read_questions, run_set, sets_named  # noqa: E402
 from dpolens.engine.session import session_scope  # noqa: E402
 from dpolens.settings import load_settings  # noqa: E402
 
@@ -49,16 +52,25 @@ def main() -> int:
     parser.add_argument("--configs", default=",".join(CONFIGS))
     args = parser.parse_args()
 
-    questions = read_questions(REPO / "evals" / args.pack / f"{args.question_set}.yaml")
+    directory = REPO / "evals" / args.pack
+    questions = {
+        set_name: read_questions(directory / f"{set_name}.yaml")
+        for set_name in sets_named(directory, args.question_set)
+    }
     models = [name.strip() for name in args.models.split(",") if name.strip()]
     configs = [name.strip() for name in args.configs.split(",") if name.strip()]
 
-    print(f"{args.pack} {args.question_set}: {len(questions)} questions\n", flush=True)
+    for set_name, asked in questions.items():
+        print(f"{args.pack} {set_name}: {len(asked)} questions", flush=True)
     print(
-        f"| {'model':18} | {'configuration':22} | recall@5 | interval     | recall@10 | MRR  |",
+        f"\n| {'model':18} | {'set':12} | {'configuration':22} "
+        "| recall@5 | interval     | recall@10 | MRR  |",
         flush=True,
     )
-    print(f"| {'-' * 18} | {'-' * 22} | -------- | ------------ | --------- | ---- |", flush=True)
+    print(
+        f"| {'-' * 18} | {'-' * 12} | {'-' * 22} | -------- | ------------ | --------- | ---- |",
+        flush=True,
+    )
 
     for name in models:
         try:
@@ -72,22 +84,25 @@ def main() -> int:
                 indexed = time.time() - started
 
                 for configuration in configs:
-                    run = run_set(
-                        session,
-                        embedder,
-                        questions,
-                        configuration,
-                        pack=args.pack,
-                        question_set=args.question_set,
-                    )
-                    found = run.score
-                    print(
-                        f"| {name:18} | {configuration:22} | {found.recall_at_5:8.2f} "
-                        f"| {found.interval!s:12} | {found.recall_at_10:9.2f} "
-                        f"| {found.mrr:4.2f} |",
-                        flush=True,
-                    )
-            print(f"| {name:18} | {'(index built)':22} | {indexed:7.0f}s | | | |", flush=True)
+                    for set_name, asked in questions.items():
+                        found = run_set(
+                            session,
+                            embedder,
+                            asked,
+                            configuration,
+                            pack=args.pack,
+                            question_set=set_name,
+                        ).score
+                        print(
+                            f"| {name:18} | {set_name:12} | {configuration:22} "
+                            f"| {found.recall_at_5:8.2f} | {found.interval!s:12} "
+                            f"| {found.recall_at_10:9.2f} | {found.mrr:4.2f} |",
+                            flush=True,
+                        )
+            print(
+                f"| {name:18} | {'':12} | {'(index built)':22} | {indexed:7.0f}s | | | |",
+                flush=True,
+            )
         except Exception as problem:
             print(f"| {name:18} | FAILED: {type(problem).__name__}: {problem}", flush=True)
 

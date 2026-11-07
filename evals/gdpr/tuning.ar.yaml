@@ -1,11 +1,11 @@
 # GDPR tuning set, asked in Arabic.
 #
-# The same questions as tuning.yaml, under the same ids, labels and sources, written
+# The same questions as tuning.en.yaml, under the same ids, labels and sources, written
 # the way a developer asks in Arabic rather than translated word for word. GDPR has
 # no Arabic text, so every hit here crosses languages: an Arabic question finding an
 # English clause.
 #
-# These questions are used while improving retrieval, like tuning.yaml. See
+# These questions are used while improving retrieval, like tuning.en.yaml. See
 # ../README.md before adding one.
 #
 # Of the thirty after the first twenty, taken in the order they appear, the odd ones
@@ -185,7 +185,7 @@ questions:
     quote: >-
       Article 7(2) addresses ... the request for consent should be clearly distinguishable
       from the other matters
-    note: Kept to how the request is presented, not whether consent can be a condition of the service, which held_out.yaml asks.
+    note: Kept to how the request is presented, not whether consent can be a condition of the service, which the held-out set asks.
 
   - id: choosing-a-vendor
     question: ما الذي ينبغي أن نتحقق منه قبل اختيار مزوّد خدمات سحابية يتولى بيانات مستخدمينا؟
@@ -388,7 +388,7 @@ questions:
     quote: >-
       they have to inform the data subject of the reasons without delay and at the latest
       within one month (Art. 12(4) GDPR)
-    note: Kept to the reasons. When a request must be answered at all is Article 12(3), which held_out.yaml asks.
+    note: Kept to the reasons. When a request must be answered at all is Article 12(3), which the held-out set asks.
 
   - id: dpo-qualifications
     question: ما المهارات أو المؤهلات التي يحتاجها مسؤول حماية البيانات لدينا؟
