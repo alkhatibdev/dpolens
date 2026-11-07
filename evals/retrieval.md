@@ -228,9 +228,9 @@ uv run dpolens pack load packs/gdpr
 uv run dpolens pack load packs/uae-pdpl
 uv run dpolens index build
 
-uv run dpolens evals run --pack gdpr --set held_out --set held_out.ar \
+uv run dpolens evals run --pack gdpr --set held_out \
   --config "convex:0.5+normative" --baselines
-uv run dpolens evals run --pack uae-pdpl --set held_out --set held_out.en --together \
+uv run dpolens evals run --pack uae-pdpl --set held_out --together \
   --config "convex:0.5+normative" --baselines
 ```
 
@@ -331,9 +331,9 @@ The other two indexes stay, so the comparison can be run again as the set grows:
 ```bash
 uv run dpolens pack load packs/uae-pdpl
 uv run dpolens index build
-uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative"
-uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative+light"
-uv run dpolens evals run --pack uae-pdpl --set tuning --config "convex:0.5+normative+snowball"
+uv run dpolens evals run --pack uae-pdpl --set tuning.ar --config "convex:0.5+normative"
+uv run dpolens evals run --pack uae-pdpl --set tuning.ar --config "convex:0.5+normative+light"
+uv run dpolens evals run --pack uae-pdpl --set tuning.ar --config "convex:0.5+normative+snowball"
 ```
 
 ### Which name opens a clause

@@ -37,7 +37,7 @@ HITS = [True, False, True, True, False, True, False, True, True, True]
 
 
 def test_a_topic_asked_twice_counts_once_in_the_interval() -> None:
-    once = a_run("held_out", HITS)
+    once = a_run("held_out.ar", HITS)
     together = run_together([once, a_run("held_out.en", HITS)])
 
     assert together.score.questions == 2 * len(HITS)
@@ -47,18 +47,20 @@ def test_a_topic_asked_twice_counts_once_in_the_interval() -> None:
 
 def test_counted_separately_the_same_answers_would_claim_more_precision() -> None:
     doubled = score([*a_run("a", HITS).outcomes, *a_run("b", HITS).outcomes])
-    once = a_run("held_out", HITS).score
+    once = a_run("held_out.ar", HITS).score
 
     assert doubled.interval.high - doubled.interval.low < once.interval.high - once.interval.low
 
 
 def test_the_sets_are_named_and_each_miss_says_which_set_it_is_from() -> None:
-    together = run_together([a_run("held_out", [True, False]), a_run("held_out.en", [False, True])])
+    together = run_together(
+        [a_run("held_out.ar", [True, False]), a_run("held_out.en", [False, True])]
+    )
 
-    assert together.question_set == "held_out+held_out.en"
-    assert together.score.misses == ("held_out/topic-1", "held_out.en/topic-0")
+    assert together.question_set == "held_out.ar+held_out.en"
+    assert together.score.misses == ("held_out.ar/topic-1", "held_out.en/topic-0")
 
 
 def test_runs_of_different_configurations_are_not_scored_together() -> None:
     with pytest.raises(ValueError, match="one pack, configuration and model"):
-        run_together([a_run("held_out", HITS), a_run("held_out.en", HITS, "rrf:10")])
+        run_together([a_run("held_out.ar", HITS), a_run("held_out.en", HITS, "rrf:10")])

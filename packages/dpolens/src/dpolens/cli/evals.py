@@ -13,11 +13,13 @@ import typer
 from dpolens.cli.ask import Asking
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.evals import (
+    EvalSetError,
     Run,
     check_configuration,
     read_questions,
     run_set,
     run_together,
+    sets_named,
 )
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
@@ -46,7 +48,7 @@ def _commit() -> str:
 
 
 def _published(question_set: str) -> bool:
-    """The held-out set, or the same set asked in another language, such as held_out.ar."""
+    """The held-out set, in any language it is asked in, such as held_out.ar."""
     return question_set == PUBLISHED_SET or question_set.startswith(f"{PUBLISHED_SET}.")
 
 
@@ -58,8 +60,8 @@ def run(
         typer.Option(
             "--set",
             help=(
-                "tuning, held_out, or either asked in another language, such as held_out.ar. "
-                "Repeatable"
+                "tuning or held_out, each in every language it is asked in, or one language "
+                "of either, such as held_out.ar. Repeatable"
             ),
         ),
     ] = None,
@@ -86,7 +88,11 @@ def run(
     ] = False,
 ) -> None:
     """Score retrieval over one question set or several."""
-    sets = question_sets or ["tuning"]
+    try:
+        named = [sets_named(EVALS / pack, name) for name in question_sets or ["tuning"]]
+    except EvalSetError as problem:
+        raise typer.BadParameter(str(problem), param_hint="--set") from problem
+    sets = list(dict.fromkeys(found for each in named for found in each))
     configurations = [configuration, *BASELINES] if baselines else [configuration]
     for config in configurations:
         try:

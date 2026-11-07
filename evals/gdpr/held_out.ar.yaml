@@ -1,6 +1,6 @@
 # GDPR held-out set, asked in Arabic.
 #
-# The same questions as held_out.yaml, under the same ids, labels, sources and
+# The same questions as held_out.en.yaml, under the same ids, labels, sources and
 # notes, written the way a developer asks in Arabic rather than translated word for
 # word: formally at odd positions, and at even ones the way people type in chat, in
 # the mix of dialects that developers in the region use.

@@ -1,7 +1,7 @@
 # GDPR tuning set.
 #
 # These questions are used while improving retrieval. The published score comes
-# from held_out.yaml, which this set never touches.
+# from held_out.en.yaml, which this set never touches.
 #
 # Every entry names the guidance that ties the question to the clause. The
 # expected keys come from that guidance, not from what the search happens to
@@ -182,7 +182,7 @@ questions:
     quote: >-
       Article 7(2) addresses ... the request for consent should be clearly distinguishable
       from the other matters
-    note: Kept to how the request is presented, not whether consent can be a condition of the service, which held_out.yaml asks.
+    note: Kept to how the request is presented, not whether consent can be a condition of the service, which the held-out set asks.
 
   - id: choosing-a-vendor
     question: What should we check before we pick a cloud provider to handle our users' data?
@@ -385,7 +385,7 @@ questions:
     quote: >-
       they have to inform the data subject of the reasons without delay and at the latest
       within one month (Art. 12(4) GDPR)
-    note: Kept to the reasons. When a request must be answered at all is Article 12(3), which held_out.yaml asks.
+    note: Kept to the reasons. When a request must be answered at all is Article 12(3), which the held-out set asks.
 
   - id: dpo-qualifications
     question: What skills or qualifications does our data protection officer need?

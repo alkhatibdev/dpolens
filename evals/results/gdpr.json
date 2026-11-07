@@ -4,7 +4,7 @@
   "commit": "046b514",
   "runs": [
     {
-      "question_set": "held_out",
+      "question_set": "held_out.en",
       "configuration": "convex:0.5+normative",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -28,7 +28,7 @@
       ]
     },
     {
-      "question_set": "held_out",
+      "question_set": "held_out.en",
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -64,7 +64,7 @@
       ]
     },
     {
-      "question_set": "held_out",
+      "question_set": "held_out.en",
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",

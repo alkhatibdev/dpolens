@@ -90,6 +90,18 @@ def read_questions(path: Path) -> list[Question]:
     return questions
 
 
+def sets_named(directory: Path, name: str) -> list[str]:
+    """The sets a name means in a pack's directory of them: the one named, such as tuning.ar,
+    or, for a name without its language, such as tuning, the set in every language it is
+    asked in."""
+    if (directory / f"{name}.yaml").is_file():
+        return [name]
+    named = sorted(path.name.removesuffix(".yaml") for path in directory.glob(f"{name}.*.yaml"))
+    if not named:
+        raise EvalSetError(f"{directory} holds no set named {name}")
+    return named
+
+
 def run_set(
     session: Session,
     embedder: Embedder,

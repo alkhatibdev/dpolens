@@ -1,10 +1,10 @@
 # UAE PDPL tuning set, asked in English.
 #
-# The same questions as tuning.yaml, which asks them in Arabic, under the same ids
+# The same questions as tuning.ar.yaml, which asks them in Arabic, under the same ids
 # and labels: each topic formally, and the way people type in chat under the same id
 # with -chat after it. The English text of the law is the official translation, so
 # these questions are answered from it, and the Arabic prevails where the two differ.
-# See tuning.yaml for where the labels come from.
+# See tuning.ar.yaml for where the labels come from.
 
 questions:
   - id: automated-decision
@@ -139,7 +139,7 @@ questions:
       transparent and lawful manner ... per Article 13 of the PDPL, the Controller is
       required to, in all cases and prior to the commencement of processing, provide
       Data Subjects with information
-    note: Fair, transparent and lawful processing is Article 5(1). held_out.yaml sets fair processing aside because its fuller answer is in another article, and DLA Piper ties transparency to the information Article 13(2) requires before processing begins, so either counts.
+    note: Fair, transparent and lawful processing is Article 5(1). The held-out set leaves fair processing aside because its fuller answer is in another article, and DLA Piper ties transparency to the information Article 13(2) requires before processing begins, so either counts.
 
   - id: pseudonymise-user-data
     question: We keep users' names and emails next to all their activity in our main database. Does the law expect us to pseudonymise that data?
@@ -150,7 +150,7 @@ questions:
       Their obligations (Art. 7) under the PDPL Law include: ... Undertaking mechanisms
       like Pseudonymisation while processing data and ensuring accurate compliance with
       the Data Protection Law.
-    note: ABS Partners lists the controller's duties in the order of Article 7's paragraphs, and this is paragraph 2, measures when the means of processing are set and while processing, pseudonymisation among them. Kept to pseudonymising the controller's own users' data, away from processor-security in held_out.yaml, which asks a vendor about building protection in at the design stage.
+    note: ABS Partners lists the controller's duties in the order of Article 7's paragraphs, and this is paragraph 2, measures when the means of processing are set and while processing, pseudonymisation among them. Kept to pseudonymising the controller's own users' data, away from processor-security in the held-out set, which asks a vendor about building protection in at the design stage.
 
   - id: dpo-outside-uae
     question: Does our data protection officer have to be an employee based in the UAE, or can we use an outside consultant abroad?
@@ -288,7 +288,7 @@ questions:
     quote: >-
       Article 9 of the PDPL ... the Processor must inform the controller immediately of
       any breaches
-    note: The processor's duty to tell the controller of a breach is paragraph 3. Kept to the processor telling its client, not to reporting to the Data Office or telling users, which held_out.yaml asks.
+    note: The processor's duty to tell the controller of a breach is paragraph 3. Kept to the processor telling its client, not to reporting to the Data Office or telling users, which the held-out set asks.
 
   - id: dpo-resources
     question: Our data protection officer says they can't do the job without budget and access to our systems. Do we have to give them that?

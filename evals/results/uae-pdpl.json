@@ -4,7 +4,7 @@
   "commit": "046b514",
   "runs": [
     {
-      "question_set": "held_out",
+      "question_set": "held_out.ar",
       "configuration": "convex:0.5+normative",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -31,7 +31,7 @@
       ]
     },
     {
-      "question_set": "held_out",
+      "question_set": "held_out.ar",
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -60,7 +60,7 @@
       ]
     },
     {
-      "question_set": "held_out",
+      "question_set": "held_out.ar",
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -158,7 +158,7 @@
       ]
     },
     {
-      "question_set": "held_out+held_out.en",
+      "question_set": "held_out.ar+held_out.en",
       "configuration": "convex:0.5+normative",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -171,17 +171,17 @@
         0.7105
       ],
       "misses": [
-        "held_out/accuracy",
-        "held_out/breach-tell-users",
-        "held_out/controller-or-processor",
-        "held_out/correction",
-        "held_out/legal-bases",
-        "held_out/minimisation",
-        "held_out/penalties",
-        "held_out/processor-end-of-contract",
-        "held_out/restriction",
-        "held_out/scope-outside-uae",
-        "held_out/stop-marketing",
+        "held_out.ar/accuracy",
+        "held_out.ar/breach-tell-users",
+        "held_out.ar/controller-or-processor",
+        "held_out.ar/correction",
+        "held_out.ar/legal-bases",
+        "held_out.ar/minimisation",
+        "held_out.ar/penalties",
+        "held_out.ar/processor-end-of-contract",
+        "held_out.ar/restriction",
+        "held_out.ar/scope-outside-uae",
+        "held_out.ar/stop-marketing",
         "held_out.en/access-request",
         "held_out.en/accuracy",
         "held_out.en/controller-or-processor",
@@ -192,7 +192,7 @@
       ]
     },
     {
-      "question_set": "held_out+held_out.en",
+      "question_set": "held_out.ar+held_out.en",
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -205,19 +205,19 @@
         0.5789
       ],
       "misses": [
-        "held_out/access-request",
-        "held_out/accuracy",
-        "held_out/breach-report",
-        "held_out/breach-tell-users",
-        "held_out/controller-or-processor",
-        "held_out/correction",
-        "held_out/minimisation",
-        "held_out/penalties",
-        "held_out/portability",
-        "held_out/processor-end-of-contract",
-        "held_out/restriction",
-        "held_out/scope-outside-uae",
-        "held_out/stop-marketing",
+        "held_out.ar/access-request",
+        "held_out.ar/accuracy",
+        "held_out.ar/breach-report",
+        "held_out.ar/breach-tell-users",
+        "held_out.ar/controller-or-processor",
+        "held_out.ar/correction",
+        "held_out.ar/minimisation",
+        "held_out.ar/penalties",
+        "held_out.ar/portability",
+        "held_out.ar/processor-end-of-contract",
+        "held_out.ar/restriction",
+        "held_out.ar/scope-outside-uae",
+        "held_out.ar/stop-marketing",
         "held_out.en/access-request",
         "held_out.en/accuracy",
         "held_out.en/breach-tell-users",
@@ -232,7 +232,7 @@
       ]
     },
     {
-      "question_set": "held_out+held_out.en",
+      "question_set": "held_out.ar+held_out.en",
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",
@@ -245,14 +245,14 @@
         0.7632
       ],
       "misses": [
-        "held_out/accuracy",
-        "held_out/breach-tell-users",
-        "held_out/controller-or-processor",
-        "held_out/minimisation",
-        "held_out/penalties",
-        "held_out/processor-security",
-        "held_out/restriction",
-        "held_out/scope-outside-uae",
+        "held_out.ar/accuracy",
+        "held_out.ar/breach-tell-users",
+        "held_out.ar/controller-or-processor",
+        "held_out.ar/minimisation",
+        "held_out.ar/penalties",
+        "held_out.ar/processor-security",
+        "held_out.ar/restriction",
+        "held_out.ar/scope-outside-uae",
         "held_out.en/access-request",
         "held_out.en/accuracy",
         "held_out.en/controller-or-processor",
