@@ -7,6 +7,10 @@
 #
 # These questions are used while improving retrieval, like tuning.yaml. See
 # ../README.md before adding one.
+#
+# Of the thirty after the first twenty, taken in the order they appear, the odd ones
+# are asked formally and the even ones the way people type in chat, the chat ones
+# alternating between Gulf and Levantine Arabic, one dialect to a question.
 
 questions:
   - id: erasure-request
@@ -145,3 +149,280 @@ questions:
     expected_keys: [gdpr:art-82:para-1]
     source: https://ico.org.uk/make-a-complaint/data-protection-complaints/
     note: The right to compensation for damage caused by an infringement is Article 82(1).
+
+  - id: new-subprocessor
+    question: نحن شركة SaaS نعالج بيانات لصالح عملائنا. هل يحق لنا الاستعانة بمقاول فرعي جديد دون أن نطلب موافقتهم أولاً؟
+    lang: ar
+    expected_keys: [gdpr:art-28:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      Article 28(2) GDPR stipulates that the processor shall not engage another processor
+      without prior specific or general written authorisation of the controller
+
+  - id: consult-regulator-first
+    question: سوينا تقييم أثر وطلع فيه خطر عالي ما قدرنا نقلله، لازم نرجع للجهة الرقابية قبل لا نطلق؟
+    lang: ar
+    expected_keys: [gdpr:art-36:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-06/edpb_recommendations_20221_bcr-c_v2_en.pdf
+    quote: >-
+      prior to processing, consult the Competent SA (see Article 36 GDPR)
+    note: The EDPB's recommendations on binding corporate rules, stating for a member acting as a controller the duty Article 36(1) gives every controller.
+
+  - id: storing-is-processing
+    question: نكتفي بتخزين البيانات على خوادمنا ولا نطّلع عليها أبداً. هل يُعدّ هذا معالجة رغم ذلك؟
+    lang: ar
+    expected_keys: [gdpr:art-4:pt-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      Article 4(2) GDPR defines the processing of personal data as "any operation or set
+      of operations which is performed on personal data or on sets of personal data"
+
+  - id: consent-stands-out
+    question: صفحة التسجيل عنا بتطلب الموافقة جوا نص قانوني طويل. لازم طلب الموافقة يكون واضح ولحاله؟
+    lang: ar
+    expected_keys: [gdpr:art-7:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Article 7(2) addresses ... the request for consent should be clearly distinguishable
+      from the other matters
+    note: Kept to how the request is presented, not whether consent can be a condition of the service, which held_out.yaml asks.
+
+  - id: choosing-a-vendor
+    question: ما الذي ينبغي أن نتحقق منه قبل اختيار مزوّد خدمات سحابية يتولى بيانات مستخدمينا؟
+    lang: ar
+    expected_keys: [gdpr:art-28:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      The obligation to use only processors "providing sufficient guarantees" contained in
+      Article 28(1) GDPR is a continuous obligation.
+
+  - id: controller-measures
+    question: احنا الشركة اللي نجمع البيانات، وش المطلوب منا نسويه من عندنا عشان نكون ماشيين صح؟
+    lang: ar
+    expected_keys: [gdpr:art-24:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      Article 24, which states that the controller shall implement appropriate technical
+      and organisational measures to ensure and to be able to demonstrate that processing
+      is performed in accordance with the GDPR.
+    note: Hard because Articles 25(1) and 32(1) also ask for appropriate technical and organisational measures, for design and for security. The controller's general duty to have them, and to be able to show it, is Article 24(1).
+
+  - id: dpo-other-roles
+    question: هل يمكن لمدير تقنية المعلومات لدينا أن يكون في الوقت نفسه مسؤول حماية البيانات؟
+    lang: ar
+    expected_keys: [gdpr:art-38:para-6]
+    source: https://www.edpb.europa.eu/system/files/documents/2024-01/edpb_report_20240116_cef_dpo_en.pdf
+    quote: >-
+      While Article 38(6) GDPR does allow DPOs to fulfil other tasks and duties, it is up
+      to the controller or processor to ensure that they do not result in a conflict of
+      interests
+    note: The EDPB's 2024 report on the position of DPOs, from its coordinated enforcement action.
+
+  - id: prove-compliance
+    question: بيكفي إنو نلتزم بالقواعد، ولا لازم كمان نقدر نثبت إنو ملتزمين؟
+    lang: ar
+    expected_keys: [gdpr:art-5:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      The GDPR, in Article 5(2), explicitly introduces the accountability principle
+
+  - id: decide-purpose-first
+    question: هل يجب أن نحدد الغرض من البيانات قبل جمعها، أم يمكننا تحديده لاحقاً؟
+    lang: ar
+    expected_keys: [gdpr:art-5:para-1:pt-b]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines-art_6-1-b-adopted_after_public_consultation_en.pdf
+    quote: >-
+      Article 5(1)(b) of the GDPR provides for the purpose limitation principle ... not
+      further processed in a manner that is incompatible with those purposes.
+
+  - id: eu-representative
+    question: احنا ستارت أب في كندا ما عندنا مكتب في أوروبا بس عندنا يوزرز هناك، نحتاج أحد يمثلنا في الاتحاد الأوروبي؟
+    lang: ar
+    expected_keys: [gdpr:art-27:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_3_2018_territorial_scope_after_public_consultation_en_1.pdf
+    quote: >-
+      In accordance with Article 27, the data controller will have to designate a
+      representative in the Union.
+
+  - id: group-transfer-rules
+    question: نحن مجموعة شركات في عدة دول. هل يمكن لمجموعة واحدة من القواعد الداخلية أن تغطي نقل بيانات الموظفين من مكاتبنا في الاتحاد الأوروبي إلى مكاتبنا خارج أوروبا؟
+    lang: ar
+    expected_keys: [gdpr:art-47:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-06/edpb_recommendations_20221_bcr-c_v2_en.pdf
+    quote: >-
+      The approval confirms that the requirements set out in Article 47 GDPR are met
+    note: Binding corporate rules. Paragraph 1 is their approval and what they must do, which is what makes them usable.
+
+  - id: keep-despite-erasure
+    question: زبون بدو نمسح كل شي إلو، بس نحنا مضطرين نحتفظ بالفواتير للضريبة. فينا نرفض نمسحهن؟
+    lang: ar
+    expected_keys: [gdpr:art-17:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines-art_6-1-b-adopted_after_public_consultation_en.pdf
+    quote: >-
+      including compliance with a legal obligation pursuant to Article 17(3)(b), or the
+      establishment, exercise or defence of legal claims, pursuant to Article 17(3)(e)
+
+  - id: largest-fines
+    question: ما أقصى غرامة يمكن أن نتعرض لها عند مخالفة اللائحة العامة لحماية البيانات؟
+    lang: ar
+    expected_keys: [gdpr:art-83:para-5, gdpr:art-83:para-6]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-06/edpb_guidelines_042022_calculationofadministrativefines_en.pdf
+    quote: >-
+      infringements punishable under Article 83(5) and (6) GDPR
+    note: Article 83(6) sets the same maximum for not complying with an order of the supervisory authority, so either counts.
+
+  - id: research-safeguards
+    question: نبي نستخدم بيانات العملاء لأبحاث وإحصائيات، وش الضمانات اللي القانون يطلبها منا؟
+    lang: ar
+    expected_keys: [gdpr:art-89:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      As long as appropriate safeguards are in place, such as the requirements under
+      Article 89(1)
+
+  - id: what-consent-is
+    question: ما الذي يُعدّ موافقة صحيحة فعلاً؟ هل يكفي وضع علامة في مربع؟
+    lang: ar
+    expected_keys: [gdpr:art-4:pt-11]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Article 4(11) of the GDPR defines consent as: "any freely given, specific, informed
+      and unambiguous indication of the data subject's wishes
+
+  - id: regulator-asks
+    question: الجهة الرقابية بعتتلنا إيميل بتسأل كيف منتعامل مع بيانات الزباين. لازم نرد عليهن؟
+    lang: ar
+    expected_keys: [gdpr:art-31]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_3_2018_territorial_scope_after_public_consultation_en_1.pdf
+    quote: >-
+      cooperate with the supervisory authority in the performance of its tasks, as per
+      Article 31
+
+  - id: make-rights-easy
+    question: هل يجوز أن نطلب من الأشخاص إرسال رسالة ورقية بالبريد لممارسة حقوقهم المتعلقة ببياناتهم بدلاً من تقديم الطلب من خلال التطبيق؟
+    lang: ar
+    expected_keys: [gdpr:art-12:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      in line with its obligation to facilitate the exercise of data subjects rights (Art.
+      12(2) GDPR)
+
+  - id: private-by-default
+    question: البروفايلات الجديدة حق اليوزرز، المفروض تكون عامة ولا خاصة بشكل افتراضي؟
+    lang: ar
+    expected_keys: [gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      Article 25(2) further states that personal data shall not be made accessible,
+      without the individual's intervention
+
+  - id: staff-on-instructions
+    question: هل يجوز لموظفي الدعم لدينا الاطلاع على حسابات العملاء لأسباب خاصة بهم خارج نطاق ما نكلفهم به؟
+    lang: ar
+    expected_keys: [gdpr:art-29]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      In accordance with Article 29, they are also bound by the controller's instructions.
+
+  - id: is-it-a-breach
+    question: انسرق لابتوب عليه سجلات زباين، بس ما حدا فتح الملفات. هيدا بيعتبر خرق بيانات؟
+    lang: ar
+    expected_keys: [gdpr:art-4:pt-12]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202209_personal_data_breach_notification_v2.0_en.pdf
+    quote: >-
+      The GDPR defines a "personal data breach" in Article 4(12) as: "a breach of security
+      leading to the accidental or unlawful destruction, loss, alteration, unauthorised
+      disclosure of, or access to, personal data transmitted, stored or otherwise
+      processed."
+
+  - id: copy-format
+    question: طلب أحد الأشخاص عبر البريد الإلكتروني نسخة من بياناته. بأي صيغة ينبغي أن نرسلها؟
+    lang: ar
+    expected_keys: [gdpr:art-15:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      other formats may also be considered to be commonly used within the meaning of
+      Article 15(3)
+
+  - id: dpo-independence
+    question: يصير الإدارة تحدد للـ DPO وش النتيجة اللي يطلع فيها، أو يفنشونه لأنه يكشف مشاكل؟
+    lang: ar
+    expected_keys: [gdpr:art-38:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_3_2018_territorial_scope_after_public_consultation_en_1.pdf
+    quote: >-
+      Article 38(3) establishes some basic guarantees to help ensure that DPOs are able to
+      perform their tasks with a sufficient degree of autonomy within their organisation.
+
+  - id: new-purpose-compatible
+    question: نرغب في استخدام بيانات عملاء لدينا أصلاً في غرض جديد. كيف نعرف ما إذا كان هذا الاستخدام الجديد مسموحاً؟
+    lang: ar
+    expected_keys: [gdpr:art-6:para-4]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      Controllers should also be careful not to extend the boundaries of "compatible
+      purposes" of Article 6(4)
+
+  - id: are-we-controller
+    question: نحنا يلي منقرر شو البيانات يلي بيجمعها التطبيق وليش. يعني هيك نحنا المتحكم؟
+    lang: ar
+    expected_keys: [gdpr:art-4:pt-7]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      A controller is defined by Article 4(7) GDPR as "the natural or legal person, public
+      authority, agency or other body which, alone or jointly with others, determines the
+      purposes and means of the processing of personal data
+
+  - id: privacy-by-design
+    question: ما المقصود عملياً بحماية البيانات من مرحلة التصميم عندما نبني ميزة جديدة؟
+    lang: ar
+    expected_keys: [gdpr:art-25:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      the requirements to data protection by design in Article 25(1)
+
+  - id: refusing-a-request
+    question: قررنا ما ننفذ طلب واحد من اليوزرز بخصوص بياناته، لازم نقول له ليش؟
+    lang: ar
+    expected_keys: [gdpr:art-12:para-4]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      they have to inform the data subject of the reasons without delay and at the latest
+      within one month (Art. 12(4) GDPR)
+    note: Kept to the reasons. When a request must be answered at all is Article 12(3), which held_out.yaml asks.
+
+  - id: dpo-qualifications
+    question: ما المهارات أو المؤهلات التي يحتاجها مسؤول حماية البيانات لدينا؟
+    lang: ar
+    expected_keys: [gdpr:art-37:para-5]
+    source: https://www.edpb.europa.eu/system/files/documents/2024-01/edpb_report_20240116_cef_dpo_en.pdf
+    quote: >-
+      Article 37(5) GDPR explicitly requires that the DPO have 'expert knowledge'
+    note: The EDPB's 2024 report on the position of DPOs, from its coordinated enforcement action.
+
+  - id: eu-office-processing-abroad
+    question: نحنا مقرنا ببرلين، بس كل المعالجة عم تصير على سيرفرات برا الاتحاد الأوروبي. بيضل الـ GDPR مطبق علينا؟
+    lang: ar
+    expected_keys: [gdpr:art-3:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_3_2018_territorial_scope_after_public_consultation_en_1.pdf
+    quote: >-
+      Article 3 of the GDPR defines the territorial scope of the Regulation on the basis
+      of two main criteria
+    note: The establishment criterion, Article 3(1), applies whether or not the processing takes place in the Union.
+
+  - id: processor-breach
+    question: نستضيف بيانات لصالح عملائنا وتعرضنا للتو لخرق. مَن نبلغ أولاً، الجهة الرقابية أم العميل؟
+    lang: ar
+    expected_keys: [gdpr:art-33:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      has a duty to notify the controller without undue delay after becoming aware of a
+      personal data breach (Article 33(2))
+
+  - id: verify-requester
+    question: واحد أرسل إيميل يبي كل بياناته، بس مو متأكدين إنه هو صدق. نقدر نطلب منه إثبات هوية؟
+    lang: ar
+    expected_keys: [gdpr:art-12:para-6]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      the controller may request the provision of additional information necessary to
+      confirm the identity of the data subject (Art.12(6) GDPR)

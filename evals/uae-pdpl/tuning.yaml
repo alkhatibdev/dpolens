@@ -4,12 +4,17 @@
 # and the way people type in chat, under the same id with -chat after it. A chat
 # question keeps to one dialect, Gulf or Levantine, as developers in the UAE do, and
 # uses English terms where they would.
-# tuning.en.yaml asks the formal ones in English, under the same ids, so the two
-# languages can be compared question by question. The ten topics were drawn at
-# random from twenty-five; the other fifteen are held out.
+# tuning.en.yaml asks them in English, formally and as chat, under the same ids, so
+# the two languages can be compared question by question.
+#
+# Twenty-nine topics. The first ten were drawn at random from twenty-five. The nineteen
+# after them were drawn at random from the paragraphs no question used, leaving out any
+# on a held-out topic, and kept where a law firm's published guide answers them.
 #
 # No regulator guidance names this law's articles, so each label comes from a law
-# firm's published guide that does, and `quote` gives that guide's own words.
+# firm's published guide, and `quote` gives that guide's own words, including the words
+# that name the article. Seven of the nineteen come from a guide that answers without
+# printing the article's number, and their note says why that clause is the answer.
 # See ../README.md before adding one.
 
 questions:
@@ -218,3 +223,387 @@ questions:
       accordance with the instructions of the Controller and the contracts and
       agreements concluded between them
     note: The same as vendor-instructions, asked the way people type in chat.
+
+  - id: dpia-contents
+    question: ما الذي يجب أن يتضمنه تقييم أثر حماية البيانات الذي نعدّه؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-21:para-3]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      As per Article 21 of the PDPL ... should cover the explanation of the proposed
+      processing operations on the protection of personal data and the purpose of
+      processing them, necessity, risks, and measures to address potential issues
+    note: Paragraph 3 is what the assessment must include at a minimum.
+
+  - id: dpo-contact-details
+    question: عيّنا مسؤولاً لحماية البيانات. هل يجب أن نحدد بيانات التواصل معه ونبلغ بها مكتب البيانات؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-10:para-3]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      By virtue of Article 10 of the PDPL ... their contact details must be shared with
+      the Data Office
+    note: Specifying the DPO's contact details and notifying the Bureau of them is paragraph 3.
+
+  - id: fair-and-transparent
+    question: تتتبع أداة التحليلات لدينا سلوك المستخدمين بطرق لا يتوقعونها، رغم أنه لا شيء فيها مخالف للقانون. هل في ذلك مشكلة؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-5:para-1, uae-pdpl:art-13:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Data Protection Controls (Article 5) ... Processing must be made in a fair,
+      transparent and lawful manner ... per Article 13 of the PDPL, the Controller is
+      required to, in all cases and prior to the commencement of processing, provide
+      Data Subjects with information
+    note: Fair, transparent and lawful processing is Article 5(1). held_out.yaml sets fair processing aside because its fuller answer is in another article, and DLA Piper ties transparency to the information Article 13(2) requires before processing begins, so either counts.
+
+  - id: pseudonymise-user-data
+    question: نحتفظ بأسماء المستخدمين وبريدهم الإلكتروني إلى جانب كل نشاطهم في قاعدة بياناتنا الرئيسية. هل يتوقع منا القانون أن نطبّق إخفاء الهوية الجزئي (pseudonymisation) على هذه البيانات؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-2]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Undertaking mechanisms
+      like Pseudonymisation while processing data and ensuring accurate compliance with
+      the Data Protection Law.
+    note: ABS Partners lists the controller's duties in the order of Article 7's paragraphs, and this is paragraph 2, measures when the means of processing are set and while processing, pseudonymisation among them. Kept to pseudonymising the controller's own users' data, away from processor-security in held_out.yaml, which asks a vendor about building protection in at the design stage.
+
+  - id: dpo-outside-uae
+    question: هل يجب أن يكون مسؤول حماية البيانات موظفاً لدينا مقيماً في الدولة، أم يمكن أن نستعين بمستشار من الخارج؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-10:para-2]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      By virtue of Article 10 of the PDPL ... The DPO can be based inside or outside
+      the UAE
+    note: Multilaw names Article 10 and, in the same answer, says where the DPO may be based, which is paragraph 2. DLA Piper says it too, in a section that names no article.
+
+  - id: data-office-court-request
+    question: طلب منا مكتب البيانات معلومات عن معالجتنا للبيانات بناءً على قرار من جهة قضائية. هل يجب أن نقدمها؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-6]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Providing the Bureau
+      with all the necessary information pursuant to a request from a competent judicial
+      authority.
+    note: ABS Partners lists the controller's duties in the order of Article 7's paragraphs, and this is paragraph 6, giving the Bureau the information it asks for on a decision of the competent judicial authority.
+
+  - id: choosing-a-processor
+    question: ما الذي يجب أن نراعيه عند اختيار شركة تعالج بيانات العملاء نيابة عنا؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Appointing a processor
+      by ensuring lawful and secure data processing.
+    note: ABS Partners lists the controller's duties in the order of Article 7's paragraphs, and this is paragraph 5, appointing a processor with sufficient guarantees.
+
+  - id: valid-consent
+    question: ما الشروط التي يجب أن تستوفيها الموافقة حتى يُعتدّ بها؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-6:para-1]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      if any processing is based on consent, the controller must be able to demonstrate
+      that consent was freely given, specific, informed and unambiguous. Consent under
+      the PDPL must be clear and easily accessible
+    note: ABS Partners gives the conditions for valid consent without the article's number, partly in the GDPR's terms. Article 6(1) asks that the controller can prove consent, that it is clear, simple, unambiguous and easily accessible, and that it says how to withdraw it.
+
+  - id: when-in-force
+    question: منذ متى أصبح القانون الاتحادي لحماية البيانات الشخصية سارياً؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-31]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      The PDPL will take effect from 2 January 2022.
+    note: Article 31 sets the day the law came into force. Bird & Bird gives the day without the article's number.
+
+  - id: complain-to-data-office
+    question: يقول أحد المستخدمين إننا أسأنا استخدام بياناته. هل يمكنه تقديم شكوى ضدنا إلى مكتب البيانات؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-24:para-1]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      Data subjects can file a complaint with the UAE Data Office if they have reason to
+      believe that the PDPL has been breached by a controller or processor.
+    note: The right to complain to the Data Office is Article 24(1). Bird & Bird states it without the number.
+
+  - id: automated-decision-exceptions
+    question: نظام تقييم الائتمان لدينا آلي بالكامل، ووافق عليه المستخدمون ضمن شروط العقد. هل يحق لهم مع ذلك الاعتراض على قراراته؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-18:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      The right not to be subject to automated decision making, including profiling
+      (Article 18) ... However, the Data Subject may not object to the decisions issued
+      with respect to Automated Processing in the following cases
+    note: Paragraph 2 is the cases in which there is no right to object.
+
+  - id: dpo-role
+    question: سيبدأ مسؤول حماية البيانات الجديد عمله لدينا الأسبوع المقبل. ما الذي يُفترض أن يقوم به بحسب القانون؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-11:para-1]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      who has sufficient skills and knowledge in data protection to oversee compliance
+      (Articles 10 and 11)
+    note: Bird & Bird names Articles 10 and 11 together, which the source check does not read as Article 11. Overseeing compliance is the role Article 11(1) gives the DPO. Worded apart from dpo-duties in the GDPR held-out set, which asks the same of that law.
+
+  - id: limit-to-purpose-by-default
+    question: هل يجب أن تقتصر الإعدادات الافتراضية في تطبيقنا على جمع ما تحتاجه كل ميزة فقط، أم يكفي أن يتمكن المستخدم من إيقاف الجمع الإضافي بنفسه؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-3]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Restricting the
+      processing of personal data only to the intended purposes.
+    note: ABS Partners lists the controller's duties in the order of Article 7's paragraphs, and this is paragraph 3, settings that keep processing to its intended purpose.
+
+  - id: several-processors
+    question: تعالج شركتان من مزودينا بيانات عملائنا معاً. هل يلزم وجود عقد مكتوب بينهما يحدد مسؤوليات كل منهما؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-8:para-10]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      multiple processors must have a written agreement delineating responsibilities ...
+      Article 8(10)
+
+  - id: processor-confidentiality
+    question: نعالج بيانات لصالح أحد العملاء. هل يجوز لفريقنا مشاركة نتائج تلك المعالجة مع عملاء آخرين؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-8:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(5) explicitly requires Data Processors to maintain confidentiality
+
+  - id: withdraw-consent
+    question: يريد أحد المستخدمين سحب موافقته. هل يحق له ذلك، وهل يؤثر السحب على ما قمنا به سابقاً ببياناته؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-6:para-2]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      the data subject has a right to withdraw consent at any time
+    note: Withdrawing consent at any time is Article 6(2), which also keeps lawful what was done before. ABS Partners states it without the number.
+
+  - id: grace-period
+    question: كم من الوقت لدى الشركات لتصبح ملتزمة بأحكام القانون؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-29]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      Whilst the PDPL provides for an implementation period of six months from the
+      publication of the Executive Regulations
+    note: Article 29 gives controllers and processors six months to bring their processing into line, which may be extended. Bird & Bird gives the period without the article's number.
+
+  - id: processor-breach-notice
+    question: نتولى معالجة الرواتب لصالح شركة عميلة، واكتشفنا للتو اختراق أحد خوادمنا. هل يجب أن نُعلم العميل بذلك؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-9:para-3]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 9 of the PDPL ... the Processor must inform the controller immediately of
+      any breaches
+    note: The processor's duty to tell the controller of a breach is paragraph 3. Kept to the processor telling its client, not to reporting to the Data Office or telling users, which held_out.yaml asks.
+
+  - id: dpo-resources
+    question: يقول مسؤول حماية البيانات لدينا إنه لا يستطيع أداء عمله دون ميزانية وصلاحية الوصول إلى أنظمتنا. هل يجب أن نوفر له ذلك؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-12:para-1]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      resources should be made available to the DPO
+    note: Bird & Bird states it without the article's number. Giving the DPO the means to carry out the tasks in Article 11, resources and support among them, is Article 12(1).
+
+  - id: dpia-contents-chat
+    question: تقييم الأثر حق الخصوصية، وش لازم يكون فيه بالضبط؟ فيه حد أدنى؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-21:para-3]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      As per Article 21 of the PDPL ... should cover the explanation of the proposed
+      processing operations on the protection of personal data and the purpose of
+      processing them, necessity, risks, and measures to address potential issues
+    note: The same as dpia-contents, asked the way people type in chat.
+
+  - id: dpo-contact-details-chat
+    question: عينا DPO، لازم نبعت معلومات التواصل تبعه لمكتب البيانات ولا شي؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-10:para-3]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      By virtue of Article 10 of the PDPL ... their contact details must be shared with
+      the Data Office
+    note: The same as dpo-contact-details, asked the way people type in chat.
+
+  - id: fair-and-transparent-chat
+    question: الأناليتكس عندنا يتتبع اليوزرز بطريقة ما يتوقعونها، بس ما فيها شي مخالف. فيها مشكلة؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-5:para-1, uae-pdpl:art-13:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Data Protection Controls (Article 5) ... Processing must be made in a fair,
+      transparent and lawful manner ... per Article 13 of the PDPL, the Controller is
+      required to, in all cases and prior to the commencement of processing, provide
+      Data Subjects with information
+    note: The same as fair-and-transparent, asked the way people type in chat.
+
+  - id: pseudonymise-user-data-chat
+    question: لازم نعمل pseudonymisation لداتا اليوزرز تبعنا، ولا هيدا شي اختياري؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-2]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Undertaking mechanisms
+      like Pseudonymisation while processing data and ensuring accurate compliance with
+      the Data Protection Law.
+    note: The same as pseudonymise-user-data, asked the way people type in chat.
+
+  - id: dpo-outside-uae-chat
+    question: الـ DPO لازم يكون موظف عندنا في الإمارات، ولا عادي يكون استشاري برا؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-10:para-2]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      By virtue of Article 10 of the PDPL ... The DPO can be based inside or outside
+      the UAE
+    note: The same as dpo-outside-uae, asked the way people type in chat.
+
+  - id: data-office-court-request-chat
+    question: مكتب البيانات طالب معلومات عن كيف منعالج الداتا، ومعه قرار من المحكمة. لازم نعطيهن؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-6]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Providing the Bureau
+      with all the necessary information pursuant to a request from a competent judicial
+      authority.
+    note: The same as data-office-court-request, asked the way people type in chat.
+
+  - id: choosing-a-processor-chat
+    question: بنختار شركة تعالج داتا العملاء عنا، وش لازم نتأكد منه قبل؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Appointing a processor
+      by ensuring lawful and secure data processing.
+    note: The same as choosing-a-processor, asked the way people type in chat.
+
+  - id: valid-consent-chat
+    question: شو لازم يكون بالـ consent flow تبعنا لحتى تنحسب الموافقة؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-6:para-1]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      if any processing is based on consent, the controller must be able to demonstrate
+      that consent was freely given, specific, informed and unambiguous. Consent under
+      the PDPL must be clear and easily accessible
+    note: The same as valid-consent, asked the way people type in chat. ABS Partners gives the conditions for valid consent without the article's number, partly in the GDPR's terms. Article 6(1) asks that the controller can prove consent, that it is clear, simple, unambiguous and easily accessible, and that it says how to withdraw it. It does not ask whether a checkbox is enough, which turns on Article 1's definition of consent, a held-out label.
+
+  - id: when-in-force-chat
+    question: قانون حماية البيانات الإماراتي من متى صار ساري؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-31]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      The PDPL will take effect from 2 January 2022.
+    note: The same as when-in-force, asked the way people type in chat. Article 31 sets the day the law came into force. Bird & Bird gives the day without the article's number.
+
+  - id: complain-to-data-office-chat
+    question: يوزر عم يقول إنو استعملنا بياناته غلط، فيه يشتكي علينا عند مكتب البيانات؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-24:para-1]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      Data subjects can file a complaint with the UAE Data Office if they have reason to
+      believe that the PDPL has been breached by a controller or processor.
+    note: The same as complain-to-data-office, asked the way people type in chat. The right to complain to the Data Office is Article 24(1). Bird & Bird states it without the number.
+
+  - id: automated-decision-exceptions-chat
+    question: تقييم الائتمان عندنا كله أوتوماتيك وموجود في الشروط اللي وافقوا عليها، يحق لهم يعترضون برضو؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-18:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      The right not to be subject to automated decision making, including profiling
+      (Article 18) ... However, the Data Subject may not object to the decisions issued
+      with respect to Automated Processing in the following cases
+    note: The same as automated-decision-exceptions, asked the way people type in chat.
+
+  - id: dpo-role-chat
+    question: الـ DPO الجديد بيبلش الأسبوع الجاي، شو المفروض يعمل كل يوم؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-11:para-1]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      who has sufficient skills and knowledge in data protection to oversee compliance
+      (Articles 10 and 11)
+    note: The same as dpo-role, asked the way people type in chat. Bird & Bird names Articles 10 and 11 together, which the source check does not read as Article 11. Overseeing compliance is the role Article 11(1) gives the DPO.
+
+  - id: limit-to-purpose-by-default-chat
+    question: الإعدادات الافتراضية في التطبيق، لازم تجمع بس اللي تحتاجه كل ميزة؟ ولا عادي اليوزر يطفي الزيادة بنفسه؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-7:para-3]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Their obligations (Art. 7) under the PDPL Law include: ... Restricting the
+      processing of personal data only to the intended purposes.
+    note: The same as limit-to-purpose-by-default, asked the way people type in chat.
+
+  - id: several-processors-chat
+    question: عنا شركتين عم يعالجوا داتا الزباين سوا، لازم يكون في عقد مكتوب بيناتهن مين بيعمل شو؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-8:para-10]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      multiple processors must have a written agreement delineating responsibilities ...
+      Article 8(10)
+    note: The same as several-processors, asked the way people type in chat.
+
+  - id: processor-confidentiality-chat
+    question: نعالج داتا لعميل، يصير نشارك النتايج مع عملاء ثانيين؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-8:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(5) explicitly requires Data Processors to maintain confidentiality
+    note: The same as processor-confidentiality, asked the way people type in chat.
+
+  - id: withdraw-consent-chat
+    question: يوزر بدو يسحب موافقته، فيه؟ وهيك بيصير يلي عملناه قبل غلط؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-6:para-2]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      the data subject has a right to withdraw consent at any time
+    note: The same as withdraw-consent, asked the way people type in chat. Withdrawing consent at any time is Article 6(2), which also keeps lawful what was done before. ABS Partners states it without the number.
+
+  - id: grace-period-chat
+    question: كم المهلة اللي عندنا عشان نصير متوافقين مع قانون حماية البيانات؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-29]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      Whilst the PDPL provides for an implementation period of six months from the
+      publication of the Executive Regulations
+    note: The same as grace-period, asked the way people type in chat. Article 29 gives controllers and processors six months to bring their processing into line, which may be extended. Bird & Bird gives the period without the article's number.
+
+  - id: processor-breach-notice-chat
+    question: احنا نعالج داتا لعميل وصار عندنا اختراق، لازم نخبر العميل؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-9:para-3]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 9 of the PDPL ... the Processor must inform the controller immediately of
+      any breaches
+    note: The same as processor-breach-notice, asked the way people type in chat.
+
+  - id: dpo-resources-chat
+    question: الـ DPO عنا عم يطلب ميزانية وأكسس على السيستمات، مجبورين نعطيه؟
+    lang: ar
+    expected_keys: [uae-pdpl:art-12:para-1]
+    source: https://www.twobirds.com/en/insights/2021/uae/how-does-the-new-uae-federal-decree-law-on-personal-data-protection-compare-against-the-gdpr
+    quote: >-
+      resources should be made available to the DPO
+    note: The same as dpo-resources, asked the way people type in chat. Bird & Bird states it without the article's number. Giving the DPO the means to carry out the tasks in Article 11, resources and support among them, is Article 12(1).

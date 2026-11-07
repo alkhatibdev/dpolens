@@ -4,7 +4,8 @@ A question's label is the clause that counts as the right answer, and it must
 not be the search author's opinion. There are two admissible kinds of evidence,
 and this reports which one each question rests on:
 
-  cited      the guidance page names the article, which a machine can confirm
+  cited      the guidance names the article, which a machine can confirm: in the
+             words the question quotes, or on the page when it quotes none
   justified  the guidance answers the question without printing the number, and
              the note records why that clause is the answer
 
@@ -12,22 +13,31 @@ A question with neither is rejected. The split is published, so a reader can see
 how much of the set rests on a regulator's words and how much on reasoning.
 
 A question may also quote its source. The quote is the evidence a reader checks,
-so a quote the page does not contain is rejected too.
+so a quote the page does not contain is rejected too, and a question that quotes
+is cited only when its quote names the article: a page can name an article
+anywhere, about anything.
 """
 
 from __future__ import annotations
 
+import functools
 import html
+import io
+import logging
 import re
 import sys
 import urllib.request
 from pathlib import Path
 
 import yaml
+from pypdf import PdfReader
 
 REPO = Path(__file__).parents[1]
 AGENT = "Mozilla/5.0 (compatible; DPOLens eval source check)"
 TIMEOUT = 40
+
+# pypdf reports each font it reads approximately, which is noise here: the text is what counts.
+logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 
 def article_of(key: str) -> str | None:
@@ -35,11 +45,17 @@ def article_of(key: str) -> str | None:
     return found.group(1) if found else None
 
 
+@functools.cache
 def page_text(url: str) -> str:
+    """Each source read once a run: dozens of questions cite the same guideline."""
     request = urllib.request.Request(url, headers={"User-Agent": AGENT})
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
-        body = response.read().decode("utf-8", errors="replace")
-    return plain(html.unescape(re.sub(r"<[^>]+>", " ", body)))
+        body = response.read()
+    # The EDPB publishes its guidelines as PDFs, so a source can be one.
+    if body.startswith(b"%PDF"):
+        pages = PdfReader(io.BytesIO(body)).pages
+        return plain(" ".join(page.extract_text() or "" for page in pages))
+    return plain(html.unescape(re.sub(r"<[^>]+>", " ", body.decode("utf-8", errors="replace"))))
 
 
 def plain(text: str) -> str:
@@ -50,7 +66,8 @@ def plain(text: str) -> str:
 
 
 def names_article(text: str, article: str) -> bool:
-    return bool(re.search(rf"Article\s*{article}\b", text))
+    """Guides write "Article 7" or "Art. 7"."""
+    return bool(re.search(rf"\b(?:Article|Art\.)\s*{article}\b", text))
 
 
 def quoted(quote: str, text: str) -> bool:
@@ -73,7 +90,8 @@ def check(path: Path) -> tuple[int, int, list[str]]:
             except Exception as problem:
                 problems.append(f"{question['id']}: source unreachable ({type(problem).__name__})")
                 continue
-            names = bool(article) and names_article(text, article)
+            evidence = plain(question["quote"]) if question.get("quote") else text
+            names = article is not None and names_article(evidence, article)
             if question.get("quote") and not quoted(question["quote"], text):
                 problems.append(f"{question['id']}: the source does not contain the quote")
                 continue
@@ -85,9 +103,10 @@ def check(path: Path) -> tuple[int, int, list[str]]:
             justified += 1
             print(f"  justified  {question['id']:24} article {article}")
         else:
+            evidence_name = "quote" if question.get("quote") else "source"
             problems.append(
-                f"{question['id']}: the source does not name article {article} and there is "
-                "no note explaining why this clause is the answer"
+                f"{question['id']}: the {evidence_name} does not name article {article} and "
+                "there is no note explaining why this clause is the answer"
             )
 
     return cited, justified, problems

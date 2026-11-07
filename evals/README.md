@@ -52,8 +52,8 @@ questions:
 | `lang` | yes | BCP 47 code |
 | `expected_keys` | yes | The clauses that answer it. Any one of them counts as a hit |
 | `source` | yes | Guidance that ties this question to that clause |
-| `quote` | no | The source's own words that tie the question to the clause. The source check confirms the page contains them, and `...` marks words left out |
-| `note` | no | Anything a reader of the file would wonder about |
+| `quote` | no | The source's own words that tie the question to the clause, with the words that name the article where the source prints them. The source check confirms the page contains them, and `...` marks words left out |
+| `note` | no | Anything a reader of the file would wonder about, and why the clause is the answer when the source does not print the article's number |
 
 ## Where questions come from
 
@@ -64,8 +64,8 @@ question written by reading the search results is a test of memory, not of retri
 
 No regulator has published guidance that names the UAE PDPL's articles, so that law's
 labels come from law firms' published guides that do. They are practitioners' readings,
-not the regulator's, and every question gives the words that name its article in `quote`,
-so a reader can check them.
+not the regulator's, and every question quotes its guide in `quote`, so a reader can check
+it.
 
 **Phrasings are learned, never copied.** Real developer questions on Stack Overflow and
 similar sites are the best guide to how people actually ask, and Stack Overflow content is
@@ -126,3 +126,11 @@ To check where each label comes from, and that every quote is on its source page
 ```bash
 uv run python scripts/check_eval_sources.py
 ```
+
+A label counts as cited when its quote names the article, or the page does for a question
+that quotes nothing, and as justified when its note says why the clause is the answer. Any
+other label is rejected.
+
+A source can be a web page or a PDF, such as an EDPB guideline. The check reads each one as
+it is published, so it cannot confirm a source that refuses automated reading. The ICO's
+pages refuse it, so a label that cites one can only be checked by opening the page.
