@@ -3,13 +3,14 @@
 The MCP server's URL is a setting rather than something the dashboard works out,
 because behind a proxy or on another port nothing on the page can know it.
 
-The settings are read here and changed nowhere: each is fixed when the instance
-starts, so changing one is a change to its environment and a restart.
+The settings are read here and changed nowhere. Most are fixed when the instance starts, so
+changing one is a change to its environment and a restart. Whether searches use the search
+questions is changed with `dpolens search-questions`, which the governance log records.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -23,6 +24,7 @@ from dpolens.engine.auth import permissions as catalog
 from dpolens.engine.auth.tokens import Authenticated
 from dpolens.engine.instance import this_instance
 from dpolens.engine.logs.redaction import BUILT_IN
+from dpolens.engine.search.questions import loaded_files, questions_on
 
 router = APIRouter(prefix="/v1", tags=["instance"], responses=problems.responses(401, 403, 429))
 
@@ -71,6 +73,32 @@ class AssistantSettings(BaseModel):
     )
 
 
+class SearchQuestionsLaw(BaseModel):
+    law: str = Field(description="The law's slug")
+    short_name: str = Field(description="What people call the law, in English")
+    questions: int = Field(description="How many questions the law's file holds")
+    current: int = Field(
+        description=(
+            "How many sit beside the words they were written for, and so are used. The rest "
+            "wait to be written again for words that have changed"
+        )
+    )
+    written_by: str = Field(description="The models that wrote them")
+    checked_by: str = Field(description="The models that checked them")
+    written_on: date
+
+
+class SearchQuestionsSettings(BaseModel):
+    on: bool = Field(
+        description=(
+            "Whether searches use the search questions, which only reorder the clauses a "
+            "search found and are never returned. Changed with `dpolens search-questions on` "
+            "or `off`, which the governance log records"
+        )
+    )
+    laws: list[SearchQuestionsLaw]
+
+
 class InstanceFacts(BaseModel):
     version: str
     id: str
@@ -81,6 +109,7 @@ class InstanceSettings(BaseModel):
     questions_log: QuestionsLogSettings
     sign_in: SignInSettings
     assistants: AssistantSettings
+    search_questions: SearchQuestionsSettings
     ai_provider: str | None = Field(
         description=(
             "The service an answer is written with. Null: none is used, search runs on "
@@ -109,6 +138,21 @@ def read_settings(who: SettingsReader, settings: Configured, opened: Opened) -> 
         assistants=AssistantSettings(
             mcp_url=settings.public_mcp_url,
             requests_per_minute=settings.rate_limit_per_minute,
+        ),
+        search_questions=SearchQuestionsSettings(
+            on=questions_on(opened),
+            laws=[
+                SearchQuestionsLaw(
+                    law=file.pack,
+                    short_name=file.short_name,
+                    questions=file.questions,
+                    current=file.current,
+                    written_by=file.written_by,
+                    checked_by=file.checked_by,
+                    written_on=file.written_on,
+                )
+                for file in loaded_files(opened)
+            ],
         ),
         ai_provider=None,
         instance=InstanceFacts(version=__version__, id=str(row.id), created_at=row.created_at),

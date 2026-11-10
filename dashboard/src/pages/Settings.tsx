@@ -36,6 +36,11 @@ function Group({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
+/** Each model once, though several laws may name it. */
+function unique(names: string[]): string {
+  return [...new Set(names.flatMap((name) => name.split(", ")))].join(", ");
+}
+
 function CopyUrl({ value }: { value: string }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
@@ -156,6 +161,37 @@ export function SettingsPage() {
           >
             <Row label={t("settings.inUse")}>{settings.data.ai_provider ?? t("settings.none")}</Row>
             <Row label={t("settings.runsOn")}>{t("settings.ownModel")}</Row>
+          </Group>
+
+          <Group title={t("settings.searchQuestions")} note={t("settings.searchQuestionsNote")}>
+            <Row label={t("settings.inSearches")}>
+              {settings.data.search_questions.on ? t("settings.used") : t("settings.turnedOff")}
+            </Row>
+            {settings.data.search_questions.laws.map((law) => (
+              <Row key={law.law} label={law.short_name}>
+                {t(
+                  law.current < law.questions ? "settings.questionsStale" : "settings.questionsFor",
+                  {
+                    count: law.questions,
+                    number: formatNumber(law.questions),
+                    current: formatNumber(law.current),
+                    date: formatDate(law.written_on),
+                  },
+                )}
+              </Row>
+            ))}
+            {settings.data.search_questions.laws.length ? (
+              <>
+                <Row label={t("settings.writtenBy")}>
+                  {unique(settings.data.search_questions.laws.map((law) => law.written_by))}
+                </Row>
+                <Row label={t("settings.checkedBy")}>
+                  {unique(settings.data.search_questions.laws.map((law) => law.checked_by))}
+                </Row>
+              </>
+            ) : (
+              <Row label={t("settings.searchQuestions")}>{t("settings.noQuestions")}</Row>
+            )}
           </Group>
 
           <Group title={t("settings.instance")}>

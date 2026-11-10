@@ -32,6 +32,10 @@ breaking change needs a new major version.
   search, and still read by key
 - `coming` holds the words an amendment gives a clause from a later day, with that
   day and the amendment, when one does
+- `GET /v1/settings` carries `search_questions`: whether searches use the search
+  questions, and for each law that has them how many it holds, how many are current,
+  which models wrote and checked them, and when. They are turned on and off with
+  `dpolens search-questions`, not through the API
 
 ## 0.2.0
 

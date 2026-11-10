@@ -8822,6 +8822,9 @@
           "assistants": {
             "$ref": "#/components/schemas/AssistantSettings"
           },
+          "search_questions": {
+            "$ref": "#/components/schemas/SearchQuestionsSettings"
+          },
           "ai_provider": {
             "anyOf": [
               {
@@ -8843,6 +8846,7 @@
           "questions_log",
           "sign_in",
           "assistants",
+          "search_questions",
           "ai_provider",
           "instance"
         ],
@@ -10864,6 +10868,78 @@
           "effective_date"
         ],
         "title": "ScheduledVersion"
+      },
+      "SearchQuestionsLaw": {
+        "properties": {
+          "law": {
+            "type": "string",
+            "title": "Law",
+            "description": "The law's slug"
+          },
+          "short_name": {
+            "type": "string",
+            "title": "Short Name",
+            "description": "What people call the law, in English"
+          },
+          "questions": {
+            "type": "integer",
+            "title": "Questions",
+            "description": "How many questions the law's file holds"
+          },
+          "current": {
+            "type": "integer",
+            "title": "Current",
+            "description": "How many sit beside the words they were written for, and so are used. The rest wait to be written again for words that have changed"
+          },
+          "written_by": {
+            "type": "string",
+            "title": "Written By",
+            "description": "The models that wrote them"
+          },
+          "checked_by": {
+            "type": "string",
+            "title": "Checked By",
+            "description": "The models that checked them"
+          },
+          "written_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Written On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "law",
+          "short_name",
+          "questions",
+          "current",
+          "written_by",
+          "checked_by",
+          "written_on"
+        ],
+        "title": "SearchQuestionsLaw"
+      },
+      "SearchQuestionsSettings": {
+        "properties": {
+          "on": {
+            "type": "boolean",
+            "title": "On",
+            "description": "Whether searches use the search questions, which only reorder the clauses a search found and are never returned. Changed with `dpolens search-questions on` or `off`, which the governance log records"
+          },
+          "laws": {
+            "items": {
+              "$ref": "#/components/schemas/SearchQuestionsLaw"
+            },
+            "type": "array",
+            "title": "Laws"
+          }
+        },
+        "type": "object",
+        "required": [
+          "on",
+          "laws"
+        ],
+        "title": "SearchQuestionsSettings"
       },
       "SearchRequest": {
         "properties": {

@@ -42,6 +42,53 @@ describe("settings", () => {
     );
   });
 
+  it("says whether searches use the search questions, and which laws have them", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: admin },
+      "GET /v1/settings": { body: settings },
+      "GET /v1/governance/verification": { body: intact },
+    });
+    renderAt("/settings");
+
+    expect(await screen.findByText("Used")).toBeInTheDocument();
+    expect(screen.getByText("4,573 questions, written 7 November 2026")).toBeInTheDocument();
+    expect(screen.getByText("1,081 questions, written 7 November 2026")).toBeInTheDocument();
+    // Two laws by the same models name each model once.
+    expect(screen.getByText("claude-sonnet-5-5")).toBeInTheDocument();
+    expect(screen.getByText("claude-opus-5-5")).toBeInTheDocument();
+  });
+
+  it("says when the search questions are turned off, or some wait to be written again", async () => {
+    const [gdpr, uae] = settings.search_questions.laws;
+    serve({
+      "GET /v1/sessions/current": { body: admin },
+      "GET /v1/settings": {
+        body: {
+          ...settings,
+          search_questions: { on: false, laws: [gdpr, { ...uae, current: 1000 }] },
+        },
+      },
+      "GET /v1/governance/verification": { body: intact },
+    });
+    renderAt("/settings");
+
+    expect(await screen.findByText("Turned off")).toBeInTheDocument();
+    expect(
+      screen.getByText("1,081 questions, 1,000 of them current, written 7 November 2026"),
+    ).toBeInTheDocument();
+  });
+
+  it("says so when no law has search questions", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: admin },
+      "GET /v1/settings": { body: { ...settings, search_questions: { on: true, laws: [] } } },
+      "GET /v1/governance/verification": { body: intact },
+    });
+    renderAt("/settings");
+
+    expect(await screen.findByText("No law has them loaded")).toBeInTheDocument();
+  });
+
   it("says how long a question is kept when a retention is set", async () => {
     serve({
       "GET /v1/sessions/current": { body: admin },

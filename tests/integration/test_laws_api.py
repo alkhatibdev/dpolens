@@ -11,8 +11,9 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, select
+from sqlalchemy import Engine, create_engine, select, text
 
 from dpolens.api.app import create_app
 from dpolens.engine.auth import permissions as catalog
@@ -23,6 +24,11 @@ from dpolens.engine.instance import Instance
 from dpolens.engine.logs.governance import LAWS_SELECTED, Actor
 from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.search.questions import (
+    current_fingerprints,
+    load_questions,
+    switch_questions,
+)
 from dpolens.engine.session import session_from
 from dpolens.settings import Settings
 
@@ -205,9 +211,62 @@ class TestSettings:
             "requests_per_minute": 60,
         }
         assert body["ai_provider"] is None
+        assert body["search_questions"] == {"on": True, "laws": []}
         with session_from(own[1]) as opened:
             row = opened.scalars(select(Instance)).one()
             assert body["instance"]["id"] == str(row.id)
+
+    def test_say_whether_searches_use_the_search_questions_and_which_laws_have_them(
+        self, app_client: TestClient, own: tuple[str, Engine], tmp_path: Path
+    ) -> None:
+        owner = own[1]
+        key = "testlaw:art-6:para-1"
+        with session_from(owner) as opened:
+            written_for = current_fingerprints(opened, [key])[key]
+        file = tmp_path / "testlaw.yaml"
+        file.write_text(
+            yaml.safe_dump(
+                {
+                    "pack": "testlaw",
+                    "written_by": ["a writer"],
+                    "checked_by": ["a checker"],
+                    "written_on": "2026-11-08",
+                    "write_prompt": "0" * 16,
+                    "check_prompt": "1" * 16,
+                    "clauses": [
+                        {"key": key, "text": written_for, "en": ["Is consent enough?"], "ar": []},
+                        {"key": "testlaw:art-5", "text": "f" * 16, "en": ["Must we erase?"]},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        with session_from(owner) as opened:
+            load_questions(opened, file, actor=ACTOR)
+            switch_questions(opened, False, actor=ACTOR)
+        try:
+            response = signed_in(app_client, DPO).get("/v1/settings", headers=SAME_ORIGIN)
+
+            assert response.status_code == 200, response.text
+            assert response.json()["search_questions"] == {
+                "on": False,
+                "laws": [
+                    {
+                        "law": "testlaw",
+                        "short_name": "TESTLAW",
+                        "questions": 2,
+                        # The second was written for words the clause no longer holds.
+                        "current": 1,
+                        "written_by": "a writer",
+                        "checked_by": "a checker",
+                        "written_on": "2026-11-08",
+                    }
+                ],
+            }
+        finally:
+            with session_from(owner) as opened:
+                switch_questions(opened, True, actor=ACTOR)
+                opened.execute(text("DELETE FROM search_question_files"))
 
     def test_reading_them_needs_the_permission_to_change_them(self, app_client: TestClient) -> None:
         response = signed_in(app_client, DEVELOPER).get("/v1/settings", headers=SAME_ORIGIN)

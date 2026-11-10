@@ -118,3 +118,24 @@ describe("a law's entries in the governance log", () => {
     ).toBe("Loaded GDPR 2026.1");
   });
 });
+
+describe("the search questions' entries in the governance log", () => {
+  it("say how many were loaded for which law, and when they were written", () => {
+    expect(
+      sentence("search_questions.loaded", {
+        pack: "uae-pdpl",
+        questions: 1081,
+        written_on: "2026-11-07",
+      }),
+    ).toBe("Loaded 1,081 search questions for UAE PDPL, written 7 November 2026");
+  });
+
+  it("say which way they were turned", () => {
+    expect(sentence("search_questions.switched", { before: true, after: false })).toBe(
+      "Turned the search questions off",
+    );
+    expect(sentence("search_questions.switched", { before: false, after: true })).toBe(
+      "Turned the search questions on",
+    );
+  });
+});

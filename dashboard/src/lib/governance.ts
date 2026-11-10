@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 
 import type { Entry } from "@/api/client";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { wordsFor } from "@/lib/permissionWords";
 
 type Details = Record<string, unknown>;
@@ -125,6 +125,17 @@ export function describeEntry(t: TFunction, entry: Entry): string {
     }
     case "laws.selection_cleared":
       return t("entries.laws_selection_cleared");
+    case "search_questions.loaded": {
+      const count = Number(details.questions ?? 0);
+      return t("entries.search_questions_loaded", {
+        count,
+        number: formatNumber(count),
+        pack: law(details.pack ?? entry.target_id),
+        date: formatDate(text(details.written_on)),
+      });
+    }
+    case "search_questions.switched":
+      return t(details.after ? "entries.search_questions_on" : "entries.search_questions_off");
     case "document.drafted":
       return t("entries.document_drafted", { file: text(details.file), policy: policy(details) });
     case "document.flag_accepted":

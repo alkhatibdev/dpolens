@@ -484,6 +484,29 @@ export const settings: InstanceSettings = {
     wrong_password_window_minutes: 15,
   },
   assistants: { mcp_url: "https://dpolens.example.com/mcp", requests_per_minute: 60 },
+  search_questions: {
+    on: true,
+    laws: [
+      {
+        law: "gdpr",
+        short_name: "GDPR",
+        questions: 4573,
+        current: 4573,
+        written_by: "claude-sonnet-5-5",
+        checked_by: "claude-opus-5-5",
+        written_on: "2026-11-07",
+      },
+      {
+        law: "uae-pdpl",
+        short_name: "UAE PDPL",
+        questions: 1081,
+        current: 1081,
+        written_by: "claude-sonnet-5-5",
+        checked_by: "claude-opus-5-5",
+        written_on: "2026-11-07",
+      },
+    ],
+  },
   ai_provider: null,
   instance: {
     version: "0.1.0",
