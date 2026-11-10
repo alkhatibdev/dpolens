@@ -65,6 +65,7 @@ ENV HF_HUB_OFFLINE=1
 COPY --chown=dpolens:dpolens alembic.ini ./
 COPY --chown=dpolens:dpolens packages/ packages/
 COPY --chown=dpolens:dpolens packs/ packs/
+COPY --chown=dpolens:dpolens search-questions/*.yaml search-questions/
 COPY --chmod=755 deploy/dpolens/setup.sh deploy/dpolens/serve.sh /usr/local/bin/
 RUN uv sync --frozen --no-dev --package dpolens
 

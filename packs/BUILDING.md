@@ -208,6 +208,11 @@ start, and `docker compose logs setup` says why, in the words step 8 lists.
 An instance never reloads a version of a law it has, so after changing the pack, start
 again from nothing: `docker compose down -v`, then the two commands above.
 
+Once the pack loads, its search questions can be written, with Claude Code signed in:
+`uv run python scripts/write_search_questions.py --pack lgpd`. They help search order what it
+found, and [search-questions/README.md](../search-questions/README.md) says how they are made
+and checked. A pack without them is searched by its own words alone.
+
 ## 8. When the build refuses
 
 | Message | What it means |

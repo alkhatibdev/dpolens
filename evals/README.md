@@ -103,8 +103,10 @@ once, and `--together` adds the sets scored as one. Left out, `--set` is `tuning
 
 `--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`), a single
 retriever (`keyword`, `meaning`), and a `+normative` suffix on any of them to exclude text
-that explains without obliging. Left out, it is `convex:0.5+normative`, which is what search
-runs and what the published scores measure. For Arabic questions, `+light`, `+snowball` or
+that explains without obliging. `+questions`, on a fusion rule, uses the
+[search questions](../search-questions/README.md), which reorder what fusion found. Left out,
+it is `convex:0.5+normative+questions`, which is what search runs, and each published score
+names the configuration it measured. For Arabic questions, `+light`, `+snowball` or
 `+folded-snowball` picks one of the three Arabic keyword indexes; the last is the default.
 `--baselines` adds the two single retrievers to the run, so a fusion rule can never be
 adopted while being worse than half the system.

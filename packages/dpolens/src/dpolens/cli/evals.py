@@ -71,10 +71,10 @@ def run(
             "--config",
             help=(
                 "rrf:10, convex:0.5, keyword or meaning, optionally with +normative, "
-                "+light, +snowball or +folded-snowball"
+                "+questions, +light, +snowball or +folded-snowball"
             ),
         ),
-    ] = "convex:0.5+normative",
+    ] = "convex:0.5+normative+questions",
     model: Annotated[str, typer.Option(help="Embedding model")] = DEFAULT_MODEL,
     baselines: Annotated[bool, typer.Option(help="Also score each retriever alone")] = False,
     together: Annotated[

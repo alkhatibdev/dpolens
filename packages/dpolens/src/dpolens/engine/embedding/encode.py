@@ -155,6 +155,10 @@ class Embedder:
         vector: np.ndarray = self._encode([f"{self.model.query_prefix}{text}"])[0]
         return vector
 
+    def encode_queries(self, texts: list[str]) -> np.ndarray:
+        """Questions written beside clauses, encoded as the questions they are."""
+        return self._encode([f"{self.model.query_prefix}{text}" for text in texts])
+
     def _encode(self, texts: list[str]) -> np.ndarray:
         with self._tokenizing:
             encoded = self._tokenizer.encode_batch(texts)

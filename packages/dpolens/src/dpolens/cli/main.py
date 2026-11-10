@@ -21,6 +21,7 @@ from dpolens.cli import (
     queries,
     role,
     search,
+    search_questions,
     token,
     user,
     worker,
@@ -75,6 +76,7 @@ from dpolens.engine.policies.store import (
     PolicyExists,
     PolicyNotFound,
 )
+from dpolens.engine.search.questions import QuestionsError
 from dpolens.engine.session import DatabaseUnavailable, MissingExtension, NotMigrated
 
 # Problems a person can act on: printed as one line, without a traceback.
@@ -128,6 +130,7 @@ EXPECTED = (
     BadSlug,
     OriginalUnavailable,
     OriginalsUnwritable,
+    QuestionsError,
 )
 
 
@@ -166,6 +169,7 @@ app.add_typer(token.app)
 app.add_typer(governance.app)
 app.add_typer(queries.app)
 app.add_typer(index.app)
+app.add_typer(search_questions.app)
 app.add_typer(model.app)
 app.add_typer(evals.app)
 app.command(name="search", cls=Asking)(search.run)

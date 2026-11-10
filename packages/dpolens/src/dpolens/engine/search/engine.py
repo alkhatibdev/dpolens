@@ -26,6 +26,7 @@ from dpolens.engine.packs.selection import Scope, scope_for
 from dpolens.engine.search.fuse import DEFAULT_FUSION, Fused, Fusion, fuse
 from dpolens.engine.search.keyword import KeywordIndex, keyword_search
 from dpolens.engine.search.language import language_of
+from dpolens.engine.search.questions import question_scores, questions_on, with_questions
 from dpolens.engine.search.vector import vector_search
 
 CANDIDATE_DEPTH = 100
@@ -63,19 +64,22 @@ def search(
     normative_only: bool = False,
     keyword_indexes: Mapping[str, KeywordIndex] | None = None,
     scope: Scope | None = None,
+    questions: bool | None = None,
 ) -> list[SearchResult]:
     """The clauses that answer a question, best first.
 
     Without `lang`, the question's own letters say which language it is in.
     `keyword_indexes` swaps a language's keyword index for another, for the evals.
     Without `scope`, the search covers the organisation's selected laws, and is
-    refused until somebody has chosen them.
+    refused until somebody has chosen them. Without `questions`, the search
+    questions are used unless the organisation has turned them off.
     """
     lang = lang or language_of(query)
     scope = scope or scope_for(session)
     # Nothing is filtered when no loaded law is left out, so an instance with one
     # law, or with every law selected, runs exactly the search it always did.
     packs = list(scope.laws) if scope.narrowed else None
+    vector = embedder.encode_query(query)
     lists = {
         "keyword": keyword_search(
             session,
@@ -95,9 +99,19 @@ def search(
             normative_only=normative_only,
             packs=packs,
             as_of=as_of,
+            vector=vector,
         ),
     }
     fused = fuse(lists, fusion)
+    # The questions were written for the words in force today, so a search of another day,
+    # which reads other words, goes without them.
+    if (questions_on(session) if questions is None else questions) and as_of in (
+        None,
+        date.today(),
+    ):
+        scores = question_scores(session, embedder, vector, [item.key for item in fused])
+        if scores:
+            fused = with_questions(lists, fused, scores, fusion)
 
     # A candidate the retrievers found may have no version in force on the date
     # being asked about, which is not an error: it is a clause that did not say

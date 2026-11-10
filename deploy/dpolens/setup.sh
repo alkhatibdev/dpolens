@@ -17,6 +17,13 @@ for pack in /opt/dpolens/packs/*/; do
     dpolens pack load --unless-loaded "$pack"
 done
 
+# The questions written beside each law's clauses. A newer file replaces the one an
+# instance has, since they are the project's and no organisation's, and a question whose
+# clause's words have changed is not used. The index build below embeds them.
+for file in /opt/dpolens/search-questions/*.yaml; do
+    dpolens search-questions load "$file"
+done
+
 # A made-up policy, so a new instance has a policy of its own to search. It is
 # published once: archived, it stays archived.
 dpolens policy sample

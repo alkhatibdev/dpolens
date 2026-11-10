@@ -30,6 +30,7 @@ sys.path.insert(0, str(REPO / "packages" / "dpolens" / "src"))
 from dpolens.engine.embedding import MODELS, Embedder, get_model  # noqa: E402
 from dpolens.engine.embedding.index import build_index  # noqa: E402
 from dpolens.engine.evals import read_questions, run_set, sets_named  # noqa: E402
+from dpolens.engine.search.questions import embed_questions, mark_current  # noqa: E402
 from dpolens.engine.session import session_scope  # noqa: E402
 from dpolens.settings import load_settings  # noqa: E402
 
@@ -41,6 +42,7 @@ CONFIGS = (
     "rrf:10+normative",
     "rrf:60+normative",
     "convex:0.5+normative",
+    "convex:0.5+normative+questions",
 )
 
 
@@ -80,6 +82,8 @@ def main() -> int:
                 session_scope(load_settings()) as session,
             ):
                 build_index(session, embedder)
+                mark_current(session)
+                embed_questions(session, embedder)
                 session.commit()
                 indexed = time.time() - started
 
