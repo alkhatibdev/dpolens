@@ -48,6 +48,8 @@ TABLES = (
     "documents",
     # A selection left behind would quietly narrow every later test's search.
     "selected_laws",
+    # And search questions turned off would quietly change it.
+    "search_settings",
     "packs",
 )
 

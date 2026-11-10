@@ -258,11 +258,14 @@ def _retrieve(
         normative_only=normative_only,
         keyword_indexes=indexes,
         scope=scope,
+        # A run says whether it uses the search questions, so a published configuration
+        # goes on measuring what it measured, whatever an organisation has switched.
+        questions="questions" in modifiers,
     )
     return [result.clause.key for result in results]
 
 
-MODIFIERS = frozenset({"normative", *ALTERNATIVES})
+MODIFIERS = frozenset({"normative", "questions", *ALTERNATIVES})
 """The modifiers a configuration can carry, besides +rerank and its depth."""
 
 RERANK = re.compile(r"rerank\d*")
@@ -300,6 +303,14 @@ def check_configuration(configuration: str, reranker: Reranker | None = None) ->
 
     if _rerank_depth(modifiers) and reranker is None:
         raise ValueError(f"{configuration!r} asks for reranking, and no reranker was given")
+
+    # The search questions reorder what fusion found, so a single retriever or the
+    # reranker's path, which do not fuse that way, would ignore them.
+    if "questions" in modifiers and (base in ("keyword", "meaning") or _rerank_depth(modifiers)):
+        raise ValueError(
+            f"{configuration!r} has a modifier nothing reads: +questions works with a fusion "
+            "rule, without +rerank"
+        )
 
 
 def _parse(configuration: str) -> tuple[str, set[str]]:

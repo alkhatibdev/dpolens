@@ -1,0 +1,2018 @@
+# Search questions for UAE PDPL, beside the clauses they were written
+# for. They help search order clauses it has already found, and are never shown,
+# quoted or cited. A clause's `text` is the fingerprint of the words they were written
+# for: when those words change, its questions are not used until they are written
+# again. search-questions/README.md says how they are written and checked.
+pack: uae-pdpl
+written_by:
+- claude-sonnet-5-5
+checked_by:
+- claude-opus-5-5
+written_on: '2026-11-07'
+write_prompt: 6204e9bfa5cda9b5
+check_prompt: 4d1cdb7bdfe91875
+clauses:
+- key: uae-pdpl:art-1
+  text: 949342a9feb6be4d
+  en:
+  - Is a user's IP address, device ID or GPS location in my app counted as personal information, or only
+    things like name and ID number?
+  - We run a clinic booking app and store diagnoses and fingerprint logins. Which of this counts as the
+    extra-sensitive kind of data, and how is it defined?
+  - What's the difference between a controller and a processor if I'm a startup using a third-party cloud
+    vendor to handle my customers' data? And does anonymizing or pseudonymizing data change anything?
+  ar:
+  - ما المقصود بالبيانات الشخصية في هذا القانون، وهل يدخل فيها عنوان الـIP أو الموقع الجغرافي أو المعرف
+    الإلكتروني للمستخدم؟
+  - ما هو تعريف الموافقة الصحيحة من صاحب البيانات، وهل يكفي مربع اختيار معبأ مسبقاً في التطبيق؟
+  - شو الفرق بين المتحكم والمعالج؟ أنا عندي شركة برمجيات وبنخزن بيانات عملاء شركة ثانية على سيرفراتنا،
+    وين موقعي بالضبط؟ وإيش يعني التنميط والمعالجة عبر الحدود لو استخدمنا سيرفر برا الإمارات؟
+- key: uae-pdpl:art-2:para-1
+  text: 03c6187f6e13c4db
+  en:
+  - Which kinds of data handling does the UAE data protection law cover, whether it's done by software
+    or manually?
+  - Our app only partly automates processing user info and the rest is done by hand in spreadsheets. Does
+    the law still apply?
+  - Does the law only cover automated systems, or also paper files and other non-electronic ways of handling
+    personal data?
+  ar:
+  - على أي أنواع معالجة البيانات الشخصية ينطبق هذا القانون، سواء كانت إلكترونية آلية أو يدوية؟
+  - إذا كان جزء من معالجة بيانات عملائنا يتم آليا وجزء يدويا، هل يسري القانون على العملية كلها؟
+  - هل القانون بس على الأنظمة الإلكترونية ولا حتى الملفات الورقية تدخل فيه؟
+- key: uae-pdpl:art-2:para-1:pt-a
+  text: 36238fec89881e81
+  en:
+  - Our online shop has customers who live in the UAE. Does the data protection law cover their data?
+  - Does the law protect a user who doesn't live in the UAE but has a business office here?
+  - I'm building an app and some users are UAE residents. Do their rights under the law apply to them?
+  ar:
+  - متجرنا الإلكتروني عنده عملاء مقيمون في الإمارات، هل ينطبق عليهم قانون حماية البيانات؟
+  - هل يسري القانون على صاحب بيانات غير مقيم في الدولة لكن له مقر عمل فيها؟
+  - هل المستخدمون المقيمون في الإمارات يشملهم القانون عند معالجة بياناتهم في تطبيقنا؟
+- key: uae-pdpl:art-2:para-1:pt-b
+  text: fd375ce971bebe4d
+  en:
+  - My company is based in the UAE but our app serves users in Europe and Asia. Does the UAE law apply
+    to that data?
+  - Does a UAE-based cloud provider that processes data for clients abroad have to follow the law?
+  - We're a startup registered in the UAE; do we have to comply even for customers outside the country?
+  ar:
+  - شركتي مقرها الإمارات لكن تطبيقنا يخدم مستخدمين في أوروبا وآسيا، هل ينطبق علينا القانون بالنسبة لهم؟
+  - هل مزود خدمات سحابية موجود في الإمارات ويعالج بيانات عملاء خارج الدولة ملزم بالقانون؟
+  - احنا شركة ناشئة مسجلة هنا في الدولة، لازم نلتزم بالقانون حتى لو زبائننا برا الإمارات؟
+- key: uae-pdpl:art-2:para-1:pt-c
+  text: 8d606f9d4b56b2d3
+  en:
+  - We run a SaaS company abroad with no UAE office, but some customers sign up from Dubai. Does the UAE
+    law apply to us?
+  - Does a foreign app that collects data from people in the UAE need to comply with the UAE data protection
+    law?
+  - Does the law reach an overseas processor that handles personal data of UAE-based users for a client?
+  ar:
+  - عندنا شركة برمجيات خارج الدولة بدون مكتب في الإمارات لكن بعض العملاء يسجلون من دبي، هل ينطبق علينا
+    القانون؟
+  - هل يلزم تطبيق أجنبي يجمع بيانات أشخاص في الإمارات بالالتزام بقانون حماية البيانات الإماراتي؟
+  - هل يسري القانون على معالج بيانات متواجد خارج الدولة يعالج بيانات مستخدمين في الإمارات؟
+- key: uae-pdpl:art-2:para-2
+  text: 3d57b30a3661b89d
+  en:
+  - What types of data or organizations are exempt from the UAE data protection law?
+  - Are there cases where we, as a software company, don't have to follow this law at all?
+  - Which exclusions should I check before deciding whether our product needs to comply?
+  ar:
+  - ما هي الجهات أو البيانات المستثناة من تطبيق قانون حماية البيانات الشخصية؟
+  - هل في حالات ما نكون فيها كشركة برمجيات غير ملزمين بالقانون نهائيا؟
+  - ايش الاستثناءات اللي لازم أراجعها قبل ما أقرر إذا منتجنا لازم يلتزم بالقانون؟
+- key: uae-pdpl:art-2:para-2:pt-a
+  text: 0a36f6fbb4936a32
+  en:
+  - We build a platform for a ministry that holds government data. Is that data outside the scope of the
+    law?
+  - Does the data protection law apply to information classified as government data?
+  - Is data owned by the government exempt from the personal data rules when we host it?
+  ar:
+  - نطور منصة لوزارة تحتوي على بيانات حكومية، هل هذه البيانات خارج نطاق القانون؟
+  - هل يسري قانون حماية البيانات الشخصية على المعلومات التي تعتبر بيانات حكومية؟
+  - إذا استضفنا بيانات تملكها الحكومة، هل هي معفاة من قواعد البيانات الشخصية؟
+- key: uae-pdpl:art-2:para-2:pt-b
+  text: 3fed3f250e09ef3d
+  en:
+  - Is a government agency that runs an app collecting citizens' data required to follow this law?
+  - We're a vendor, and our client is a federal government entity. Is the client covered by the data protection
+    law?
+  - Do public sector bodies that process personal data have to comply like private companies?
+  ar:
+  - هل جهة حكومية تدير تطبيقا يجمع بيانات المواطنين ملزمة بهذا القانون؟
+  - عميلنا جهة حكومية اتحادية، هل تخضع هي لقانون حماية البيانات الشخصية؟
+  - هل الجهات الحكومية اللي تعالج بيانات شخصية لازم تلتزم زي الشركات الخاصة؟
+- key: uae-pdpl:art-2:para-2:pt-c
+  text: 145446aa3a435406
+  en:
+  - Does the law apply to personal data kept by police or courts?
+  - We're building a case management tool for a court. Is the data in it covered by the data protection
+    law?
+  - Are security agencies exempt from the personal data law when they hold people's information?
+  ar:
+  - هل ينطبق القانون على البيانات الشخصية المحفوظة لدى الشرطة أو المحاكم؟
+  - نبني نظام إدارة قضايا لمحكمة، هل البيانات فيه تخضع لقانون حماية البيانات؟
+  - هل الجهات الأمنية مستثناة من قانون البيانات الشخصية لما تحتفظ بمعلومات الناس؟
+- key: uae-pdpl:art-2:para-2:pt-d
+  text: ad243d809f3398da
+  en:
+  - I keep my own contacts and photos in a personal notes app. Does the data protection law apply to me?
+  - If a person processes their own data just for personal use, do they need to comply?
+  - Does the law apply to someone using their own data in a private diary or family organizer app?
+  ar:
+  - أخزن جهات اتصالي وصوري في تطبيق ملاحظات شخصي، هل ينطبق علي القانون؟
+  - إذا شخص يعالج بياناته الخاصة لأغراض شخصية فقط، هل يلزمه الالتزام بالقانون؟
+  - هل يسري القانون على من يستخدم بياناته في مذكرة خاصة أو تطبيق تنظيم عائلي؟
+- key: uae-pdpl:art-2:para-2:pt-e
+  text: fbee99da596a844b
+  en:
+  - We run a clinic app with patient records. Is health data excluded if there's a separate health law?
+  - Does this law apply to patient health data that already has its own regulation?
+  - Our telemedicine product stores medical info. Do we follow this law or the health-sector rules?
+  ar:
+  - نشغل تطبيق عيادة فيه سجلات المرضى، هل البيانات الصحية مستثناة إذا كان لها قانون خاص؟
+  - هل ينطبق هذا القانون على بيانات المرضى الصحية التي لها تشريع ينظمها أصلا؟
+  - منتجنا للطب عن بعد يخزن معلومات طبية، نتبع هذا القانون ولا قوانين القطاع الصحي؟
+- key: uae-pdpl:art-2:para-2:pt-f
+  text: 66ac05d4db393f14
+  en:
+  - We're a fintech app handling customers' bank and credit information. Does this law apply or the banking
+    rules?
+  - Is credit data excluded from the data protection law when other legislation governs it?
+  - Does a bank's customer account data fall outside this personal data law?
+  ar:
+  - نحن تطبيق تقني مالي نتعامل مع بيانات العملاء المصرفية والائتمانية، هل ينطبق هذا القانون أم قواعد البنوك؟
+  - هل البيانات الائتمانية مستثناة من قانون حماية البيانات إذا كان هناك تشريع آخر ينظمها؟
+  - هل بيانات حسابات عملاء البنك خارج نطاق قانون البيانات الشخصية هذا؟
+- key: uae-pdpl:art-2:para-2:pt-g
+  text: 0b8949123f4a5790
+  en:
+  - Our company is in a free zone with its own data protection rules. Do we still need to follow this
+    federal law?
+  - Does the law apply to startups licensed in a UAE free zone?
+  - We're set up in a free zone that has its own privacy regulation. Are we exempt from this decree?
+  ar:
+  - شركتنا في منطقة حرة ولها قانون خاص لحماية البيانات، هل لازم نلتزم بهذا القانون الاتحادي؟
+  - هل ينطبق القانون على الشركات الناشئة المرخصة في منطقة حرة بالدولة؟
+  - احنا مسجلين في منطقة حرة عندها لائحة خصوصية خاصة فيها، هل نحن مستثنون من هذا المرسوم؟
+- key: uae-pdpl:art-3
+  text: dee430900d5b7bc4
+  en:
+  - We're a tiny startup with a small app and only a few hundred users' data. Could the data regulator
+    let us off some of the privacy compliance rules?
+  - Is there any way for a small business that doesn't handle much personal data to be exempt from the
+    data protection requirements, fully or partly?
+  - Who decides which companies get an exemption from the data protection rules, and what are they judged
+    on?
+  ar:
+  - هل يحق للمكتب إعفاء المنشآت الصغيرة التي لا تعالج كمية كبيرة من البيانات الشخصية من متطلبات حماية
+    البيانات؟
+  - شركتنا ناشئة وعندنا تطبيق صغير وبيانات مستخدمينا قليلة، ممكن نتعفى من بعض شروط حماية البيانات ولا
+    لازم نلتزم بكل شي؟
+  - وين ألقى المعايير اللي تحدد مين ينعفى من شروط حماية البيانات الشخصية؟ هل يعتمد على حجم البيانات اللي
+    نعالجها؟
+- key: uae-pdpl:art-4
+  text: 18292731a4247543
+  en:
+  - Do I always need a user's consent before collecting and using their personal data in my app?
+  - What are the exceptions where I can process customer data without asking them to opt in?
+  - If a user never ticked a consent box, is it automatically illegal for us to use their data?
+  ar:
+  - هل يجب علي دائماً الحصول على موافقة المستخدم قبل جمع بياناته الشخصية في تطبيقي؟
+  - ما هي الحالات اللي أقدر فيها أعالج بيانات العملاء بدون ما آخذ موافقتهم؟
+  - هل يعتبر استخدام بيانات المستخدم غير قانوني إذا ما وافق عليها، ولا فيه استثناءات؟
+- key: uae-pdpl:art-4:para-1
+  text: dd710cef4bfe1f54
+  en:
+  - Can we use personal data without consent when it's needed to protect the public interest?
+  - Our platform was asked to share user info for a matter of public interest; do we still need user consent?
+  - Does a public interest need let a company skip consent for data processing?
+  ar:
+  - هل يجوز معالجة البيانات الشخصية بدون موافقة إذا كان ذلك ضرورياً لحماية المصلحة العامة؟
+  - تطبيقنا طُلب منه استخدام بيانات مستخدمين لغرض يخدم المصلحة العامة، فهل نحتاج موافقتهم؟
+  - وش الحكم لو المعالجة ضرورية للمصلحة العامة، لازم آخذ موافقة صاحب البيانات؟
+- key: uae-pdpl:art-4:para-2
+  text: 41464097bac694d5
+  en:
+  - A user posted their phone number publicly on their profile; can we use it without asking for consent?
+  - Is data that the person made public themselves exempt from the consent requirement?
+  - We scrape contact details that people openly published on their own websites; is consent still needed?
+  ar:
+  - مستخدم نشر رقم جواله علناً في حسابه، فهل يمكنني استخدامه بدون موافقته؟
+  - هل البيانات التي نشرها الشخص بنفسه للجميع تُستثنى من اشتراط الموافقة؟
+  - نجمع بيانات تواصل نشرها أصحابها علناً على مواقعهم، هل لازم موافقة منهم؟
+- key: uae-pdpl:art-4:para-3
+  text: e36f9e06afa5b721
+  en:
+  - A customer is threatening to sue us; can we keep and use their data to defend ourselves without their
+    consent?
+  - Can we hand over user data to the police or a court without getting the user's approval?
+  - We need to file a legal claim against a user who didn't pay; may we process their data for that without
+    consent?
+  ar:
+  - عميل يهددنا بدعوى قضائية، هل نقدر نستخدم بياناته للدفاع عن أنفسنا بدون موافقته؟
+  - هل يجوز تسليم بيانات مستخدم للشرطة أو المحكمة بدون أخذ موافقته؟
+  - بدنا نرفع قضية على مستخدم ما سدد، هل نقدر نعالج بياناته لهذا الغرض بدون موافقة؟
+- key: uae-pdpl:art-4:para-4
+  text: 0f8097a0114bccc3
+  en:
+  - Can our clinic app process patient records for diagnosis and treatment without separate consent?
+  - Does an HR system need employee consent to store medical fitness-for-work assessments?
+  - Can a health insurance platform process members' health data without asking for consent each time?
+  ar:
+  - هل يمكن لتطبيق عيادتنا معالجة سجلات المرضى للتشخيص والعلاج بدون موافقة منفصلة؟
+  - هل يحتاج نظام الموارد البشرية لموافقة الموظف لتخزين تقييم لياقته الطبية للعمل؟
+  - شركة تأمين صحي تبي تعالج بيانات المشتركين الصحية، لازم موافقة كل مرة؟
+- key: uae-pdpl:art-4:para-5
+  text: 1c5cb253430e659b
+  en:
+  - During an epidemic, can a health app process users' data to help control disease spread without consent?
+  - Can we process data without consent to monitor the safety and quality of medicines or medical devices?
+  - Are public health reasons enough to use personal data without asking permission?
+  ar:
+  - في حال تفشي وباء، هل يجوز لتطبيق صحي معالجة بيانات المستخدمين للحد من انتشار المرض بدون موافقة؟
+  - هل يجوز معالجة البيانات بدون موافقة لضمان سلامة وجودة الأدوية والأجهزة الطبية؟
+  - هل الصحة العامة سبب كافي نستخدم فيه البيانات الشخصية بدون إذن؟
+- key: uae-pdpl:art-4:para-6
+  text: acb651dc96758050
+  en:
+  - Can we keep old customer data for archiving without asking for consent?
+  - We're running a statistical study on our users' data; do we need their consent?
+  - Does using personal data for scientific or historical research require consent from each person?
+  ar:
+  - هل نقدر نحتفظ ببيانات العملاء القديمة لأغراض الأرشفة بدون موافقتهم؟
+  - نجري دراسة إحصائية على بيانات مستخدمينا، هل نحتاج موافقتهم؟
+  - هل استخدام البيانات الشخصية في بحث علمي أو تاريخي يتطلب موافقة كل شخص؟
+- key: uae-pdpl:art-4:para-7
+  text: 06c47d0835364d4c
+  en:
+  - A user is in an emergency and we need to use their data to help them; can we do it without consent?
+  - Can we process someone's data without consent if it's to protect their own interests?
+  - Our app detects possible fraud on a customer's account; may we use their data to protect them without
+    asking first?
+  ar:
+  - مستخدم في حالة طارئة ونحتاج استخدام بياناته لمساعدته، هل يجوز بدون موافقته؟
+  - هل يمكن معالجة بيانات شخص بدون موافقته إذا كان الهدف حماية مصلحته هو؟
+  - تطبيقنا اكتشف احتيال محتمل على حساب عميل، هل نستخدم بياناته لحمايته قبل ما نسأله؟
+- key: uae-pdpl:art-4:para-8
+  text: a4cc153a278b78d7
+  en:
+  - Can HR software process employee data for payroll and social security without separate consent?
+  - Does an employer need staff consent to process data needed to meet employment law duties?
+  - Can we use an employee's data to exercise our rights as an employer without asking them each time?
+  ar:
+  - هل يجوز لنظام الموارد البشرية معالجة بيانات الموظفين للرواتب والضمان الاجتماعي بدون موافقة منفصلة؟
+  - هل يحتاج صاحب العمل لموافقة الموظفين لمعالجة بيانات لازمة للوفاء بالتزامات التوظيف؟
+  - نقدر نستخدم بيانات الموظف لممارسة حقوقنا كصاحب عمل بدون ما نطلب موافقته كل مرة؟
+- key: uae-pdpl:art-4:para-9
+  text: ba40e56d9a727929
+  en:
+  - Do I need consent to use a customer's address and details to deliver the order they placed?
+  - A user asked to cancel their subscription; can we process their data to complete that without consent?
+  - Is consent required to process data needed for signing up a customer to a service contract?
+  ar:
+  - هل أحتاج موافقة لاستخدام عنوان العميل وبياناته لتوصيل الطلب اللي طلبه؟
+  - مستخدم طلب إلغاء اشتراكه، هل نعالج بياناته لإتمام الإلغاء بدون موافقة؟
+  - هل نحتاج موافقة لمعالجة البيانات اللازمة لتسجيل عميل في عقد خدمة؟
+- key: uae-pdpl:art-4:para-10
+  text: fe6c5c999f8ac8e0
+  en:
+  - Another law requires our bank app to keep customer records; do we need consent to process that data?
+  - Can we process user data without consent when a different law obliges us to do so?
+  - We must report certain transactions under a regulation; can we use customer data for that without
+    their approval?
+  ar:
+  - قانون آخر يلزم تطبيقنا البنكي بالاحتفاظ بسجلات العملاء، هل نحتاج موافقتهم؟
+  - هل يجوز معالجة بيانات المستخدم بدون موافقة إذا كان قانون آخر يلزمنا بذلك؟
+  - علينا نبلغ عن معاملات معينة حسب نظام، هل نستخدم بيانات العميل بدون موافقته؟
+- key: uae-pdpl:art-4:para-11
+  text: a06adcfb9accbbde
+  en:
+  - Are there other situations besides the listed ones where data can be processed without consent?
+  - Could the implementing regulations add more cases where consent isn't required?
+  - Where do I check for additional consent exceptions not written in the main law?
+  ar:
+  - هل فيه حالات ثانية غير المذكورة تسمح بمعالجة البيانات بدون موافقة؟
+  - هل ممكن اللائحة التنفيذية تضيف حالات إضافية لا تحتاج فيها موافقة؟
+  - وين أدور على استثناءات إضافية للموافقة مو مذكورة في القانون نفسه؟
+- key: uae-pdpl:art-5
+  text: a82376a26e01a100
+  en:
+  - What are the basic rules my app has to follow whenever it handles users' personal data?
+  - We're building a signup flow that collects customer info. What principles should we check before launch?
+  - Is there a general checklist of conditions for processing personal data legally?
+  ar:
+  - ما هي الضوابط العامة التي يجب أن يلتزم بها تطبيقي عند معالجة بيانات المستخدمين الشخصية؟
+  - ما الشروط الواجب توافرها قبل أن تقوم شركتنا بمعالجة البيانات الشخصية للعملاء؟
+  - شو القواعد الأساسية اللي لازم نمشي عليها لما نتعامل مع بيانات الناس في التطبيق؟
+- key: uae-pdpl:art-5:para-1
+  text: 603096d83f578e52
+  en:
+  - Do we have to be upfront with users about how their data is used in our app?
+  - Is it okay to quietly use customer data in ways they wouldn't expect?
+  - Does the law require data handling to be honest and legal, not just secure?
+  ar:
+  - هل يجب أن تكون معالجة بيانات المستخدمين واضحة وعادلة ومشروعة؟
+  - نستخدم بيانات عملائنا بدون ما نبلغهم بالتفاصيل، هل هذا مسموح؟
+  - يعني لازم أكون صريح مع المستخدم في طريقة استخدام بياناته ولا كيفي؟
+- key: uae-pdpl:art-5:para-2
+  text: 5fba066e179bbfde
+  en:
+  - We collected emails for order receipts and now marketing wants to use them for promotions. Can we?
+  - Can I reuse data collected for one feature to train a different feature?
+  - Do we need to state a clear purpose at the time we collect user data?
+  ar:
+  - جمعنا بيانات العملاء لتنفيذ الطلبات، هل يجوز استخدامها لاحقاً لغرض آخر مختلف؟
+  - هل يلزم تحديد غرض واضح ومحدد عند جمع البيانات الشخصية من المستخدمين؟
+  - بدنا نستعمل بيانات جمعناها لميزة معينة في شي ثاني، هل بيصير؟
+- key: uae-pdpl:art-5:para-3
+  text: b0530b3c50510e6a
+  en:
+  - Our signup form asks for much more info than we need. Is that a problem?
+  - How much user data can we collect for a feature, only what's needed?
+  - Is it allowed to collect extra fields just in case we need them later?
+  ar:
+  - نموذج التسجيل عندنا يطلب بيانات أكثر من اللازم، هل هذا مخالف؟
+  - هل يجب أن نقتصر على جمع البيانات الضرورية فقط للغرض من الخدمة؟
+  - ليش أجمع بيانات زيادة؟ هل ممنوع آخذ أكثر من اللي أحتاجه؟
+- key: uae-pdpl:art-5:para-4
+  text: 927e4acdf130f60f
+  en:
+  - Do we have to keep customer records accurate and up to date in our database?
+  - Users changed their address but our system still has the old one. Are we responsible?
+  - How often must we refresh stored personal details?
+  ar:
+  - هل يجب علينا الحفاظ على دقة بيانات العملاء وتحديثها باستمرار؟
+  - العميل غيّر رقمه وما حدّثنا قاعدة البيانات، هل نتحمل مسؤولية؟
+  - لازم نحدّث بيانات المستخدمين كل ما تتغير؟
+- key: uae-pdpl:art-5:para-5
+  text: fee5779b30c0cb88
+  en:
+  - What must we do when we find wrong personal data in our system?
+  - Do we need a process to fix or delete incorrect user records?
+  - A patient's record has a wrong detail in our clinic app. Do we have to correct it?
+  ar:
+  - ماذا يجب أن نفعل إذا اكتشفنا بيانات شخصية خاطئة في نظامنا؟
+  - هل يلزم وجود إجراءات لتصحيح أو حذف بيانات المستخدمين غير الصحيحة؟
+  - لقينا معلومة غلط في سجل عميل عندنا، لازم نصلحها أو نمسحها؟
+- key: uae-pdpl:art-5:para-6
+  text: c95a764e0e2e067b
+  en:
+  - What security do we need to protect user data from hackers and leaks?
+  - Someone without permission accessed our user data. Did we fail our obligation to keep it secure?
+  ar:
+  - ما هي متطلبات حماية بيانات المستخدمين من الاختراق والتسريب؟
+  - هل يلزمنا اعتماد إجراءات تقنية وتنظيمية لتأمين قاعدة بيانات العملاء؟
+  - موظف دخل على بيانات عملاء ما له صلاحية، هل هذا تقصير بالحماية؟
+- key: uae-pdpl:art-5:para-7
+  text: b7b4c6593b6db75e
+  en:
+  - How long can we keep user data after they close their account?
+  - Can we keep old customer records if we strip out their identity?
+  - Do we have to delete data once we no longer need it for the original purpose?
+  ar:
+  - كم مدة يجوز لنا الاحتفاظ ببيانات المستخدم بعد إغلاق حسابه؟
+  - هل يمكن الإبقاء على بيانات قديمة إذا أخفينا هوية أصحابها؟
+  - خلص الغرض من البيانات، لازم نمسحها ولا نقدر نخليها عندنا؟
+- key: uae-pdpl:art-5:para-8
+  text: 24389e9f2cc5a123
+  en:
+  - Could there be additional data processing rules beyond those listed in the law?
+  - Where do I find further processing requirements that the regulations add?
+  - Will the executive regulations add more conditions for handling personal data?
+  ar:
+  - هل هناك ضوابط إضافية لمعالجة البيانات الشخصية غير المذكورة في القانون؟
+  - أين أجد الشروط الأخرى التي تحددها اللائحة التنفيذية للمعالجة؟
+  - في شروط ثانية بتنزل من اللائحة التنفيذية لازم نلتزم فيها؟
+- key: uae-pdpl:art-6:para-1
+  text: 4a39df893ab67790
+  en:
+  - What conditions does user consent have to meet for it to count when we collect personal data in our
+    app?
+  - We rely on a checkbox at signup to process customer data. What do we need to get right for that consent
+    to be valid?
+  - Is there a checklist for making sure the permission we get from users for data processing is actually
+    acceptable?
+  ar:
+  - ما هي الشروط التي يجب أن تتوفر في موافقة المستخدم حتى يُعتد بها عند معالجة بياناته الشخصية في تطبيقنا؟
+  - ما المتطلبات اللازمة لتكون موافقة العميل على معالجة بياناته صحيحة ومقبولة قانونياً؟
+  - شو لازم أتأكد منه عشان موافقة المستخدمين على بياناتهم تنحسب عندنا في التطبيق؟
+- key: uae-pdpl:art-6:para-1:pt-a
+  text: d739d49fa5b7728e
+  en:
+  - Do we need to keep records showing that a user agreed to our data processing?
+  - Should our app log when and how each user gave consent, like timestamps of ticking the box?
+  ar:
+  - هل يلزمنا الاحتفاظ بما يثبت أن المستخدم وافق على معالجة بياناته؟
+  - هل لازم نسجل وقت وطريقة موافقة كل مستخدم في النظام عشان نقدر نثبتها بعدين؟
+- key: uae-pdpl:art-6:para-1:pt-b
+  text: 2f5d75fec08fc769
+  en:
+  - Can our consent request be buried in long terms and conditions, or does it have to be plain and clear?
+  - How should we word and present the consent form in our app so it is not vague?
+  - Does the way we show consent matter, like a pop-up versus a paper form, in terms of being easy to
+    find and understand?
+  ar:
+  - هل يجوز إخفاء طلب الموافقة داخل شروط وأحكام طويلة أم يجب أن يكون واضحاً وبسيطاً؟
+  - كيف يجب أن نصيغ ونعرض نموذج الموافقة في تطبيقنا حتى لا يكون غامضاً؟
+  - ليش لازم نكتب الموافقة بلغة سهلة وواضحة وتكون سهلة الوصول سواء ورقية أو داخل الموقع؟
+- key: uae-pdpl:art-6:para-1:pt-c
+  text: 3a615af39cf0eb03
+  en:
+  - Do we have to tell users in the consent request that they can take their consent back?
+  - How easy does it need to be for a user to opt out after agreeing, like a single click in settings?
+  - Can we make users email support and wait to cancel consent, or must withdrawing be simple?
+  ar:
+  - هل يجب أن نذكر للمستخدم في نموذج الموافقة أن له الحق في سحبها؟
+  - ما مدى سهولة إجراء إلغاء الموافقة الذي يجب توفيره للمستخدم في التطبيق؟
+  - هل نقدر نخلي المستخدم يراسل الدعم عشان يلغي موافقته ولا لازم يكون الإلغاء سهل؟
+- key: uae-pdpl:art-6:para-2
+  text: 29b7e5edc99c8170
+  en:
+  - A user wants to withdraw consent for their data after months of using our app. Are they allowed to,
+    and when?
+  - If a customer withdraws consent, does that make everything we processed before illegal?
+  ar:
+  - هل يحق للمستخدم سحب موافقته على معالجة بياناته في أي وقت حتى بعد استخدامه التطبيق لأشهر؟
+  - إذا عدل العميل عن موافقته، هل تصبح المعالجة التي تمت قبل ذلك غير قانونية؟
+  - المستخدم سحب موافقته اليوم، هل اللي سويناه ببياناته قبل كذا يعتبر مخالف ولا عادي؟
+- key: uae-pdpl:art-7
+  text: 0035b81e2501ce30
+  en:
+  - What are the main things a company that decides how user data is used must do to stay compliant?
+  - We run an app and collect customer data. What general duties do we have as the one in charge of that
+    data?
+  - Is there a checklist of baseline obligations for the business that owns the data processing?
+  ar:
+  - ما هي الالتزامات العامة التي يجب أن تتقيد بها الجهة التي تحدد كيفية معالجة البيانات الشخصية؟
+  - نحن شركة نجمع بيانات عملائنا عبر تطبيق، فما الواجبات الأساسية علينا بصفتنا المتحكم؟
+  - شو الأشياء الأساسية اللي لازم نلتزم فيها كشركة تتحكم بداتا المستخدمين؟
+- key: uae-pdpl:art-7:para-1
+  text: b86efa13bbc359ef
+  en:
+  - What security measures do we need to put in place so our users' data doesn't get hacked, lost or altered?
+  - How do we decide how strong our data protection should be for our online shop?
+  - Are we required to use technical and organizational safeguards, and does it depend on how risky our
+    data is?
+  ar:
+  - ما التدابير التقنية والتنظيمية المطلوبة لحماية البيانات الشخصية من الاختراق أو التلف أو التعديل؟
+  - هل مستوى الحماية المطلوب يختلف بحسب طبيعة البيانات وحجم المعالجة والمخاطر المحتملة؟
+  - خايفين يتهكر نظامنا وتتسرب بيانات العملاء، شو لازم نسوي عشان نأمّنها؟
+- key: uae-pdpl:art-7:para-2
+  text: e7618a2c8167f97a
+  en:
+  - Do we need to build privacy into our app from the design stage and not just after launch?
+  - Is pseudonymisation or masking user data something we are expected to do?
+  - Do privacy controls have to be applied both when choosing how the system works and while it's running?
+  ar:
+  - هل يجب مراعاة حماية البيانات منذ تصميم التطبيق وتحديد وسائل المعالجة وليس بعد الإطلاق فقط؟
+  - هل إخفاء هوية البيانات أو آلية إخفاء البيانات من التدابير المطلوبة منا؟
+  - احنا نبني منصة جديدة، لازم نطبق الخصوصية من البداية ولا نقدر نأجلها؟
+- key: uae-pdpl:art-7:para-3
+  text: 226cdb72af3b42c0
+  en:
+  - Should our app's default settings collect only the minimum data needed for its purpose?
+  - How should we configure defaults for data volume, retention period and who can access the data?
+  - Is it allowed for our sign-up form to collect extra data by default that we don't really need?
+  ar:
+  - هل يجب أن تقتصر الإعدادات الافتراضية في التطبيق على جمع البيانات اللازمة للغرض فقط؟
+  - كيف نضبط الإعدادات التلقائية فيما يخص مدة التخزين وحجم البيانات ومن يصل إليها؟
+  - هل ينفع نخلي الإعدادات الافتراضية تجمع بيانات زيادة عن اللي نحتاجه؟
+- key: uae-pdpl:art-7:para-4
+  text: fbb0f718ffa2c67c
+  en:
+  - Do we have to keep an internal register of the personal data we process, and what should it contain?
+  - Does our record need to list who can access data, retention periods and cross-border transfers?
+  - If the regulator asks to see our data processing records, are we obliged to hand them over?
+  ar:
+  - هل يلزمنا الاحتفاظ بسجل خاص بالبيانات الشخصية وما الذي يجب أن يتضمنه؟
+  - هل يجب أن يذكر السجل المصرح لهم بالوصول والمدد الزمنية ونقل البيانات عبر الحدود؟
+  - لو المكتب طلب منا سجل معالجة البيانات، لازم نقدمه؟
+- key: uae-pdpl:art-7:para-5
+  text: 24a644c6eed332db
+  en:
+  - How careful must we be when picking a cloud or outsourced vendor to handle our customers' data?
+  - Before hiring a third-party company to process user data for us, what do they need to show?
+  - Can we use any service provider for data processing or must they guarantee proper safeguards?
+  ar:
+  - ما الذي يجب مراعاته عند اختيار جهة خارجية أو مزود خدمة سحابية لمعالجة بيانات عملائنا؟
+  - هل يجوز تعيين أي معالج للبيانات أم يجب أن يقدم ضمانات كافية للتدابير التقنية والتنظيمية؟
+  - بنوظف شركة برا تعالج داتا المستخدمين، شو لازم نتأكد منه فيها؟
+- key: uae-pdpl:art-7:para-6
+  text: 70e4883402edd0bf
+  en:
+  - Must we give the data regulator information about our processing if they ask for it?
+  - Does a court decision have to be in place before we hand information to the data protection office?
+  - The data office sent us a request for information; are we obligated to respond?
+  ar:
+  - هل يلزمنا تزويد مكتب البيانات بأي معلومات يطلبها منا؟
+  - هل يشترط صدور قرار من الجهة القضائية المختصة قبل تقديم المعلومات للمكتب؟
+  - جانا طلب معلومات من مكتب حماية البيانات، لازم نرد عليهم؟
+- key: uae-pdpl:art-7:para-7
+  text: c995e40530bd324f
+  en:
+  - Are there more duties for data controllers beyond those in the law itself?
+  - Where can I find extra compliance obligations that apply to us as a controller?
+  - Could the implementing rules add new requirements for our company's data handling?
+  ar:
+  - هل توجد التزامات أخرى على المتحكم غير المذكورة في القانون نفسه؟
+  - أين أجد الالتزامات الإضافية التي تحددها اللائحة التنفيذية للمتحكمين؟
+  - ممكن اللايحة التنفيذية تضيف علينا متطلبات جديدة في التعامل مع البيانات؟
+- key: uae-pdpl:art-8
+  text: 40cf222991b182d7
+  en:
+  - We're a vendor handling customer data for other companies. What are our basic duties as the one processing
+    the data?
+  - What does the law require from a company that only processes data on behalf of another business?
+  - Our SaaS platform stores clients' user data. What obligations do we have as a service provider?
+  ar:
+  - ما هي الالتزامات العامة التي يجب على المعالج الالتزام بها عند معالجة البيانات نيابة عن جهة أخرى؟
+  - نحن شركة نقدم خدمة سحابية ونعالج بيانات عملاء شركات ثانية، شو واجباتنا حسب القانون؟
+  - ايش لازم أسوي كمزود خدمة يعالج بيانات لحساب شركة غيري؟
+- key: uae-pdpl:art-8:para-1
+  text: 0c7d2a5f2206483e
+  en:
+  - Can we process customer data in a way our client didn't tell us to, if it helps improve our service?
+  - What should our contract with the client spell out about the data we process for them?
+  - A client's app sends us user data to process. Do we have to follow only their instructions?
+  ar:
+  - هل يجوز للمعالج أن يعالج البيانات بطريقة تخالف تعليمات المتحكم والعقد المبرم بينهما؟
+  - شو لازم يكون مكتوب في العقد بيني وبين الشركة اللي أعالج لها البيانات؟
+  - عميلنا أرسل لنا بيانات مستخدمين نعالجها، هل نلتزم بتعليماته بس ولا نقدر نستخدمها بطريقتنا؟
+- key: uae-pdpl:art-8:para-2
+  text: cb83a1f5094cbdfe
+  en:
+  - Do we need to build security into our system from the design stage when processing data for a client?
+  - How much can cost factor into deciding what security measures we apply as a data processor?
+  - We're choosing the tools and architecture for a data pipeline for a client. Do privacy protections
+    have to be considered now?
+  ar:
+  - هل يلزم المعالج بتطبيق تدابير حماية تقنية وتنظيمية من مرحلة تصميم النظام؟
+  - نختار تقنيات لمعالجة بيانات عميل، هل لازم نفكر بالحماية من البداية؟
+  - هل تكلفة تطبيق إجراءات الأمان تُؤخذ بعين الاعتبار عند تحديد مستوى الحماية المطلوب؟
+- key: uae-pdpl:art-8:para-3
+  text: e5ef81eaf9837c78
+  en:
+  - Our processing job for a client is taking longer than the agreed period. What do we have to do?
+  - Can we keep processing data after the agreed time window ends?
+  - What should a processor do if the work is only for a set purpose and time, and we need more time?
+  ar:
+  - انتهت المدة المتفق عليها لمعالجة بيانات العميل ولسه الشغل ما خلص، شو نسوي؟
+  - ما الذي يجب على المعالج فعله إذا تجاوزت المعالجة المدة المحددة لها؟
+  - هل أقدر أستخدم بيانات العميل لغرض ثاني غير المتفق عليه؟
+- key: uae-pdpl:art-8:para-4
+  text: b96413c8f372aa4d
+  en:
+  - Our contract with a client ended. Do we have to delete their users' data from our servers?
+  - Do we need to wipe the data after handing the results back to the client?
+  - When must a processor erase the data it was given?
+  ar:
+  - انتهى العقد مع العميل، هل يجب علينا حذف بيانات مستخدميه من خوادمنا؟
+  - متى يلزم المعالج بمحو البيانات؟
+  - سلمنا البيانات للشركة، لازم نمسح النسخ اللي عندنا؟
+- key: uae-pdpl:art-8:para-5
+  text: 1506fdaa4a930486
+  en:
+  - Can we share processed customer data or analysis results with a third party if they ask?
+  - Is it allowed to show a client's user data to a partner company without legal permission?
+  - An employee wants to publish insights derived from a client's data. Is that a problem for a processor?
+  ar:
+  - هل يجوز للمعالج الكشف عن البيانات الشخصية أو نتائج المعالجة لطرف ثالث؟
+  - شريك طلب منا نتائج تحليل بيانات عميلنا، نعطيه ولا لا؟
+  - متى يُسمح للمعالج بالإفصاح عن البيانات التي يعالجها؟
+- key: uae-pdpl:art-8:para-6
+  text: f46a4ed75870ae92
+  en:
+  - What do we have to do to secure the servers and devices we use to process client data?
+  - Do laptops and cloud storage used by our team for client data need protection too?
+  - Are we responsible for securing the whole processing operation, not just the database?
+  ar:
+  - كيف يجب على المعالج تأمين الأجهزة والوسائط الإلكترونية المستخدمة في المعالجة؟
+  - هل علينا حماية اللابتوبات والتخزين السحابي اللي نستخدمها لبيانات العميل؟
+  - شو المطلوب منا لحماية عملية المعالجة والبيانات اللي على الأجهزة؟
+- key: uae-pdpl:art-8:para-7
+  text: 4d2179f8d69b9637
+  en:
+  - Do we need to keep a log of all the personal data we process for our clients?
+  - What information must go in the processor's data processing record?
+  - The regulator asked to see our records of processing. Do we have to hand them over?
+  ar:
+  - هل يجب على المعالج مسك سجل خاص بالبيانات الشخصية التي يعالجها نيابة عن المتحكم؟
+  - ايش لازم يحتوي سجل المعالجة، مثل مين يوصل للبيانات وتحويلها خارج الدولة؟
+  - المكتب طلب منا سجل المعالجة، هل لازم نقدمه؟
+- key: uae-pdpl:art-8:para-8
+  text: a5c8794617d33735
+  en:
+  - A client asks us to prove we comply with the data protection law. What must we provide?
+  - If the regulator audits us as a processor, do we have to show evidence of compliance?
+  - How can a processor demonstrate it is following the rules when asked?
+  ar:
+  - العميل طلب منا إثبات التزامنا بقانون حماية البيانات، شو لازم نقدم؟
+  - هل يلزم المعالج بتوفير ما يثبت التزامه عند طلب المكتب؟
+  - وش المطلوب مني كمعالج إذا طلبت الجهة المنظمة دليل على التزامي بالقانون؟
+- key: uae-pdpl:art-8:para-9
+  text: 18521fa4c4aacb93
+  en:
+  - Besides the contract, do we also have to follow the regulator's instructions when processing data?
+  - Are processors bound by the executive regulations and Data Office guidance?
+  - Does our processing have to follow rules issued later by the regulator?
+  ar:
+  - هل يلتزم المعالج بالقواعد واللائحة التنفيذية وتعليمات المكتب أثناء المعالجة؟
+  - غير العقد مع العميل، لازم نتبع تعليمات الجهة المنظمة بعد؟
+  - هل تنطبق الضوابط التي يصدرها المكتب على من يعالج البيانات نيابة عن غيره؟
+- key: uae-pdpl:art-8:para-10
+  text: 71b9c310379d81e2
+  en:
+  - We and another vendor both process data for the same client. Do we need a written agreement between
+    us?
+  - What happens if several processors work on the same data and nobody defined who does what?
+  - Are subcontractors jointly liable if we never wrote down each one's responsibilities?
+  ar:
+  - نحن ومعالج آخر نعمل على بيانات نفس العميل، هل نحتاج اتفاق مكتوب بيننا؟
+  - ماذا يحدث إذا اشترك عدة معالجين ولم تُحدد مسؤولياتهم كتابياً؟
+  - إذا ما وزعنا الأدوار مع المقاول الثاني بعقد، هل نتحمل المسؤولية سوا؟
+- key: uae-pdpl:art-8:para-11
+  text: 9b38eb5cd9aa6fb5
+  en:
+  - Where can I find the detailed technical standards for the processor's obligations?
+  - Will more detailed rules on how processors must comply be issued separately?
+  - Which document sets the exact procedures and conditions for processor duties?
+  ar:
+  - أين أجد المعايير الفنية والإجراءات التفصيلية لالتزامات المعالج؟
+  - هل ستصدر تفاصيل إضافية حول كيفية التزام المعالج بواجباته؟
+  - ايش الوثيقة اللي تحدد الشروط والضوابط التفصيلية لواجبات المعالج؟
+- key: uae-pdpl:art-9:para-1
+  text: 0123777f7a864a0d
+  en:
+  - We just discovered hackers got into our app's user database. Do we have to tell the data regulator,
+    and what must we send them?
+  - When exactly does the clock start for reporting a data leak to the authority, and who sets the deadline?
+  - What information and paperwork should our company prepare when filing a data breach report with the
+    regulator?
+  ar:
+  - اكتشفنا أن مخترقين دخلوا على قاعدة بيانات عملاء متجرنا الإلكتروني، هل يلزمنا إبلاغ المكتب وماذا نرفق
+    بالبلاغ؟
+  - متى يجب على المتحكم إبلاغ المكتب بعد علمه بحدوث اختراق للبيانات الشخصية، ومن يحدد المدة والإجراءات؟
+  - شو لازم نسوي لو تسربت بيانات الزبائن عندنا؟ لازم نبلغ الجهة المختصة ونقدم لهم أوراق؟
+- key: uae-pdpl:art-9:para-1:pt-a
+  text: ad8f07269c8be835
+  en:
+  - What should we say about what happened when reporting a leak of customer data to the regulator?
+  - Do we need to give the regulator an estimate of how many users and records were hit by the breach?
+  - Must the breach report explain how the leak happened and what caused it?
+  ar:
+  - هل يجب أن يتضمن بلاغ الاختراق شرحاً لأسبابه وطبيعته والعدد التقريبي للسجلات المتأثرة؟
+  - ما البيانات التي نذكرها عن حجم التسريب وكيف حصل عند إبلاغ المكتب؟
+  - وش لازم أكتب بالبلاغ عن سبب التسريب وكم سجل انكشف؟
+- key: uae-pdpl:art-9:para-1:pt-b
+  text: 04480c1def1fcb4d
+  en:
+  - Do we have to include our data protection officer's contact details in a breach report?
+  - Our clinic app had a leak; does the regulator need to know who our DPO is?
+  - Who should be named as the contact person when we report a data breach?
+  ar:
+  - هل يلزم ذكر بيانات مسؤول حماية البيانات لدينا ضمن بلاغ الاختراق المقدم للمكتب؟
+  - حصل تسريب في تطبيق عيادتنا، هل نحتاج أن نعطي المكتب معلومات مسؤول حماية البيانات؟
+  - ليش يطلبون بيانات الـ DPO مع بلاغ التسريب؟ لازم نكتبها؟
+- key: uae-pdpl:art-9:para-1:pt-c
+  text: 91630bbd8c5bc0ee
+  en:
+  - Do we need to tell the regulator what harm the data leak could cause to our users?
+  - What should a breach report say about possible consequences for affected customers?
+  - After a security incident at our bank app, must we describe the expected impact in the report?
+  ar:
+  - هل يجب أن نذكر في بلاغ الاختراق الآثار المتوقعة على أصحاب البيانات؟
+  - ما الذي يُطلب بيانه عن الأضرار المحتملة للتسريب عند إبلاغ المكتب؟
+  - بعد اختراق تطبيق البنك، لازم نكتب في البلاغ شو ممكن يصير للعملاء من ضرر؟
+- key: uae-pdpl:art-9:para-1:pt-d
+  text: bf42b1a2ecf1cb83
+  en:
+  - What fixes and steps should we describe to the regulator after a breach in our app?
+  - Do we have to report the measures we plan to take to limit damage from a data leak?
+  - Should the breach notification include what we've already done to contain the incident?
+  ar:
+  - هل يلزم أن نبين للمكتب الإجراءات التي اتخذناها أو نقترحها للحد من آثار الاختراق؟
+  - ما التدابير التصحيحية التي يجب ذكرها في بلاغ انتهاك البيانات؟
+  - سكرنا الثغرة بعد التسريب، لازم نكتب بالبلاغ اللي سويناه واللي ناوين نسويه؟
+- key: uae-pdpl:art-9:para-1:pt-e
+  text: 7b9b6dec502dac55
+  en:
+  - Do we need to attach records or evidence of the breach and our fixes when reporting to the regulator?
+  - Should we keep and submit incident logs and documentation about a data leak?
+  - What proof of the incident and our response must go with the breach notification?
+  ar:
+  - هل يجب إرفاق توثيق للاختراق والإجراءات التصحيحية مع البلاغ المقدم للمكتب؟
+  - هل نقدم سجلات الحادثة وما قمنا به لإصلاحها عند الإبلاغ عن تسريب بيانات؟
+  - وش المستندات اللي نرفقها كإثبات للتسريب وللحل اللي سويناه؟
+- key: uae-pdpl:art-9:para-1:pt-f
+  text: 58ba9507d2354409
+  en:
+  - Can the regulator ask for more information than the standard items after we report a breach?
+  - If the authority wants extra details about our data leak, do we have to provide them?
+  - Are there additional things the regulator may require with a breach report?
+  ar:
+  - هل يحق للمكتب طلب معلومات إضافية غير المعتادة بعد إبلاغه عن اختراق؟
+  - لو طلبت الجهة المختصة تفاصيل زيادة عن تسريب البيانات، هل نلتزم بتقديمها؟
+  - هل هناك متطلبات أخرى قد يطلبها المكتب مع بلاغ انتهاك البيانات الشخصية؟
+- key: uae-pdpl:art-9:para-2
+  text: a64f3c9c84e1517a
+  en:
+  - Our online store was hacked and customer data may be exposed; do we have to tell the customers themselves?
+  - When a breach threatens users' privacy, do we need to inform them and tell them what we're doing about
+    it?
+  - Is notifying the regulator enough after a leak, or must affected individuals be told as well?
+  ar:
+  - تعرض متجرنا للاختراق وقد تنكشف بيانات العملاء، هل يجب إخطارهم بأنفسهم؟
+  - هل يلزم إعلام صاحب البيانات بالانتهاك وبالإجراءات التي اتخذناها عندما يمس خصوصيته؟
+  - يعني كفاية نبلغ الجهة الرسمية ولا لازم نرسل للمستخدمين المتأثرين إشعار بالتسريب؟
+- key: uae-pdpl:art-9:para-3
+  text: 6127c95b12396f47
+  en:
+  - We're a cloud vendor processing data for a client and found a breach; who do we tell first?
+  - As a data processor, what must we do the moment we detect a leak in the data we handle for a customer?
+  - Does our outsourced support provider report a breach to the regulator or to us as the company?
+  ar:
+  - نحن شركة استضافة نعالج بيانات لعميل واكتشفنا تسريباً، لمن نبلغ أولاً؟
+  - ما واجب المعالج فور علمه بوجود اختراق في البيانات التي يعالجها لحساب شركة أخرى؟
+  - مزود الدعم الخارجي عندنا لقى تسريب، يبلغ المكتب بنفسه ولا يبلغنا إحنا؟
+- key: uae-pdpl:art-9:para-4
+  text: cac2e227f94f6015
+  en:
+  - What does the regulator do after we file a breach report, and could we be fined?
+  - Will the authority investigate why the leak happened and check our security measures?
+  - If we're found to have broken the rules in a data breach, can the processor or controller face penalties?
+  ar:
+  - ماذا يفعل المكتب بعد استلام بلاغ الاختراق وهل يمكن أن نتعرض لعقوبات إدارية؟
+  - هل يتحقق المكتب من أسباب التسريب ومن سلامة إجراءاتنا الأمنية بعد البلاغ؟
+  - لو بلغنا عن تسريب، ممكن ينفرض علينا غرامة إذا طلع عندنا تقصير؟
+- key: uae-pdpl:art-10:para-1
+  text: 5551e180b9ade862
+  en:
+  - When does my company have to hire a data protection officer for our app?
+  - We're a processor handling customer data for other businesses. Do we need to name someone responsible
+    for data protection?
+  - What kind of skills should the person we appoint as DPO have?
+  ar:
+  - متى يجب على شركتنا تعيين مسؤول حماية بيانات لتطبيقنا؟
+  - هل المعالج مثل شركة تستضيف بيانات عملائها ملزم بتعيين مسؤول لحماية البيانات، وما المؤهلات المطلوبة
+    فيه؟
+  - شركتنا الناشئة لازم تعيّن واحد مسؤول عن حماية البيانات ولا لا؟ وش الشروط فيه؟
+- key: uae-pdpl:art-10:para-1:pt-a
+  text: b198025b1ef847ec
+  en:
+  - We're launching an app using a new AI technology on lots of user data. Do we need a DPO?
+  - Does a high privacy risk from adopting new tech or handling huge amounts of data force us to appoint
+    a data protection officer?
+  - Our platform collects data from millions of users with a brand-new tracking tool. Is a DPO mandatory?
+  ar:
+  - نطلق تطبيقاً يعتمد تقنية ذكاء اصطناعي جديدة على بيانات مستخدمين كثيرة، هل يلزمنا تعيين مسؤول حماية
+    بيانات؟
+  - هل يوجب اعتماد تقنيات حديثة تشكل خطراً عالياً على خصوصية البيانات أو ضخامة حجمها تعيين مسؤول لحماية
+    البيانات؟
+  - عندنا منصة فيها ملايين المستخدمين وبنستخدم أداة تتبع جديدة، لازم نوظف مسؤول حماية بيانات؟
+- key: uae-pdpl:art-10:para-1:pt-b
+  text: 94ed41bdfab578fc
+  en:
+  - Our app profiles users automatically using their health or religion data. Do we need a DPO?
+  - Do we have to appoint a data protection officer if we run automated scoring on sensitive data?
+  - We built a system that systematically evaluates sensitive customer details with algorithms. Is a DPO
+    required?
+  ar:
+  - تطبيقنا يصنّف المستخدمين تلقائياً بناءً على بياناتهم الصحية، هل يلزمنا مسؤول حماية بيانات؟
+  - هل يجب تعيين مسؤول حماية بيانات إذا كنا نجري تنميطاً ومعالجة مؤتمتة على بيانات حساسة بشكل شامل؟
+  - عندنا نظام يقيّم بيانات العملاء الحساسة بالخوارزميات، لازم يكون عندنا DPO؟
+- key: uae-pdpl:art-10:para-1:pt-c
+  text: 360233844398f6cb
+  en:
+  - Our clinic app stores a large amount of patient records. Must we appoint a DPO?
+  - Does holding lots of sensitive data like biometrics or health info require a data protection officer?
+  - Is a DPO needed if we process sensitive personal data at large scale?
+  ar:
+  - تطبيق عيادتنا يخزن عدداً كبيراً من السجلات الطبية للمرضى، هل يلزمنا تعيين مسؤول حماية بيانات؟
+  - هل معالجة حجم كبير من البيانات الحساسة مثل البصمات والمعلومات الصحية تستوجب وجود مسؤول لحماية البيانات؟
+  - احنا نخزن بيانات حساسة كثيرة، يعني لازم نعيّن مسؤول حماية بيانات؟
+- key: uae-pdpl:art-10:para-2
+  text: 774365936323a90b
+  en:
+  - Can our DPO be an existing employee, or can we use an outside consultant?
+  - Can we hire a data protection officer based abroad for our UAE business?
+  - Is it allowed to authorize a freelancer outside the country to act as our DPO?
+  ar:
+  - هل يجوز أن يكون مسؤول حماية البيانات موظفاً لدينا أم يمكن الاستعانة بمستشار خارجي؟
+  - هل يمكن تعيين مسؤول حماية بيانات يعمل من خارج الدولة لشركتنا؟
+  - ينفع نخلي واحد فريلانسر برا الإمارات يكون هو الـ DPO حقنا؟
+- key: uae-pdpl:art-10:para-3
+  text: 328e63ab3ff0f28d
+  en:
+  - Do we have to tell the regulator who our DPO is and how to reach them?
+  - After appointing a DPO, what must we publish or report about their contact details?
+  ar:
+  - هل يجب إبلاغ الجهة الرقابية باسم مسؤول حماية البيانات وطريقة التواصل معه؟
+  - بعد تعيين مسؤول حماية البيانات، ما الذي يلزمنا تحديده وإخطار المكتب به؟
+- key: uae-pdpl:art-10:para-4
+  text: 73b88596a3ff5251
+  en:
+  - Where will we find out which technologies count as risky enough to need a DPO?
+  - How is the data volume threshold for appointing a DPO going to be defined?
+  - Is there a specific number of records that triggers the DPO requirement?
+  ar:
+  - أين نعرف أنواع التقنيات التي تستوجب تعيين مسؤول حماية بيانات؟
+  - كيف ستُحدد معايير حجم البيانات الذي يوجب تعيين مسؤول حماية البيانات؟
+  - في رقم معين لعدد السجلات يخلينا نلتزم بتعيين DPO ولا لسا ما تحدد؟
+- key: uae-pdpl:art-11:para-1
+  text: b425b483edf07112
+  en:
+  - What is our data protection officer actually supposed to do at our company, and who do they check
+    up on?
+  - We appointed a DPO for our fintech app. Do they have to monitor whether we follow the data law and
+    the regulator's guidance?
+  - Is the DPO responsible for making sure both us and our cloud vendor handling user data are compliant?
+  ar:
+  - ما هي مهام مسؤول حماية البيانات وصلاحياته في الشركة، وهل يراقب التزامنا بالقانون؟
+  - هل يلزم أن يتأكد مسؤول حماية البيانات من امتثال المعالج الذي نتعامل معه وتعليمات المكتب؟
+  - وش بالضبط شغل الـ DPO عندنا؟ هو اللي يتابع إن التطبيق ماشي على القانون ولا لا؟
+- key: uae-pdpl:art-11:para-1:pt-a
+  text: 9dd3d5a985abdf7e
+  en:
+  - Does the DPO have to review whether our data handling procedures and our processor's procedures are
+    good and accurate?
+  - Who checks that the privacy processes we run in our online shop actually work properly?
+  - Our vendor processes customer data for us. Is the DPO supposed to verify the quality of their procedures
+    too?
+  ar:
+  - هل على مسؤول حماية البيانات أن يتحقق من جودة وصحة إجراءاتنا وإجراءات المعالج؟
+  - من المسؤول عن فحص أن إجراءات الخصوصية المطبقة في تطبيقنا سليمة وصحيحة؟
+  - الـ DPO لازم يراجع شغلنا وشغل الشركة اللي تعالج الداتا عنا ولا هذا مو من شغله؟
+- key: uae-pdpl:art-11:para-1:pt-b
+  text: 1b4b0d864acd6e99
+  en:
+  - A customer sent a complaint about how we use their data. Is the DPO the one who should receive it?
+  - Who handles users' requests about their personal data, like access or deletion requests, in our app?
+  - Should our clinic's DPO be the point of contact for patients' data complaints?
+  ar:
+  - وصلتنا شكوى من عميل بخصوص بياناته الشخصية، هل مسؤول حماية البيانات هو من يستلمها؟
+  - من الجهة المخولة داخل الشركة باستلام طلبات أصحاب البيانات وشكاواهم؟
+  - أحد المستخدمين يبي يقدم طلب بخصوص بياناته، هل يروح للـ DPO عندنا؟
+- key: uae-pdpl:art-11:para-1:pt-c
+  text: d6e7584fbbf981ea
+  en:
+  - Does the DPO advise on security testing and periodic checks of our data protection and intrusion prevention
+    systems?
+  - Who should document the results of our privacy and security evaluations and recommend fixes?
+  - We're planning a risk assessment for a new feature. Is the DPO supposed to give technical advice on
+    it?
+  ar:
+  - هل يقدم مسؤول حماية البيانات استشارات فنية حول الفحص الدوري لأنظمة الحماية ومنع الاختراق؟
+  - من يوثق نتائج تقييم أنظمة حماية البيانات ويقدم التوصيات وتقييم المخاطر؟
+  - نبي نعمل تقييم مخاطر لميزة جديدة في التطبيق، هل الـ DPO يعطينا توصيات فنية؟
+- key: uae-pdpl:art-11:para-1:pt-d
+  text: 55e2a23f30c326d5
+  en:
+  - Who communicates with the data regulator on behalf of our company about how we apply the data law?
+  - Is the DPO the contact person between our company or our processor and the Bureau?
+  - The regulator wants to ask about our processing practices. Should the DPO be the liaison?
+  ar:
+  - من يتواصل مع المكتب نيابة عن الشركة بخصوص تطبيق أحكام معالجة البيانات؟
+  - هل مسؤول حماية البيانات هو حلقة الوصل بين المتحكم أو المعالج والجهة الرقابية؟
+  - الجهة المنظمة تبي تستفسر عن طريقة معالجتنا للبيانات، هل نرسل الـ DPO يكلمهم؟
+- key: uae-pdpl:art-11:para-1:pt-e
+  text: 076f285f5c1208ea
+  en:
+  - Can the DPO be given extra duties beyond the ones listed in the law?
+  - Might the regulations add more tasks or powers for a data protection officer?
+  - Where would I find additional DPO responsibilities that aren't listed in the main law?
+  ar:
+  - هل يمكن تحديد مهام أو صلاحيات إضافية لمسؤول حماية البيانات غير المذكورة؟
+  - هل اللائحة التنفيذية ممكن تضيف واجبات ثانية على الـ DPO؟
+  - وين ألقى مهام الـ DPO الإضافية اللي مو مكتوبة في القانون نفسه؟
+- key: uae-pdpl:art-11:para-2
+  text: 3b1fc39e797b6548
+  en:
+  - Is our DPO required to keep the information they see while doing their job confidential?
+  - Can the DPO share user data they came across during an audit with other teams or outsiders?
+  - Our DPO has access to customer records for reviews. What confidentiality duty applies to them?
+  ar:
+  - هل يلتزم مسؤول حماية البيانات بسرية المعلومات التي يطلع عليها أثناء عمله؟
+  - هل يجوز للـ DPO أن يشارك بيانات اطلع عليها خلال التدقيق مع أطراف خارجية؟
+  - الـ DPO عندنا يشوف بيانات العملاء أثناء المراجعة، هل لازم يحافظ على سريتها؟
+- key: uae-pdpl:art-12:para-1
+  text: 02a970511bb2b92e
+  en:
+  - What do we have to do as a company to make sure our data protection officer can actually do their
+    job?
+  - We hired a DPO for our app but they have no real access or backing. What are we obliged to provide?
+  - Are both the company that owns the data and the vendor processing it responsible for supporting the
+    DPO?
+  ar:
+  - ما الواجبات المترتبة على الشركة لتمكين مسؤول حماية البيانات من أداء مهامه بالشكل المطلوب؟
+  - هل يلتزم المتحكم والمعالج كلاهما بتوفير السبل اللازمة لمسؤول حماية البيانات؟
+  - عيّنا مسؤول حماية بيانات بس ما نعطيه أي صلاحيات ولا دعم، شو المطلوب منا نسوي؟
+- key: uae-pdpl:art-12:para-1:pt-a
+  text: 5871160f7b685174
+  en:
+  - Do we have to loop our DPO in when we plan a new feature that collects user data?
+  - When should the data protection officer be brought into a decision, like before launching a new tracking
+    tool?
+  - Our product team keeps making data decisions without telling the DPO. Is that allowed?
+  ar:
+  - هل يجب إشراك مسؤول حماية البيانات عند التخطيط لميزة جديدة في التطبيق تجمع بيانات المستخدمين؟
+  - متى يجب إشراك مسؤول حماية البيانات في القرارات المتعلقة بالبيانات الشخصية؟
+  - فريق المنتج ياخذ قرارات عن بيانات العملاء وما يخبر مسؤول حماية البيانات، هذا مسموح؟
+- key: uae-pdpl:art-12:para-1:pt-b
+  text: f0347df37f60683d
+  en:
+  - Do we need to give our DPO a budget and staff to do their work?
+  - What kind of resources and support must a company give its data protection officer?
+  - Our DPO says they lack tools and time to handle privacy tasks at our online shop. Are we required
+    to fix that?
+  ar:
+  - هل يلزمنا توفير ميزانية وفريق ودعم لمسؤول حماية البيانات لينفذ مهامه؟
+  - ما الموارد والدعم الذي يجب على الشركة تقديمه لمسؤول حماية البيانات؟
+  - مسؤول الخصوصية عندنا يقول ما عنده وقت ولا أدوات كافية، هل علينا نوفرها له؟
+- key: uae-pdpl:art-12:para-1:pt-c
+  text: 8eed92c2ef8af1fc
+  en:
+  - Can we fire our DPO because they flagged a privacy problem with our product that the CEO didn't like?
+  - Is it legal to demote or discipline a data protection officer for doing their job?
+  - Our DPO objected to a data-sharing deal and management wants them gone. What are the limits?
+  ar:
+  - هل يجوز فصل مسؤول حماية البيانات لأنه اعترض على ممارسة في منتجنا؟
+  - هل يمكن معاقبة مسؤول حماية البيانات تأديبياً بسبب قيامه بمهامه؟
+  - الإدارة زعلانة من مسؤول حماية البيانات لأنه رفض مشاركة بيانات مع طرف ثالث وتبي تطرده، يصير هالشي؟
+- key: uae-pdpl:art-12:para-1:pt-d
+  text: 6c19f9256eb677d9
+  en:
+  - Can our DPO also be the head of marketing or IT at the same time?
+  - Can we give the data protection officer extra duties that clash with their privacy role?
+  ar:
+  - هل يجوز أن يكون مسؤول حماية البيانات هو نفسه مدير التسويق أو تقنية المعلومات؟
+  - هل يمكن تكليف مسؤول حماية البيانات بمهام أخرى تتعارض مع دوره؟
+  - وايد شركات ناشئة تخلي نفس الشخص DPO ومدير المنتج، هل في مشكلة تعارض مصالح؟
+- key: uae-pdpl:art-12:para-2
+  text: 0909ba8f0a4bce78
+  en:
+  - Can a user of our app contact the DPO directly about their data?
+  - A customer wants to reach our data protection officer to exercise their rights. Do we have to allow
+    it?
+  ar:
+  - هل يحق لمستخدم تطبيقنا التواصل مباشرة مع مسؤول حماية البيانات بخصوص بياناته؟
+  - عميل يبي يتواصل مع مسؤول حماية البيانات عشان يمارس حقوقه، لازم نسمح له؟
+  - هل يحق لصاحب البيانات مراسلة مسؤول حماية البيانات دون المرور بخدمة العملاء؟
+- key: uae-pdpl:art-13:para-1
+  text: 90682f2d1b0b2936
+  en:
+  - A customer of our app emailed asking what info we hold and how we use it. Do we have to answer, and
+    can we charge a fee?
+  - What details must we give a user who submits a request asking about how their data is handled?
+  - Can I charge users for a data access information request?
+  ar:
+  - يحق للمستخدم يطلب منا معلومات عن بياناته الشخصية؟ وهل نقدر نأخذ رسوم على الطلب؟
+  - ما هي المعلومات التي يجب على المتحكم تزويدها لصاحب البيانات عند تقديمه طلباً للحصول عليها، وهل يكون
+    ذلك مجاناً؟
+  - وش لازم أرد عليه لو عميل في تطبيقي طلب يعرف كيف نتعامل مع بياناته؟
+- key: uae-pdpl:art-13:para-1:pt-a
+  text: 8dbe493a931795e0
+  en:
+  - A user asks which of their personal details our online shop is actually processing. Do we have to
+    tell them?
+  - Do I need to list the categories of data we store about a person when they ask?
+  - Customer wants to know exactly what kinds of data we collect on them, is that their right?
+  ar:
+  - عميل في متجرنا الإلكتروني يسأل أي بيانات عنه عندنا، هل لازم نخبره؟
+  - هل يلزمني إبلاغ صاحب البيانات بأنواع بياناته الشخصية التي تتم معالجتها عند طلبه؟
+  - مستخدم يبي يعرف شنو أنواع البيانات اللي نجمعها عنه، لازم أعطيه؟
+- key: uae-pdpl:art-13:para-1:pt-b
+  text: 5b2b45f26138aad6
+  en:
+  - A user asks why our app collects their data. Must we explain the reasons?
+  - Do we have to tell people the purposes we use their data for if they ask?
+  - What do I say when a customer asks what we do with their information?
+  ar:
+  - مستخدم يسأل ليش تطبيقكم يجمع بياناته، هل يجب أن نوضح له السبب؟
+  - هل يجب على المتحكم إبلاغ صاحب البيانات بأغراض معالجة بياناته عند الطلب؟
+  - العميل يسأل ليش نستخدم بياناته وفيش نستفيد منها، لازم أجاوبه؟
+- key: uae-pdpl:art-13:para-1:pt-c
+  text: 8da35a95122ce7a7
+  en:
+  - Our lending app auto-rejects applicants by algorithm. Can a user ask us about decisions made automatically
+    about them?
+  - Do we have to disclose decisions made by profiling or automated scoring when a user asks?
+  - A customer wants to know if a bot decided their account limit based on their profile. Must we tell
+    them?
+  ar:
+  - تطبيق التمويل عندنا يرفض الطلبات تلقائياً بخوارزمية، هل يحق للمتقدم أن يسأل عن هذه القرارات؟
+  - هل يجب الإفصاح لصاحب البيانات عن القرارات المبنية على التنميط أو المعالجة الآلية؟
+  - عميل يسأل إذا النظام الآلي هو اللي قرر حده الائتماني من بياناته، لازم نخبره؟
+- key: uae-pdpl:art-13:para-1:pt-d
+  text: 819cc5d9fbe5c41e
+  en:
+  - A user asks which companies we share their data with, including overseas partners. Do we have to say?
+  - Must we tell users which sectors or organizations receive their data, inside or outside the country?
+  - We send customer data to analytics vendors abroad. Can a customer ask who gets it?
+  ar:
+  - مستخدم يسأل مع أي جهات نشارك بياناته داخل الدولة وخارجها، هل يلزمنا إخباره؟
+  - هل يجب على المتحكم إعلام صاحب البيانات بالقطاعات أو المنشآت التي ستُشارك بياناته معها؟
+  - نرسل بيانات العملاء لشركات تحليلات برا البلد، العميل يقدر يسأل مين ياخذها؟
+- key: uae-pdpl:art-13:para-1:pt-e
+  text: 85130ee8553322fb
+  en:
+  - A user asks how long our app keeps their data. Do we need to answer?
+  - Do we have to explain our data retention rules to a customer who asks?
+  - How do I respond when someone wants to know the criteria for how long we store their records?
+  ar:
+  - مستخدم يسأل كم مدة احتفاظ تطبيقكم ببياناته، هل يجب الرد؟
+  - هل يلزم المتحكم بإبلاغ صاحب البيانات بضوابط ومعايير مدة تخزين بياناته؟
+  - العميل يسأل لين متى تحتفظون ببياناته، لازم أشرح له سياسة الحفظ؟
+- key: uae-pdpl:art-13:para-1:pt-f
+  text: 01618d2ba9a65a4e
+  en:
+  - A user asks how they can fix, delete or restrict the use of their data in our app. Must we tell them
+    the steps?
+  - Do we have to explain how a person can object to our processing or get data erased?
+  - Customer wants to know the procedure to correct wrong info we hold about them. Is that something we
+    must provide?
+  ar:
+  - مستخدم يسأل كيف يصحح أو يحذف بياناته أو يقيد استخدامها في تطبيقنا، هل يجب إخباره بالإجراءات؟
+  - هل يجب على المتحكم إطلاع صاحب البيانات على إجراءات التصحيح والمحو والاعتراض؟
+  - العميل يبغى يعرف كيف يعدل أو يمسح بياناته عندنا، لازم نعطيه الخطوات؟
+- key: uae-pdpl:art-13:para-1:pt-g
+  text: 5bf688a0f4ecce36
+  en:
+  - We host user data on servers abroad. Do we have to tell users what safeguards protect it when it leaves
+    the country?
+  - A customer asks how their data is protected when transferred internationally. What must we tell them?
+  - Must we describe our cross-border transfer protections to a user on request?
+  ar:
+  - نخزن بيانات المستخدمين على سيرفرات خارج الدولة، هل يلزمنا إخبارهم بإجراءات الحماية عند النقل؟
+  - عميل يسأل كيف تُحمى بياناته لما تنتقل دولياً، ماذا يجب أن نخبره؟
+  - هل يجب على المتحكم بيان تدابير حماية المعالجة عبر الحدود لصاحب البيانات عند طلبه؟
+- key: uae-pdpl:art-13:para-1:pt-h
+  text: f0eee1f338dfe4db
+  en:
+  - Our app was hacked. What must we tell users about what we'll do when their data is breached or misused?
+  - A user asks what happens if their data leaks from our system. Do we have to explain our response?
+  - Do we need to tell customers what actions we take if their data is compromised and it seriously threatens
+    their privacy?
+  ar:
+  - تعرض نظامنا لاختراق، ما الذي يجب أن نبلغ به المستخدمين عن الإجراءات المتخذة لحماية بياناتهم؟
+  - هل يحق لصاحب البيانات معرفة الإجراءات التي ستُتخذ عند اختراق بياناته أو إساءة استخدامها؟
+  - عميل يسأل شنو بتسوون لو تسربت بياناته من عندكم، لازم نجاوبه؟
+- key: uae-pdpl:art-13:para-1:pt-i
+  text: f3be42912027b7eb
+  en:
+  - A user is unhappy with how we handle their data. Do we have to tell them how to file a complaint with
+    the regulator?
+  - Must we explain to customers how to complain to the data protection Bureau?
+  - Where do users complain about our data practices, and are we required to tell them?
+  ar:
+  - مستخدم غير راضٍ عن تعاملنا مع بياناته، هل يجب أن نعرّفه كيف يقدم شكوى للمكتب؟
+  - هل يلزم المتحكم بإبلاغ صاحب البيانات بطريقة تقديم الشكاوى إلى المكتب؟
+  - العميل يسأل وين يشتكي علينا بخصوص بياناته، لازم نقوله؟
+- key: uae-pdpl:art-13:para-2
+  text: 50129df15ca790a0
+  en:
+  - Do we have to tell users why we collect data and who we share it with before they sign up, or only
+    when they ask?
+  - What must be disclosed to a user before we begin processing their data in our app?
+  - Our signup flow collects data right away. Which information must be shown upfront regardless of any
+    request?
+  ar:
+  - هل يجب أن نخبر المستخدم بأغراض جمع بياناته ومن نشاركها معه قبل التسجيل أم فقط عند طلبه؟
+  - ما المعلومات التي يجب على المتحكم تزويدها لصاحب البيانات قبل بدء المعالجة في جميع الأحوال؟
+  - وش لازم أوضحه للمستخدم قبل ما أبدأ أجمع بياناته في التطبيق حتى لو ما طلب؟
+- key: uae-pdpl:art-13:para-3
+  text: 5b5659f5b35869df
+  en:
+  - When can we refuse a customer's request for information about how we process their data?
+  - Are there grounds that let a company turn down a data information request?
+  - A user sent a request about their data and we'd rather not answer. Is refusing ever allowed?
+  ar:
+  - متى يجوز لنا رفض طلب العميل بالحصول على معلومات عن معالجة بياناته؟
+  - ما الحالات التي يجوز فيها للمتحكم رفض طلب صاحب البيانات للمعلومات؟
+  - جاني طلب من مستخدم عن بياناته ودي أرفضه، متى أقدر قانونياً؟
+- key: uae-pdpl:art-13:para-3:pt-a
+  text: 7ca920d67a7459c6
+  en:
+  - A user keeps sending the same information request every few days. Can we refuse?
+  - Can we reject a request that asks for things outside what the user is entitled to be told?
+  - What counts as grounds to refuse a request because it's too repetitive or unrelated?
+  ar:
+  - مستخدم يرسل نفس طلب المعلومات كل يومين، هل يجوز لنا رفضه؟
+  - هل يجوز رفض الطلب إذا كان لا يتعلق بالمعلومات التي يحق لصاحب البيانات الحصول عليها؟
+  - العميل يكرر الطلب نفسه مرات كثيرة وايد، نقدر نرفض؟
+- key: uae-pdpl:art-13:para-3:pt-b
+  text: 4052937c8416c804
+  en:
+  - Police are investigating a case involving our user's account. Can we refuse the user's request about
+    their data?
+  - Can we deny an information request if giving it would interfere with a court case or official investigation?
+  - A user asks what we hold on them while authorities are investigating. Must we answer?
+  ar:
+  - الجهات المختصة تحقق في قضية تخص حساب مستخدم عندنا، هل نرفض طلبه للمعلومات؟
+  - هل يجوز رفض طلب صاحب البيانات إذا كان يتعارض مع إجراءات قضائية أو تحقيقات؟
+  - مستخدم يسأل عن بياناته وفيه تحقيق رسمي جاري، لازم نرد عليه؟
+- key: uae-pdpl:art-13:para-3:pt-c
+  text: d4c199cbd0c3e935
+  en:
+  - Answering a user's request would reveal details of our security setup. Can we refuse?
+  - Can we decline an information request if it could weaken our system security?
+  - A customer asks for info that might expose how we defend against hackers. Are we allowed to say no?
+  ar:
+  - الرد على طلب المستخدم قد يكشف تفاصيل أمن أنظمتنا، هل يجوز رفضه؟
+  - هل يجوز للمتحكم رفض الطلب إذا كان قد يضر بجهوده في حماية أمن المعلومات؟
+  - عميل يطلب معلومات ممكن تضعف حمايتنا ضد الاختراق، نقدر نقول لا؟
+- key: uae-pdpl:art-13:para-3:pt-d
+  text: fc20b11bb66d3dcc
+  en:
+  - The data a user is asking about also contains other people's personal details. Can we refuse the request?
+  - Can we reject an information request if answering would expose another customer's private data?
+  - In our messaging app, a user asks for info that includes other users' data. Do we have to hand it
+    over?
+  ar:
+  - البيانات التي يطلبها المستخدم تتضمن بيانات أشخاص آخرين، هل يجوز رفض الطلب؟
+  - هل يجوز رفض طلب الحصول على المعلومات إذا كان يمس خصوصية بيانات الغير؟
+  - مستخدم يطلب معلومات فيها بيانات عملاء ثانيين، لازم نعطيه ولا نرفض؟
+- key: uae-pdpl:art-14:para-1
+  text: 66adbe51f0bf02e8
+  en:
+  - A customer of our subscription app wants a copy of all the data they gave us in a structured file
+    like CSV or JSON. Do we have to provide it?
+  - When can a user demand an export of their own data in a machine-readable format, and does it apply
+    if we process it based on consent or a contract?
+  - Do I need to build a 'download my data' feature if our app processes user data automatically to deliver
+    the service they signed up for?
+  ar:
+  - يطلب أحد عملائنا في التطبيق نسخة من بياناته التي زودنا بها بصيغة منظمة يمكن قراءتها آلياً، هل نلتزم
+    بتزويده بها؟
+  - ما هي الحالات التي يحق فيها لصاحب البيانات الحصول على بياناته بصيغة قابلة للقراءة الآلية، هل يشترط
+    أن تكون المعالجة قائمة على الموافقة أو العقد؟
+  - يا جماعة المستخدم يبي يحمّل كل بياناته من التطبيق بملف CSV أو JSON، لازم نوفر له هالشي ولا لا؟
+- key: uae-pdpl:art-14:para-2
+  text: f3e2146cfe18fb6e
+  en:
+  - A user wants to move their account history from our app to a competitor. Do we have to send their
+    data directly to the other company?
+  - Can customers ask us to transfer their personal data to another service provider, and what if it's
+    technically not possible?
+  - Our online shop got a request to hand a customer's data over to a rival platform. Are we obliged to
+    do it?
+  ar:
+  - مستخدم يريد نقل سجل حسابه من تطبيقنا إلى منصة منافسة، هل نحن ملزمون بإرسال بياناته مباشرة إلى الجهة
+    الأخرى؟
+  - هل يحق لصاحب البيانات أن يطلب نقل بياناته الشخصية إلى متحكم آخر، وماذا لو لم يكن ذلك ممكناً من الناحية
+    التقنية؟
+  - عميل في متجرنا يبينا نحوّل بياناته لشركة ثانية، لازم نسوي له هالنقل ولا بس لو الوضع التقني يسمح؟
+- key: uae-pdpl:art-15:para-1
+  text: 6345f4d628c06cc4
+  en:
+  - A user noticed the birth date in their profile on our app is wrong. Do we have to fix it when they
+    ask?
+  - Can a customer ask us to fill in missing details in the record we hold about them?
+  - How quickly do we need to act when someone asks to correct inaccurate personal info in our system?
+  ar:
+  - يحق للمستخدم أن يطلب تعديل بياناته الشخصية الخاطئة لدينا، فهل نلتزم بالتصحيح؟
+  - عميل يطلب استكمال بياناته الناقصة في سجلاتنا، هل يحق له ذلك قانوناً؟
+  - واحد من العملاء قال إن اسمه مكتوب غلط في حسابه، لازم نصلحه بسرعة ولا نقدر نأخر؟
+- key: uae-pdpl:art-15:para-2
+  text: e75266d290883a1b
+  en:
+  - When can a user make us delete the personal data we store about them?
+  - A customer emailed asking us to wipe everything we have on them from our online shop. Do we have to
+    do it?
+  - Does a person's right to have their data deleted have limits tied to other laws or the public interest?
+  ar:
+  - في أي حالات يحق للمستخدم أن يطلب منا حذف بياناته الشخصية المخزنة لدينا؟
+  - عميل راسل متجرنا الإلكتروني يطلب مسح كل بياناته، هل نحن ملزمون بذلك؟
+  - هل حق صاحب البيانات في طلب المحو مقيد بالتشريعات الأخرى والمصلحة العامة؟
+- key: uae-pdpl:art-15:para-2:pt-a
+  text: 6ec3debef1301e74
+  en:
+  - We still keep data of users who left years ago and we no longer need it. Can they demand we delete
+    it?
+  - Is a user entitled to erasure if the reason we collected their data is finished?
+  - Our app collected a phone number just for a one-time delivery. Must we delete it afterward if asked?
+  ar:
+  - عندنا بيانات مستخدمين تركوا التطبيق من سنوات ولم نعد نحتاجها، هل يحق لهم طلب حذفها؟
+  - هل يحق لصاحب البيانات طلب المحو إذا انتهى الغرض الذي جُمعت من أجله بياناته؟
+  - جمعنا رقم جوال عشان توصيل مرة وحدة، لازم نمسحه بعدين لو طلب العميل؟
+- key: uae-pdpl:art-15:para-2:pt-b
+  text: 8add4945be743f32
+  en:
+  - A user withdrew the consent they gave us for marketing emails. Can they also make us erase their data?
+  - If someone takes back their consent in our app settings, do we have to delete what we collected based
+    on it?
+  - Does pulling consent give a person the right to demand deletion of their data?
+  ar:
+  - مستخدم سحب موافقته على الرسائل التسويقية، هل يحق له أيضاً أن يطلب محو بياناته؟
+  - إذا تراجع الشخص عن موافقته من إعدادات التطبيق، هل علينا حذف البيانات التي جمعناها بناءً عليها؟
+  - لما العميل يلغي موافقته، يقدر يطلب منا نمسح بياناته؟
+- key: uae-pdpl:art-15:para-2:pt-c
+  text: 205ff98fe333dbb4
+  en:
+  - A customer objects to us processing their data and we have no strong reason to keep going. Do we have
+    to delete it?
+  - Can a user force us to erase their data just by objecting to how we use it?
+  - What if we can't show a legitimate reason to keep processing someone's data after they object?
+  ar:
+  - عميل اعترض على معالجتنا لبياناته وما عندنا سبب قوي نستمر، هل نحذف بياناته؟
+  - هل يمكن لصاحب البيانات إجبار المتحكم على المحو بمجرد اعتراضه على المعالجة؟
+  - وش نسوي لو الشخص اعترض وما عندنا مبرر مشروع نكمل فيه معالجة بياناته؟
+- key: uae-pdpl:art-15:para-2:pt-d
+  text: 890a5d7574c9e738
+  en:
+  - We found out we collected users' data in a way that breaks the data protection rules. Can they ask
+    us to delete it?
+  - If our clinic app processed patient data unlawfully, do patients have the right to get it erased?
+  - When is erasure required because our processing was illegal in the first place?
+  ar:
+  - اكتشفنا أننا جمعنا بيانات المستخدمين بطريقة مخالفة للقانون، هل يحق لهم طلب حذفها؟
+  - إذا عالج تطبيقنا بيانات المرضى بشكل غير قانوني، هل يحق للمريض طلب محوها؟
+  - متى يكون المحو واجباً لأن معالجة البيانات كانت مخالفة للتشريعات من الأساس؟
+- key: uae-pdpl:art-15:para-3
+  text: 7b585f4ff72ba77e
+  en:
+  - In which situations can we refuse a user's request to delete their data?
+  - Are there exceptions to the right to be forgotten that let us keep a customer's data?
+  - A user asked for deletion but we think we can lawfully say no. What grounds exist for refusing?
+  ar:
+  - في أي حالات يمكننا رفض طلب المستخدم بحذف بياناته؟
+  - هل توجد استثناءات على حق المحو تسمح لنا بالاحتفاظ ببيانات العميل؟
+  - مستخدم طلب حذف بياناته وإحنا نبي نرفض بشكل قانوني، إيش الأسباب المسموحة؟
+- key: uae-pdpl:art-15:para-3:pt-a
+  text: 82ec7a8ed01be373
+  en:
+  - Our private hospital app stores a patient's public-health records. Must we delete them if the patient
+    asks?
+  - Can a private clinic refuse to erase health data related to public health?
+  ar:
+  - تطبيق مستشفانا الخاص يحتفظ بسجلات صحية عامة للمريض، هل نمحوها إذا طلب؟
+  - هل يحق لعيادة خاصة رفض محو البيانات المتعلقة بالصحة العامة؟
+- key: uae-pdpl:art-15:para-3:pt-b
+  text: e38046664417cb69
+  en:
+  - A customer in a dispute with us asks to delete their order history. Can we keep it for the case?
+  - Can we refuse erasure when the data is needed for an investigation or to defend a legal claim?
+  - We expect a lawsuit from a user. Are we allowed to hold their data despite a deletion request?
+  ar:
+  - عميل بيننا وبينه نزاع يطلب حذف سجل طلباته، هل يمكننا الاحتفاظ به من أجل القضية؟
+  - هل نستطيع رفض المحو إذا كانت البيانات لازمة للتحقيق أو للدفاع عن حق قانوني؟
+  - نتوقع دعوى من مستخدم ويطلب مسح بياناته، يحق لنا نخليها عندنا؟
+- key: uae-pdpl:art-15:para-3:pt-c
+  text: 55379e093e28df68
+  en:
+  - Another law requires our bank app to keep transaction records for years. Must we still delete them
+    if a customer asks?
+  - Can we turn down an erasure request because it conflicts with other regulations we must follow?
+  - A user wants records deleted that we are legally obliged to retain. What do we do?
+  ar:
+  - قانون آخر يلزم تطبيقنا البنكي بحفظ سجلات المعاملات سنوات، هل نحذفها إذا طلب العميل؟
+  - هل يجوز رفض طلب المحو لأنه يتعارض مع تشريعات أخرى نخضع لها؟
+  - مستخدم يطلب مسح سجلات إحنا ملزمين نحتفظ فيها بحكم القانون، وش نسوي؟
+- key: uae-pdpl:art-15:para-3:pt-d
+  text: bc520c442956f936
+  en:
+  - Could the implementing regulations add more cases where we can refuse to erase data?
+  - Are the listed grounds for refusing deletion the only ones, or can more be set later?
+  - Where do I look for any extra exceptions to a user's right to erasure?
+  ar:
+  - هل يمكن أن تضيف اللائحة التنفيذية حالات أخرى يجوز فيها رفض محو البيانات؟
+  - هل حالات رفض الحذف المذكورة هي الوحيدة أم يمكن تحديد غيرها لاحقاً؟
+  - وين ألقى استثناءات إضافية على حق المستخدم في طلب المحو؟
+- key: uae-pdpl:art-16:para-1
+  text: 8a5c4acc7aa6aad6
+  en:
+  - When can a user force us to pause or stop processing their data in our app?
+  - A customer is demanding that we freeze how we use their data. Do they have the right to do that?
+  - What are the situations where we must restrict processing of someone's personal data on request?
+  ar:
+  - متى يحق للمستخدم أن يطلب منا إيقاف أو تقييد معالجة بياناته في التطبيق؟
+  - ما هي الحالات التي يلزم فيها المتحكم بتقييد معالجة البيانات الشخصية بناءً على طلب صاحبها؟
+  - عميل يقول وقفوا استخدام بياناتي، هل لازم أنفذ طلبه ومتى؟
+- key: uae-pdpl:art-16:para-1:pt-a
+  text: b6a4e14c4371bcf1
+  en:
+  - A user says the address on their profile is wrong. Do we have to pause processing while we check it?
+  - How long can we restrict processing of data whose accuracy is disputed?
+  - Customer disputes the accuracy of their record in our CRM; what must we do in the meantime?
+  ar:
+  - مستخدم اعترض على صحة بياناته المسجلة لدينا، هل يلزمنا تقييد المعالجة أثناء التحقق؟
+  - هل تقييد المعالجة بسبب الاعتراض على دقة البيانات يكون لمدة محددة للتحقق منها؟
+  - عميل يقول معلوماتي غلط في حسابكم، شو لازم نسوي لحد ما نتأكد؟
+- key: uae-pdpl:art-16:para-1:pt-b
+  text: fb8b960dc0135e0e
+  en:
+  - We collected emails for order updates but used them for marketing, and the user objected. Must we
+    restrict processing?
+  - Can a user make us stop using their data for something other than what they agreed to?
+  - A customer complains we're using their data for a purpose they never agreed to. What are their rights?
+  ar:
+  - جمعنا الإيميلات لتحديثات الطلبات واستخدمناها للتسويق واعترض العميل، هل علينا تقييد المعالجة؟
+  - هل يحق لصاحب البيانات إيقاف استخدام بياناته في غرض غير الذي وافق عليه؟
+  - المستخدم يشتكي إننا نستعمل بياناته بغير الغرض اللي اتفقنا عليه، شو حقه؟
+- key: uae-pdpl:art-16:para-1:pt-c
+  text: cbb68715fde079cf
+  en:
+  - We found our app has been processing user data in breach of the data protection law. Can users demand
+    a restriction?
+  - If our data processing turns out to be unlawful, can the user make us stop it?
+  - Does a user have the right to restrict processing just because we handled their data illegally?
+  ar:
+  - اكتشفنا أن تطبيقنا يعالج بيانات المستخدمين بشكل مخالف للقانون، هل يحق لهم طلب التقييد؟
+  - إذا كانت معالجتنا للبيانات غير قانونية، هل يستطيع صاحب البيانات إلزامنا بإيقافها؟
+  - لو كنا نعالج بيانات عميل بطريقة مخالفة للقانون، يقدر يطلب منا نوقف؟
+- key: uae-pdpl:art-16:para-2
+  text: 3b8b0c9290c189e7
+  en:
+  - A user is in a legal dispute and asks us to keep their data even after we no longer need it. Do we
+    have to?
+  - Can a customer ask us to retain their records past the normal period so they can use them in a lawsuit?
+  - Someone wants us not to delete their data because they need it to defend a claim in court. Is that
+    allowed?
+  ar:
+  - مستخدم لديه نزاع قضائي ويطلب منا الاحتفاظ ببياناته بعد انتهاء الغرض منها، هل يحق له ذلك؟
+  - هل يستطيع العميل أن يطلب إبقاء بياناته أطول من المدة المعتادة لاستخدامها في دعوى؟
+  - عميل يبي ما نمسح بياناته لأنه محتاجها في قضية، هل هذا من حقه؟
+- key: uae-pdpl:art-16:para-3
+  text: 85a74b4530ed37c7
+  en:
+  - When can we keep processing a user's data even after they ask us to restrict it and without their
+    consent?
+  - What are the exceptions that let us ignore a restriction request?
+  - User asked to restrict processing but we think we may continue. In which cases is that allowed?
+  ar:
+  - متى يجوز لنا الاستمرار في معالجة بيانات المستخدم دون موافقته رغم طلب التقييد؟
+  - ما الاستثناءات التي تسمح للمتحكم بتجاهل طلب تقييد المعالجة؟
+  - المستخدم طلب تقييد المعالجة بس نبي نكمل، في أي حالات يسمح لنا القانون؟
+- key: uae-pdpl:art-16:para-3:pt-a
+  text: 6c250a24f5bb3eb2
+  en:
+  - If we just store a user's data in our database and do nothing else with it, do we still have to honor
+    a restriction request?
+  - Can we keep data in backups after a restriction request if we only store it?
+  - Is mere storage of data allowed while processing is restricted?
+  ar:
+  - إذا كنا فقط نخزّن بيانات المستخدم في قاعدة البيانات، هل يجب أن نلتزم بطلب التقييد؟
+  - هل يجوز إبقاء البيانات في النسخ الاحتياطية بعد طلب التقييد إذا كان الأمر مجرد تخزين؟
+  - احنا بس نخزن البيانات ولا نستخدمها، لازم نوقف رغم طلب العميل؟
+- key: uae-pdpl:art-16:para-3:pt-b
+  text: 88f022b6e785493e
+  en:
+  - A customer is suing us and wants their data processing restricted. Can we still use their data for
+    our defense?
+  - Can we continue processing data when it's needed for a legal claim or court case?
+  - Our company needs a user's records for a legal proceeding; does their restriction request block us?
+  ar:
+  - عميل رفع علينا دعوى ويطلب تقييد معالجة بياناته، هل يمكننا استخدامها للدفاع عن أنفسنا؟
+  - هل يجوز مواصلة المعالجة إذا كانت ضرورية لدعوى قضائية أو المطالبة بحق؟
+  - نحتاج بيانات مستخدم في إجراء قضائي، هل طلب التقييد يمنعنا؟
+- key: uae-pdpl:art-16:para-3:pt-c
+  text: 29d316dba9abfeed
+  en:
+  - Can we keep processing a user's data after a restriction request if it's needed to protect another
+    person's rights?
+  - A user wants us to stop processing but another user's rights depend on that data. What applies?
+  - Does protecting third parties allow us to override a restriction request?
+  ar:
+  - هل نستمر بمعالجة البيانات رغم طلب التقييد إذا كانت ضرورية لحماية حقوق شخص آخر؟
+  - مستخدم يطلب إيقاف المعالجة لكن حقوق مستخدم ثانٍ تعتمد على هذه البيانات، ما الحكم؟
+  - هل حماية حقوق الغير تبرر تجاوز طلب التقييد؟
+- key: uae-pdpl:art-16:para-3:pt-d
+  text: e742b8a526dff94d
+  en:
+  - Can we keep processing data despite a restriction request if it's needed for the public interest?
+  - A regulator needs us to keep using certain user data for public safety. Can we ignore the user's restriction
+    request?
+  - Does the public interest exception let a controller continue processing without consent?
+  ar:
+  - هل يجوز الاستمرار بالمعالجة رغم طلب التقييد إذا كانت ضرورية للمصلحة العامة؟
+  - جهة رسمية تحتاج منا استمرار استخدام بيانات معينة للسلامة العامة، هل نتجاهل طلب المستخدم؟
+  - هل تسمح المصلحة العامة للمتحكم بالمعالجة دون موافقة صاحب البيانات؟
+- key: uae-pdpl:art-16:para-4
+  text: fbfd1717171f58b1
+  en:
+  - After we lift a restriction on a user's data, do we need to tell them?
+  - Do we have to notify the customer when we resume processing their data after verification?
+  - What is our duty to the user once a processing restriction ends?
+  ar:
+  - بعد رفع التقييد عن بيانات المستخدم، هل يجب إبلاغه؟
+  - هل علينا إخطار العميل عندما نستأنف معالجة بياناته بعد التحقق؟
+  - ما التزامنا تجاه صاحب البيانات عند إنهاء تقييد المعالجة؟
+- key: uae-pdpl:art-17
+  text: 8e2a6a7f18a8944c
+  en:
+  - When can a user tell us to stop using their personal data in our app?
+  - A customer is asking us to stop processing their information. Do they have the right to demand that?
+  - What are the situations where someone can object to how we handle their data and make us stop?
+  ar:
+  - متى يحق للمستخدم أن يعترض على معالجة بياناته في تطبيقنا ويطلب إيقافها؟
+  - ما هي الحالات التي يقدر فيها صاحب البيانات يوقف معالجتنا لبياناته؟
+  - عميل يبي يوقف استخدامنا لمعلوماته، هل من حقه وفي أي حالات؟
+- key: uae-pdpl:art-17:para-1
+  text: a136e95f19c07482
+  en:
+  - A subscriber wants to stop getting our promotional emails and push offers. Do we have to honor that?
+  - Can a customer object to us building a profile of their shopping habits to target ads at them?
+  - Our online shop sends marketing messages based on browsing history, and a user says stop. Can they
+    force us?
+  ar:
+  - مشترك يطلب إيقاف رسائلنا الترويجية وعروض الإشعارات، هل يلزمنا ذلك قانونا؟
+  - هل يحق للعميل الاعتراض على تحليل سلوكه الشرائي لاستهدافه بإعلانات تسويقية؟
+  - واحد من عملاءنا قال وقفوا الرسائل التسويقية والعروض، لازم نوقفها ولا لا؟
+- key: uae-pdpl:art-17:para-2
+  text: 9341c19f90f1a7a8
+  en:
+  - Can a user opt out of having their data used in our customer research surveys and statistics?
+  - We run statistical analysis on user data in our app. When can someone make us stop?
+  - Does a person's objection to statistical use of their data still apply if the work serves the public
+    interest?
+  ar:
+  - هل يحق للمستخدم رفض استخدام بياناته في استطلاعاتنا ودراساتنا الإحصائية؟
+  - نجري تحليلات إحصائية على بيانات مستخدمي التطبيق، متى يستطيع الشخص إيقاف ذلك؟
+  - هل يسقط اعتراض الشخص على استخدام بياناته في المسوح الإحصائية إذا كانت المعالجة لخدمة المصلحة العامة؟
+- key: uae-pdpl:art-17:para-3
+  text: 9050fa9f7c7fcec7
+  en:
+  - We processed user data without a valid legal basis. Can the user demand we stop?
+  - A customer says we are collecting their data in breach of the rules on lawful processing. Do we have
+    to halt?
+  - If our app handles personal data in a way the law doesn't allow, what can the affected user do?
+  ar:
+  - عالجنا بيانات مستخدم بدون أساس قانوني سليم، هل يحق له أن يطلب إيقاف المعالجة؟
+  - عميل يقول إننا نعالج بياناته بالمخالفة لشروط المعالجة المشروعة، هل يجب أن نتوقف؟
+  - إذا كان تطبيقنا يعالج بيانات بطريقة يمنعها القانون، ماذا يستطيع صاحب البيانات أن يفعل؟
+- key: uae-pdpl:art-18:para-1
+  text: 755a85f932c75adb
+  en:
+  - My app automatically rejects loan applications with an algorithm. Can an applicant push back on that
+    decision?
+  - Do users have a right to contest a decision made by a scoring or profiling system that hurts them?
+  - A customer is upset because our software auto-declined their account and wants to challenge it. Do
+    they have that right?
+  ar:
+  - هل يحق للمستخدم أن يعترض على قرار اتخذه النظام تلقائياً وأثّر عليه بشكل كبير مثل رفض طلبه؟
+  - عميلي زعلان لأن النظام رفض طلبه أوتوماتيك بناءً على تحليل بياناته، يقدر يعترض على القرار؟
+  - هل يجوز لصاحب البيانات الاعتراض على قرارات التنميط الآلي التي لها أثر قانوني عليه؟
+- key: uae-pdpl:art-18:para-2
+  text: 8871525e5417732c
+  en:
+  - In what situations can a user NOT object to a decision our system makes automatically?
+  - Are there exceptions where customers can't contest automated decisions made by our platform?
+  - Is the right to challenge algorithmic decisions limited in some cases, such as when a contract or
+    another law is involved?
+  ar:
+  - ما هي الحالات التي لا يحق فيها للمستخدم الاعتراض على القرارات الآلية التي يتخذها نظامنا؟
+  - في استثناءات تمنع العميل من الاعتراض على قرار أخذه النظام أوتوماتيك؟
+  - هل يسقط حق الاعتراض على المعالجة المؤتمتة في بعض الظروف؟
+- key: uae-pdpl:art-18:para-2:pt-a
+  text: 9a5da632e7820d1b
+  en:
+  - Our terms of service say decisions like fraud checks are done automatically. Can the user still object
+    because the contract covers it?
+  - If automated processing is part of the contract a customer signed with us, can they object to the
+    outcome?
+  - We run automated credit approvals as part of our service agreement. Does the customer lose the right
+    to contest?
+  ar:
+  - العقد مع العميل ينص على أن القرارات تتم آلياً، فهل يقدر يعترض عليها؟
+  - إذا كانت المعالجة الآلية جزءاً من شروط العقد بيننا وبين المستخدم، هل يسقط حقه في الاعتراض؟
+  - احنا حاطين في اتفاقية الخدمة إن الموافقة على الطلبات تتم أوتوماتيك، هل العميل يقدر يعترض؟
+- key: uae-pdpl:art-18:para-2:pt-b
+  text: b5b46c2f65c43057
+  en:
+  - Our bank app must run automated checks because another law requires it. Can users object to those
+    decisions?
+  - If a different regulation makes automated screening mandatory, can the data subject still contest
+    the result?
+  - Does a legal requirement to automate, like compliance screening, remove the user's right to object?
+  ar:
+  - تطبيقنا البنكي مجبر بقانون آخر يسوي فحص آلي، هل يحق للعميل الاعتراض على نتيجته؟
+  - هل يمنع اشتراط تشريع نافذ في الدولة للمعالجة الآلية صاحب البيانات من الاعتراض؟
+  - في حال كانت المعالجة المؤتمتة ضرورية بموجب قانون ثاني، هل يبقى حق الاعتراض؟
+- key: uae-pdpl:art-18:para-2:pt-c
+  text: 928002f92b240149
+  en:
+  - A user ticked a box agreeing to automated decision-making in our app. Can they object later to the
+    results?
+  - Does prior consent to automated processing take away the right to contest its decisions?
+  - We got consent upfront for automatic profiling of customers. Are we protected from objections?
+  ar:
+  - المستخدم وافق مسبقاً على القرارات الآلية في تطبيقنا، هل يقدر يعترض عليها بعدين؟
+  - هل تسقط الموافقة المسبقة على المعالجة المؤتمتة حق صاحب البيانات في الاعتراض؟
+  - أخذنا موافقة العميل قبل ما نسوي التنميط الآلي، هل نكون محميين من اعتراضه؟
+- key: uae-pdpl:art-18:para-3
+  text: dac52eac77ebd046
+  en:
+  - If users can't object to our automated decisions because of a contract or consent, what must we still
+    do to protect their data?
+  - What safeguards do we owe customers when automated processing is allowed without objection?
+  - Can we ignore a user's rights just because the automated processing falls under an exception?
+  ar:
+  - لو ما كان للمستخدم حق الاعتراض على القرارات الآلية، شو لازم نسوي عشان نحمي بياناته؟
+  - ما التزامات المتحكم بحماية خصوصية البيانات وسريتها عندما تنطبق استثناءات الاعتراض على المعالجة المؤتمتة؟
+  - هل نقدر نتجاهل حقوق العميل لأن المعالجة الآلية مستثناة من الاعتراض؟
+- key: uae-pdpl:art-18:para-4
+  text: d42e3dfe74dfc2d4
+  en:
+  - A customer asked for a real person to look at the decision our algorithm made. Do we have to do that?
+  - Do we need a human to review automated decisions when a user requests it?
+  - Our app auto-flags and suspends accounts. Should support staff be able to manually re-check a case
+    if the user asks?
+  ar:
+  - العميل طلب أن يراجع موظف حقيقي قرار اتخذه النظام الآلي، هل يلزمنا ذلك؟
+  - هل يجب إشراك العنصر البشري في مراجعة القرارات المؤتمتة بناءً على طلب صاحب البيانات؟
+  - تطبيقنا يوقف الحسابات تلقائياً، ولو المستخدم طلب مراجعة يدوية لازم نسويها؟
+- key: uae-pdpl:art-19
+  text: c7bbbd5d2e8d7577
+  en:
+  - Our app only has a generic info@ email buried in the footer. Is that enough for users who want to
+    access or delete their data, or do we need something clearer?
+  - What contact channels do we have to offer so customers can submit requests about their personal data,
+    like a privacy request form or a dedicated email?
+  - A user complained they couldn't figure out how to ask us to correct their data. Are we required to
+    make that process easy to find?
+  ar:
+  - ما هي الواجبات على الشركة فيما يخص توفير وسيلة واضحة تمكّن العميل من تقديم طلب لممارسة حقوقه على بياناته
+    الشخصية؟
+  - هل يكفي أن نضع بريداً إلكترونياً عاماً في أسفل موقع متجرنا ليتواصل معنا أصحاب البيانات لطلب حقوقهم،
+    أم يلزم توفير آلية أوضح؟
+  - يا جماعة المستخدمين ما يعرفون كيف يطلبون حذف بياناتهم من تطبيقنا، لازم نحط لهم رابط أو نموذج واضح
+    ولا عادي؟
+- key: uae-pdpl:art-20:para-1
+  text: c04ad75697468e14
+  en:
+  - What level of security do we have to put in place for the user data our app processes?
+  - We're a SaaS startup handling customer records. Are we expected to follow international security standards,
+    or can we just do the basics?
+  - Does the company that hosts or processes data for us have the same security duties as we do?
+  ar:
+  - ما مستوى حماية المعلومات الذي يجب أن نطبقه على بيانات المستخدمين في تطبيقنا؟
+  - هل يلزمنا قانوناً اتباع المعايير الدولية في أمن المعلومات أم يكفي إجراءات بسيطة؟
+  - شركتنا تعالج بيانات عملاء لحساب شركة ثانية، هل علينا نفس التزامات الأمان ولا بس صاحب البيانات؟
+- key: uae-pdpl:art-20:para-1:pt-a
+  text: bd3a1b5be86ff928
+  en:
+  - Do we have to encrypt customer data stored in our database?
+  - Is pseudonymising user records enough, or do we need real encryption for personal data?
+  - Our online shop keeps customer names and addresses in plain text. Is that a problem?
+  ar:
+  - هل يجب علينا تشفير بيانات العملاء المخزنة في قاعدة بياناتنا؟
+  - هل يعتبر إخفاء هوية أصحاب البيانات في السجلات إجراءً مطلوباً لحماية البيانات الشخصية؟
+  - موقعنا يخزن أسماء وعناوين الزبائن بدون تشفير، هل هذا مسموح؟
+- key: uae-pdpl:art-20:para-1:pt-b
+  text: a8fa5571799a9ae2
+  en:
+  - What do we need to do to keep our systems' confidentiality and integrity intact while processing user
+    data?
+  - Are we required to make sure our cloud services keep data accurate and private all the time?
+  ar:
+  - ما الإجراءات المطلوبة لضمان سرية أنظمة معالجة البيانات وسلامتها وبقائها صامدة؟
+  - هل يجب أن نضمن أن أنظمتنا تظل موثوقة ودقيقة ومحمية بشكل مستمر؟
+  - شو لازم نسوي عشان نضمن إن أنظمة المعالجة عندنا آمنة وما تتأثر ببسهولة؟
+- key: uae-pdpl:art-20:para-1:pt-c
+  text: ce5bd4f1f352ad3b
+  en:
+  - If our server crashes, do we need to be able to restore user data quickly?
+  - Do we need backups and disaster recovery for the personal data in our app?
+  - Our database went down for hours and users couldn't access their data. Did we breach our duties?
+  ar:
+  - إذا تعطل السيرفر عندنا، هل يجب أن نكون قادرين على استرجاع بيانات المستخدمين بسرعة؟
+  - هل النسخ الاحتياطي وخطة التعافي من الكوارث مطلوبان للبيانات الشخصية؟
+  - قاعدة البيانات وقعت كم ساعة والمستخدمين ما قدروا يوصلون لبياناتهم، هل نعتبر مقصرين؟
+- key: uae-pdpl:art-20:para-1:pt-d
+  text: e00825fb06c907b3
+  en:
+  - Do we have to regularly test our security controls, like pen testing?
+  - Is there a duty to review and assess our security setup for processing personal data?
+  ar:
+  - هل يلزمنا إجراء اختبارات دورية لإجراءات الأمان مثل اختبار الاختراق؟
+  - كيف نتأكد قانوناً من أن تدابير حماية البيانات عندنا فعالة ويتم تقييمها؟
+  - وين نلتزم بفحص وتقييم إجراءاتنا الأمنية بشكل منتظم لمعالجة البيانات؟
+- key: uae-pdpl:art-20:para-2
+  text: 5dbb4e14cc180a04
+  en:
+  - What factors should we consider when deciding if our security level is good enough?
+  - How do we assess whether our security measures fit the risks of our data processing?
+  - Is there a checklist of things to weigh when evaluating our app's data security?
+  ar:
+  - ما العوامل التي يجب مراعاتها عند تقييم مستوى أمن المعلومات لدينا؟
+  - كيف نحدد أن إجراءات الأمان عندنا مناسبة لمخاطر معالجة البيانات؟
+  - في شي نعتمد عليه عشان نقيّم أمان بيانات تطبيقنا ولا نقرر حسب اجتهادنا؟
+- key: uae-pdpl:art-20:para-2:pt-a
+  text: 18456201c5bc9eef
+  en:
+  - Which risks should we consider, like data leaks, loss or unauthorized access, when assessing our security?
+  - Do our risk checks need to cover data in transit and at rest as well as while it's being processed?
+  - An employee accidentally changed customer records. Is that the kind of risk we must plan for?
+  ar:
+  - ما المخاطر التي يجب أخذها في الحساب كالتسريب أو الضياع أو الوصول غير المصرح به عند تقييم الأمان؟
+  - هل يجب أن يشمل تقييم المخاطر البيانات أثناء النقل والتخزين والمعالجة؟
+  - موظف عدّل سجلات العملاء بالغلط، هل هذا من المخاطر اللي لازم نحسب حسابها؟
+- key: uae-pdpl:art-20:para-2:pt-b
+  text: 0ab19b484579f49f
+  en:
+  - Can the cost of security tools be taken into account when choosing how much protection to apply?
+  - Does the type and purpose of our data processing change how strong our security must be?
+  - Do we need stronger protection if the data could seriously affect users' privacy?
+  ar:
+  - هل يمكن مراعاة تكلفة أدوات الأمان عند تحديد مستوى الحماية المطلوب؟
+  - هل تؤثر طبيعة المعالجة وأهدافها ونطاقها على قوة الأمان المطلوبة؟
+  - هل نحتاج حماية أقوى إذا كانت البيانات قد تؤثر كثيراً على خصوصية المستخدمين؟
+- key: uae-pdpl:art-21:para-1
+  text: 272346e624372147
+  en:
+  - We're about to launch an app using a new facial recognition feature. Do we have to assess privacy
+    impact before going live?
+  - Do I need to run a data protection impact assessment before rolling out new tech that could be risky
+    for users' privacy?
+  - Is it required to evaluate the risks to user data before we start processing with some new AI tool?
+  ar:
+  - هل يجب على الشركة إجراء تقييم لأثر حماية البيانات الشخصية قبل البدء بالمعالجة عند استخدام تقنيات حديثة
+    تشكل خطراً عالياً على الخصوصية؟
+  - احنا بنطلق ميزة جديدة بالذكاء الاصطناعي في التطبيق، لازم نسوي تقييم للمخاطر على خصوصية المستخدمين
+    قبل الإطلاق؟
+  - متى يلزمني أعمل تقييم أثر قبل ما أشغّل تقنية جديدة تتعامل مع بيانات العملاء؟
+- key: uae-pdpl:art-21:para-2
+  text: 209300980b7aecaa
+  en:
+  - In which situations is an impact assessment mandatory for our app's data processing?
+  - When is a DPIA compulsory rather than optional for a company handling user data?
+  - What are the cases that trigger a required privacy risk assessment?
+  ar:
+  - ما هي الحالات التي يكون فيها تقييم أثر حماية البيانات إلزامياً على المتحكم؟
+  - وش الحالات اللي لازم فيها نسوي تقييم أثر للخصوصية في مشروعنا؟
+  - متى يصير تقييم الأثر ضرورياً وليس اختيارياً عند معالجة بيانات المستخدمين؟
+- key: uae-pdpl:art-21:para-2:pt-a
+  text: 411c6a2cf2d1686a
+  en:
+  - Our app profiles users automatically to decide on loan approvals. Do we need an impact assessment?
+  - Does automated scoring or profiling of customers that significantly affects them require a DPIA?
+  - We rate employees' or users' behavior with an algorithm that affects their access to services. Is
+    a privacy impact assessment required?
+  ar:
+  - تطبيقنا يقيّم العملاء آلياً عبر التنميط لاتخاذ قرار الموافقة على التمويل، هل يلزم تقييم أثر؟
+  - هل التقييم الآلي الشامل لسلوك المستخدمين الذي يؤثر عليهم بشكل كبير يستوجب تقييم أثر حماية البيانات؟
+- key: uae-pdpl:art-21:para-2:pt-b
+  text: 2cd7d290f7f2f3fc
+  en:
+  - Our clinic app will store health records for thousands of patients. Do we need an impact assessment
+    first?
+  - Is a DPIA required if we process a lot of sensitive data like biometrics or medical info?
+  - We're building a platform that collects large amounts of sensitive user data. Must we assess the privacy
+    impact?
+  ar:
+  - عيادتنا ستخزن سجلات صحية لآلاف المرضى في تطبيق، هل يجب إجراء تقييم أثر قبل ذلك؟
+  - هل معالجة كمية كبيرة من البيانات الحساسة مثل البيانات الحيوية تستلزم تقييم أثر حماية البيانات؟
+  - عندنا منصة بتجمع بيانات حساسة بكميات ضخمة، لازم نسوي تقييم للأثر؟
+- key: uae-pdpl:art-21:para-3
+  text: 26ffbb22b537d3bf
+  en:
+  - What must a privacy impact assessment contain at a minimum?
+  - What should I include in the DPIA report we're preparing for our product?
+  - Is there a minimum checklist of contents for a data protection risk assessment?
+  ar:
+  - ما هي العناصر الدنيا التي يجب أن يتضمنها تقييم أثر حماية البيانات الشخصية؟
+  - وش لازم أحط في تقرير تقييم الأثر اللي نجهزه لمنتجنا؟
+  - هل في حد أدنى للمحتوى المطلوب في تقييم مخاطر البيانات؟
+- key: uae-pdpl:art-21:para-3:pt-a
+  text: df00afa90221e412
+  en:
+  - Does our impact assessment need to describe what our app does with the data and why?
+  - Do we have to write up the processing operations and their purpose in the DPIA?
+  - What description of data processing should be part of the privacy assessment?
+  ar:
+  - هل يجب أن يتضمن تقييم الأثر شرحاً واضحاً لعمليات المعالجة والغرض منها؟
+  - لازم نكتب في تقييم الأثر وش نسوي بالبيانات وليش نعالجها؟
+  - ما الوصف المطلوب لعمليات معالجة البيانات في وثيقة تقييم الأثر؟
+- key: uae-pdpl:art-21:para-3:pt-b
+  text: f73c03ffba0729fd
+  en:
+  - Must the assessment show that collecting this data is actually necessary for our feature?
+  - Do we need to justify that the data we process is proportionate to what the app does?
+  - Does the DPIA need to check whether we could achieve our goal with less data?
+  ar:
+  - هل يجب أن يبيّن التقييم أن جمع هذه البيانات ضروري ومتناسب مع الغرض منها؟
+  - لازم نبرر في تقييم الأثر ان البيانات اللي نجمعها فعلاً نحتاجها للميزة؟
+  - هل يتحقق التقييم من أن حجم المعالجة مناسب للهدف من التطبيق؟
+- key: uae-pdpl:art-21:para-3:pt-c
+  text: 714346c678438f65
+  en:
+  - Does the impact assessment have to cover the risks to users' privacy and confidentiality?
+  - What kind of risk analysis for user data must be in our DPIA?
+  - Do we need to list what could go wrong for users, like leaks, in the assessment?
+  ar:
+  - هل يجب أن يشمل التقييم تحليل المخاطر المحتملة على خصوصية وسرية بيانات المستخدمين؟
+  - وش نوع تحليل المخاطر اللي لازم يكون في تقييم الأثر؟
+  - هل لازم نذكر في التقييم الأخطار اللي ممكن تصير على بيانات العملاء مثل التسريب؟
+- key: uae-pdpl:art-21:para-3:pt-d
+  text: 3e6d2e889fd670a3
+  en:
+  - Does our assessment need to list the safeguards we'll use to reduce privacy risks?
+  - Do we have to describe mitigation measures in the DPIA?
+  - What measures should be proposed in the assessment to lower risks to user data?
+  ar:
+  - هل يجب أن يتضمن التقييم الإجراءات والتدابير المقترحة للحد من المخاطر على البيانات؟
+  - لازم نذكر في تقييم الأثر الحلول اللي بنطبقها لتقليل المخاطر؟
+  - ما التدابير التي ينبغي اقتراحها في التقييم لتقليل مخاطر بيانات المستخدمين؟
+- key: uae-pdpl:art-21:para-4
+  text: 0bfe1d96d26b17ea
+  en:
+  - We have several similar features with the same kind of data use. Can one assessment cover all of them?
+  - Can I do a single DPIA for multiple similar processing activities instead of one each?
+  - Do we need a separate impact assessment for each app module if the risks are alike?
+  ar:
+  - عندنا عدة ميزات متشابهة في استخدام البيانات، هل يكفي تقييم أثر واحد لها كلها؟
+  - هل يجوز إجراء تقييم واحد لمجموعة عمليات معالجة متماثلة في طبيعتها ومخاطرها؟
+  - لازم نسوي تقييم منفصل لكل خاصية بالتطبيق لو المخاطر نفسها؟
+- key: uae-pdpl:art-21:para-5
+  text: 802c7503783b830b
+  en:
+  - Does our data protection officer have to be involved when we do a privacy impact assessment?
+  - Who should we work with while preparing the DPIA for our new product?
+  - Should the DPO be consulted during the impact assessment?
+  ar:
+  - هل يجب التنسيق مع مسؤول حماية البيانات أثناء إجراء تقييم الأثر؟
+  - مين لازم نشاركه وإحنا نجهز تقييم الأثر، هل مسؤول حماية البيانات؟
+  - هل يلزم إشراك مسؤول حماية البيانات عند تقييم أثر المعالجة؟
+- key: uae-pdpl:art-21:para-6
+  text: 342de51cd032464a
+  en:
+  - Is there an official list of processing activities that don't need an impact assessment?
+  - Where can I check whether my type of processing is exempt from a DPIA?
+  - Does the regulator publish which processing operations can skip the privacy assessment?
+  ar:
+  - هل توجد قائمة رسمية بعمليات المعالجة التي لا تحتاج إلى تقييم أثر؟
+  - وين ألقى القائمة اللي تبين أنواع المعالجة المعفية من تقييم الأثر؟
+  - هل تنشر الجهة المختصة على موقعها أنواع المعالجة غير الملزمة بتقييم الأثر؟
+- key: uae-pdpl:art-21:para-7
+  text: 57ad01645f6b99a4
+  en:
+  - Do we need to revisit our impact assessment after launch if the risks change?
+  - Our app added new features that raise the risk level. Do we need to check the processing still matches
+    the assessment?
+  ar:
+  - هل يجب مراجعة نتائج تقييم الأثر دورياً بعد الإطلاق إذا تغير مستوى المخاطر؟
+  - أضفنا خصائص جديدة للتطبيق ورفعت المخاطر، هل لازم نتأكد أن المعالجة لسا مطابقة للتقييم؟
+- key: uae-pdpl:art-22
+  text: c6b3f508f093a72b
+  en:
+  - Can we send our users' personal data to servers outside the UAE, and who has to approve the cases
+    where that's allowed?
+  - Our app's cloud hosting is in another country. Under what circumstances is it legal to move customer
+    data abroad?
+  - Are there only certain approved situations where an online shop can transfer customer info overseas,
+    or is it freely allowed?
+  ar:
+  - هل يجوز لنا نقل بيانات المستخدمين الشخصية إلى سيرفرات خارج الدولة، ومن الجهة التي تعتمد الحالات المسموحة؟
+  - في أي الحالات يسمح قانونا بتحويل بيانات عملاء تطبيقنا إلى بلد آخر لأغراض المعالجة؟
+  - شركتنا تبي تنقل داتا العملاء برا الإمارات، هل في حالات معينة معتمدة من المكتب ولا الموضوع مفتوح؟
+- key: uae-pdpl:art-22:para-1
+  text: d6632c2ac8abdff5
+  en:
+  - We want to host our app's user data in another country. Does that country need its own data protection
+    law for the transfer to be allowed?
+  - What should a country's privacy rules include, like user rights and a regulator that can penalize
+    companies, before we can send data there?
+  - Our clinic software vendor is based abroad. How do we know if their country has adequate data protection
+    legislation and enforcement for us to transfer patient data?
+  ar:
+  - نريد استضافة بيانات مستخدمي تطبيقنا في دولة أخرى، هل يشترط أن يكون لديها قانون لحماية البيانات الشخصية
+    حتى يجوز النقل؟
+  - ما الذي يجب أن تتضمنه تشريعات الدولة المنقول إليها البيانات، مثل حقوق أصحاب البيانات وجهة رقابية تفرض
+    إجراءات على المتحكم أو المعالج؟
+  - شلون أعرف إن البلد اللي بنرسل له بيانات عملائنا عنده قوانين حماية خصوصية وجهة تحاسب الشركات؟
+- key: uae-pdpl:art-22:para-2
+  text: d5cceee583be0c9f
+  en:
+  - Can we transfer customer data to a country just because the UAE has signed a data protection agreement
+    with it?
+  - Does a bilateral or multilateral data protection treaty between the UAE and another country make it
+    OK to send our app's user data there?
+  - We're moving our school platform's student records to a foreign data center. Does an international
+    agreement the UAE joined count as grounds for the transfer?
+  ar:
+  - هل يجوز نقل بيانات العملاء إلى دولة معينة إذا كانت الدولة منضمة لاتفاقية معها بشأن حماية البيانات
+    الشخصية؟
+  - هل وجود اتفاقية ثنائية أو متعددة الأطراف بين الإمارات ودولة أخرى يبرر نقل بيانات مستخدمي تطبيقنا إليها؟
+- key: uae-pdpl:art-23:para-1
+  text: e8eab7b3e111d16d
+  en:
+  - In what situations can we still send customer personal data to servers or partners abroad even if
+    the destination country doesn't have an adequate privacy regime?
+  - Our app's vendor is overseas and the country has no data adequacy status. Are there any exceptions
+    that let us transfer user data there?
+  - What are the allowed grounds for exporting user data out of the UAE when the normal route isn't available?
+  ar:
+  - ما هي الحالات التي يجوز فيها نقل بيانات العملاء الشخصية إلى خارج الدولة رغم عدم وجود مستوى حماية ملائم
+    في البلد المستقبل؟
+  - شركتنا تستخدم مزود خدمة سحابية في الخارج والدولة ما عندها تصنيف كفاية، هل في استثناءات تسمح لنا بنقل
+    البيانات؟
+  - وش الحالات اللي أقدر فيها أنقل بيانات المستخدمين برا الإمارات لو ما كان فيه حماية كافية هناك؟
+- key: uae-pdpl:art-23:para-1:pt-a
+  text: 4de0e6c77f236f74
+  en:
+  - We want to send data to a support team in a country with no data protection law. Can a contract between
+    the companies cover that?
+  - What must a data transfer agreement with an overseas processor include if their country has no privacy
+    law?
+  - Can our UAE company share customer data with an affiliate abroad if we sign an agreement making them
+    follow UAE rules and accept oversight by a regulator or court?
+  ar:
+  - نبغى نرسل بيانات لفريق دعم في دولة ما فيها قانون حماية بيانات، هل يكفي عقد بين الشركتين؟
+  - ما الذي يجب أن يتضمنه العقد مع شركة معالجة في الخارج إذا كانت دولتها لا تملك قانونا لحماية البيانات؟
+  - هل يجوز لمنشأتنا نقل بيانات العملاء إلى شركة شقيقة بالخارج بموجب اتفاقية تلزمها بأحكام القانون وتخضعها
+    لجهة رقابية أو قضائية؟
+- key: uae-pdpl:art-23:para-1:pt-b
+  text: ba0155afab07adf9
+  en:
+  - If a user explicitly agrees to their data being sent abroad, is that enough to transfer it, for example
+    by ticking a box in our app?
+  - Are there limits on relying on user consent to move data overseas?
+  - A customer asked us to send their records to a clinic in another country. Can we do it based on their
+    clear approval?
+  ar:
+  - إذا وافق المستخدم صراحة على نقل بياناته إلى الخارج، مثلا بتأشير خانة في التطبيق، هل هذا يكفي؟
+  - هل هناك قيود على الاعتماد على موافقة صاحب البيانات لنقل بياناته خارج الدولة؟
+  - شو أسوي لو العميل طلب مني أرسل ملفه لعيادة برا الدولة وهو موافق بشكل واضح، يحق لي؟
+- key: uae-pdpl:art-23:para-1:pt-c
+  text: 48b077d52b975b58
+  en:
+  - We're in a lawsuit abroad and need to send user records to our foreign lawyers. Is that permitted?
+  - Can personal data be transferred overseas to defend or prove our legal rights in court?
+  - Does the need to meet legal obligations before a court allow us to move customer data out of the country?
+  ar:
+  - عندنا قضية في الخارج ونحتاج نرسل بيانات مستخدمين لمحامينا هناك، هل يجوز ذلك؟
+  - هل يجوز نقل البيانات الشخصية إلى الخارج لإثبات حقوقنا أو الدفاع عنها أمام القضاء؟
+- key: uae-pdpl:art-23:para-1:pt-d
+  text: 561e341df047f7af
+  en:
+  - Our online shop must send the buyer's address to an overseas courier to deliver their order. Is that
+    transfer allowed?
+  - Can we transfer customer data abroad when it's needed to carry out the contract we have with that
+    customer?
+  - We have a contract with a foreign partner that benefits our user, like an international booking. Can
+    we pass their data along?
+  ar:
+  - متجرنا الإلكتروني يحتاج يرسل عنوان المشتري لشركة شحن في الخارج لتوصيل الطلب، هل هذا النقل جائز؟
+  - هل يجوز نقل بيانات العميل إلى الخارج إذا كان ضروريا لتنفيذ العقد المبرم معه؟
+  - احنا متعاقدين مع طرف ثالث بالخارج لمصلحة العميل مثل حجز فندق دولي، نقدر نعطيهم بياناته؟
+- key: uae-pdpl:art-23:para-1:pt-e
+  text: e6b22c9a08348e85
+  en:
+  - A foreign court asked us for user data through an official cooperation request between countries.
+    Can we hand it over?
+  - Is moving personal data abroad allowed when it's part of international judicial cooperation?
+  - Our fintech got a cross-border legal assistance request. Does that count as a valid reason to transfer
+    data?
+  ar:
+  - محكمة أجنبية طلبت بيانات مستخدمين عبر طلب تعاون رسمي بين الدول، هل يجوز تسليمها؟
+  - هل يجوز نقل البيانات الشخصية للخارج إذا كان ذلك لتنفيذ إجراء تعاون قضائي دولي؟
+  - وصلنا طلب مساعدة قانونية دولية للبنك الرقمي عندنا، هل هذا مبرر لنقل البيانات؟
+- key: uae-pdpl:art-23:para-1:pt-f
+  text: 01c78ca9434af826
+  en:
+  - Can we send personal data outside the country if it's needed to protect the public interest?
+  - Is public interest a valid reason to export user data to another country?
+  - Our health app needs to share data abroad to deal with a public health emergency. Is that permitted?
+  ar:
+  - هل يجوز نقل البيانات الشخصية إلى خارج الدولة إذا كان ذلك ضروريا لحماية المصلحة العامة؟
+  - هل تعتبر المصلحة العامة سببا مقبولا لتصدير بيانات المستخدمين لدولة أخرى؟
+  - تطبيقنا الصحي يحتاج يشارك بيانات مع الخارج بسبب طارئ صحي عام، هل مسموح؟
+- key: uae-pdpl:art-23:para-2
+  text: e0ffbfe42ad3baa3
+  en:
+  - Where can I find the detailed conditions we must meet when transferring data abroad under these exceptions?
+  - Is there further guidance on the specific requirements for each overseas transfer case?
+  - Who sets the practical controls for sending personal data out of the UAE, and where are they published?
+  ar:
+  - وين ألقى الشروط التفصيلية اللي لازم ألتزم فيها عند نقل البيانات للخارج ضمن هذه الحالات؟
+  - هل توجد ضوابط واشتراطات إضافية تفصيلية لكل حالة من حالات النقل خارج الدولة؟
+  - من الجهة التي تحدد الضوابط العملية لنقل البيانات الشخصية خارج الدولة وفي أي وثيقة ترد؟
+- key: uae-pdpl:art-24:para-1
+  text: 65517b782a2deca4
+  en:
+  - A customer thinks our app is mishandling their personal data. Can they report us to the data protection
+    regulator?
+  - Do users have the right to file a complaint with the authority if they think a company is using their
+    data illegally?
+  - We're a processor for an online shop and a shopper says we broke the privacy rules. Where can they
+    take that complaint?
+  ar:
+  - يحق لمستخدم تطبيقنا أن يقدم شكوى للمكتب إذا ظن أننا نعالج بياناته الشخصية بشكل مخالف للقانون؟
+  - هل ممكن العميل يشتكي علينا عند الجهة المسؤولة عن حماية البيانات لو حس إن الشركة تستخدم بياناته غلط؟
+- key: uae-pdpl:art-24:para-2
+  text: b230e0f689795cd4
+  en:
+  - After a user files a privacy complaint against our company, who receives it and will the regulator
+    contact us?
+  - Will the data protection authority check with us as the controller or processor when investigating
+    a user's complaint?
+  - A client of our clinic app complained to the regulator about their data. What happens next on the
+    regulator's side?
+  ar:
+  - لما مستخدم يقدم شكوى خصوصية ضد شركتنا، مين يستلمها وهل المكتب راح يتواصل معنا؟
+  - هل يتحقق المكتب من شكوى صاحب البيانات بالتنسيق مع المتحكم والمعالج؟
+  - عميل شكا علينا عند جهة حماية البيانات، شو بيصير بعدها وهل بيسألونا عن الموضوع؟
+- key: uae-pdpl:art-24:para-3
+  text: 25573129c28b4670
+  en:
+  - If a privacy complaint against our app turns out to be true, can the regulator fine us?
+  - Can we be punished for ignoring the regulator's decisions after a complaint about how we handle user
+    data?
+  ar:
+  - إذا ثبت أن شكوى الخصوصية ضد تطبيقنا صحيحة، هل يقدر المكتب يفرض علينا عقوبات إدارية؟
+  - لو تجاهلنا قرارات الجهة المنظمة بخصوص البيانات، ممكن يعاقبونا ولا بس تنبيه؟
+- key: uae-pdpl:art-25
+  text: 87e1ee0b71210438
+  en:
+  - The data regulator fined our online shop and we think it's unfair. Can we object to it, and who do
+    we send the objection to?
+  - How many days do we have to file a written objection after the data office notifies us of a penalty
+    or decision against our app?
+  - Can we go straight to court to fight a decision from the data protection authority, or do we have
+    to file an internal complaint first?
+  ar:
+  - استلمنا إخطار بغرامة إدارية على تطبيقنا من مكتب حماية البيانات، هل نقدر نتظلم منها وإلى من نقدم التظلم؟
+  - كم المدة المتاحة لتقديم التظلم الخطي بعد إبلاغنا بقرار المكتب، وكم يستغرق المكتب للرد على التظلم؟
+  - شركتي تبي تعترض على قرار المكتب وتروح المحكمة على طول، هل يجوز هذا ولا لازم نتظلم أول؟
+- key: uae-pdpl:art-26
+  text: 1e80ad0f3eb6e39d
+  en:
+  - Who decides which data protection mistakes by my app company count as violations and what fines or
+    sanctions apply?
+  - We run an online shop in the UAE and want to know where the list of punishable data privacy breaches
+    and administrative penalties will be set out. Who issues it?
+  - Are the penalties for breaking the data protection rules written in the law itself, or does the government
+    set them later in a separate decision?
+  ar:
+  - من الجهة التي تحدد الأفعال التي تعتبر مخالفة لقانون حماية البيانات الشخصية والعقوبات الإدارية التي
+    توقع على الشركة؟
+  - نحن شركة تطبيقات في الإمارات ونبغى نعرف وين نلقى قائمة المخالفات والغرامات الإدارية لو أخطأنا في التعامل
+    مع بيانات المستخدمين، ومين اللي يصدرها؟
+  - هل الجزاءات الإدارية على مخالفة حماية البيانات منصوص عليها في المرسوم نفسه أم يصدر بها قرار مستقل
+    من مجلس الوزراء بناء على اقتراح مدير المكتب؟
+- key: uae-pdpl:art-27
+  text: 816ef746dff24625
+  en:
+  - Can a local emirate-level government body enforce data protection rules on behalf of the national
+    data office for companies in its area?
+  - Who decides whether the federal data regulator can hand some of its powers to a local authority, and
+    how does that get proposed?
+  - Our app is based in one emirate and we got a notice from a local government agency instead of the
+    federal data office. Is that agency allowed to act for the regulator?
+  ar:
+  - من الجهة التي تملك قرار تفويض جهة محلية ببعض اختصاصات مكتب البيانات، ومن يقترح ذلك؟
+  - وصلنا إشعار من جهة حكومية محلية بخصوص بيانات المستخدمين عندنا بدل المكتب الاتحادي، هل هي فعلاً تقدر
+    تتصرف نيابة عنه؟
+- key: uae-pdpl:art-28
+  text: 7b78e77b0225e8f9
+  en:
+  - Who is responsible for issuing the detailed implementing rules for the UAE data protection law that
+    my app has to follow?
+  - We're launching a product in the UAE and wondering whether the detailed implementation rules were
+    supposed to be published within a set deadline after the law came out. What was it?
+  - Is the data protection law complete on its own, or will more detailed regulations be issued by the
+    cabinet on the proposal of the data office head?
+  ar:
+  - من الجهة المسؤولة عن إصدار اللائحة التنفيذية لقانون حماية البيانات الشخصية في الإمارات، ومن يقترحها؟
+  - ما المدة المحددة لإصدار اللائحة التنفيذية بعد صدور المرسوم بقانون؟
+  - هل مجلس الوزراء هو اللي يطلع التفاصيل التنفيذية لقانون حماية البيانات؟ وإيش دور مدير المكتب فيها؟
+    ما فهمت لأن تطبيقنا لازم يلتزم.
+- key: uae-pdpl:art-29
+  text: e8fb8ff94b5dae0a
+  en:
+  - How long do we have to get our app's data handling in line with the new data protection rules after
+    the implementing regulations come out?
+  - We run an online shop and process customer data. Is there a grace period before we must be fully compliant,
+    and can it be extended?
+  - Who can give companies extra time to comply if six months isn't enough for our SaaS product?
+  ar:
+  - كم المدة المسموحة للشركات حتى تعدّل أوضاعها وتلتزم بقانون حماية البيانات بعد صدور اللائحة التنفيذية؟
+  - هل يجوز تمديد مهلة توفيق الأوضاع للمتحكم والمعالج، ومن الجهة التي تملك قرار التمديد؟
+  - عندنا تطبيق وبنجمع بيانات المستخدمين، كم عندنا وقت عشان نظبّط وضعنا مع القانون؟ وهل ممكن يمدّدوا المهلة؟
+- key: uae-pdpl:art-30
+  text: 2e0c31d258e2a296
+  en:
+  - An older UAE rule our app followed says something different from the new data protection decree. Which
+    one applies now?
+  - If a previous regulation conflicts with the personal data protection law, do we still have to follow
+    the old requirement?
+  - We built our onboarding flow around a past rule on handling user data. Does that rule stay valid if
+    it clashes with the new law?
+  ar:
+  - هل تبقى الأحكام القديمة سارية إذا كانت تتعارض مع مرسوم القانون الجديد لحماية البيانات الشخصية؟
+  - تطبيقنا كان ماشي على نظام قديم لمعالجة بيانات المستخدمين، وهالنظام يخالف القانون الجديد، فأي واحد
+    نلتزم فيه؟
+  - شو يصير بالنصوص القانونية السابقة اللي تتعارض مع قانون حماية البيانات؟ تنلغي ولا تظل شغالة؟
+- key: uae-pdpl:art-31
+  text: bb605e2fb0040e6a
+  en:
+  - From what date do the UAE data protection rules apply to my app and its users' data?
+  - We launched our online shop in the UAE in 2021 and still hold customer data. Did the privacy rules
+    start applying to us before or after we went live?
+  ar:
+  - متى بدأ العمل بمرسوم القانون الخاص بحماية البيانات الشخصية في الإمارات وأصبح ملزماً لشركتي؟
+  - من أي يوم بالضبط صار لازم نلتزم بقانون حماية البيانات في الإمارات؟ تطبيقنا كان شغال قبلها

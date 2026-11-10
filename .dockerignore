@@ -24,6 +24,7 @@ htmlcov/
 # repository itself is available.
 tests/
 evals/runs/
+search-questions/.work/
 dashboard/node_modules/
 dist/
 build/

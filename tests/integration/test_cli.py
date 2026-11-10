@@ -449,3 +449,47 @@ def test_user_create_in_a_terminal_asks_for_what_is_missing_and_a_password(
     assert f"Created asked-{unique}@example.com (person)" in result.output
     assert "roles: none yet" in result.output
     assert "password: set, for the dashboard" in result.output
+
+
+def test_search_questions_are_turned_off_and_on_again(instance: None, clean_tables: None) -> None:
+    off = runner.invoke(app, ["search-questions", "off"])
+    status = runner.invoke(app, ["search-questions", "status"])
+    on = runner.invoke(app, ["search-questions", "on"])
+
+    assert (off.exit_code, on.exit_code) == (0, 0)
+    assert "Searches no longer use the search questions." in off.output
+    assert "Searches do not use the search questions." in status.output
+    assert "No law has search questions loaded" in status.output
+    assert "Searches use the search questions." in on.output
+
+
+def test_questions_for_a_law_that_is_not_loaded_are_refused_in_one_line(
+    instance: None, clean_tables: None, tmp_path: Path
+) -> None:
+    file = tmp_path / "elsewhere.yaml"
+    file.write_text(
+        "pack: elsewhere\nwritten_by: [a writer]\nchecked_by: [a checker]\n"
+        "written_on: '2026-11-08'\nwrite_prompt: '0000000000000000'\n"
+        "check_prompt: '1111111111111111'\n"
+        "clauses:\n- key: elsewhere:art-1\n  text: ffffffffffffffff\n"
+        "  en: ['Anything?']\n  ar: []\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["search-questions", "load", str(file)])
+
+    assert result.exit_code == 1
+    assert "elsewhere is not loaded here" in said(result)
+    assert "Traceback" not in result.output
+
+
+def test_a_file_of_questions_that_is_not_yaml_is_refused_in_one_line(
+    instance: None, clean_tables: None, tmp_path: Path
+) -> None:
+    file = tmp_path / "broken.yaml"
+    file.write_text("pack: gdpr\nclauses: [unclosed\n", encoding="utf-8")
+
+    result = runner.invoke(app, ["search-questions", "load", str(file)])
+
+    assert result.exit_code == 1
+    assert "cannot be read as a file of questions" in said(result)

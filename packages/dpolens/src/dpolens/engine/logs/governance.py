@@ -95,6 +95,10 @@ DOCUMENT_CLAUSE_FIXED = "document.clause_fixed"
 DOCUMENT_PUBLISHED = "document.published"
 DOCUMENT_DRAFT_DISCARDED = "document.draft_discarded"
 DOCUMENT_ARCHIVED = "document.archived"
+# The search questions a law's file holds, loaded beside its clauses, and the organisation
+# turning their use in search on or off: both change what a search returns.
+SEARCH_QUESTIONS_LOADED = "search_questions.loaded"
+SEARCH_QUESTIONS_SWITCHED = "search_questions.switched"
 
 
 @dataclass(frozen=True)

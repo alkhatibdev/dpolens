@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import date
 
+import numpy as np
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -30,11 +31,13 @@ def vector_search(
     normative_only: bool = False,
     packs: Sequence[str] | None = None,
     as_of: date | None = None,
+    vector: np.ndarray | None = None,
 ) -> list[Candidate]:
     """The clauses closest in meaning to the query, best first, each once.
 
     `packs` keeps the search to those laws and the organisation's own policies.
-    `as_of` is the day the text is read on, today unless given.
+    `as_of` is the day the text is read on, today unless given. `vector` is the query
+    already encoded, when the caller needs it for something else too.
     """
     model_id = session.execute(
         text("SELECT id FROM embedding_models WHERE name = :name"), {"name": embedder.model.name}
@@ -44,7 +47,7 @@ def vector_search(
             f"{embedder.model.name} has not indexed this corpus. Run `dpolens index build` first."
         )
 
-    vector = embedder.encode_query(query)
+    vector = embedder.encode_query(query) if vector is None else vector
     session.execute(text(f"SET LOCAL hnsw.ef_search = {EF_SEARCH}"))
     # The index finds the nearest vectors first and the filter runs after it, so a
     # search kept to some laws could end with fewer candidates than it asked for.

@@ -12,6 +12,7 @@ from sqlalchemy import text
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.embedding.encode import usable_cpus
 from dpolens.engine.embedding.index import build_index
+from dpolens.engine.search.questions import embed_questions, mark_current
 from dpolens.engine.session import maintenance_scope, session_scope
 from dpolens.settings import load_settings
 
@@ -46,6 +47,9 @@ def build(
         maintenance_scope(load_settings()) as session,
     ):
         result = build_index(session, embedder, skip_embedded=skip_embedded)
+        # A law loaded or updated since its questions were may have changed words under them.
+        current = mark_current(session)
+        questions = embed_questions(session, embedder)
     elapsed = time.time() - started
 
     typer.echo(
@@ -55,6 +59,14 @@ def build(
     )
     if result.skipped_already_embedded:
         typer.echo(f"Left {result.skipped_already_embedded} already embedded clauses alone")
+    if current or questions:
+        typer.echo(
+            f"Embedded {questions} search questions; "
+            + ", ".join(
+                f"{law} has {count} beside the words they were written for"
+                for law, count in sorted(current.items())
+            )
+        )
 
 
 @app.command()
