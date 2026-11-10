@@ -145,6 +145,7 @@ def load_questions(session: Session, path: Path, *, actor: Actor) -> Loaded:
         target_type="pack",
         target_id=slug,
         details={
+            "pack": slug,
             "questions": len(rows),
             "current": current,
             "written_by": _named(data["written_by"]),
@@ -322,6 +323,8 @@ class QuestionFile:
     """A law's questions as loaded: how many, how many still current, and who wrote them."""
 
     pack: str
+    short_name: str
+    """What people call the law, in English, which is the interface's language."""
     questions: int
     current: int
     written_by: str
@@ -333,6 +336,7 @@ def loaded_files(session: Session) -> list[QuestionFile]:
     return [
         QuestionFile(
             pack=row.slug,
+            short_name=row.short_name,
             questions=int(row.questions),
             current=int(row.current),
             written_by=row.written_by,
@@ -342,12 +346,13 @@ def loaded_files(session: Session) -> list[QuestionFile]:
         for row in session.execute(
             text(
                 """
-                SELECT p.slug, f.written_by, f.checked_by, f.written_on,
+                SELECT p.slug, n.short_name, f.written_by, f.checked_by, f.written_on,
                        count(q.id) AS questions, count(q.id) FILTER (WHERE q.current) AS current
                 FROM search_question_files f
                 JOIN packs p ON p.id = f.pack_id
+                JOIN pack_names n ON n.pack_id = p.id AND n.lang = 'en'
                 LEFT JOIN search_questions q ON q.pack_id = f.pack_id
-                GROUP BY p.slug, f.written_by, f.checked_by, f.written_on
+                GROUP BY p.slug, n.short_name, f.written_by, f.checked_by, f.written_on
                 ORDER BY p.slug
                 """
             )

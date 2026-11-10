@@ -1716,6 +1716,7 @@ export interface components {
       questions_log: components["schemas"]["QuestionsLogSettings"];
       sign_in: components["schemas"]["SignInSettings"];
       assistants: components["schemas"]["AssistantSettings"];
+      search_questions: components["schemas"]["SearchQuestionsSettings"];
       /**
        * Ai Provider
        * @description The service an answer is written with. Null: none is used, search runs on this instance's own model, and nothing anybody asks is sent elsewhere
@@ -2603,6 +2604,54 @@ export interface components {
        * Format: date
        */
       effective_date: string;
+    };
+    /** SearchQuestionsLaw */
+    SearchQuestionsLaw: {
+      /**
+       * Law
+       * @description The law's slug
+       */
+      law: string;
+      /**
+       * Short Name
+       * @description What people call the law, in English
+       */
+      short_name: string;
+      /**
+       * Questions
+       * @description How many questions the law's file holds
+       */
+      questions: number;
+      /**
+       * Current
+       * @description How many sit beside the words they were written for, and so are used. The rest wait to be written again for words that have changed
+       */
+      current: number;
+      /**
+       * Written By
+       * @description The models that wrote them
+       */
+      written_by: string;
+      /**
+       * Checked By
+       * @description The models that checked them
+       */
+      checked_by: string;
+      /**
+       * Written On
+       * Format: date
+       */
+      written_on: string;
+    };
+    /** SearchQuestionsSettings */
+    SearchQuestionsSettings: {
+      /**
+       * On
+       * @description Whether searches use the search questions, which only reorder the clauses a search found and are never returned. Changed with `dpolens search-questions on` or `off`, which the governance log records
+       */
+      on: boolean;
+      /** Laws */
+      laws: components["schemas"]["SearchQuestionsLaw"][];
     };
     /** SearchRequest */
     SearchRequest: {
