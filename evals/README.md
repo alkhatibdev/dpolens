@@ -88,6 +88,38 @@ means that law. Keyword statistics are kept across every loaded law, so a run on
 holding other laws can differ slightly from one holding that law alone. The published scores
 are measured with every pack loaded, and so is CI's gate.
 
+## Judging a change
+
+A change to search is judged on the tuning sets, by a rule fixed before the change is
+measured. Each question scores by the place of the first clause that answers it among the ten
+returned: 1 for first place, a half for second, down to a tenth, and nothing when none answers.
+A count of hits at five would not see a clause climb from ninth to sixth, or fall from first to
+fifth.
+
+Two runs are compared question by question. A topic asked more than once, in another language
+or the way people type in chat, is one topic: its questions move together, so their changes are
+counted together. The change is kept when both of these hold:
+
+- **The gain is more than chance gives.** Each topic's change is given a random sign, ten
+  thousand times, and the measured gain has to be larger than 95% of those.
+- **No set is worse.** A set is worse when its score falls by more than chance explains, by the
+  same test on that set alone, with the 5% shared between the sets.
+
+The held-out sets take no part in it. They are measured for the published score.
+
+```bash
+uv run dpolens evals run --pack gdpr --outcomes before/gdpr.json
+uv run dpolens evals run --pack uae-pdpl --outcomes before/uae-pdpl.json
+# with the change in place, and whatever it needs rebuilt:
+uv run dpolens evals run --pack gdpr --outcomes after/gdpr.json
+uv run dpolens evals run --pack uae-pdpl --outcomes after/uae-pdpl.json
+uv run dpolens evals compare before after
+```
+
+`--outcomes` writes, for every question of the configuration being scored, the clauses returned
+and the place of the first that answers. `compare` takes two such files, or two folders with a
+file for each law, and prints each set before and after, then whether the change is kept.
+
 ## Running them
 
 ```bash
