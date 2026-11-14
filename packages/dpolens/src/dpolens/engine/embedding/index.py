@@ -1,8 +1,11 @@
-"""Building the vector index over the corpus.
+"""Embedding the corpus: a vector for every clause that has text.
 
 Every clause with text gets one vector per model. Clauses without text, such as
 an article that only holds paragraphs, are skipped: an empty string embeds to a
 vector that matches everything weakly and drags on every query.
+
+The vectors are stored and nothing is built over them: a search compares the
+question with every one, so there is no approximate index to keep in step.
 """
 
 from __future__ import annotations
@@ -22,12 +25,6 @@ from dpolens.engine.embedding.recipe import RECIPE_VERSION, RecipeInput, build
 # How much one batch may hold, as its clauses times the square of the longest, which is how the
 # memory for attention grows: 64 clauses of 64 tokens, 16 of 128, or one of 512.
 BATCH_BUDGET = 64 * 64 * 64
-
-# Chosen so the index is not what loses recall, and measured against a
-# brute-force scan in the evals.
-HNSW_M = 16
-HNSW_EF_CONSTRUCTION = 64
-EF_SEARCH = 100
 
 # The clauses a model embeds: every one with text, in a published version.
 _PUBLISHED_TEXT = """
@@ -86,18 +83,13 @@ def build_index(
     embedder: Embedder,
     activate: bool = True,
     skip_embedded: bool = False,
-    create_index: bool = True,
 ) -> IndexResult:
-    """Embed every clause that has text, then build the vector index.
+    """Embed every clause that has text.
 
     With `skip_embedded`, a clause this model has already embedded under the
     current recipe is left alone. That makes a second run cheap, which is what an
     instance restarting wants, and it is why the recipe is part of the condition:
     a change to the recipe has to embed everything again.
-
-    Without `create_index`, the index is left as it is: Postgres adds each new
-    vector to it, and creating one needs the role that owns the table, which the
-    worker embedding a newly published policy does not hold.
     """
     model_id = register_model(session, embedder.model, activate=activate)
 
@@ -187,9 +179,6 @@ def build_index(
         )
         embedded += len(batch)
 
-    if create_index:
-        _create_index(session, model_id, embedder.model.dimensions)
-
     return IndexResult(
         model=embedder.model.name,
         recipe=RECIPE_VERSION,
@@ -263,18 +252,3 @@ def _ancestor_headings(
         {"node_id": node_id, "lang": lang, "applies_from": applies_from},
     ).all()
     return [row.heading for row in rows if row.heading]
-
-
-def _create_index(session: Session, model_id: uuid.UUID, dimensions: int) -> None:
-    """One index per model, built after the rows are in, which is far faster."""
-    name = f"node_embeddings_hnsw_{str(model_id).replace('-', '')}"
-    session.execute(
-        text(
-            f"""
-            CREATE INDEX IF NOT EXISTS {name} ON node_embeddings
-            USING hnsw ((embedding::vector({dimensions})) vector_cosine_ops)
-            WITH (m = {HNSW_M}, ef_construction = {HNSW_EF_CONSTRUCTION})
-            WHERE embedding_model_id = '{model_id}'
-            """
-        )
-    )

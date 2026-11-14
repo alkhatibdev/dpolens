@@ -15,7 +15,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding.encode import Embedder
-from dpolens.engine.embedding.index import EF_SEARCH
 from dpolens.engine.search.keyword import Candidate, scoped
 
 
@@ -48,16 +47,12 @@ def vector_search(
         )
 
     vector = embedder.encode_query(query) if vector is None else vector
-    session.execute(text(f"SET LOCAL hnsw.ef_search = {EF_SEARCH}"))
-    # The index finds the nearest vectors first and the filter runs after it, so a
-    # search kept to some laws could end with fewer candidates than it asked for.
-    # An iterative scan goes on until enough pass. Set either way, because SET
-    # LOCAL lasts for the transaction and the next search may not be kept.
-    session.execute(
-        text(f"SET LOCAL hnsw.iterative_scan = {'strict_order' if packs is not None else 'off'}")
-    )
     scope_join, scope_condition = scoped(packs)
 
+    # Every vector is compared: nothing approximate stands between the question and the
+    # clauses. Laws and policies come to thousands of vectors, which takes milliseconds.
+    # With an approximate index, Postgres decides from its statistics whether to use it and
+    # other clauses come back when it does, so a search would not be the same twice.
     rows = session.execute(
         text(
             f"""

@@ -1,4 +1,4 @@
-"""Building and inspecting the vector index."""
+"""Embedding the clauses, and seeing how much of the corpus is embedded."""
 
 from __future__ import annotations
 
@@ -13,10 +13,12 @@ from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.embedding.encode import usable_cpus
 from dpolens.engine.embedding.index import build_index
 from dpolens.engine.search.questions import embed_questions, mark_current
-from dpolens.engine.session import maintenance_scope, session_scope
+from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
-app = typer.Typer(name="index", help="Build and inspect the vector index.", no_args_is_help=True)
+app = typer.Typer(
+    name="index", help="Embed the clauses, and see how much is embedded.", no_args_is_help=True
+)
 
 
 @app.command()
@@ -44,7 +46,7 @@ def build(
         Embedder(
             get_model(model), cache_dir=cache_dir, intra_op_num_threads=usable_cpus()
         ) as embedder,
-        maintenance_scope(load_settings()) as session,
+        session_scope(load_settings()) as session,
     ):
         result = build_index(session, embedder, skip_embedded=skip_embedded)
         # A law loaded or updated since its questions were may have changed words under them.

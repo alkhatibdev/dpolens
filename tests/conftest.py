@@ -175,17 +175,6 @@ def _migrated_database(database_url: str, app_role: str, name: str) -> str:
 
 
 @pytest.fixture(scope="session")
-def committed_owner_url(committed_database_url: str, database_url: str) -> str:
-    """The committing tests' database, reached as the role that owns the tables.
-
-    Creating an index needs ownership, which the application role deliberately
-    does not have, so loading a corpus for a test connects the way an operator's
-    maintenance command does.
-    """
-    return _as_owner(committed_database_url, database_url)
-
-
-@pytest.fixture(scope="session")
 def committed_database_url(database_url: str, app_role: str) -> str:
     """A database of its own for tests that commit, reached as the application role.
 

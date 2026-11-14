@@ -176,15 +176,29 @@ class TestWhatASearchCovers:
         assert {candidate.key.split(":")[0] for candidate in keyword} == {"bilingual"}
         assert {candidate.key.split(":")[0] for candidate in meaning} == {"bilingual"}
 
-    def test_a_kept_search_does_not_keep_the_next_one(
+    def test_a_search_kept_to_one_law_leaves_none_of_its_clauses_out(
         self, two_laws: Session, embedder: Embedder
     ) -> None:
-        """SET LOCAL lasts for the transaction, so each search sets the scan its own way."""
-        vector_search(two_laws, embedder, BOTH, packs=["bilingual"])
-        assert two_laws.execute(text("SHOW hnsw.iterative_scan")).scalar() == "strict_order"
+        """Every vector is compared, so however many of the other law's clauses sit closer
+        to the question, the law asked for still returns all it holds."""
+        held = two_laws.scalars(
+            text(
+                """
+                SELECT n.canonical_key
+                FROM node_texts t
+                JOIN document_nodes n ON n.id = t.node_id
+                JOIN document_versions v ON v.id = n.document_version_id
+                JOIN documents d ON d.id = v.document_id
+                JOIN packs p ON p.id = d.pack_id
+                WHERE p.slug = 'bilingual' AND length(trim(t.body_text)) > 0
+                """
+            )
+        ).all()
 
-        vector_search(two_laws, embedder, BOTH)
-        assert two_laws.execute(text("SHOW hnsw.iterative_scan")).scalar() == "off"
+        meaning = vector_search(two_laws, embedder, BOTH, packs=["bilingual"], limit=len(held))
+
+        assert held
+        assert {candidate.key for candidate in meaning} == set(held)
 
     def test_an_eval_run_searches_only_the_law_it_tests(
         self, two_laws: Session, embedder: Embedder
