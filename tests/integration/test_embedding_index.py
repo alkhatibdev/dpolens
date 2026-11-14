@@ -266,3 +266,53 @@ def test_a_new_recipe_embeds_every_clause_again_in_place(
             """
         )
     ).one() == (before, before, RECIPE_VERSION, RECIPE_VERSION)
+
+
+def test_meaning_search_compares_every_vector(indexed: Session, embedder: Embedder) -> None:
+    """Each score is the clause's own closeness to the question, and no clause is left
+    out, which an approximate index does not promise."""
+    question = "how do I delete someone's account"
+    asked = embedder.encode_query(question)
+    rows = indexed.execute(
+        text(
+            """
+            SELECT n.canonical_key AS key, e.embedding::text AS embedding
+            FROM node_embeddings e
+            JOIN node_texts t ON t.id = e.node_text_id
+            JOIN document_nodes n ON n.id = t.node_id
+            """
+        )
+    ).all()
+    closeness: dict[str, float] = {}
+    for row in rows:
+        # A clause counts once, at whichever of its texts is closer.
+        closest = float(np.dot(json.loads(row.embedding), asked))
+        closeness[row.key] = max(closeness.get(row.key, -1.0), closest)
+
+    found = vector_search(indexed, embedder, question, limit=len(rows))
+
+    assert {candidate.key for candidate in found} == set(closeness)
+    for candidate in found:
+        assert candidate.score == pytest.approx(closeness[candidate.key], abs=1e-5)
+    assert [candidate.score for candidate in found] == sorted(
+        (candidate.score for candidate in found), reverse=True
+    )
+
+
+def test_embedding_builds_no_approximate_index(indexed: Session) -> None:
+    """Postgres would use one or not as its statistics change, and other clauses come back
+    when it does, so a search would not be the same twice."""
+    methods = indexed.scalars(
+        text(
+            """
+            SELECT pg_am.amname
+            FROM pg_index
+            JOIN pg_class AS built ON built.oid = pg_index.indexrelid
+            JOIN pg_class AS held ON held.oid = pg_index.indrelid
+            JOIN pg_am ON pg_am.oid = built.relam
+            WHERE held.relname IN ('node_embeddings', 'search_question_embeddings')
+            """
+        )
+    ).all()
+
+    assert set(methods) == {"btree"}

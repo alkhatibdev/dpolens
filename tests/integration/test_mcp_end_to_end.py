@@ -54,8 +54,8 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture(scope="module")
-def corpus(committed_owner_url: str) -> Iterator[Engine]:
-    engine = create_engine(committed_owner_url)
+def corpus(committed_database_url: str) -> Iterator[Engine]:
+    engine = create_engine(committed_database_url)
     with session_from(engine) as opened:
         bootstrap(opened, actor=ACTOR)
         load_pack(opened, TESTLAW)

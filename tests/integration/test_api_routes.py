@@ -37,13 +37,9 @@ TESTLAW = Path(__file__).parents[1] / "fixtures" / "packs" / "testlaw"
 
 
 @pytest.fixture(scope="module")
-def corpus(committed_owner_url: str) -> Iterator[Engine]:
-    """The fixture pack, loaded and indexed once for this module.
-
-    As the owning role, because building a vector index creates one and
-    PostgreSQL requires ownership for that. It is maintenance, not serving.
-    """
-    engine = create_engine(committed_owner_url)
+def corpus(committed_database_url: str) -> Iterator[Engine]:
+    """The fixture pack, loaded and embedded once for this module."""
+    engine = create_engine(committed_database_url)
     with session_from(engine) as opened:
         bootstrap(opened, actor=ACTOR)
         load_pack(opened, TESTLAW)

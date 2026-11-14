@@ -96,7 +96,7 @@ def _embed_what_is_left(session: Session, settings: Settings) -> int:
         return 0
     ensure_cached(model)
     with Embedder(model, intra_op_num_threads=settings.intra_op_num_threads) as embedder:
-        return build_index(session, embedder, skip_embedded=True, create_index=False).embedded
+        return build_index(session, embedder, skip_embedded=True).embedded
 
 
 def give_back_memory() -> None:

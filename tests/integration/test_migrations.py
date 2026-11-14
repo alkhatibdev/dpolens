@@ -122,6 +122,39 @@ def test_a_table_added_later_is_reachable_by_the_application_role(
             connection.execute(text("DROP TABLE later_table"))
 
 
+def test_0021_drops_the_approximate_index_an_earlier_version_built(
+    owner_url: str, app_role: str
+) -> None:
+    """Whichever model it was built for, and nothing else the table has."""
+    config = alembic(owner_url, app_role)
+    engine = create_engine(owner_url)
+    indexes = text("SELECT indexname FROM pg_indexes WHERE tablename = 'node_embeddings'")
+    try:
+        command.upgrade(config, "head")
+        command.downgrade(config, "0020")
+        with engine.begin() as connection:
+            kept = set(connection.scalars(indexes))
+            connection.execute(
+                text(
+                    """
+                    CREATE INDEX node_embeddings_hnsw_0a1b ON node_embeddings
+                    USING hnsw ((embedding::vector(384)) vector_cosine_ops)
+                    WITH (m = 16, ef_construction = 64)
+                    WHERE embedding_model_id = '00000000-0000-0000-0000-00000000000a'
+                    """
+                )
+            )
+            assert set(connection.scalars(indexes)) == kept | {"node_embeddings_hnsw_0a1b"}
+
+        command.upgrade(config, "head")
+
+        with engine.connect() as connection:
+            assert kept
+            assert set(connection.scalars(indexes)) == kept
+    finally:
+        engine.dispose()
+
+
 def test_0019_names_what_was_stored_before(owner_url: str, app_role: str) -> None:
     """A law keeps its name and title, in English as they were written, until its pack loads
     again, and a policy keeps its title, in the language of its text."""

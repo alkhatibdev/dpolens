@@ -20,6 +20,12 @@ Meaning search is a multilingual embedding model running on the CPU inside the c
 through ONNX Runtime. No API key, no network call after the first start, nothing to
 configure. An embedding model is not an LLM: it turns text into numbers and writes nothing.
 
+A question is compared with the vector of every clause, with no approximate index in between.
+The laws and an organisation's policies come to thousands of vectors, which takes
+milliseconds. With an approximate index, the database decides from its own statistics whether
+to use it, and other clauses come back when it does, so a search, and a score measured on it,
+would not be the same twice.
+
 **Languages.** A question is searched in the language of the letters it is written in:
 Arabic letters, Arabic, and anything else, English. Keyword search keeps one index per
 language, because an index fixes how it splits and folds words when it is built. Meaning

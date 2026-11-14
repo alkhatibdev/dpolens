@@ -69,6 +69,25 @@ def test_loading_twice_is_a_no_op(loaded: None) -> None:
     assert "already loaded" in result.output
 
 
+def test_embedding_needs_only_the_application_role(
+    app_database_url: str,
+    clean_tables: None,
+    testlaw_pack: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """It writes rows and creates nothing, so the role that answers requests can run it,
+    with no connection as the role that owns the tables."""
+    monkeypatch.setenv("DPOLENS_DATABASE_URL", app_database_url)
+    monkeypatch.delenv("DPOLENS_MIGRATION_DATABASE_URL", raising=False)
+    loaded = runner.invoke(app, ["pack", "load", str(testlaw_pack)])
+    assert loaded.exit_code == 0, loaded.output
+
+    built = runner.invoke(app, ["index", "build"])
+
+    assert built.exit_code == 0, built.output
+    assert "clauses with e5-small" in said(built)
+
+
 def test_showing_an_article(loaded: None) -> None:
     result = runner.invoke(app, ["clause", "show", "gdpr:art-17"])
 
