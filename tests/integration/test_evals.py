@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Iterator
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,7 @@ from typer.testing import CliRunner
 from dpolens.cli.main import app
 from dpolens.engine.embedding import Embedder, get_model
 from dpolens.engine.embedding.index import build_index
-from dpolens.engine.evals import EvalSetError, read_questions, run_set
+from dpolens.engine.evals import EvalSetError, Question, read_questions, run_set
 from dpolens.engine.evals.score import answers
 from dpolens.engine.packs.load import load_pack
 
@@ -23,6 +24,7 @@ pytestmark = pytest.mark.integration
 REPO = Path(__file__).parents[2]
 GDPR_PACK = REPO / "packs" / "gdpr"
 TUNING = REPO / "evals" / "gdpr" / "tuning.en.yaml"
+ASSISTANT = REPO / "evals" / "gdpr" / "assistant.en.yaml"
 
 
 @pytest.fixture(scope="session")
@@ -169,3 +171,59 @@ def test_a_run_keeps_where_each_questions_right_clause_came(
     assert any(question["place"] for question in asked)
     assert compared.exit_code == 0, compared.output
     assert "Not kept." in compared.output
+
+
+def test_a_topic_asked_twice_is_one_item_in_the_interval(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Two entries of one topic, one found and one not: resampled as one item the rate is a
+    half every time, where two items would range from nothing to all."""
+    breach = Question(
+        id="breach",
+        question="How quickly must a personal data breach be reported to the authority?",
+        lang="en",
+        expected_keys=("gdpr:no-such-clause",),
+        source="https://example.org/guide",
+    )
+    first = run_set(indexed, embedder, [breach], "meaning+normative", pack="gdpr").outcomes[0]
+    wordings = [
+        replace(breach, id="found", expected_keys=(first.returned[0],), topic="breach.authority"),
+        replace(breach, id="missed", topic="breach.authority"),
+    ]
+
+    run = run_set(indexed, embedder, wordings, "meaning+normative", pack="gdpr")
+    apart = run_set(
+        indexed,
+        embedder,
+        [replace(wording, topic=None) for wording in wordings],
+        "meaning+normative",
+        pack="gdpr",
+    )
+
+    assert [outcome.topic for outcome in run.outcomes] == ["breach.authority"] * 2
+    assert (run.score.recall_at_5, str(run.score.interval)) == (0.5, "0.50 to 0.50")
+    assert str(apart.score.interval) == "0.00 to 1.00"
+
+
+def test_a_set_asked_in_parts_keeps_each_parts_topic_and_counts_whole_queries(
+    indexed: Session, migrated: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The set in the words AI assistants send, through the command: each entry's own topic
+    is what the judge reads, and a query counts once every part of it is found."""
+    monkeypatch.chdir(REPO)
+    monkeypatch.setenv("DPOLENS_DATABASE_URL", migrated)
+    kept = tmp_path / "gdpr.json"
+    questions = read_questions(ASSISTANT)
+    queries = len({question.question for question in questions})
+
+    asked_for = ["--pack", "gdpr", "--set", "assistant", "--config", "meaning+normative"]
+    ran = CliRunner().invoke(app, ["evals", "run", *asked_for, "--outcomes", str(kept)])
+
+    assert ran.exit_code == 0, ran.output
+    record = json.loads(kept.read_text(encoding="utf-8"))
+    assert record["sets"][0]["question_set"] == "assistant.en"
+    assert [(q["id"], q["topic"]) for q in record["sets"][0]["questions"]] == [
+        (question.id, question.topic) for question in questions
+    ]
+    assert f"gdpr assistant.en: {len(questions)} questions" in ran.output
+    assert f"of {queries} queries in the top five" in " ".join(ran.output.split())

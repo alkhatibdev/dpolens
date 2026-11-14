@@ -21,6 +21,7 @@ from dpolens.engine.evals import (
     check_configuration,
     judge,
     placed_in,
+    queries_answered,
     read_questions,
     run_set,
     run_together,
@@ -66,8 +67,8 @@ def run(
         typer.Option(
             "--set",
             help=(
-                "tuning or held_out, each in every language it is asked in, or one language "
-                "of either, such as held_out.ar. Repeatable"
+                "A set's name, such as tuning, held_out or assistant, for every language it "
+                "is asked in, or one language of it, such as held_out.ar. Repeatable"
             ),
         ),
     ] = None,
@@ -163,6 +164,14 @@ def run(
             )
         if block[0].score.misses:
             typer.echo(f"\n  {block[0].configuration} missed: {', '.join(block[0].score.misses)}")
+        asked = questions.get(name, [])
+        if len({question.question for question in asked}) < len(asked):
+            at_five, queries = queries_answered(asked, block[0].outcomes, 5)
+            at_ten, _ = queries_answered(asked, block[0].outcomes, 10)
+            typer.echo(
+                f"\n  {block[0].configuration} answered every part of {at_five} of {queries} "
+                f"queries in the top five, and of {at_ten} in the top ten"
+            )
         typer.echo("")
 
     if write:
@@ -252,7 +261,7 @@ def _keep(pack: str, runs: list[Run], path: Path) -> None:
                 "questions": [
                     {
                         "id": outcome.question_id,
-                        "topic": topic_of(outcome.question_id),
+                        "topic": topic_of(outcome.question_id, outcome.topic),
                         "expected": list(outcome.expected),
                         "returned": list(outcome.returned),
                         "place": outcome.first_hit,

@@ -34,6 +34,8 @@ class Outcome:
     question_id: str
     expected: tuple[str, ...]
     returned: tuple[str, ...]
+    topic: str | None = None
+    """The topic the question names, in a set where several entries ask one topic."""
 
     def hit_at(self, k: int) -> bool:
         return any(
