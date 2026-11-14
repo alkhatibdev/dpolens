@@ -14,12 +14,18 @@ from dpolens.cli.ask import Asking
 from dpolens.engine.embedding import DEFAULT_MODEL, Embedder, get_model
 from dpolens.engine.evals import (
     EvalSetError,
+    Judgement,
+    Placed,
     Run,
+    Unpaired,
     check_configuration,
+    judge,
+    placed_in,
     read_questions,
     run_set,
     run_together,
     sets_named,
+    topic_of,
 )
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
@@ -82,6 +88,15 @@ def run(
         typer.Option(help="Also score the sets as one, a topic asked in each counted once"),
     ] = False,
     write: Annotated[bool, typer.Option(help="Write evals/results/<pack>.json")] = False,
+    outcomes: Annotated[
+        Path | None,
+        typer.Option(
+            help=(
+                "Write where each question's right clause came to this file, for "
+                "`dpolens evals compare`"
+            )
+        ),
+    ] = None,
     as_json: Annotated[
         bool,
         typer.Option("--json", help="Print one run as JSON: the sets together, or the first"),
@@ -128,6 +143,8 @@ def run(
         if together
         else []
     )
+    if outcomes is not None:
+        _keep(pack, [result for result in runs if result.configuration == configuration], outcomes)
     runs += combined
 
     if as_json:
@@ -150,6 +167,106 @@ def run(
 
     if write:
         _write(pack, runs)
+
+
+@app.command()
+def compare(
+    before: Annotated[
+        Path,
+        typer.Argument(help="An outcomes file from before a change, or a folder of them"),
+    ],
+    after: Annotated[Path, typer.Argument(help="The same, from after it")],
+) -> None:
+    """Judge a change to search from two runs over the same questions."""
+    try:
+        judgement = judge(_placed(before), _placed(after))
+    except Unpaired as problem:
+        raise typer.BadParameter(str(problem)) from problem
+
+    for change in judgement.sets:
+        typer.echo(
+            f"{change.pack} {change.question_set}: {change.questions} questions   "
+            f"hits at five {change.hits_before} to {change.hits_after}   "
+            f"place score {change.score_before:.3f} to {change.score_after:.3f}"
+        )
+    typer.echo(
+        f"\nAll: {judgement.questions} questions on {judgement.topics} topics   "
+        f"hits at five {judgement.hits_before} to {judgement.hits_after}   "
+        f"place score {judgement.score_before:.3f} to {judgement.score_after:.3f}"
+    )
+    typer.echo(f"By topic at five: {judgement.topics_found} found, {judgement.topics_lost} lost\n")
+    typer.echo(_verdict(judgement))
+
+
+def _verdict(judgement: Judgement) -> str:
+    said = []
+    if judgement.score_after <= judgement.score_before:
+        said.append("No gain: the right clauses sit no higher than before.")
+    else:
+        said.append(
+            f"Chance alone gives a gain this large {_share(judgement.chance)} of the time, "
+            "and a change is kept under 5%."
+        )
+    for change in judgement.sets:
+        if change.worse:
+            said.append(
+                f"{change.pack} {change.question_set} is worse: chance alone gives it a loss "
+                f"this large {_share(change.chance_of_loss)} of the time."
+            )
+    said.append("Kept." if judgement.kept else "Not kept.")
+    return "\n".join(said)
+
+
+def _share(chance: float) -> str:
+    return f"{100 * chance:.2f}%"
+
+
+def _placed(path: Path) -> list[Placed]:
+    """Every question in an outcomes file, or in each file of a folder."""
+    files = sorted(path.glob("*.json")) if path.is_dir() else [path]
+    if not files:
+        raise typer.BadParameter(f"{path} holds no outcomes file")
+    placed: list[Placed] = []
+    for file in files:
+        try:
+            placed += placed_in(json.loads(file.read_text(encoding="utf-8")))
+        except (OSError, ValueError, KeyError, TypeError) as problem:
+            raise typer.BadParameter(
+                f"{file} is not an outcomes file, as `dpolens evals run --outcomes` writes one"
+            ) from problem
+    return placed
+
+
+def _keep(pack: str, runs: list[Run], path: Path) -> None:
+    """The configuration scored, with where each question's right clause came."""
+    payload = {
+        "pack": pack,
+        "measured_at": datetime.now(UTC).date().isoformat(),
+        "commit": _commit(),
+        "configuration": runs[0].configuration,
+        "model": runs[0].model,
+        "context_recipe": runs[0].recipe,
+        "sets": [
+            {
+                "question_set": result.question_set,
+                "questions": [
+                    {
+                        "id": outcome.question_id,
+                        "topic": topic_of(outcome.question_id),
+                        "expected": list(outcome.expected),
+                        "returned": list(outcome.returned),
+                        "place": outcome.first_hit,
+                    }
+                    for outcome in result.outcomes
+                ],
+            }
+            for result in runs
+        ],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    # Not to standard output, which `--json` keeps to the one record a script reads.
+    typer.echo(f"Wrote {path}", err=True)
 
 
 def _as_record(result: Run) -> dict[str, Any]:

@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
+from typer.testing import CliRunner
 
+from dpolens.cli.main import app
 from dpolens.engine.embedding import Embedder, get_model
 from dpolens.engine.embedding.index import build_index
 from dpolens.engine.evals import EvalSetError, read_questions, run_set
+from dpolens.engine.evals.score import answers
 from dpolens.engine.packs.load import load_pack
 
 pytestmark = pytest.mark.integration
@@ -132,3 +136,36 @@ def test_excluding_explaining_text_is_measurable(indexed: Session, embedder: Emb
     normative = run_set(indexed, embedder, questions, "meaning+normative")
 
     assert normative.score.recall_at_5 >= everything.score.recall_at_5
+
+
+def test_a_run_keeps_where_each_questions_right_clause_came(
+    indexed: Session, migrated: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Written by the command and read back: every question, the clauses returned for it,
+    and the place of the first that answers, which is what comparing two runs needs."""
+    monkeypatch.chdir(REPO)
+    monkeypatch.setenv("DPOLENS_DATABASE_URL", migrated)
+    kept = tmp_path / "before" / "gdpr.json"
+    runner = CliRunner()
+
+    asked_for = ["--pack", "gdpr", "--set", "tuning.en", "--config", "meaning+normative"]
+    ran = runner.invoke(app, ["evals", "run", *asked_for, "--outcomes", str(kept)])
+    compared = runner.invoke(app, ["evals", "compare", str(kept), str(kept)])
+
+    assert ran.exit_code == 0, ran.output
+    record = json.loads(kept.read_text(encoding="utf-8"))
+    asked = record["sets"][0]["questions"]
+    assert (record["pack"], record["configuration"]) == ("gdpr", "meaning+normative")
+    assert record["sets"][0]["question_set"] == "tuning.en"
+    assert [question["id"] for question in asked] == [q.id for q in read_questions(TUNING)]
+    for question in asked:
+        assert len(question["returned"]) == 10
+        answered = [
+            place
+            for place, key in enumerate(question["returned"], start=1)
+            if any(answers(key, expected) for expected in question["expected"])
+        ]
+        assert question["place"] == (answered[0] if answered else None)
+    assert any(question["place"] for question in asked)
+    assert compared.exit_code == 0, compared.output
+    assert "Not kept." in compared.output
