@@ -85,10 +85,11 @@ class Judgement:
         return self.chance < CHANCE and not any(change.worse for change in self.sets)
 
 
-def topic_of(question_id: str) -> str:
-    """The topic a question asks about. A set that asks a topic twice, formally and the way
-    people type in chat, gives the second question the first's id with -chat after it."""
-    return question_id.removesuffix("-chat")
+def topic_of(question_id: str, named: str | None = None) -> str:
+    """The topic a question asks about: the one it names, or its id. A set that asks a topic
+    twice, formally and the way people type in chat, gives the second question the first's id
+    with -chat after it."""
+    return named or question_id.removesuffix("-chat")
 
 
 def placed_in(record: Mapping[str, Any]) -> list[Placed]:

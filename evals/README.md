@@ -7,9 +7,10 @@ packs themselves.
 ## Layout
 
 ```
-evals/<pack>/tuning.<lang>.yaml    used while improving retrieval
-evals/<pack>/held_out.<lang>.yaml  produces the published score, and nothing else
-evals/results/<pack>.json          the published held-out scores, committed
+evals/<pack>/tuning.<lang>.yaml     used while improving retrieval
+evals/<pack>/assistant.<lang>.yaml  the same use, in the words AI assistants send
+evals/<pack>/held_out.<lang>.yaml   produces the published score, and nothing else
+evals/results/<pack>.json           the published held-out scores, committed
 ```
 
 Every set names the language it is asked in before `.yaml`, such as `tuning.ar.yaml`. A
@@ -53,6 +54,7 @@ questions:
 | `source` | yes | Guidance that ties this question to that clause |
 | `quote` | no | The source's own words that tie the question to the clause, with the words that name the article where the source prints them. The source check confirms the page contains them, and `...` marks words left out |
 | `note` | no | Anything a reader of the file would wonder about, and why the clause is the answer when the source does not print the article's number |
+| `topic` | no | The thing asked, in a set where several entries ask one thing. See [What AI assistants send](#what-ai-assistants-send) |
 
 ## Where questions come from
 
@@ -75,6 +77,50 @@ Keep the hard ones. "Do we need a DPO?" fails today because the corpus never wri
 only "data protection officer". That is exactly the question a developer types, so it stays
 in the set and the number carries the cost.
 
+## What AI assistants send
+
+A tuning question is what a person types. An AI assistant at work on code sends something
+else: often a description, not a question, and often two things at once. "IP address logging
+legal basis and retention" asks whether the logging is allowed and how long the logs may be
+kept, and two different clauses answer it.
+
+`assistant.<lang>.yaml` holds such queries as they were sent: the ones Claude Code typed
+while working through the coding tasks of the [trigger test](trigger/README.md). GDPR has
+one, in English: 64 queries that ask 98 things. It is used while improving retrieval and
+produces no published score.
+
+Each thing a query asks is a **part**, with an entry of its own under the same words:
+
+```yaml
+  # Each entry also carries lang, source, quote and note, as any question does.
+  - id: ip-logs.allowed
+    topic: ip-logs.allowed
+    question: IP address logging legal basis and retention
+    expected_keys: [gdpr:art-6:para-1]
+
+  - id: ip-logs.how-long-logs
+    topic: ip-logs.how-long-logs
+    question: IP address logging legal basis and retention
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1:pt-a, gdpr:art-25:para-2]
+```
+
+`topic` names the group of queries and the part. A group keeps up to two wordings, the
+shortest and the longest that were sent, and the second wording's entries carry the same
+topics, so one part asked in two wordings is one topic. A query is answered when each of its
+parts is.
+
+The labels follow the same rule as every other set, and two more, because a query that
+describes a situation can touch several clauses:
+
+- A label follows what an EDPB guideline says of the nearest case, and `quote` gives the
+  guideline's words that name the article.
+- A clause counts only when reading it alone answers the part. Article 13(2)(a) says a privacy
+  notice states how long data is kept. It does not say how long data may be kept, so it is not
+  a label of a part that asks that.
+- Where two clauses state one rule, both are listed. Data is kept no longer than its purpose
+  needs under Article 5(1)(e), and erased once the purpose no longer needs it under Article
+  17(1)(a).
+
 ## Scoring
 
 A hit is the expected key, or any clause inside it: a point of Article 13(1) is part of
@@ -83,6 +129,10 @@ Article 13(1). A sibling paragraph is not, because Article 13(2) is a different 
 `recall@5` is the reported number, with a bootstrap confidence interval, and CI fails on a
 regression beyond that interval. `recall@10` and MRR are reported and never gated.
 
+In a set that names topics, every entry is scored as a question is, the interval resamples
+topics, and the run also prints how many queries had every part answered, in the top five and
+in the top ten.
+
 A run searches only the law its pack holds, whatever else is loaded or selected, so a score
 means that law. Keyword statistics are kept across every loaded law, so a run on an instance
 holding other laws can differ slightly from one holding that law alone. The published scores
@@ -90,15 +140,15 @@ are measured with every pack loaded, and so is CI's gate.
 
 ## Judging a change
 
-A change to search is judged on the tuning sets, by a rule fixed before the change is
-measured. Each question scores by the place of the first clause that answers it among the ten
-returned: 1 for first place, a half for second, down to a tenth, and nothing when none answers.
-A count of hits at five would not see a clause climb from ninth to sixth, or fall from first to
-fifth.
+A change to search is judged on the sets used while improving retrieval, tuning and
+assistant, by a rule fixed before the change is measured. Each question scores by the place of
+the first clause that answers it among the ten returned: 1 for first place, a half for second,
+down to a tenth, and nothing when none answers. A count of hits at five would not see a clause
+climb from ninth to sixth, or fall from first to fifth.
 
-Two runs are compared question by question. A topic asked more than once, in another language
-or the way people type in chat, is one topic: its questions move together, so their changes are
-counted together. The change is kept when both of these hold:
+Two runs are compared question by question. A topic asked more than once, in another language,
+the way people type in chat or in a second wording, is one topic: its questions move together,
+so their changes are counted together. The change is kept when both of these hold:
 
 - **The gain is more than chance gives.** Each topic's change is given a random sign, ten
   thousand times, and the measured gain has to be larger than 95% of those.
@@ -108,10 +158,10 @@ counted together. The change is kept when both of these hold:
 The held-out sets take no part in it. They are measured for the published score.
 
 ```bash
-uv run dpolens evals run --pack gdpr --outcomes before/gdpr.json
+uv run dpolens evals run --pack gdpr --set tuning --set assistant --outcomes before/gdpr.json
 uv run dpolens evals run --pack uae-pdpl --outcomes before/uae-pdpl.json
 # with the change in place, and whatever it needs rebuilt:
-uv run dpolens evals run --pack gdpr --outcomes after/gdpr.json
+uv run dpolens evals run --pack gdpr --set tuning --set assistant --outcomes after/gdpr.json
 uv run dpolens evals run --pack uae-pdpl --outcomes after/uae-pdpl.json
 uv run dpolens evals compare before after
 ```
@@ -125,6 +175,7 @@ file for each law, and prints each set before and after, then whether the change
 ```bash
 uv run dpolens evals run --pack gdpr --set tuning
 uv run dpolens evals run --pack gdpr --set tuning.ar
+uv run dpolens evals run --pack gdpr --set assistant
 uv run dpolens evals run --pack gdpr --set held_out --baselines --write
 uv run dpolens evals run --pack uae-pdpl --set held_out --together --baselines --write
 ```

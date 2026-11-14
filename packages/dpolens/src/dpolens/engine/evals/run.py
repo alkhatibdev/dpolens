@@ -9,7 +9,7 @@ could adopt a fusion rule that is worse than half the system.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -44,6 +44,7 @@ class Question:
     expected_keys: tuple[str, ...]
     source: str
     note: str | None = None
+    topic: str | None = None
 
 
 @dataclass(frozen=True)
@@ -81,6 +82,7 @@ def read_questions(path: Path) -> list[Question]:
                 expected_keys=tuple(entry["expected_keys"]),
                 source=str(entry["source"]),
                 note=entry.get("note"),
+                topic=str(entry["topic"]) if entry.get("topic") else None,
             )
         )
 
@@ -134,6 +136,7 @@ def run_set(
                 question_id=question.id,
                 expected=question.expected_keys,
                 returned=tuple(returned),
+                topic=question.topic,
             )
         )
 
@@ -143,9 +146,31 @@ def run_set(
         configuration=configuration,
         model=embedder.model.name,
         recipe=RECIPE_VERSION,
-        score=score(outcomes),
+        score=score(outcomes, group_of=_item_of(questions)),
         outcomes=tuple(outcomes),
     )
+
+
+def _item_of(questions: Sequence[Question]) -> Callable[[Outcome], str] | None:
+    """What a set's interval resamples: its questions, or its topics where it names them,
+    since one topic asked in two wordings is one item."""
+    if not any(question.topic for question in questions):
+        return None
+    return lambda outcome: outcome.topic or outcome.question_id
+
+
+def queries_answered(
+    questions: Sequence[Question], outcomes: Sequence[Outcome], k: int
+) -> tuple[int, int]:
+    """How many queries have every part answered in the top k, and how many queries there are.
+
+    A set in the words AI assistants send asks a query in parts, one entry for each under the
+    same words, so the entries that share their words are one query.
+    """
+    parts: dict[str, list[bool]] = {}
+    for question, outcome in zip(questions, outcomes, strict=True):
+        parts.setdefault(question.question, []).append(outcome.hit_at(k))
+    return sum(all(found) for found in parts.values()), len(parts)
 
 
 def run_together(runs: Sequence[Run]) -> Run:

@@ -76,7 +76,9 @@ one that only explains where the retrievers cannot separate them.
 ## How it is measured
 
 Two question sets per pack, kept apart: a tuning set used while improving retrieval, and a
-held-out set that produces the published score and nothing else.
+held-out set that produces the published score and nothing else. GDPR has a third, used as the
+tuning set is: [the queries an AI assistant sent](README.md#what-ai-assistants-send) while
+working on code.
 
 A question's label, the clause that counts as correct, does not come from the search
 author. It comes from regulator guidance, and `scripts/check_eval_sources.py` reports where

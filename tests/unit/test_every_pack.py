@@ -58,6 +58,22 @@ def test_a_pack_is_asked_in_its_language_and_in_english(pack_dir: Path) -> None:
             assert expected <= keys, f"{name} expects what {pack.slug} lacks: {expected - keys}"
 
 
+@pytest.mark.parametrize("pack_dir", PACKS, ids=lambda path: path.name)
+def test_every_set_of_a_pack_expects_clauses_the_pack_has(pack_dir: Path) -> None:
+    """Whatever sets a pack has beside the ones it must: a typo in a label is a miss for ever."""
+    pack = read_pack_metadata(pack_dir)
+    keys = {
+        clause.key
+        for document in pack.documents
+        for top in read_document(pack_dir, document)
+        for clause in top.walk()
+    }
+
+    for path in sorted((REPO / "evals" / pack.slug).glob("*.yaml")):
+        expected = {key for question in read_questions(path) for key in question.expected_keys}
+        assert expected <= keys, f"{path.name} expects what {pack.slug} lacks: {expected - keys}"
+
+
 def shared_short_names(packs: list[PackMetadata]) -> list[str]:
     """Each short name two packs share in a language, which a reader could not tell apart."""
     named: dict[tuple[str, str], str] = {}
