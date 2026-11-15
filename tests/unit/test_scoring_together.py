@@ -20,7 +20,12 @@ def outcome(question_id: str, hit: bool) -> Outcome:
     )
 
 
-def a_run(question_set: str, hits: list[bool], configuration: str = "convex:0.5") -> Run:
+def a_run(
+    question_set: str,
+    hits: list[bool],
+    configuration: str = "convex:0.5",
+    beside: tuple[str, ...] = (),
+) -> Run:
     outcomes = tuple(outcome(f"topic-{number}", hit) for number, hit in enumerate(hits))
     return Run(
         pack="law",
@@ -30,6 +35,7 @@ def a_run(question_set: str, hits: list[bool], configuration: str = "convex:0.5"
         recipe="v1",
         score=score(outcomes),
         outcomes=outcomes,
+        beside=beside,
     )
 
 
@@ -64,3 +70,23 @@ def test_the_sets_are_named_and_each_miss_says_which_set_it_is_from() -> None:
 def test_runs_of_different_configurations_are_not_scored_together() -> None:
     with pytest.raises(ValueError, match="one pack, configuration and model"):
         run_together([a_run("held_out.ar", HITS), a_run("held_out.en", HITS, "rrf:10")])
+
+
+def test_a_run_beside_other_laws_is_named_with_them() -> None:
+    assert a_run("tuning.ar", HITS).name == "tuning.ar"
+    assert a_run("tuning.ar", HITS, beside=("gdpr", "sa-pdpl")).name == (
+        "tuning.ar beside gdpr, sa-pdpl"
+    )
+
+
+def test_sets_scored_together_beside_other_laws_keep_saying_which() -> None:
+    together = run_together(
+        [a_run("tuning.ar", HITS, beside=("gdpr",)), a_run("tuning.en", HITS, beside=("gdpr",))]
+    )
+
+    assert together.name == "tuning.ar+tuning.en beside gdpr"
+
+
+def test_a_law_alone_and_beside_others_are_not_scored_together() -> None:
+    with pytest.raises(ValueError, match="searched beside the same laws"):
+        run_together([a_run("tuning.ar", HITS), a_run("tuning.en", HITS, beside=("gdpr",))])

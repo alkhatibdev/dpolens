@@ -57,6 +57,7 @@ from dpolens.engine.packs.selection import (
     EmptySelection,
     NothingSelected,
     NotSelected,
+    OnlyLaw,
     UnknownLaw,
 )
 from dpolens.engine.policies.blocks import UnreadablePolicy
@@ -108,6 +109,7 @@ EXPECTED = (
     UnknownToken,
     SurfaceOwnerIsAPerson,
     UnknownLaw,
+    OnlyLaw,
     NotSelected,
     NothingSelected,
     WeakPassword,

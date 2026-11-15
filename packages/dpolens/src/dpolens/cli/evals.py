@@ -88,6 +88,16 @@ def run(
         bool,
         typer.Option(help="Also score the sets as one, a topic asked in each counted once"),
     ] = False,
+    every_law: Annotated[
+        bool,
+        typer.Option(
+            "--every-law",
+            help=(
+                "Search every law loaded here, not the pack's alone, as an organisation "
+                "that selected them all does"
+            ),
+        ),
+    ] = False,
     write: Annotated[bool, typer.Option(help="Write evals/results/<pack>.json")] = False,
     outcomes: Annotated[
         Path | None,
@@ -125,6 +135,11 @@ def run(
             "so a number measured on a set used for tuning does not belong in it.",
             param_hint="--set",
         )
+    if write and every_law:
+        raise typer.BadParameter(
+            "--write is for a law searched alone, which is what the published scores measure",
+            param_hint="--every-law",
+        )
     questions = {name: read_questions(EVALS / pack / f"{name}.yaml") for name in sets}
 
     with (
@@ -132,7 +147,15 @@ def run(
         session_scope(load_settings()) as session,
     ):
         runs = [
-            run_set(session, embedder, questions[name], config, pack=pack, question_set=name)
+            run_set(
+                session,
+                embedder,
+                questions[name],
+                config,
+                pack=pack,
+                question_set=name,
+                every_law=every_law,
+            )
             for name in sets
             for config in configurations
         ]
@@ -155,7 +178,7 @@ def run(
 
     for name in dict.fromkeys(result.question_set for result in runs):
         block = [result for result in runs if result.question_set == name]
-        typer.echo(f"{pack} {name}: {block[0].score.questions} questions, model {model}\n")
+        typer.echo(f"{pack} {block[0].name}: {block[0].score.questions} questions, model {model}\n")
         for result in block:
             typer.echo(
                 f"  {result.configuration:12} recall@5 {result.score.recall_at_5:.2f} "
@@ -257,7 +280,7 @@ def _keep(pack: str, runs: list[Run], path: Path) -> None:
         "context_recipe": runs[0].recipe,
         "sets": [
             {
-                "question_set": result.question_set,
+                "question_set": result.name,
                 "questions": [
                     {
                         "id": outcome.question_id,
@@ -280,7 +303,7 @@ def _keep(pack: str, runs: list[Run], path: Path) -> None:
 
 def _as_record(result: Run) -> dict[str, Any]:
     return {
-        "question_set": result.question_set,
+        "question_set": result.name,
         "configuration": result.configuration,
         "model": result.model,
         "context_recipe": result.recipe,
