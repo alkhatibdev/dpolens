@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.embedding.recipe import RECIPE_VERSION
 from dpolens.engine.evals.score import Outcome, Score, score
-from dpolens.engine.packs.selection import Scope, law_alone
+from dpolens.engine.packs.selection import Scope, law_alone, law_beside_the_others
 from dpolens.engine.search.engine import CANDIDATE_DEPTH, search
 from dpolens.engine.search.fuse import Fused, Fusion, fuse
 from dpolens.engine.search.keyword import ALTERNATIVES, Candidate, KeywordIndex, keyword_search
@@ -56,6 +56,15 @@ class Run:
     recipe: str
     score: Score
     outcomes: tuple[Outcome, ...]
+    beside: tuple[str, ...] = ()
+    """The other laws searched with the pack's own, in a run that measures it beside them."""
+
+    @property
+    def name(self) -> str:
+        """The set as a reader names it: tuning.ar, or tuning.ar beside uae-pdpl."""
+        if not self.beside:
+            return self.question_set
+        return f"{self.question_set} beside {', '.join(self.beside)}"
 
 
 def read_questions(path: Path) -> list[Question]:
@@ -112,6 +121,7 @@ def run_set(
     pack: str = "",
     question_set: str = "",
     reranker: Reranker | None = None,
+    every_law: bool = False,
 ) -> Run:
     """Score one configuration over one question set.
 
@@ -125,9 +135,19 @@ def run_set(
     A run for a pack searches that pack's law alone, whatever else is loaded or
     selected, so its score means that law. Without a pack it searches what any
     search would.
+
+    With `every_law`, a run for a pack searches every loaded law, as an organisation
+    that selected them all does. Its questions still expect the pack's own clauses,
+    so the score says how well that law is found beside the others.
     """
     check_configuration(configuration, reranker)
-    scope = law_alone(session, pack) if pack else None
+    if every_law and not pack:
+        raise ValueError("a run beside every law is a run for a pack")
+    if every_law:
+        scope: Scope | None = law_beside_the_others(session, pack)
+    else:
+        scope = law_alone(session, pack) if pack else None
+    beside = tuple(law for law in scope.laws if law != pack) if scope and every_law else ()
     outcomes = []
     for question in questions:
         returned = _retrieve(session, embedder, question, configuration, reranker, scope)
@@ -148,6 +168,7 @@ def run_set(
         recipe=RECIPE_VERSION,
         score=score(outcomes, group_of=_item_of(questions)),
         outcomes=tuple(outcomes),
+        beside=beside,
     )
 
 
@@ -182,10 +203,14 @@ def run_together(runs: Sequence[Run]) -> Run:
     """
     first = runs[0]
     if any(
-        (run.pack, run.configuration, run.model) != (first.pack, first.configuration, first.model)
+        (run.pack, run.configuration, run.model, run.beside)
+        != (first.pack, first.configuration, first.model, first.beside)
         for run in runs
     ):
-        raise ValueError("only runs of one pack, configuration and model are scored together")
+        raise ValueError(
+            "only runs of one pack, configuration and model, searched beside the same laws, "
+            "are scored together"
+        )
 
     outcomes = tuple(
         Outcome(
@@ -204,6 +229,7 @@ def run_together(runs: Sequence[Run]) -> Run:
         recipe=first.recipe,
         score=score(outcomes, group_of=lambda outcome: outcome.question_id.split("/", 1)[1]),
         outcomes=outcomes,
+        beside=first.beside,
     )
 
 

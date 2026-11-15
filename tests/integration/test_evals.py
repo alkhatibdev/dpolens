@@ -227,3 +227,16 @@ def test_a_set_asked_in_parts_keeps_each_parts_topic_and_counts_whole_queries(
     ]
     assert f"gdpr assistant.en: {len(questions)} questions" in ran.output
     assert f"of {queries} queries in the top five" in " ".join(ran.output.split())
+
+
+def test_a_law_loaded_alone_has_no_other_to_be_searched_beside(
+    indexed: Session, migrated: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(REPO)
+    monkeypatch.setenv("DPOLENS_DATABASE_URL", migrated)
+
+    asked_for = ["--pack", "gdpr", "--set", "tuning.en", "--config", "keyword", "--every-law"]
+    ran = CliRunner().invoke(app, ["evals", "run", *asked_for])
+
+    assert ran.exit_code == 1
+    assert "gdpr is the only law loaded here" in ran.output

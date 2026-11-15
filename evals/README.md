@@ -138,6 +138,12 @@ means that law. Keyword statistics are kept across every loaded law, so a run on
 holding other laws can differ slightly from one holding that law alone. The published scores
 are measured with every pack loaded, and so is CI's gate.
 
+An organisation that selects several laws searches them together. `--every-law` measures a
+law that way: the run searches every law loaded, the pack's questions still expect the pack's
+own clauses, and the set is named with the laws beside it, such as `tuning.ar beside uae-pdpl`.
+The laws then share the ten results, so `recall@10` is the figure to read. Such a run is never
+written to `evals/results`: the published scores are of a law searched alone.
+
 ## Judging a change
 
 A change to search is judged on the sets used while improving retrieval, tuning and
@@ -166,6 +172,10 @@ uv run dpolens evals run --pack uae-pdpl --outcomes after/uae-pdpl.json
 uv run dpolens evals compare before after
 ```
 
+A change to how several laws share the results is judged with the same runs made again with
+`--every-law`, kept in the same folders under another file name. A law alone and a law beside
+the others are two sets, and a topic asked in both is still one topic.
+
 `--outcomes` writes, for every question of the configuration being scored, the clauses returned
 and the place of the first that answers. `compare` takes two such files, or two folders with a
 file for each law, and prints each set before and after, then whether the change is kept.
@@ -176,6 +186,7 @@ file for each law, and prints each set before and after, then whether the change
 uv run dpolens evals run --pack gdpr --set tuning
 uv run dpolens evals run --pack gdpr --set tuning.ar
 uv run dpolens evals run --pack gdpr --set assistant
+uv run dpolens evals run --pack gdpr --set tuning --every-law
 uv run dpolens evals run --pack gdpr --set held_out --baselines --write
 uv run dpolens evals run --pack uae-pdpl --set held_out --together --baselines --write
 ```

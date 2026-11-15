@@ -68,6 +68,16 @@ class EmptySelection(Exception):
     """A selection names at least one law."""
 
 
+class OnlyLaw(Exception):
+    """A law cannot be searched beside the others where no other is loaded."""
+
+    def __init__(self, slug: str) -> None:
+        self.slug = slug
+        super().__init__(
+            f"{slug} is the only law loaded here, so there is no other to search it beside"
+        )
+
+
 @dataclass(frozen=True)
 class Scope:
     """The laws one search covers, against the laws loaded here."""
@@ -146,6 +156,18 @@ def law_alone(session: Session, slug: str) -> Scope:
     if slug not in loaded:
         raise UnknownLaw([slug], loaded)
     return Scope(laws=(slug,), loaded=loaded)
+
+
+def law_beside_the_others(session: Session, slug: str) -> Scope:
+    """One loaded law with every other loaded law beside it, whatever is selected, which is
+    what an eval run searches to measure a law as an organisation that chose several finds
+    it."""
+    loaded = tuple(pack.slug for pack in loaded_laws(session))
+    if slug not in loaded:
+        raise UnknownLaw([slug], loaded)
+    if len(loaded) == 1:
+        raise OnlyLaw(slug)
+    return Scope(laws=loaded, loaded=loaded)
 
 
 def newly_arrived(session: Session, *, now: datetime | None = None) -> frozenset[str]:

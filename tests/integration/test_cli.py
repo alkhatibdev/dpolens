@@ -239,6 +239,15 @@ def test_only_a_held_out_set_is_written_and_before_anything_runs(in_the_checkout
     assert "--write is for held-out sets, not 'tuning.ar'" in said(result)
 
 
+def test_a_run_beside_every_law_is_never_written(in_the_checkout: None) -> None:
+    result = runner.invoke(
+        app, ["evals", "run", "--pack", "gdpr", "--set", "held_out", "--every-law", "--write"]
+    )
+
+    assert result.exit_code == 2
+    assert "--write is for a law searched alone" in said(result)
+
+
 def test_scoring_together_needs_two_sets(in_the_checkout: None) -> None:
     result = runner.invoke(
         app, ["evals", "run", "--pack", "gdpr", "--set", "held_out.en", "--together"]
