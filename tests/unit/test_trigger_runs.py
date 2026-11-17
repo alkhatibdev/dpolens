@@ -26,6 +26,7 @@ from run_trigger_test import (  # noqa: E402
     BAKED_IN,
     INSTANCE_IMAGES,
     INSTANCE_VERSION,
+    LAWS,
     PREFIXES,
     SERVERS,
     TRIGGER,
@@ -75,6 +76,23 @@ def answer(tool_id: str) -> dict[str, Any]:
     }
 
 
+def refused(tool_id: str) -> dict[str, Any]:
+    return {
+        "type": "user",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "is_error": True,
+                    "content": "Error executing tool search_policies: nobody has chosen which "
+                    "laws apply to this organisation yet, so nothing is searched.",
+                }
+            ]
+        },
+    }
+
+
 def watch(*events: dict[str, Any]) -> Observation:
     seen = Observation(prefix=PREFIXES["plugin"], server=SERVERS["plugin"])
     for event in events:
@@ -94,6 +112,37 @@ def test_the_token_is_the_line_that_holds_it_not_the_prefix_named_above_it() -> 
     )
 
     assert token_from(printed) == "dpol_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abc"
+
+
+def test_a_search_that_came_back_as_an_error_is_noted() -> None:
+    """The decision to search still counts; the report says the instance could not answer."""
+    seen = watch(init(), use("1", SEARCH), refused("1"))
+    task = Task(id="t", kind="coding", should_search=True, prompt="p", reason="r", verb="store")
+    outcome = outcome_of(
+        task, 1, 1, "plugin", seen, stopped_at_call=True, clock=False, seconds=1.0, rows=0
+    )
+
+    assert seen.called and seen.call_failed
+    assert outcome.scored and outcome.search_failed
+    assert score([task], [outcome])["searches_that_failed"] == ["t#1"]
+
+
+def test_the_instance_chooses_the_law_its_searches_cover(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An instance searches nothing until its laws are chosen, and refuses every search."""
+    commands: list[tuple[str, ...]] = []
+
+    def compose(_: Instance, *args: str, **__: Any) -> subprocess.CompletedProcess[str]:
+        commands.append(args)
+        printed = "dpol_" + "a" * 40 if "token" in args else ""
+        return subprocess.CompletedProcess(args, 0, stdout=printed, stderr="")
+
+    monkeypatch.setattr(Instance, "compose", compose)
+    monkeypatch.setattr(Instance, "_retry", lambda *_: None)
+    monkeypatch.setattr(Instance, "_wait_until_healthy", lambda *_, **__: None)
+
+    Instance().start()
+
+    assert ("exec", "-T", "api", "dpolens", "laws", "select", *LAWS) in commands
 
 
 def test_a_search_before_any_edit_is_a_call_before_editing() -> None:
@@ -377,6 +426,7 @@ def held_out_batch(
     question_set: str = "held_out",
     model: str | None = "claude-sonnet-5-5",
     drop: int = 0,
+    failed: bool = False,
 ) -> None:
     """A batch in which every task did what its label says, once."""
     batch = runs / name
@@ -393,7 +443,8 @@ def held_out_batch(
     session = {**init(), "model": model or "claude-sonnet-5-5"}
     lines = []
     for task in read_tasks(TRIGGER / "held_out.yaml"):
-        events = [session, *([use("1", SEARCH), answer("1")] if task.should_search else [])]
+        reply = refused("1") if failed else answer("1")
+        events = [session, *([use("1", SEARCH), reply] if task.should_search else [])]
         seen = watch(*events)
         result = outcome_of(
             task,
@@ -432,6 +483,7 @@ def test_a_complete_pinned_held_out_batch_is_published(
         ({"question_set": "tuning"}, "only held-out is published"),
         ({"model": None}, "not a pinned one"),
         ({"drop": 1}, "scored 29 of 30 runs"),
+        ({"failed": True}, "came back as an error in 15 runs"),
     ],
 )
 def test_a_batch_that_cannot_stand_behind_the_number_is_refused(
