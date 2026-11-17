@@ -8,21 +8,28 @@ without running an assistant.
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import sys
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
 
 import run_trigger_test  # noqa: E402
 from run_trigger_test import (  # noqa: E402
+    BAKED_IN,
+    INSTANCE_IMAGES,
+    INSTANCE_VERSION,
     PREFIXES,
     SERVERS,
     TRIGGER,
+    Instance,
     NotPublishable,
     Observation,
     Outcome,
@@ -305,6 +312,40 @@ def test_rereading_a_batch_rescores_what_the_old_rule_misjudged(
     assert not now.scored
     assert now.unusable == "the model requests kept failing (unknown)"
     assert read_outcomes(batch / "outcomes.recorded.jsonl") == [misjudged]
+
+
+def test_the_instance_is_built_under_a_name_no_release_has(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compose names a built image after DPOLENS_VERSION, so a build under a release's
+    number would replace that release's images on the machine running the test."""
+    monkeypatch.setenv("DPOLENS_VERSION", "0.2.0")
+
+    assert Instance().env["DPOLENS_VERSION"] == INSTANCE_VERSION
+    assert not re.match(r"\d", INSTANCE_VERSION)
+
+
+def test_the_images_checked_are_the_images_compose_builds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Checking other images than the ones started would vouch for the wrong files."""
+    services = yaml.safe_load((REPO / "compose.yaml").read_text(encoding="utf-8"))["services"]
+    checked: list[str] = []
+
+    def answer(command: list[str], **_: Any) -> subprocess.CompletedProcess[str]:
+        if command[0] == "docker":
+            checked.extend(command)
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", answer)
+    run_trigger_test.stale_images()
+
+    for service in BAKED_IN:
+        built = re.sub(
+            r"\$\{DPOLENS_VERSION:-[^}]*\}", INSTANCE_VERSION, services[service]["image"]
+        )
+        assert INSTANCE_IMAGES[service] == built
+        assert built in checked
 
 
 def test_an_image_holding_the_checkout_differs_in_nothing() -> None:
