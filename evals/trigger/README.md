@@ -100,7 +100,9 @@ others about the model or the version of Claude Code.
 Building the instance asks the image registries about base images, so a network that cannot
 reach them stops a batch before it starts. `--reuse-images` starts from the images already
 built instead, after checking that every file they copy from the repository is the same as in
-your checkout, and refuses otherwise.
+your checkout, and refuses otherwise. The instance's images are built as `trigger-test`, never
+as a release's number, so a batch leaves the images of every release on your machine as they
+were.
 
 When a rule turns out to have been applied wrongly to recorded runs, `--reread <batch>` applies
 the rule as it now stands to each run's saved stream of events. What was recorded first is kept

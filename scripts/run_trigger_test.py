@@ -55,6 +55,15 @@ CLAUDE_CODE = "2.1.288"
 
 IMAGE = f"dpolens-trigger-run:{CLAUDE_CODE}"
 PROJECT = "dpolens-trigger"
+INSTANCE_VERSION = "trigger-test"
+"""What the instance's images are built as. Compose names each image after DPOLENS_VERSION,
+so a build under a release's number would replace that release's images on this machine."""
+
+INSTANCE_IMAGES = {
+    "api": f"ghcr.io/alkhatibdev/dpolens:{INSTANCE_VERSION}",
+    "setup": f"ghcr.io/alkhatibdev/dpolens:{INSTANCE_VERSION}",
+    "mcp": f"ghcr.io/alkhatibdev/dpolens-mcp:{INSTANCE_VERSION}",
+}
 NETWORK = f"{PROJECT}_default"
 MCP_URL = "http://mcp:8765/mcp"
 DEVELOPER = "developer@larder.shop"
@@ -548,6 +557,7 @@ class Instance:
             "DPOLENS_API_PORT": "18000",
             "DPOLENS_MCP_PORT": "18765",
             "DPOLENS_MCP_ALLOWED_HOSTS": '["mcp:8765"]',
+            "DPOLENS_VERSION": INSTANCE_VERSION,
         }
         self.token = ""
 
@@ -685,7 +695,15 @@ def stale_images() -> list[str]:
             for path, name in inside.items()
         }
         listing = subprocess.run(
-            ["docker", "run", "--rm", "--entrypoint", "sha256sum", f"{PROJECT}-{service}", *inside],
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--entrypoint",
+                "sha256sum",
+                INSTANCE_IMAGES[service],
+                *inside,
+            ],
             capture_output=True,
             text=True,
             check=False,
