@@ -1,12 +1,13 @@
-"""Reading a trigger run from Claude Code's stream of events, and scoring a batch.
+"""Reading a trigger run from an AI assistant's stream of events, and scoring a batch.
 
-The events are built by hand in the shape Claude Code prints with
+The events are built by hand in the shapes Claude Code and Qwen Code print with
 `--output-format stream-json`, so these tests pin what counts as a call
-without running an assistant.
+without running an AI assistant.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import subprocess
@@ -24,10 +25,13 @@ sys.path.insert(0, str(REPO / "scripts"))
 import run_trigger_test  # noqa: E402
 from run_trigger_test import (  # noqa: E402
     BAKED_IN,
+    CLIENTS,
     INSTANCE_IMAGES,
     INSTANCE_VERSION,
     LAWS,
+    MCP_URL,
     PREFIXES,
+    QWEN_CODE,
     SERVERS,
     TRIGGER,
     Instance,
@@ -36,13 +40,18 @@ from run_trigger_test import (  # noqa: E402
     Outcome,
     Task,
     agrees,
+    arguments,
     differing,
     digests,
     outcome_of,
     published,
+    qwen_settings,
     read_outcomes,
     read_tasks,
     reread,
+    run_batch,
+    run_once,
+    sampling,
     score,
     token_from,
 )
@@ -427,6 +436,7 @@ def held_out_batch(
     model: str | None = "claude-sonnet-5-5",
     drop: int = 0,
     failed: bool = False,
+    conditions: dict[str, Any] | None = None,
 ) -> None:
     """A batch in which every task did what its label says, once."""
     batch = runs / name
@@ -438,6 +448,7 @@ def held_out_batch(
         "claude_code": "2.1.288",
         "runs_per_task": 1,
         "started": "2026-10-09T08:00:00+00:00",
+        **(conditions or {}),
     }
     (batch / "batch.json").write_text(json.dumps(meta))
     session = {**init(), "model": model or "claude-sonnet-5-5"}
@@ -484,6 +495,8 @@ def test_a_complete_pinned_held_out_batch_is_published(
         ({"model": None}, "not a pinned one"),
         ({"drop": 1}, "scored 29 of 30 runs"),
         ({"failed": True}, "came back as an error in 15 runs"),
+        ({"conditions": {"stop_at_edit": True}}, "cannot say what they did after"),
+        ({"conditions": {"client": "qwen-code"}}, "is Claude Code's"),
     ],
 )
 def test_a_batch_that_cannot_stand_behind_the_number_is_refused(
@@ -505,3 +518,226 @@ def test_batches_on_different_models_are_not_published_together(
 
     with pytest.raises(NotPublishable, match="different models"):
         published(["one", "two"])
+
+
+QWEN_SEARCH = PREFIXES["mcp-only"] + "search_policies"
+
+
+def qwen_init(status: str = "connected") -> dict[str, Any]:
+    """The first event of a Qwen Code 0.27.4 run, which lists every tool, deferred ones too."""
+    return {
+        "type": "system",
+        "subtype": "init",
+        "model": "Qwen3.5-4B-8bit",
+        "qwen_code_version": "0.27.4",
+        "mcp_servers": [{"name": SERVERS["mcp-only"], "status": status}],
+        "tools": ["read_file", "edit", "write_file", "tool_search", "tool_call", QWEN_SEARCH],
+    }
+
+
+def bridged(tool_id: str, name: str) -> dict[str, Any]:
+    """A call through Qwen Code's bridge to a tool kept out of the prompt."""
+    return {
+        "type": "assistant",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "id": tool_id,
+                    "name": "tool_call",
+                    "input": {"name": name, "arguments": {"query": "logging IP addresses"}},
+                }
+            ]
+        },
+    }
+
+
+def qwen(*lines: dict[str, Any] | str) -> Observation:
+    seen = Observation(prefix=PREFIXES["mcp-only"], server=SERVERS["mcp-only"], client=QWEN_CODE)
+    for line in lines:
+        seen.read(line if isinstance(line, str) else json.dumps(line))
+    return seen
+
+
+def test_a_search_through_qwen_codes_bridge_is_a_call() -> None:
+    """Qwen Code keeps MCP tools out of the prompt, so its searches arrive as tool_call."""
+    seen = qwen(
+        qwen_init(),
+        use("1", "tool_search"),
+        answer("1"),
+        bridged("2", QWEN_SEARCH),
+        answer("2"),
+        use("3", "edit"),
+    )
+
+    assert seen.called and seen.before_edit and seen.call_answered
+    assert seen.version == "0.27.4"
+    assert seen.unusable("mcp-only") is None
+    assert seen.dpolens_answered == 1
+
+
+def test_looking_a_tool_up_is_not_calling_it() -> None:
+    seen = qwen(qwen_init(), use("1", "tool_search"), answer("1"), use("2", "write_file"))
+
+    assert not seen.called
+    assert seen.first_edit == 1
+
+
+def test_a_bridged_name_resolves_the_way_qwen_code_resolves_it() -> None:
+    """The exact name, or the one tool differing only in case. A bare tool name reaches no
+    server, since Qwen Code refuses it, so it is not a call."""
+    assert qwen(qwen_init(), bridged("1", QWEN_SEARCH.upper())).called
+    assert not qwen(qwen_init(), bridged("1", "search_policies")).called
+
+
+def test_qwen_codes_own_edit_tools_are_edits() -> None:
+    seen = qwen(qwen_init(), use("1", "write_file"), bridged("2", QWEN_SEARCH), answer("2"))
+
+    assert seen.called
+    assert not seen.before_edit
+
+
+def test_a_run_qwen_code_ended_at_the_turn_limit_is_scored_as_capped() -> None:
+    """Qwen Code says so on stderr and exits, with no final event."""
+    seen = qwen(
+        qwen_init(),
+        use("1", "read_file"),
+        answer("1"),
+        "Reached max session turns for this session. Increase the number of turns by "
+        "specifying maxSessionTurns in settings.json.\n",
+    )
+    outcome = outcome_of(
+        TASKS[2], 1, 1, "mcp-only", seen, stopped_at_call=False, clock=False, seconds=1.0, rows=0
+    )
+
+    assert outcome.scored
+    assert outcome.capped == "turns"
+
+
+def test_a_qwen_code_run_whose_model_request_failed_is_not_scored() -> None:
+    seen = qwen(
+        qwen_init(),
+        {
+            "type": "result",
+            "subtype": "error_during_execution",
+            "is_error": True,
+            "error": {"message": "[API Error: 401 Invalid API key]"},
+        },
+    )
+
+    assert seen.unusable("mcp-only") == "the run failed: [API Error: 401 Invalid API key]"
+
+
+class Finished:
+    """A stand-in for the container: its whole output at once."""
+
+    def __init__(self, lines: list[str]) -> None:
+        self.stdout = iter(lines)
+
+    def wait(self, timeout: float | None = None) -> int:
+        return 0
+
+
+@pytest.mark.parametrize("stop_at_edit", [True, False])
+def test_stop_at_edit_ends_a_run_at_its_first_edit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stop_at_edit: bool
+) -> None:
+    """Whether a run searched before editing is known at its first edit."""
+    events = [qwen_init(), use("1", "edit"), answer("1"), bridged("2", QWEN_SEARCH), answer("2")]
+    killed: list[list[str]] = []
+
+    def kill(command: list[str], **_: Any) -> subprocess.CompletedProcess[str]:
+        killed.append(command)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(
+        subprocess, "Popen", lambda *_, **__: Finished([json.dumps(e) + "\n" for e in events])
+    )
+    monkeypatch.setattr(subprocess, "run", kill)
+
+    seen, at_call, at_edit, clock, _ = run_once(
+        TASKS[0],
+        QWEN_CODE,
+        "mcp-only",
+        "Qwen3.5-4B-8bit",
+        None,
+        "volume",
+        tmp_path,
+        ("OPENAI_API_KEY", "key"),
+        tmp_path / "transcript.jsonl",
+        stop_at_edit,
+    )
+
+    assert (at_edit, at_call, seen.called) == (
+        (True, False, False) if stop_at_edit else (False, True, True)
+    )
+    assert not clock
+    assert killed and killed[0][:2] == ["docker", "kill"]
+
+
+def test_qwen_codes_settings_name_the_server_the_model_and_dpolens() -> None:
+    settings = qwen_settings(
+        "Qwen3.5-4B-8bit",
+        "http://host.docker.internal:8181/v1",
+        "dpol_token",
+        {"temperature": 0.6, "top_k": 20},
+        262144,
+    )
+
+    assert settings["mcpServers"] == {
+        "dpolens": {"httpUrl": MCP_URL, "headers": {"Authorization": "Bearer dpol_token"}}
+    }
+    [provider] = settings["modelProviders"]["openai"]
+    assert provider["baseUrl"] == "http://host.docker.internal:8181/v1"
+    assert provider["envKey"] == "OPENAI_API_KEY"
+    assert provider["generationConfig"] == {
+        "samplingParams": {"temperature": 0.6, "top_k": 20},
+        "contextWindowSize": 262144,
+    }
+    assert settings["model"] == {"name": "Qwen3.5-4B-8bit", "catalogRefresh": False}
+    assert settings["privacy"]["usageStatisticsEnabled"] is False
+    assert settings["general"]["enableAutoUpdate"] is False
+
+
+def test_sampling_is_read_as_the_numbers_qwen_code_sends() -> None:
+    assert sampling("temperature=0.6, top_p=0.95,top_k=20") == {
+        "temperature": 0.6,
+        "top_p": 0.95,
+        "top_k": 20,
+    }
+    with pytest.raises(argparse.ArgumentTypeError, match="min_p"):
+        sampling("min_p=0")
+
+
+@pytest.mark.parametrize(
+    ("options", "reason"),
+    [
+        (["--client", "qwen-code", "--model", "m"], "need --model and --base-url"),
+        (["--client", "qwen-code", "--setup", "plugin"], "the plugin is Claude Code's"),
+        (["--base-url", "http://host.docker.internal:8181/v1"], "are for Qwen Code runs"),
+        (["--set", "held_out", "--client", "qwen-code", "--base-url", "u"], "need --model"),
+    ],
+)
+def test_options_that_cannot_make_a_batch_start_nothing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    options: list[str],
+    reason: str,
+) -> None:
+    monkeypatch.setattr(run_trigger_test, "RUNS", tmp_path)
+
+    assert run_batch(arguments(options)) == 2
+    assert reason in capsys.readouterr().out
+    assert not any(tmp_path.iterdir())
+
+
+def test_every_client_has_a_target_and_its_two_scripts() -> None:
+    container = TRIGGER / "container"
+    dockerfile = (container / "Dockerfile").read_text(encoding="utf-8")
+    targets = re.findall(r"^FROM \S+ AS (\S+)$", dockerfile, re.MULTILINE)
+
+    for name in CLIENTS:
+        assert name in targets
+        assert (container / name / "prepare-profile.sh").is_file()
+        assert (container / name / "run-task.sh").is_file()

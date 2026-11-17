@@ -1,19 +1,21 @@
-"""Measure how often Claude Code calls DPOLens without being told to.
+"""Measure how often an AI coding assistant calls DPOLens without being told to.
 
 Each task in evals/trigger is something a developer might ask for in the Larder
-app. Every run is a new container holding Claude Code, the app, and DPOLens
-installed the way Get started on dpolens.com installs it, talking to a
-throwaway instance of DPOLens built from this checkout. What is measured is
-whether the assistant calls search_policies or get_clause, and whether it does
-so before it edits a file.
+app. Every run is a new container holding the AI assistant, the app, and
+DPOLens installed the way a user installs it, talking to a throwaway instance
+of DPOLens built from this checkout. What is measured is whether the AI
+assistant calls search_policies or get_clause, and whether it does so before
+it edits a file.
 
     uv run python scripts/run_trigger_test.py --set tuning                # the pilot
     uv run python scripts/run_trigger_test.py --set held_out --runs 3 --model <id>
     uv run python scripts/run_trigger_test.py --report <batch>            # score again
 
-Runs are billed to a Claude subscription through a token from
+Claude Code runs are billed to a Claude subscription through a token from
 `claude setup-token`, read from evals/trigger/.oauth-token, which git ignores,
 or to an API account when that file is absent and ANTHROPIC_API_KEY is set.
+Qwen Code runs talk to the OpenAI-compatible server named by --base-url, with
+its key in OPENAI_API_KEY.
 Everything a batch produces stays in evals/trigger/runs/<batch>/, also ignored,
 so a batch stopped by a usage limit resumes where it stopped.
 """
@@ -32,7 +34,7 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -50,10 +52,54 @@ RUNS = TRIGGER / "runs"
 TOKEN_FILE = TRIGGER / ".oauth-token"
 RESULTS = REPO / "evals" / "results" / "trigger.json"
 
-CLAUDE_CODE = "2.1.288"
-"""The Claude Code version every run uses, so a batch measures one thing."""
 
-IMAGE = f"dpolens-trigger-run:{CLAUDE_CODE}"
+@dataclass(frozen=True)
+class Client:
+    """An AI coding assistant the test runs, at the version every run of a batch uses, so a
+    batch measures one thing."""
+
+    name: str
+    """Its target in the run container's Dockerfile."""
+    label: str
+    version: str
+    version_key: str
+    """Where the first event of its stream gives its version."""
+    edits: frozenset[str]
+    """The tools that change a file."""
+    bridge: str | None = None
+    """A tool that calls the tool named in its input. Qwen Code keeps MCP tools out of the
+    prompt until the model looks one up, and the model can call one through it as well as by
+    its own name."""
+    turn_cap: str | None = None
+    """What it prints on reaching the turn limit, when no final event says so."""
+
+    @property
+    def image(self) -> str:
+        return f"dpolens-trigger-run:{self.name}-{self.version}"
+
+    @property
+    def version_arg(self) -> str:
+        return self.name.upper().replace("-", "_") + "_VERSION"
+
+
+CLAUDE_CODE = Client(
+    name="claude-code",
+    label="Claude Code",
+    version="2.1.288",
+    version_key="claude_code_version",
+    edits=frozenset({"Edit", "Write", "MultiEdit", "NotebookEdit"}),
+)
+QWEN_CODE = Client(
+    name="qwen-code",
+    label="Qwen Code",
+    version="0.27.4",
+    version_key="qwen_code_version",
+    edits=frozenset({"edit", "write_file", "notebook_edit"}),
+    bridge="tool_call",
+    turn_cap="Reached max session turns",
+)
+CLIENTS = {client.name: client for client in (CLAUDE_CODE, QWEN_CODE)}
+
 PROJECT = "dpolens-trigger"
 INSTANCE_VERSION = "trigger-test"
 """What the instance's images are built as. Compose names each image after DPOLENS_VERSION,
@@ -71,6 +117,18 @@ until somebody chooses its laws, and refuses every search until then."""
 NETWORK = f"{PROJECT}_default"
 MCP_URL = "http://mcp:8765/mcp"
 DEVELOPER = "developer@larder.shop"
+OPENAI_KEY = "OPENAI_API_KEY"
+"""The variable that holds the model server's key, on this machine and in the container."""
+
+SAMPLING: dict[str, Callable[[str], float | int]] = {
+    "temperature": float,
+    "top_p": float,
+    "top_k": int,
+    "presence_penalty": float,
+    "frequency_penalty": float,
+    "repetition_penalty": float,
+}
+"""The sampling values Qwen Code sends with every request when its settings name them."""
 
 SETS = ("tuning", "held_out")
 SETUPS = ("plugin", "mcp-only")
@@ -80,7 +138,6 @@ SERVERS = {"plugin": "plugin:dpolens:dpolens", "mcp-only": "dpolens"}
 COUNTED = ("search_policies", "get_clause")
 """The tools that return clause text. Listing documents is not consulting them."""
 
-EDITS = frozenset({"Edit", "Write", "MultiEdit", "NotebookEdit"})
 VERBS = ("collect", "store", "log", "share", "delete")
 KINDS = ("coding", "question")
 
@@ -216,6 +273,7 @@ class Observation:
 
     prefix: str
     server: str
+    client: Client = CLAUDE_CODE
     model: str | None = None
     version: str | None = None
     server_status: str | None = None
@@ -225,6 +283,7 @@ class Observation:
     first_call: int | None = None
     """Where in `tools` the first counted call is."""
     first_edit: int | None = None
+    turn_capped: bool = False
     call_answered: bool = False
     call_failed: bool = False
     """Whether the first counted call came back as an error, which no setup should cause."""
@@ -237,6 +296,18 @@ class Observation:
     """Whether the last thing that happened was a failed request to the model."""
     _names: dict[str, str] = field(default_factory=dict)
     _call_id: str | None = None
+    _registered: tuple[str, ...] = ()
+
+    def read(self, line: str) -> None:
+        """One line of a run's output: an event, or text printed outside the events."""
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            if self.client.turn_cap and line.startswith(self.client.turn_cap):
+                self.turn_capped = True
+            return
+        if isinstance(event, dict):
+            self.see(event)
 
     def see(self, event: dict[str, Any]) -> None:
         kind, subtype = event.get("type"), event.get("subtype")
@@ -256,7 +327,8 @@ class Observation:
     def _init(self, event: dict[str, Any]) -> None:
         self.started = True
         self.model = event.get("model")
-        self.version = event.get("claude_code_version")
+        self.version = event.get(self.client.version_key)
+        self._registered = tuple(str(name) for name in event.get("tools") or [])
         for server in event.get("mcp_servers") or []:
             if isinstance(server, dict) and server.get("name") == self.server:
                 self.server_status = server.get("status")
@@ -274,14 +346,27 @@ class Observation:
         for block in blocks(event):
             if block.get("type") != "tool_use":
                 continue
-            name = str(block.get("name", ""))
+            name = self._target(block)
             self._names[str(block.get("id"))] = name
             self.tools.append(name)
             if self.first_call is None and self.counts(name):
                 self.first_call = len(self.tools) - 1
                 self._call_id = str(block.get("id"))
-            if self.first_edit is None and name in EDITS:
+            if self.first_edit is None and name in self.client.edits:
                 self.first_edit = len(self.tools) - 1
+
+    def _target(self, block: dict[str, Any]) -> str:
+        """The tool a call runs. Through the bridge, it is the tool named, resolved the way
+        Qwen Code resolves it: the exact name, or else the only one differing in case."""
+        name = str(block.get("name", ""))
+        given = block.get("input")
+        named = given.get("name") if isinstance(given, dict) else None
+        if name != self.client.bridge or not isinstance(named, str):
+            return name
+        if named in self._registered:
+            return named
+        same = {tool for tool in self._registered if tool.lower() == named.lower()}
+        return same.pop() if len(same) == 1 else named
 
     def _user(self, event: dict[str, Any]) -> None:
         for block in blocks(event):
@@ -310,7 +395,7 @@ class Observation:
     def unusable(self, setup: str) -> str | None:
         """Why this run could not have called DPOLens, if it could not."""
         if not self.started:
-            return "Claude Code never started a session"
+            return f"{self.client.label} never started a session"
         if setup == "plugin" and ("dpolens" not in self.plugins or self.plugin_errors):
             return f"the plugin did not load: {'; '.join(self.plugin_errors) or 'not listed'}"
         if self.server_status not in ("connected", "pending"):
@@ -320,8 +405,26 @@ class Observation:
         if self.retrying:
             return f"the model requests kept failing ({', '.join(sorted(set(self.retries)))})"
         if self.result and self.result.get("is_error") and capped_by(self.result) is None:
-            return f"the run failed: {self.result.get('result') or self.result.get('subtype')}"
+            error = self.result.get("error")
+            reason = (
+                self.result.get("result")
+                or (error.get("message") if isinstance(error, dict) else None)
+                or self.result.get("subtype")
+            )
+            return f"the run failed: {reason}"
         return None
+
+    @property
+    def capped(self) -> str | None:
+        """Which limit ended the run, if one did."""
+        return "turns" if self.turn_capped else capped_by(self.result or {})
+
+    def settled(self, stop_at_edit: bool) -> bool:
+        """Whether the run's outcome is known: its first call came back or, when runs stop at
+        the first edit, it edited before calling."""
+        return self.call_answered or (
+            stop_at_edit and self.first_edit is not None and self.first_call is None
+        )
 
 
 def capped_by(result: dict[str, Any]) -> str | None:
@@ -359,6 +462,8 @@ class Outcome:
     search_failed: bool = False
     """Whether the search that decided the run came back as an error. Batches recorded before
     this was noted read as False."""
+    stopped_at_edit: bool = False
+    """Whether the run was ended at its first edit, which only `--stop-at-edit` does."""
 
 
 def outcome_of(
@@ -372,10 +477,11 @@ def outcome_of(
     clock: bool,
     seconds: float,
     rows: int | None,
+    stopped_at_edit: bool = False,
 ) -> Outcome:
     unusable = seen.unusable(setup)
     result = seen.result or {}
-    capped = "clock" if clock else capped_by(result) if not seen.called else None
+    capped = "clock" if clock else seen.capped if not seen.called else None
     return Outcome(
         task=task.id,
         run=run,
@@ -396,6 +502,7 @@ def outcome_of(
         dpolens_calls=seen.dpolens_answered,
         query_log_rows=rows,
         search_failed=seen.call_failed,
+        stopped_at_edit=stopped_at_edit,
     )
 
 
@@ -501,7 +608,7 @@ def score(tasks: Sequence[Task], outcomes: Sequence[Outcome]) -> dict[str, Any]:
     }
 
 
-def print_score(found: dict[str, Any]) -> None:
+def print_score(found: dict[str, Any], client: Client) -> None:
     labels = {
         "should": "coding tasks that should search",
         "should_not": "coding tasks that should not",
@@ -531,9 +638,10 @@ def print_score(found: dict[str, Any]) -> None:
         f"  runs scored {found['runs_scored']}, capped {found['capped']}, "
         f"attempts not scored {found['attempts_not_scored']}"
     )
+    cost = found["estimated_cost_usd"]
     print(
-        f"  estimated cost {found['estimated_cost_usd']} USD, "
-        f"model {', '.join(found['models'])}, Claude Code {', '.join(found['versions'])}"
+        (f"  estimated cost {cost} USD, " if cost else "  ")
+        + f"model {', '.join(found['models'])}, {client.label} {', '.join(found['versions'])}"
     )
     for key, label in (
         ("never_searched", "never searched"),
@@ -729,15 +837,17 @@ def stale_images() -> list[str]:
     return stale
 
 
-def build_image() -> None:
-    print(f"building the run container with Claude Code {CLAUDE_CODE}", flush=True)
+def build_image(client: Client) -> None:
+    print(f"building the run container with {client.label} {client.version}", flush=True)
     docker(
         "build",
         "--quiet",
+        "--target",
+        client.name,
         "-t",
-        IMAGE,
+        client.image,
         "--build-arg",
-        f"CLAUDE_CODE_VERSION={CLAUDE_CODE}",
+        f"{client.version_arg}={client.version}",
         "-f",
         str(TRIGGER / "container" / "Dockerfile"),
         str(TRIGGER),
@@ -755,10 +865,48 @@ def marketplace(batch: Path) -> Path:
     return target
 
 
-def prepare_profile(setup: str, token: str, volume: str, plugin_source: Path) -> None:
+def qwen_settings(
+    model: str,
+    base_url: str,
+    token: str,
+    sampling: dict[str, float | int] | None,
+    context_window: int | None,
+) -> dict[str, Any]:
+    """Qwen Code's settings for a batch: the model at its server, and DPOLens as the entry
+    `qwen mcp add` writes. Nothing reports usage, fetches a model catalogue or updates
+    Qwen Code, so a run talks to the model server and DPOLens only."""
+    generation: dict[str, Any] = {}
+    if sampling:
+        generation["samplingParams"] = sampling
+    if context_window:
+        generation["contextWindowSize"] = context_window
+    provider = {
+        "id": model,
+        "name": model,
+        "baseUrl": base_url,
+        "envKey": OPENAI_KEY,
+        "generationConfig": generation,
+    }
+    return {
+        "general": {"enableAutoUpdate": False},
+        "privacy": {"usageStatisticsEnabled": False},
+        "security": {"auth": {"selectedType": "openai"}},
+        "model": {"name": model, "catalogRefresh": False},
+        "modelProviders": {"openai": [provider]},
+        "mcpServers": {
+            "dpolens": {"httpUrl": MCP_URL, "headers": {"Authorization": f"Bearer {token}"}}
+        },
+    }
+
+
+def prepare_profile(
+    client: Client, args: argparse.Namespace, token: str, volume: str, plugin_source: Path
+) -> None:
     """Install DPOLens into an empty profile once, for every run of the batch to copy."""
     values: dict[str, Any]
-    if setup == "plugin":
+    if client is QWEN_CODE:
+        values = qwen_settings(args.model, args.base_url, token, args.sampling, args.context_window)
+    elif args.setup == "plugin":
         values = {"url": MCP_URL, "token": token}
     else:
         values = {"type": "http", "url": MCP_URL, "headers": {"Authorization": f"Bearer {token}"}}
@@ -773,9 +921,9 @@ def prepare_profile(setup: str, token: str, volume: str, plugin_source: Path) ->
         f"{volume}:/home/node/profile",
         "-v",
         f"{plugin_source}:/marketplace:ro",
-        IMAGE,
+        client.image,
         "prepare-profile.sh",
-        setup,
+        args.setup,
         input=json.dumps(values),
         capture_output=True,
     )
@@ -789,6 +937,7 @@ def read_lines(stream: Any, lines: queue.Queue[str | None]) -> None:
 
 def run_once(
     task: Task,
+    client: Client,
     setup: str,
     model: str | None,
     budget: float | None,
@@ -796,8 +945,10 @@ def run_once(
     plugin_source: Path,
     credential: tuple[str, str],
     transcript: Path,
-) -> tuple[Observation, bool, bool, float]:
-    """One container, one prompt. Returns what was seen, and why it ended."""
+    stop_at_edit: bool = False,
+) -> tuple[Observation, bool, bool, bool, float]:
+    """One container, one prompt. Returns what was seen, and why it ended: at the first call
+    answered, at the first edit, or on the clock."""
     name = f"{PROJECT}-run-{secrets.token_hex(4)}"
     env = {
         **os.environ,
@@ -829,12 +980,15 @@ def run_once(
         f"{volume}:/home/node/profile:ro",
         "-v",
         f"{plugin_source}:/marketplace:ro",
-        IMAGE,
+        # A model server on this machine is host.docker.internal, a name Docker Desktop gives
+        # every container and Docker on Linux has to be told.
+        *(["--add-host", "host.docker.internal:host-gateway"] if client is QWEN_CODE else []),
+        client.image,
         "run-task.sh",
     ]
-    seen = Observation(prefix=PREFIXES[setup], server=SERVERS[setup])
+    seen = Observation(prefix=PREFIXES[setup], server=SERVERS[setup], client=client)
     started = time.monotonic()
-    stopped_at_call = clock = False
+    stopped_at_call = stopped_at_edit = clock = False
 
     process = subprocess.Popen(
         command, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
@@ -856,20 +1010,16 @@ def run_once(
             if line is None:
                 break
             record.write(line)
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(event, dict):
-                seen.see(event)
-            if seen.call_answered:
-                stopped_at_call = True
+            seen.read(line)
+            if seen.settled(stop_at_edit):
+                stopped_at_call = seen.call_answered
+                stopped_at_edit = not stopped_at_call
                 break
 
-    if stopped_at_call or clock:
+    if stopped_at_call or stopped_at_edit or clock:
         subprocess.run(["docker", "kill", name], capture_output=True, check=False)
     process.wait(timeout=60)
-    return seen, stopped_at_call, clock, time.monotonic() - started
+    return seen, stopped_at_call, stopped_at_edit, clock, time.monotonic() - started
 
 
 def attempt_run(
@@ -884,8 +1034,9 @@ def attempt_run(
     batch: Path,
 ) -> Outcome:
     before = instance.rows()
-    seen, at_call, clock, seconds = run_once(
+    seen, at_call, at_edit, clock, seconds = run_once(
         task,
+        CLIENTS[args.client],
         args.setup,
         args.model,
         args.max_budget_usd,
@@ -893,6 +1044,7 @@ def attempt_run(
         plugin_source,
         credential,
         batch / "transcripts" / f"{task.id}.{run}.{attempt}.jsonl",
+        args.stop_at_edit,
     )
     after = instance.rows()
     rows = after - before if before is not None and after is not None else None
@@ -906,6 +1058,7 @@ def attempt_run(
         clock=clock,
         seconds=seconds,
         rows=rows,
+        stopped_at_edit=at_edit,
     )
 
 
@@ -914,6 +1067,8 @@ def verdict(outcome: Outcome) -> str:
         return f"not scored, {outcome.unusable}"
     if outcome.called:
         return "searched" + ("" if outcome.before_edit else " after editing")
+    if outcome.stopped_at_edit:
+        return f"edited without searching, {outcome.seconds:.0f}s"
     return f"did not search ({outcome.capped or 'finished'}), {outcome.seconds:.0f}s"
 
 
@@ -927,8 +1082,11 @@ def read_outcomes(path: Path) -> list[Outcome]:
     ]
 
 
-def credential_for_runs() -> tuple[str, str] | None:
-    """The variable Claude Code authenticates with, and its value."""
+def credential_for_runs(client: Client) -> tuple[str, str] | None:
+    """The variable the AI assistant authenticates with, and its value."""
+    if client is QWEN_CODE:
+        key = os.environ.get(OPENAI_KEY)
+        return (OPENAI_KEY, key) if key else None
     if TOKEN_FILE.is_file():
         return "CLAUDE_CODE_OAUTH_TOKEN", TOKEN_FILE.read_text(encoding="utf-8").strip()
     if os.environ.get("ANTHROPIC_API_KEY"):
@@ -936,28 +1094,57 @@ def credential_for_runs() -> tuple[str, str] | None:
     return None
 
 
+def refusal(args: argparse.Namespace) -> str | None:
+    """Why the options cannot make a batch, when they cannot."""
+    client = CLIENTS[args.client]
+    if client is QWEN_CODE:
+        if args.setup == "plugin":
+            return "the plugin is Claude Code's: Qwen Code runs use --setup mcp-only"
+        if not args.model or not args.base_url:
+            return "Qwen Code runs need --model and --base-url: the model, at the server holding it"
+        if args.max_budget_usd is not None:
+            return "--max-budget-usd is Claude Code's limit, and Qwen Code has none"
+    elif args.base_url or args.sampling or args.context_window:
+        return "--base-url, --sampling and --context-window are for Qwen Code runs"
+    if args.set == "held_out" and not args.model:
+        return "a held-out batch is published, so its model is pinned: pass --model"
+    return None
+
+
 def run_batch(args: argparse.Namespace) -> int:
+    client = CLIENTS[args.client]
+    args.setup = args.setup or ("plugin" if client is CLAUDE_CODE else "mcp-only")
+    refused = refusal(args)
+    if refused:
+        print(refused)
+        return 2
+
     tasks = read_tasks(TRIGGER / f"{args.set}.yaml")
     if args.tasks:
         wanted = set(args.tasks.split(","))
         tasks = [task for task in tasks if task.id in wanted]
 
-    if args.set == "held_out" and not args.model:
-        print("a held-out batch is published, so its model is pinned: pass --model")
-        return 2
     planned = len(tasks) * args.runs
     if planned > args.max_runs:
         print(f"{planned} runs planned, more than --max-runs {args.max_runs}; nothing started")
         return 2
-    credential = credential_for_runs()
+    credential = credential_for_runs(client)
     if credential is None:
         print(
-            f"no subscription token at {TOKEN_FILE}: run `claude setup-token` and save it "
+            f"set {OPENAI_KEY} to the key of the server at --base-url, or to any value when "
+            "it needs none"
+            if client is QWEN_CODE
+            else f"no subscription token at {TOKEN_FILE}: run `claude setup-token` and save it "
             "there, or set ANTHROPIC_API_KEY to bill an API account instead"
         )
         return 2
 
-    batch_id = args.batch or f"{args.set}-{args.setup}-{datetime.now(UTC):%Y%m%d-%H%M}"
+    named = (
+        args.setup
+        if client is CLAUDE_CODE
+        else f"{client.name}-{re.sub(r'[^A-Za-z0-9._-]+', '-', args.model)}"
+    )
+    batch_id = args.batch or f"{args.set}-{named}-{datetime.now(UTC):%Y%m%d-%H%M}"
     batch = RUNS / batch_id
     (batch / "transcripts").mkdir(parents=True, exist_ok=True)
     outcomes_file = batch / "outcomes.jsonl"
@@ -972,38 +1159,40 @@ def run_batch(args: argparse.Namespace) -> int:
             else "built from the checkout"
         ),
     }
+    asked = conditions(args)
     if meta_file.is_file():
         meta = json.loads(meta_file.read_text(encoding="utf-8"))
-        asked = {"set": args.set, "setup": args.setup, "model": args.model}
-        if any(meta.get(key) != value for key, value in asked.items()):
+        differ = [key for key, value in asked.items() if recorded(meta, key) != value]
+        if differ:
             print(
-                f"batch {batch_id} is {meta['set']}, {meta['setup']}, {meta['model']}: "
-                "resume it with those"
+                f"batch {batch_id} was started with other {', '.join(differ)}: resume it with those"
             )
             return 2
         meta.setdefault("resumed", []).append(this_run)
     else:
         meta = {
-            "set": args.set,
-            "setup": args.setup,
-            "model": args.model,
-            "claude_code": CLAUDE_CODE,
+            **{key: value for key, value in asked.items() if value is not None or key == "model"},
+            "client_version": client.version,
+            **({"claude_code": client.version} if client is CLAUDE_CODE else {}),
             "runs_per_task": args.runs,
             "max_turns": MAX_TURNS,
             "max_budget_usd": args.max_budget_usd,
             **this_run,
         }
     meta_file.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
-    print(f"batch {batch_id}: {len(tasks)} tasks, {args.runs} runs each, setup {args.setup}")
+    print(
+        f"batch {batch_id}: {len(tasks)} tasks, {args.runs} runs each, "
+        f"{client.label}, setup {args.setup}"
+    )
 
-    build_image()
+    build_image(client)
     instance = Instance()
-    volume = f"{PROJECT}-profile-{args.setup}"
+    volume = f"{PROJECT}-profile-{client.name}-{args.setup}"
     failures = 0
     try:
         instance.start(build=not args.reuse_images)
         plugin_source = marketplace(batch)
-        prepare_profile(args.setup, instance.token, volume, plugin_source)
+        prepare_profile(client, args, instance.token, volume, plugin_source)
 
         for task in tasks:
             for run in range(1, args.runs + 1):
@@ -1040,8 +1229,28 @@ def run_batch(args: argparse.Namespace) -> int:
 
     found = score(tasks, outcomes)
     (batch / "score.json").write_text(json.dumps(found, indent=2) + "\n", encoding="utf-8")
-    print_score(found)
+    print_score(found, client)
     return 0
+
+
+def conditions(args: argparse.Namespace) -> dict[str, Any]:
+    """What a batch measures under, which every run of it shares, resumed ones included."""
+    return {
+        "set": args.set,
+        "setup": args.setup,
+        "model": args.model,
+        "client": args.client,
+        "base_url": args.base_url,
+        "sampling": args.sampling,
+        "context_window": args.context_window,
+        "stop_at_edit": args.stop_at_edit or None,
+    }
+
+
+def recorded(meta: dict[str, Any], key: str) -> Any:
+    """A condition as a batch recorded it. Batches from before there was a choice of client
+    ran Claude Code."""
+    return meta.get(key, CLAUDE_CODE.name if key == "client" else None)
 
 
 def checkout() -> dict[str, Any]:
@@ -1070,22 +1279,18 @@ def reread(batch_id: str) -> int:
     meta = json.loads((batch / "batch.json").read_text(encoding="utf-8"))
     tasks = {task.id: task for task in read_tasks(TRIGGER / f"{meta['set']}.yaml")}
     outcomes_file = batch / "outcomes.jsonl"
-    recorded = read_outcomes(outcomes_file)
+    outcomes = read_outcomes(outcomes_file)
     first = batch / "outcomes.recorded.jsonl"
     if not first.is_file():
         shutil.copy2(outcomes_file, first)
 
+    client = CLIENTS[recorded(meta, "client")]
     updated = []
-    for old in recorded:
-        seen = Observation(prefix=PREFIXES[old.setup], server=SERVERS[old.setup])
+    for old in outcomes:
+        seen = Observation(prefix=PREFIXES[old.setup], server=SERVERS[old.setup], client=client)
         transcript = batch / "transcripts" / f"{old.task}.{old.run}.{old.attempt}.jsonl"
         for line in transcript.read_text(encoding="utf-8").splitlines():
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(event, dict):
-                seen.see(event)
+            seen.read(line)
         new = outcome_of(
             tasks[old.task],
             old.run,
@@ -1096,6 +1301,7 @@ def reread(batch_id: str) -> int:
             clock=old.capped == "clock",
             seconds=old.seconds,
             rows=old.query_log_rows,
+            stopped_at_edit=old.stopped_at_edit,
         )
         if verdict(new) != verdict(old):
             print(
@@ -1121,6 +1327,14 @@ def published(batch_ids: Sequence[str]) -> dict[str, Any]:
         meta = json.loads((RUNS / batch_id / "batch.json").read_text(encoding="utf-8"))
         if meta["set"] != "held_out":
             raise NotPublishable(f"{batch_id} is a {meta['set']} batch; only held-out is published")
+        if recorded(meta, "client") != CLAUDE_CODE.name:
+            raise NotPublishable(
+                f"{batch_id} ran {meta['client']}; {RESULTS.name} is Claude Code's"
+            )
+        if meta.get("stop_at_edit"):
+            raise NotPublishable(
+                f"{batch_id} stopped runs at their first edit, so it cannot say what they did after"
+            )
         if not meta.get("model"):
             raise NotPublishable(
                 f"{batch_id} ran on whatever model was the default, not a pinned one"
@@ -1176,19 +1390,55 @@ def report(batch_id: str) -> int:
     meta = json.loads((batch / "batch.json").read_text(encoding="utf-8"))
     tasks = read_tasks(TRIGGER / f"{meta['set']}.yaml")
     found = score(tasks, read_outcomes(batch / "outcomes.jsonl"))
-    print(f"batch {batch_id}: {meta['set']}, setup {meta['setup']}")
-    print_score(found)
+    client = CLIENTS[recorded(meta, "client")]
+    print(f"batch {batch_id}: {meta['set']}, {client.label}, setup {meta['setup']}")
+    print_score(found, client)
     return 0
 
 
-def main() -> int:
+def sampling(text: str) -> dict[str, float | int]:
+    """`temperature=0.6,top_k=20` as the values Qwen Code sends with every request."""
+    found: dict[str, float | int] = {}
+    for pair in text.split(","):
+        key, _, value = (part.strip() for part in pair.partition("="))
+        if key not in SAMPLING:
+            raise argparse.ArgumentTypeError(f"{key!r} is not one of {', '.join(SAMPLING)}")
+        try:
+            found[key] = SAMPLING[key](value)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"{key} takes a number, not {value!r}") from None
+    return found
+
+
+def arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--set", choices=SETS, default="tuning")
-    parser.add_argument("--setup", choices=SETUPS, default="plugin")
+    parser.add_argument(
+        "--client", choices=sorted(CLIENTS), default=CLAUDE_CODE.name, help="the AI assistant"
+    )
+    parser.add_argument(
+        "--setup", choices=SETUPS, help="plugin, Claude Code's default, or the MCP server alone"
+    )
     parser.add_argument("--runs", type=int, default=1, help="runs of each task")
     parser.add_argument("--model", help="the full model id; Claude Code's default when left out")
+    parser.add_argument(
+        "--base-url", help="Qwen Code: the OpenAI-compatible server, as the container reaches it"
+    )
+    parser.add_argument(
+        "--sampling",
+        type=sampling,
+        help="Qwen Code: sampling sent with every request, as temperature=0.6,top_k=20",
+    )
+    parser.add_argument(
+        "--context-window", type=int, help="Qwen Code: the context the server gives the model"
+    )
+    parser.add_argument(
+        "--stop-at-edit",
+        action="store_true",
+        help="end a run at its first edit, when whether it searched before editing is known",
+    )
     parser.add_argument("--tasks", help="only these task ids, separated by commas")
     parser.add_argument("--batch", help="a batch to resume, or the name for a new one")
     parser.add_argument(
@@ -1212,7 +1462,11 @@ def main() -> int:
         metavar="BATCHES",
         help="write evals/results/trigger.json from held-out batches, separated by commas",
     )
-    args = parser.parse_args()
+    return parser.parse_args(argv)
+
+
+def main() -> int:
+    args = arguments()
 
     if args.report:
         return report(args.report)

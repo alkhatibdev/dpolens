@@ -2,7 +2,8 @@
 
 The retrieval evals measure whether search finds the right clause once an AI assistant asks. This
 measures whether it asks: how often Claude Code calls DPOLens on its own when the work in front
-of it touches personal data, and how often it calls when the work does not.
+of it touches personal data, and how often it calls when the work does not. It also runs Qwen Code,
+with any model served through an OpenAI-compatible API, such as a small model on your own machine.
 
 ## What is here
 
@@ -11,7 +12,7 @@ of it touches personal data, and how often it calls when the work does not.
 | `tuning.yaml` | 20 tasks used while improving the guidance DPOLens gives an AI assistant |
 | `held_out.yaml` | 30 tasks that produce the published number and are never used to change anything |
 | `app/` | Larder, the small TypeScript shop every task runs against |
-| `container/` | The container one run happens in |
+| `container/` | The container one run happens in, one for each AI assistant |
 | `../../scripts/run_trigger_test.py` | The runner |
 
 ## A task
@@ -48,18 +49,25 @@ this compliant" would trigger any AI assistant and the number would mean nothing
 
 ## What a run is
 
-Every run is a new container: Claude Code at a pinned version, a fresh checkout of Larder with
-its dependencies installed, and an empty profile with DPOLens installed the way
+Every run is a new container: the AI assistant at a pinned version (Claude Code 2.1.288 or
+Qwen Code 0.27.4), a fresh checkout of Larder with its dependencies installed, and an empty
+profile with DPOLens installed. Claude Code gets it the way
 [Get started](https://dpolens.com/docs/get-started) installs it, from the plugin marketplace,
-with `claude plugin configure`. Nothing else is in the
-profile: no `CLAUDE.md`, no memory, no other plugins. The runs talk to a throwaway DPOLens
-instance built from your checkout, with every pack in it loaded, which is removed afterwards.
+with `claude plugin configure`. Qwen Code gets the MCP server on its own, as the entry
+`qwen mcp add` writes, beside settings that name the model and its server. Nothing else is in the
+profile: no `CLAUDE.md` or `QWEN.md`, no memory, no other plugins. The runs talk to a throwaway
+DPOLens instance built from your checkout, with every pack in it loaded, which is removed
+afterwards.
 
 A run counts as a call when the AI assistant calls `search_policies` or `get_clause`, the two
 tools that return clause text. It counts as a call before editing when that happens before its
-first `Edit`, `Write`, `MultiEdit` or `NotebookEdit`. A run stops as soon as the first call
-comes back, since the outcome is known by then. Otherwise it goes until the AI assistant finishes,
-25 turns or 10 minutes.
+first edit: `Edit`, `Write`, `MultiEdit` or `NotebookEdit` in Claude Code, and `edit`,
+`write_file` or `notebook_edit` in Qwen Code. Qwen Code keeps MCP tools out of the prompt until
+the model looks one up, so a search can also come through its `tool_call` tool, and counts the
+same. A run stops as soon as the first call comes back, since the outcome is known by then.
+Otherwise it goes until the AI assistant finishes, 25 turns or 10 minutes. With
+`--stop-at-edit`, a run also stops at its first edit, when whether it searched before editing is
+known: runs stay short on a slow model, and the batch cannot say what a run would have done after.
 
 A run that could not have called DPOLens is retried rather than scored: the plugin not loading,
 the MCP server not connecting, or the request to the model failing. Each run's calls are also
@@ -67,7 +75,7 @@ counted in the instance's query log, and the report names any run where the two 
 
 ## Running it
 
-You need Docker and either a Claude subscription or an API key.
+For Claude Code you need Docker and either a Claude subscription or an API key.
 
 ```bash
 claude setup-token        # prints a one-year token for your subscription
@@ -93,9 +101,10 @@ of every run, and the full stream of events from each one, which is where to loo
 did something unexpected. A batch stopped by a usage limit resumes with
 `--batch <batch>`, and `--report <batch>` scores one again without running anything.
 
-`--write held_out-plugin,held_out-mcp-only` writes `evals/results/trigger.json` from held-out
-batches, and refuses one that is incomplete, ran on an unpinned model, or disagrees with the
-others about the model or the version of Claude Code.
+`--write held_out-plugin,held_out-mcp-only` writes `evals/results/trigger.json`, Claude Code's
+number, from held-out batches, and refuses one that is incomplete, ran on an unpinned model,
+stopped its runs at their first edit, or disagrees with the others about the model or the version
+of Claude Code.
 
 Building the instance asks the image registries about base images, so a network that cannot
 reach them stops a batch before it starts. `--reuse-images` starts from the images already
@@ -110,6 +119,23 @@ When a rule turns out to have been applied wrongly to recorded runs, `--reread <
 the rule as it now stands to each run's saved stream of events. What was recorded first is kept
 in `outcomes.recorded.jsonl`, and any run that should not have been scored is run again by the
 next resume.
+
+### With Qwen Code
+
+Qwen Code talks to any server with an OpenAI-compatible API whose model can call tools, such as
+llama.cpp, LM Studio, Ollama, oMLX or vLLM. Name the model as the server lists it, and the server
+as the container reaches it: your own machine is `host.docker.internal`.
+
+```bash
+export OPENAI_API_KEY=<the server's key>    # any value when it needs none
+uv run python scripts/run_trigger_test.py --client qwen-code --set held_out --max-runs 30 \
+  --model <id> --base-url http://host.docker.internal:<port>/v1 \
+  --sampling temperature=0.6,top_p=0.95,top_k=20 --context-window 262144 --stop-at-edit
+```
+
+`--sampling` is sent with every request in place of the server's own choice, so give the values
+the model's card recommends. `--context-window` tells Qwen Code how much context the server gives
+the model. Both are kept with the batch, and resuming it takes the same.
 
 ## Reading the number
 

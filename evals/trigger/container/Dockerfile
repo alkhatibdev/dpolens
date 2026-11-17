@@ -1,32 +1,24 @@
-# Where one trigger run happens: Claude Code at a pinned version, as an
-# ordinary user, in a checkout of the Larder app with its dependencies
+# Where one trigger run happens: an AI coding assistant at a pinned version, as
+# an ordinary user, in a checkout of the Larder app with its dependencies
 # installed, the way a developer's machine would have it.
 #
-# Built by scripts/run_trigger_test.py with evals/trigger as the context.
+# Built by scripts/run_trigger_test.py with evals/trigger as the context, one
+# target for each AI assistant: claude-code or qwen-code. Both start from the
+# same checkout.
 
-FROM node:24-bookworm-slim
-
-ARG CLAUDE_CODE_VERSION=2.1.288
+FROM node:24-bookworm-slim AS larder
 
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates git openssl; \
-    rm -rf /var/lib/apt/lists/*; \
-    npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"; \
-    claude --version
-
-COPY --chmod=755 container/prepare-profile.sh container/run-task.sh /usr/local/bin/
-
-# The pinned version is the one measured, so nothing may update it mid-batch.
-ENV DISABLE_AUTOUPDATER=1 \
-    CLAUDE_CONFIG_DIR=/home/node/.claude
+    rm -rf /var/lib/apt/lists/*
 
 USER node
 WORKDIR /home/node/larder
 
 # A named volume mounted here starts out owned by this user, which is how the
 # prepared profile reaches every run read-only.
-RUN mkdir -p /home/node/.claude /home/node/profile
+RUN mkdir -p /home/node/profile
 
 COPY --chown=node:node app/ ./
 
@@ -37,7 +29,7 @@ RUN set -eux; \
     npx prisma generate; \
     npm run typecheck
 
-# A short history, because a real checkout has one and Claude Code reads it.
+# A short history, because a real checkout has one and the AI assistant reads it.
 RUN set -eux; \
     git init -q -b main; \
     git config user.name "Sam Okafor"; \
@@ -56,3 +48,40 @@ RUN set -eux; \
     git add -A; \
     commit "2026-09-19T11:42:00Z" "Orders, with order_placed sent to Segment"; \
     test -z "$(git status --porcelain)"
+
+FROM larder AS claude-code
+
+ARG CLAUDE_CODE_VERSION=2.1.288
+
+USER root
+RUN set -eux; \
+    npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"; \
+    claude --version
+
+COPY --chmod=755 container/claude-code/ /usr/local/bin/
+
+# The pinned version is the one measured, so nothing may update it mid-batch.
+ENV DISABLE_AUTOUPDATER=1 \
+    CLAUDE_CONFIG_DIR=/home/node/.claude
+
+USER node
+RUN mkdir -p /home/node/.claude
+
+FROM larder AS qwen-code
+
+ARG QWEN_CODE_VERSION=0.27.4
+
+USER root
+RUN set -eux; \
+    npm install -g "@qwen-code/qwen-code@${QWEN_CODE_VERSION}"; \
+    qwen --version
+
+COPY --chmod=755 container/qwen-code/ /usr/local/bin/
+
+# Every run approves every tool call, so the notice saying so would only repeat
+# itself in each transcript. The pinned version is the one measured: the
+# settings each run starts from keep it from updating itself.
+ENV QWEN_CODE_SUPPRESS_YOLO_WARNING=1
+
+USER node
+RUN mkdir -p /home/node/.qwen
