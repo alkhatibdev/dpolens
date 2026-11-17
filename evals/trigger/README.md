@@ -102,7 +102,9 @@ reach them stops a batch before it starts. `--reuse-images` starts from the imag
 built instead, after checking that every file they copy from the repository is the same as in
 your checkout, and refuses otherwise. The instance's images are built as `trigger-test`, never
 as a release's number, so a batch leaves the images of every release on your machine as they
-were.
+were. The instance chooses GDPR as the law that applies when it starts, since an instance
+searches nothing until its laws are chosen. A search that comes back as an error is named in the
+report, and `--write` refuses a batch that has one.
 
 When a rule turns out to have been applied wrongly to recorded runs, `--reread <batch>` applies
 the rule as it now stands to each run's saved stream of events. What was recorded first is kept

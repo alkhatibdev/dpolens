@@ -64,6 +64,10 @@ INSTANCE_IMAGES = {
     "setup": f"ghcr.io/alkhatibdev/dpolens:{INSTANCE_VERSION}",
     "mcp": f"ghcr.io/alkhatibdev/dpolens-mcp:{INSTANCE_VERSION}",
 }
+LAWS = ("gdpr",)
+"""What the instance's searches cover, as in the published runs. An instance searches nothing
+until somebody chooses its laws, and refuses every search until then."""
+
 NETWORK = f"{PROJECT}_default"
 MCP_URL = "http://mcp:8765/mcp"
 DEVELOPER = "developer@larder.shop"
@@ -222,6 +226,8 @@ class Observation:
     """Where in `tools` the first counted call is."""
     first_edit: int | None = None
     call_answered: bool = False
+    call_failed: bool = False
+    """Whether the first counted call came back as an error, which no setup should cause."""
     dpolens_answered: int = 0
     """DPOLens calls that came back, each of which wrote one row to the query log."""
     retries: list[str] = field(default_factory=list)
@@ -284,6 +290,7 @@ class Observation:
             use = str(block.get("tool_use_id"))
             if use == self._call_id:
                 self.call_answered = True
+                self.call_failed = bool(block.get("is_error"))
             if self._names.get(use, "").startswith(self.prefix):
                 self.dpolens_answered += 1
 
@@ -349,6 +356,9 @@ class Outcome:
     tools: list[str]
     dpolens_calls: int
     query_log_rows: int | None
+    search_failed: bool = False
+    """Whether the search that decided the run came back as an error. Batches recorded before
+    this was noted read as False."""
 
 
 def outcome_of(
@@ -385,6 +395,7 @@ def outcome_of(
         tools=seen.tools,
         dpolens_calls=seen.dpolens_answered,
         query_log_rows=rows,
+        search_failed=seen.call_failed,
     )
 
 
@@ -473,6 +484,9 @@ def score(tasks: Sequence[Task], outcomes: Sequence[Outcome]) -> dict[str, Any]:
         "query_log_mismatches": [
             f"{outcome.task}#{outcome.run}" for outcome in scored if not agrees(outcome)
         ],
+        "searches_that_failed": [
+            f"{outcome.task}#{outcome.run}" for outcome in scored if outcome.search_failed
+        ],
         "estimated_cost_usd": round(sum(costs), 2),
         "never_searched": [
             task.id
@@ -525,6 +539,7 @@ def print_score(found: dict[str, Any]) -> None:
         ("never_searched", "never searched"),
         ("searched_without_need", "searched without needing to"),
         ("query_log_mismatches", "query log disagrees with the stream for"),
+        ("searches_that_failed", "a search came back as an error in"),
     ):
         if found[key]:
             print(f"  {label}: {', '.join(found[key])}")
@@ -618,6 +633,7 @@ class Instance:
             capture_output=True,
         )
         self.token = token_from(created.stdout)
+        self.compose("exec", "-T", "api", "dpolens", "laws", "select", *LAWS, capture_output=True)
 
     def _retry(self, *args: str) -> None:
         """A Compose command that a network blip can fail, tried a few times."""
@@ -1113,6 +1129,11 @@ def published(batch_ids: Sequence[str]) -> dict[str, Any]:
         expected = len(tasks) * meta["runs_per_task"]
         if found["runs_scored"] != expected:
             raise NotPublishable(f"{batch_id} scored {found['runs_scored']} of {expected} runs")
+        if found["searches_that_failed"]:
+            raise NotPublishable(
+                f"{batch_id}: a search came back as an error in "
+                f"{len(found['searches_that_failed'])} runs, so its instance could not answer"
+            )
         if found["models"] != [meta["model"]] or found["versions"] != [meta["claude_code"]]:
             raise NotPublishable(
                 f"{batch_id} pinned {meta['model']} on {meta['claude_code']}, and its sessions "
