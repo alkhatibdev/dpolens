@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -155,6 +155,6 @@ describe("policies", () => {
     const { router } = renderAt("/policies");
 
     await screen.findAllByRole("navigation", { name: "Main" });
-    expect(router.state.location.pathname).toBe("/library");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/library"));
   });
 });

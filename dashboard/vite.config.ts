@@ -22,6 +22,24 @@ export default defineConfig({
     // Every asset as a file of its own, never a data: URL, so the dashboard's
     // Content-Security-Policy can allow fonts and images from itself alone.
     assetsInlineLimit: 0,
+    rolldownOptions: {
+      output: {
+        // The libraries are two files apart from the dashboard's own code, React
+        // and the router in one and the rest in the other, each under the size
+        // Vite warns about. They change only when a library is upgraded, so a
+        // browser keeps them from one DPOLens release to the next.
+        codeSplitting: {
+          groups: [
+            {
+              name: "react",
+              test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/,
+              priority: 2,
+            },
+            { name: "vendor", test: /node_modules[\\/]/, priority: 1 },
+          ],
+        },
+      },
+    },
   },
   test: {
     environment: "jsdom",
