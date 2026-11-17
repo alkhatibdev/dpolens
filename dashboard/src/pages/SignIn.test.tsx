@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -104,8 +104,10 @@ describe("signing in", () => {
     serve({ "GET /v1/sessions/current": problem("unauthenticated", 401) });
     renderAt("/sign-in?reason=idle");
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "You were signed out after a while without activity.",
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "You were signed out after a while without activity.",
+      ),
     );
   });
 

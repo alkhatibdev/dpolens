@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -46,7 +46,7 @@ describe("the shell", () => {
     const box = (await screen.findAllByRole("searchbox"))[0]!;
     await userEvent.type(box, "Can a user see their data?{Enter}");
 
-    expect(router.state.location.pathname).toBe("/search");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/search"));
     expect(router.state.location.search).toBe("?q=Can%20a%20user%20see%20their%20data%3F");
   });
 

@@ -4,6 +4,16 @@ import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
 
+/** The whole window, while the dashboard starts and there is no page to show yet. */
+export function Starting() {
+  const { t } = useTranslation();
+  return (
+    <div className="grid min-h-dvh place-items-center text-muted" role="status">
+      {t("app.loading")}
+    </div>
+  );
+}
+
 export function Loading() {
   const { t } = useTranslation();
   return (
@@ -25,6 +35,20 @@ export function Failed({ onRetry }: { onRetry?: () => void }) {
           {t("errors.retry")}
         </Button>
       ) : null}
+    </div>
+  );
+}
+
+/** A page that could not be fetched or drawn. Loading it again from the server is the way back. */
+export function PageFailed() {
+  return <Failed onRetry={() => window.location.reload()} />;
+}
+
+/** The same, for a page outside the dashboard's frame, such as signing in. */
+export function StartFailed() {
+  return (
+    <div className="grid min-h-dvh place-items-center p-4">
+      <PageFailed />
     </div>
   );
 }

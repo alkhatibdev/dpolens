@@ -14,8 +14,22 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router/dom";
 
 import { ApiError } from "./api/client";
+import { reloadTarget } from "./lib/upgrade";
 import { router } from "./router";
 import { SESSION } from "./session";
+
+// A page's file that cannot be fetched is, most often, from before an upgrade.
+window.addEventListener("vite:preloadError", (event) => {
+  const target = reloadTarget(
+    router.state.navigation.location,
+    window.location.href,
+    () => window.sessionStorage,
+  );
+  if (target !== null) {
+    event.preventDefault();
+    window.location.assign(target);
+  }
+});
 
 const client: QueryClient = new QueryClient({
   queryCache: new QueryCache({

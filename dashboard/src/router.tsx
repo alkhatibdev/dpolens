@@ -1,66 +1,132 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Outlet } from "react-router";
 
+import { PageFailed, StartFailed, Starting } from "@/components/States";
 import { Shell } from "@/layout/Shell";
-import { ClausePage } from "@/pages/Clause";
-import { ComparePage } from "@/pages/Compare";
-import { DocumentPage } from "@/pages/Document";
-import { GovernancePage } from "@/pages/Governance";
 import { Home } from "@/pages/Home";
-import { LibraryPage } from "@/pages/Library";
 import { NotFoundPage } from "@/pages/NotFound";
-import { OverviewPage } from "@/pages/Overview";
-import { PeoplePage } from "@/pages/People";
-import { PoliciesPage } from "@/pages/Policies";
-import { PolicyDraftPage } from "@/pages/PolicyDraft";
-import { QuestionsPage } from "@/pages/Questions";
-import { RolePage } from "@/pages/Role";
-import { RolesPage } from "@/pages/Roles";
-import { SearchPage } from "@/pages/Search";
-import { SelectedLawsPage } from "@/pages/SelectedLaws";
-import { SettingsPage } from "@/pages/Settings";
-import { SetupPage } from "@/pages/Setup";
-import { SignInPage } from "@/pages/SignIn";
-import { TokensPage } from "@/pages/Tokens";
-import { WelcomePage } from "@/pages/Welcome";
 import { RequireSession } from "@/RequireSession";
 
+// Each page is a file of its own in the build, fetched the first time somebody
+// opens it, so the dashboard starts without loading every page it has. Each
+// `lazy` is a function: written as an object, the tests' routers answered "No
+// route matches" for a page's first visit.
 export const routes = [
-  { path: "/sign-in", element: <SignInPage /> },
-  { path: "/welcome", element: <WelcomePage /> },
+  {
+    path: "/sign-in",
+    HydrateFallback: Starting,
+    ErrorBoundary: StartFailed,
+    lazy: async () => ({ Component: (await import("@/pages/SignIn")).SignInPage }),
+  },
+  {
+    path: "/welcome",
+    HydrateFallback: Starting,
+    ErrorBoundary: StartFailed,
+    lazy: async () => ({ Component: (await import("@/pages/Welcome")).WelcomePage }),
+  },
   {
     path: "/setup",
+    HydrateFallback: Starting,
+    ErrorBoundary: StartFailed,
     element: (
       <RequireSession>
-        <SetupPage />
+        <Outlet />
       </RequireSession>
     ),
+    children: [
+      {
+        index: true,
+        lazy: async () => ({ Component: (await import("@/pages/Setup")).SetupPage }),
+      },
+    ],
   },
   {
     path: "/",
+    HydrateFallback: Starting,
+    ErrorBoundary: StartFailed,
     element: (
       <RequireSession>
         <Shell />
       </RequireSession>
     ),
     children: [
-      { index: true, element: <Home /> },
-      { path: "overview", element: <OverviewPage /> },
-      { path: "logs", element: <QuestionsPage /> },
-      { path: "logs/governance", element: <GovernancePage /> },
-      { path: "library", element: <LibraryPage /> },
-      { path: "library/:slug", element: <DocumentPage /> },
-      { path: "library/:slug/compare", element: <ComparePage /> },
-      { path: "clauses/:key", element: <ClausePage /> },
-      { path: "policies", element: <PoliciesPage /> },
-      { path: "policies/:slug/draft", element: <PolicyDraftPage /> },
-      { path: "search", element: <SearchPage /> },
-      { path: "laws", element: <SelectedLawsPage /> },
-      { path: "users", element: <PeoplePage /> },
-      { path: "users/roles", element: <RolesPage /> },
-      { path: "users/roles/:id", element: <RolePage /> },
-      { path: "tokens", element: <TokensPage /> },
-      { path: "settings", element: <SettingsPage /> },
-      { path: "*", element: <NotFoundPage /> },
+      {
+        // A page that fails says so inside the frame, so the menu stays.
+        ErrorBoundary: PageFailed,
+        children: [
+          { index: true, element: <Home /> },
+          {
+            path: "overview",
+            lazy: async () => ({ Component: (await import("@/pages/Overview")).OverviewPage }),
+          },
+          {
+            path: "logs",
+            lazy: async () => ({ Component: (await import("@/pages/Questions")).QuestionsPage }),
+          },
+          {
+            path: "logs/governance",
+            lazy: async () => ({
+              Component: (await import("@/pages/Governance")).GovernancePage,
+            }),
+          },
+          {
+            path: "library",
+            lazy: async () => ({ Component: (await import("@/pages/Library")).LibraryPage }),
+          },
+          {
+            path: "library/:slug",
+            lazy: async () => ({ Component: (await import("@/pages/Document")).DocumentPage }),
+          },
+          {
+            path: "library/:slug/compare",
+            lazy: async () => ({ Component: (await import("@/pages/Compare")).ComparePage }),
+          },
+          {
+            path: "clauses/:key",
+            lazy: async () => ({ Component: (await import("@/pages/Clause")).ClausePage }),
+          },
+          {
+            path: "policies",
+            lazy: async () => ({ Component: (await import("@/pages/Policies")).PoliciesPage }),
+          },
+          {
+            path: "policies/:slug/draft",
+            lazy: async () => ({
+              Component: (await import("@/pages/PolicyDraft")).PolicyDraftPage,
+            }),
+          },
+          {
+            path: "search",
+            lazy: async () => ({ Component: (await import("@/pages/Search")).SearchPage }),
+          },
+          {
+            path: "laws",
+            lazy: async () => ({
+              Component: (await import("@/pages/SelectedLaws")).SelectedLawsPage,
+            }),
+          },
+          {
+            path: "users",
+            lazy: async () => ({ Component: (await import("@/pages/People")).PeoplePage }),
+          },
+          {
+            path: "users/roles",
+            lazy: async () => ({ Component: (await import("@/pages/Roles")).RolesPage }),
+          },
+          {
+            path: "users/roles/:id",
+            lazy: async () => ({ Component: (await import("@/pages/Role")).RolePage }),
+          },
+          {
+            path: "tokens",
+            lazy: async () => ({ Component: (await import("@/pages/Tokens")).TokensPage }),
+          },
+          {
+            path: "settings",
+            lazy: async () => ({ Component: (await import("@/pages/Settings")).SettingsPage }),
+          },
+          { path: "*", element: <NotFoundPage /> },
+        ],
+      },
     ],
   },
 ];
