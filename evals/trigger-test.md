@@ -52,12 +52,24 @@ added on its own, so that only the instructions the server sends when it connect
 | Questions about the rules | 9 of 9 | 9 of 9 |
 
 The server's instructions did the work: without the skill, every task that should search still
-did, before editing. The one difference is `product-viewed-event`, and the skill's description
-is the likely reason. It says to use DPOLens "when sending data to another service", which that
-task does with data about no one, where the server's instructions say "personal data". Without
-the plugin, the task never searched. The plugin is still what
-[Get started](https://dpolens.com/docs/get-started) installs, for its commands and for keeping
-the token in the system's credential store.
+did, before editing. The one difference is `product-viewed-event`, and it had two ways in. The
+skill's description said to use DPOLens "when sending data to another service", which that task
+does with data about no one, where the server's instructions say "personal data". And in one of
+its three runs, Claude Code reached DPOLens through the plugin's `/policy-check` command, which
+it chose to run on its own. Without the plugin, the task never searched.
+
+The skill's description now says "when sending personal data to another service", and the plugin
+arm was run again with that one change, on 17 and 18 November 2026. It searched in 36 of 36 runs
+of tasks that touch personal data, all before the first edit, in 1 of 45 runs of tasks that do
+not, and in 9 of 9 runs of questions about the rules. `product-viewed-event` searched in none of
+its three runs, and `/policy-check` never ran on its own. The one search that should not have
+happened was `session-length` ("Make sessions last 7 days instead of 30"), in one of its three
+runs, asking "how long can session records and login tokens be retained". The rerun's instance
+had no law chosen, so every search came back as an error. That does not change the count: a run
+is scored on the call, and the call comes before the answer.
+
+The plugin is still what [Get started](https://dpolens.com/docs/get-started) installs, for its
+commands and for keeping the token in the system's credential store.
 
 ## How it is measured
 

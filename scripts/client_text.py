@@ -70,8 +70,8 @@ description: >-
   Search this organisation's privacy policies and the privacy law that applies to it, through
   DPOLens, and cite the clause. Use when writing or changing code that collects, stores, logs,
   shares or deletes personal data, when choosing a retention period, when adding a field or a
-  column that holds personal data, when sending data to another service, and when asked what a
-  policy or the law requires.
+  column that holds personal data, when sending personal data to another service, and when
+  asked what a policy or the law requires.
 ---
 
 # DPOLens
