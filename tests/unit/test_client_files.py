@@ -17,7 +17,7 @@ from typing import Any
 import pytest
 import yaml
 
-from dpolens_mcp.instructions import SENTENCES
+from dpolens_mcp.instructions import SEARCH, SENTENCES, TRIGGER, community_search
 from dpolens_mcp.settings import Settings
 
 REPO = Path(__file__).resolve().parents[2]
@@ -109,6 +109,28 @@ class TestTheGuidanceIsTheSameEverywhere:
         assert "name: dpolens" in front
         assert "personal data" in front
         assert "retention" in front
+
+    def test_what_says_when_to_search_names_only_personal_data(self) -> None:
+        """Data about nobody, such as a page view sent to analytics, is no reason to search.
+
+        An assistant reads these before it decides whether to call DPOLens, so a bare "data"
+        in any of them widens when it does. The lines are joined first, so "personal" at the
+        end of one line and "data" at the start of the next are still one phrase.
+        """
+        skill = (CLIENTS / "claude-code" / "skills" / "dpolens" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        when = {
+            "the skill's description": yaml.safe_load(skill.split("---")[1])["description"],
+            "the instructions' trigger": TRIGGER,
+            "search_policies": SEARCH,
+            "search_policies on a community version": community_search(30),
+        }
+        bare = re.compile(r"(?<!personal )\bdata\b", re.IGNORECASE)
+
+        found = {name: bare.findall(" ".join(text.split())) for name, text in when.items()}
+
+        assert all(not words for words in found.values()), found
 
 
 class TestNothingCarriesACredential:
