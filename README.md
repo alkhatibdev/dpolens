@@ -28,24 +28,31 @@
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
+<p align="center">
+  <img alt="Claude Code is asked to log failed logins with the email that was tried and the client IP. It calls DPOLens, finds the policy clause that says email addresses in logs are masked (sample-data-protection:6.1), writes a maskEmail helper that cites it, and quotes the clause in its answer." src="docs/media/claude-code-session.gif" width="920">
+</p>
+
+<p align="center"><sub>A real Claude Code session with the DPOLens plugin, on the sample policy every new
+instance starts with. The highlights are added and the waits are shortened.</sub></p>
+
+<p align="center">Try it in your AI assistant with the community version: public privacy law only,
+with no sign-in and no token.</p>
+
+<p align="center">
+  <a href="https://cursor.com/install-mcp?name=dpolens&config=eyJ1cmwiOiJodHRwczovL21jcC5kcG9sZW5zLmNvbS8ifQ%3D%3D"><img alt="Install in Cursor" src="https://img.shields.io/badge/Cursor-Install-000000?logo=cursor&logoColor=white"></a>
+  <a href="https://vscode.dev/redirect/mcp/install?name=dpolens&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.dpolens.com%2F%22%7D"><img alt="Install in Copilot in VS Code" src="https://img.shields.io/badge/Copilot_in_VS_Code-Install-0098FF?logo=githubcopilot&logoColor=white"></a>
+  <a href="https://claude.ai/directory/dpolens"><img alt="Connect in Claude" src="https://img.shields.io/badge/Claude-Connect-D97757?logo=claude&logoColor=white"></a>
+</p>
+
+<p align="center">For Claude Code, Codex, ChatGPT and the others,
+<a href="https://dpolens.com/community">the community version's page</a> has the line to add.</p>
+
 ## Get started
 
 DPOLens runs on your own servers with Docker Compose, so your policies stay there.
 [Get started](https://dpolens.com/docs/get-started) takes you from the first command to your
 first question, and [Connect your AI assistant](https://dpolens.com/docs/connect) sets up Claude
 Code, Codex, Cursor and GitHub Copilot in VS Code.
-
-To try it first, add the community version to your AI assistant: public privacy law only, with
-no sign-in and no token.
-
-<p>
-  <a href="https://cursor.com/install-mcp?name=dpolens&config=eyJ1cmwiOiJodHRwczovL21jcC5kcG9sZW5zLmNvbS8ifQ%3D%3D"><img alt="Install in Cursor" src="https://img.shields.io/badge/Cursor-Install-000000?logo=cursor&logoColor=white"></a>
-  <a href="https://vscode.dev/redirect/mcp/install?name=dpolens&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.dpolens.com%2F%22%7D"><img alt="Install in Copilot in VS Code" src="https://img.shields.io/badge/Copilot_in_VS_Code-Install-0098FF?logo=githubcopilot&logoColor=white"></a>
-  <a href="https://claude.ai/directory/dpolens"><img alt="Connect in Claude" src="https://img.shields.io/badge/Claude-Connect-D97757?logo=claude&logoColor=white"></a>
-</p>
-
-For Claude Code, Codex, ChatGPT and the others, [the community version's page](https://dpolens.com/community)
-has the line to add.
 
 ## What's inside
 
