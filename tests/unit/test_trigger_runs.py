@@ -71,11 +71,12 @@ def init(status: str = "connected", plugins: tuple[str, ...] = ("dpolens",)) -> 
     }
 
 
-def use(tool_id: str, name: str) -> dict[str, Any]:
-    return {
-        "type": "assistant",
-        "message": {"content": [{"type": "tool_use", "id": tool_id, "name": name, "input": {}}]},
-    }
+def use(tool_id: str, name: str, given: dict[str, Any] | None = None) -> dict[str, Any]:
+    block = {"type": "tool_use", "id": tool_id, "name": name, "input": given or {}}
+    return {"type": "assistant", "message": {"content": [block]}}
+
+
+ASKED = {"query": "how long are failed logins kept"}
 
 
 def answer(tool_id: str) -> dict[str, Any]:
@@ -125,7 +126,7 @@ def test_the_token_is_the_line_that_holds_it_not_the_prefix_named_above_it() -> 
 
 def test_a_search_that_came_back_as_an_error_is_noted() -> None:
     """The decision to search still counts; the report says the instance could not answer."""
-    seen = watch(init(), use("1", SEARCH), refused("1"))
+    seen = watch(init(), use("1", SEARCH, ASKED), refused("1"))
     task = Task(id="t", kind="coding", should_search=True, prompt="p", reason="r", verb="store")
     outcome = outcome_of(
         task, 1, 1, "plugin", seen, stopped_at_call=True, clock=False, seconds=1.0, rows=0
@@ -134,6 +135,37 @@ def test_a_search_that_came_back_as_an_error_is_noted() -> None:
     assert seen.called and seen.call_failed
     assert outcome.scored and outcome.search_failed
     assert score([task], [outcome])["searches_that_failed"] == ["t#1"]
+
+
+def test_a_search_that_asked_nothing_counts_and_is_not_the_instance_failing() -> None:
+    """Claude Code once called search_policies with no question before loading its description,
+    and the server's schema refused it. Any instance would have: the decision still counts."""
+    schema = {
+        "type": "user",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": "1",
+                    "is_error": True,
+                    "content": "Error executing tool search_policies: 1 validation error for "
+                    "search_policiesArguments\nquery\n  Field required",
+                }
+            ]
+        },
+    }
+    seen = watch(init(), use("1", SEARCH), schema)
+    task = Task(id="t", kind="coding", should_search=True, prompt="p", reason="r", verb="store")
+    outcome = outcome_of(
+        task, 1, 1, "plugin", seen, stopped_at_call=True, clock=False, seconds=1.0, rows=0
+    )
+
+    assert seen.called and seen.call_failed and not seen.call_asked
+    assert outcome.scored and outcome.before_edit
+    assert not outcome.search_failed and outcome.search_asked_nothing
+    found = score([task], [outcome])
+    assert found["searches_that_failed"] == []
+    assert found["searches_without_a_question"] == ["t#1"]
 
 
 def test_the_instance_chooses_the_law_its_searches_cover(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -436,6 +468,7 @@ def held_out_batch(
     model: str | None = "claude-sonnet-5-5",
     drop: int = 0,
     failed: bool = False,
+    asked_nothing: bool = False,
     conditions: dict[str, Any] | None = None,
 ) -> None:
     """A batch in which every task did what its label says, once."""
@@ -454,8 +487,9 @@ def held_out_batch(
     session = {**init(), "model": model or "claude-sonnet-5-5"}
     lines = []
     for task in read_tasks(TRIGGER / "held_out.yaml"):
-        reply = refused("1") if failed else answer("1")
-        events = [session, *([use("1", SEARCH), reply] if task.should_search else [])]
+        reply = refused("1") if failed or asked_nothing else answer("1")
+        call = use("1", SEARCH, None if asked_nothing else ASKED)
+        events = [session, *([call, reply] if task.should_search else [])]
         seen = watch(*events)
         result = outcome_of(
             task,
@@ -507,6 +541,20 @@ def test_a_batch_that_cannot_stand_behind_the_number_is_refused(
 
     with pytest.raises(NotPublishable, match=reason):
         published(["batch"])
+
+
+def test_a_batch_whose_searches_asked_nothing_is_published(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A search sent with no question is refused whatever the instance holds, so it says nothing
+    against the instance, and it still counts as the decision to search."""
+    monkeypatch.setattr(run_trigger_test, "RUNS", tmp_path)
+    held_out_batch(tmp_path, "batch", asked_nothing=True)
+
+    [run] = published(["batch"])["runs"]
+
+    assert run["groups"]["should"]["rate"]["calls"] == 12
+    assert len(run["searches_without_a_question"]) == 15
 
 
 def test_batches_on_different_models_are_not_published_together(

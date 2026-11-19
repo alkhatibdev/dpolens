@@ -137,6 +137,9 @@ SERVERS = {"plugin": "plugin:dpolens:dpolens", "mcp-only": "dpolens"}
 
 COUNTED = ("search_policies", "get_clause")
 """The tools that return clause text. Listing documents is not consulting them."""
+QUESTIONS = {"search_policies": "query", "get_clause": "key"}
+"""What each counted tool needs to be asked. A call without it is refused by the server's
+schema, whatever the instance holds."""
 
 VERBS = ("collect", "store", "log", "share", "delete")
 KINDS = ("coding", "question")
@@ -287,6 +290,9 @@ class Observation:
     call_answered: bool = False
     call_failed: bool = False
     """Whether the first counted call came back as an error, which no setup should cause."""
+    call_asked: bool = True
+    """Whether the first counted call carried its question. One sent with none is the AI
+    assistant's slip: no instance can answer it, and the decision to search was still made."""
     dpolens_answered: int = 0
     """DPOLens calls that came back, each of which wrote one row to the query log."""
     retries: list[str] = field(default_factory=list)
@@ -352,6 +358,7 @@ class Observation:
             if self.first_call is None and self.counts(name):
                 self.first_call = len(self.tools) - 1
                 self._call_id = str(block.get("id"))
+                self.call_asked = self._asked(block, name)
             if self.first_edit is None and name in self.client.edits:
                 self.first_edit = len(self.tools) - 1
 
@@ -367,6 +374,15 @@ class Observation:
             return named
         same = {tool for tool in self._registered if tool.lower() == named.lower()}
         return same.pop() if len(same) == 1 else named
+
+    def _asked(self, block: dict[str, Any], name: str) -> bool:
+        """Whether a counted call named its question. A call through the bridge carries its
+        arguments in its own shape, so it is taken as asked."""
+        given = block.get("input")
+        if block.get("name") != name or not isinstance(given, dict):
+            return True
+        question = given.get(QUESTIONS[name.removeprefix(self.prefix)])
+        return isinstance(question, str) and bool(question.strip())
 
     def _user(self, event: dict[str, Any]) -> None:
         for block in blocks(event):
@@ -460,8 +476,12 @@ class Outcome:
     dpolens_calls: int
     query_log_rows: int | None
     search_failed: bool = False
-    """Whether the search that decided the run came back as an error. Batches recorded before
-    this was noted read as False."""
+    """Whether the search that decided the run came back as an error although it asked
+    something, so the instance could not answer. Batches recorded before this was noted read as
+    False."""
+    search_asked_nothing: bool = False
+    """Whether the search that decided the run carried no question, which the server refuses.
+    It counts as a search: what is measured is the decision to look the rules up."""
     stopped_at_edit: bool = False
     """Whether the run was ended at its first edit, which only `--stop-at-edit` does."""
 
@@ -501,7 +521,8 @@ def outcome_of(
         tools=seen.tools,
         dpolens_calls=seen.dpolens_answered,
         query_log_rows=rows,
-        search_failed=seen.call_failed,
+        search_failed=seen.call_failed and seen.call_asked,
+        search_asked_nothing=seen.called and not seen.call_asked,
         stopped_at_edit=stopped_at_edit,
     )
 
@@ -594,6 +615,9 @@ def score(tasks: Sequence[Task], outcomes: Sequence[Outcome]) -> dict[str, Any]:
         "searches_that_failed": [
             f"{outcome.task}#{outcome.run}" for outcome in scored if outcome.search_failed
         ],
+        "searches_without_a_question": [
+            f"{outcome.task}#{outcome.run}" for outcome in scored if outcome.search_asked_nothing
+        ],
         "estimated_cost_usd": round(sum(costs), 2),
         "never_searched": [
             task.id
@@ -648,6 +672,7 @@ def print_score(found: dict[str, Any], client: Client) -> None:
         ("searched_without_need", "searched without needing to"),
         ("query_log_mismatches", "query log disagrees with the stream for"),
         ("searches_that_failed", "a search came back as an error in"),
+        ("searches_without_a_question", "a search asked no question in"),
     ):
         if found[key]:
             print(f"  {label}: {', '.join(found[key])}")
