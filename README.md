@@ -77,7 +77,7 @@ Code, Codex, Cursor and GitHub Copilot in VS Code.
   answers 73% of the time for GDPR, and 53% for the UAE's law.
   [How it was measured](evals/retrieval.md)
 - **Use:** Claude Code with the plugin searched before writing code in 36 of 36 runs of tasks
-  that touch personal data, and in 3 of 45 runs of tasks that do not.
+  that touch personal data, and in none of the 45 runs of tasks that do not.
   [How it was measured](evals/trigger-test.md)
 
 ## Contributing
