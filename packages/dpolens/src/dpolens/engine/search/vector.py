@@ -15,7 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from dpolens.engine.embedding.encode import Embedder
-from dpolens.engine.search.keyword import Candidate, scoped
+from dpolens.engine.search.keyword import IN_FORCE, Candidate, scoped
 
 
 class NoActiveModel(Exception):
@@ -63,10 +63,9 @@ def vector_search(
             JOIN node_texts t ON t.id = e.node_text_id
             JOIN document_nodes n ON n.id = t.node_id
             JOIN document_versions v ON v.id = n.document_version_id
+            JOIN ({IN_FORCE}) in_force ON in_force.id = v.id
             {scope_join}
             WHERE e.embedding_model_id = :model_id
-              AND v.status = 'published'
-              AND v.effective_date <= :as_of
               -- Words that stopped applying are not an answer. Words that start later
               -- are, marked as such, so a duty can be prepared for.
               AND (t.applies_until IS NULL OR t.applies_until > :as_of)
