@@ -9,6 +9,16 @@ breaking change needs a new major version.
 
 ## 0.3.0
 
+- `POST /v1/search`: each law a search covers, and the organisation's own policies, are
+  ranked apart and take turns in `results`, the one whose best match is closest first. So
+  `results` is no longer in `score` order across them: a score compares results from the
+  same law, or from the policies. A law's search questions can bring in a clause its own
+  words did not reach, and with `explain`, a result's `ranks` can name `questions`, where
+  its nearest search question placed it. A heading with no text of its own is never
+  returned
+- `GET /v1/settings`: the description of `search_questions.on` says the questions help a
+  search find the clause that answers, where it said they only reorder what a search found.
+  What the field holds is unchanged
 - A law is named in the language of its text. Every clause carries `document_title`
   in the language it is returned in, so an Arabic clause of the UAE PDPL carries the
   law's Arabic title, and `jurisdiction` in that language too. The new

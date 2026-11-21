@@ -1,12 +1,11 @@
-"""Search questions, without a database: the words they were written for, and the one way
-they may change what search returns."""
+"""Search questions, without a database: the words they were written for, and how a law's
+questions join what its clauses' own words found."""
 
 from __future__ import annotations
 
 import pytest
 
 from dpolens.engine.evals import check_configuration
-from dpolens.engine.search.fuse import DEFAULT_FUSION, fuse
 from dpolens.engine.search.keyword import Candidate
 from dpolens.engine.search.questions import fingerprint, with_questions
 
@@ -18,12 +17,10 @@ def listed(*found: tuple[str, float]) -> list[Candidate]:
     ]
 
 
-LISTS = {
-    "keyword": listed(("law:a", 9.0), ("law:c", 8.5), ("law:b", 8.0), ("policy:x", 6.0)),
-    "meaning": listed(
-        ("law:b", 0.84), ("policy:x", 0.83), ("law:a", 0.82), ("law:c", 0.80), ("law:d", 0.70)
-    ),
-}
+# A clause's own words score lower than questions do, since a question resembles a question
+# more than legal text. law:a stands far above the rest of its list; law:e only a little.
+MEANING = listed(("law:a", 0.90), ("law:b", 0.80), ("law:c", 0.79), ("law:d", 0.78))
+ASKED = listed(("law:e", 0.95), ("law:f", 0.94), ("law:b", 0.93), ("law:g", 0.92))
 
 
 def test_a_fingerprint_reads_the_words_not_how_they_were_spaced() -> None:
@@ -39,34 +36,29 @@ def test_a_fingerprint_changes_with_the_words_in_any_language() -> None:
     assert both != fingerprint({"en": "Data shall be kept"})
 
 
-def test_a_close_question_moves_its_clause_into_the_best_place_a_carded_clause_held() -> None:
-    fused = fuse(LISTS, DEFAULT_FUSION)
+def test_a_question_brings_in_a_clause_its_own_words_did_not() -> None:
+    joined = [candidate.key for candidate in with_questions(MEANING, ASKED)]
 
-    reordered = with_questions(LISTS, fused, {"law:a": 0.1, "law:c": 0.99}, DEFAULT_FUSION)
-
-    places = [item.key for item in fused]
-    assert places.index("law:a") < places.index("law:c")
-    moved = [item.key for item in reordered]
-    assert moved.index("law:c") < moved.index("law:a")
+    assert {"law:e", "law:f", "law:g"} <= set(joined)
 
 
-def test_a_clause_without_questions_keeps_its_place_and_every_place_its_score() -> None:
-    fused = fuse(LISTS, DEFAULT_FUSION)
+def test_each_list_counts_for_how_far_a_clause_stands_above_the_rest_of_it() -> None:
+    """Compared raw, every question would outrank every clause's own words."""
+    joined = [candidate.key for candidate in with_questions(MEANING, ASKED)]
 
-    reordered = with_questions(LISTS, fused, {"law:a": 0.1, "law:c": 0.99}, DEFAULT_FUSION)
-
-    for before, after in zip(fused, reordered, strict=True):
-        assert after.score == before.score
-        if before.key not in ("law:a", "law:c"):
-            assert after == before
+    assert joined.index("law:a") < joined.index("law:e")
 
 
-def test_a_question_cannot_bring_in_a_clause_search_did_not_find() -> None:
-    fused = fuse(LISTS, DEFAULT_FUSION)
+def test_a_clause_found_both_ways_counts_once_at_the_better() -> None:
+    joined = with_questions(MEANING, ASKED)
+    keys = [candidate.key for candidate in joined]
 
-    reordered = with_questions(LISTS, fused, {"law:elsewhere": 1.0}, DEFAULT_FUSION)
+    assert keys.count("law:b") == 1
+    assert [candidate.rank for candidate in joined] == list(range(1, len(joined) + 1))
 
-    assert [item.key for item in reordered] == [item.key for item in fused]
+
+def test_without_questions_the_meaning_list_is_left_as_it_is() -> None:
+    assert with_questions(MEANING, []) == MEANING
 
 
 @pytest.mark.parametrize("configuration", ["keyword+questions", "meaning+questions"])
@@ -75,5 +67,19 @@ def test_a_single_retriever_has_no_use_for_the_questions(configuration: str) -> 
         check_configuration(configuration)
 
 
-def test_a_fusion_rule_takes_the_questions() -> None:
-    check_configuration("convex:0.5+normative+questions")
+@pytest.mark.parametrize("swapped", ["light", "snowball"])
+def test_with_the_questions_the_law_s_own_arabic_index_goes_unread(swapped: str) -> None:
+    with pytest.raises(ValueError, match=f"nothing reads: \\+{swapped}"):
+        check_configuration(f"convex:0.5+normative+questions+{swapped}")
+
+
+@pytest.mark.parametrize(
+    "configuration",
+    [
+        "convex:0.5+normative+questions",
+        "standardised:0.3+normative+questions",
+        "standardised:0.3+normative+questions+folded-snowball",
+    ],
+)
+def test_a_fusion_rule_takes_the_questions(configuration: str) -> None:
+    check_configuration(configuration)

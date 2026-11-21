@@ -77,8 +77,8 @@ def run(
         typer.Option(
             "--config",
             help=(
-                "rrf:10, convex:0.5, keyword or meaning, optionally with +normative, "
-                "+questions, +light, +snowball or +folded-snowball"
+                "standardised:0.3, convex:0.5, rrf:10, keyword or meaning, optionally with "
+                "+normative, +questions, +light, +snowball or +folded-snowball"
             ),
         ),
     ] = "convex:0.5+normative+questions",

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from dpolens.engine.search.fuse import Fusion, convex, fuse, reciprocal_rank
+from dpolens.engine.search.fuse import Fusion, convex, fuse, reciprocal_rank, standardised
 from dpolens.engine.search.keyword import Candidate
 
 
@@ -74,6 +74,55 @@ def test_convex_handles_a_list_where_everything_scored_the_same() -> None:
     assert fused[0].key == "b"
 
 
+def test_standardised_fusion_adds_how_far_each_clause_stands_from_its_list_s_mean() -> None:
+    lists = {
+        "keyword": candidates(("a", 3.0), ("b", 1.0)),
+        "meaning": candidates(("b", 0.9), ("a", 0.5)),
+    }
+
+    fused = {item.key: item.score for item in standardised(lists, keyword_weight=0.3)}
+
+    # Two candidates sit one spread either side of their list's mean.
+    assert fused["a"] == pytest.approx(0.3 * 1 + 0.7 * -1)
+    assert fused["b"] == pytest.approx(0.3 * -1 + 0.7 * 1)
+
+
+def test_a_list_on_a_higher_scale_wins_nothing_by_its_scale() -> None:
+    keyword = candidates(("a", 3.0), ("b", 2.0), ("c", 1.0))
+    low = {"keyword": keyword, "meaning": candidates(("c", 0.9), ("b", 0.6), ("a", 0.5))}
+    high = {"keyword": keyword, "meaning": candidates(("c", 90.0), ("b", 60.0), ("a", 50.0))}
+
+    on_low, on_high = standardised(low), standardised(high)
+
+    assert [item.key for item in on_low] == [item.key for item in on_high]
+    assert [item.score for item in on_low] == pytest.approx([item.score for item in on_high])
+
+
+def test_a_clause_one_list_did_not_find_takes_that_list_s_lowest() -> None:
+    lists = {
+        "keyword": candidates(("a", 4.0), ("b", 2.0), ("c", 0.0)),
+        "meaning": candidates(("d", 0.9), ("a", 0.5)),
+    }
+
+    fused = {item.key: item for item in standardised(lists, keyword_weight=0.3)}
+
+    # d has no keyword score: it takes c's, the lowest of that list, and no less.
+    assert fused["d"].score == pytest.approx(0.3 * -1.2247449 + 0.7 * 1.0)
+    assert fused["d"].ranks == {"meaning": 1}
+
+
+def test_standardised_fusion_handles_a_list_where_everything_scored_the_same() -> None:
+    lists = {
+        "keyword": candidates(("a", 1.0), ("b", 1.0)),
+        "meaning": candidates(("b", 0.5), ("a", 0.4)),
+    }
+
+    fused = standardised(lists, keyword_weight=0.3)
+
+    assert [item.key for item in fused] == ["b", "a"]
+    assert all(item.score == item.score for item in fused), "no score is NaN"
+
+
 def test_results_are_ordered_and_stable() -> None:
     lists = {"keyword": candidates(("b", 1.0), ("a", 1.0)), "meaning": candidates(("a", 1.0))}
 
@@ -88,6 +137,7 @@ def test_a_fusion_rule_is_named_so_a_published_score_can_state_it() -> None:
     assert Fusion.parse("rrf:60").name == "rrf:60"
     assert Fusion.parse("convex:0.5").name == "convex:0.5"
     assert Fusion.parse("rrf").name == "rrf:10"
+    assert Fusion.parse("standardised").name == "standardised:0.3"
 
     with pytest.raises(ValueError, match="unknown fusion rule"):
         Fusion.parse("magic:1")
@@ -98,8 +148,11 @@ def test_fuse_dispatches_on_the_rule() -> None:
 
     assert [item.key for item in fuse(lists, Fusion.parse("rrf:10"))] == ["a", "b"]
     assert len(fuse(lists, Fusion.parse("convex:0.5"))) == 2
+    assert len(fuse(lists, Fusion.parse("standardised:0.3"))) == 2
 
 
 def test_convex_refuses_a_shape_it_is_not_defined_for() -> None:
     with pytest.raises(ValueError, match="exactly two retrievers"):
         convex({"keyword": candidates(("a", 1.0))}, alpha=0.5)
+    with pytest.raises(ValueError, match="exactly two retrievers"):
+        standardised({"keyword": candidates(("a", 1.0))}, keyword_weight=0.3)

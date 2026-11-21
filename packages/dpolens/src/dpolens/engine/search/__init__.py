@@ -8,6 +8,7 @@ from dpolens.engine.search.fuse import (
     convex,
     fuse,
     reciprocal_rank,
+    standardised,
 )
 from dpolens.engine.search.keyword import (
     ALTERNATIVES,
@@ -40,5 +41,6 @@ __all__ = [
     "language_of",
     "reciprocal_rank",
     "search",
+    "standardised",
     "vector_search",
 ]

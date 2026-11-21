@@ -52,12 +52,12 @@ def ranked(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(engine, "vector_search", lambda *_, **__: [])
     monkeypatch.setattr(engine, "fuse", lambda *_, **__: fused)
     monkeypatch.setattr(engine, "get_clause", get_clause)
-    monkeypatch.setattr(engine, "scope_for", lambda session: SimpleNamespace(narrowed=False))
     monkeypatch.setattr(engine, "questions_on", lambda session: False)
 
 
 def test_archived_ended_and_not_yet_in_force_clauses_leave_no_slot_empty(ranked: None) -> None:
-    scope = SimpleNamespace(narrowed=False, is_selected=lambda pack: True)
+    # No law loaded: the organisation's policies are the one source searched.
+    scope = SimpleNamespace(laws=(), narrowed=False)
 
     # The query is encoded once, for meaning search and the search questions alike.
     embedder = SimpleNamespace(encode_query=lambda query: None)

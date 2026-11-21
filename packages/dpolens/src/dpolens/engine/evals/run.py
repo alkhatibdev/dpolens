@@ -355,12 +355,20 @@ def check_configuration(configuration: str, reranker: Reranker | None = None) ->
     if _rerank_depth(modifiers) and reranker is None:
         raise ValueError(f"{configuration!r} asks for reranking, and no reranker was given")
 
-    # The search questions reorder what fusion found, so a single retriever or the
-    # reranker's path, which do not fuse that way, would ignore them.
+    # The search questions are a list of their own in search's ranking, and a single
+    # retriever or the reranker's path builds no such list, so either would ignore them.
     if "questions" in modifiers and (base in ("keyword", "meaning") or _rerank_depth(modifiers)):
         raise ValueError(
             f"{configuration!r} has a modifier nothing reads: +questions works with a fusion "
             "rule, without +rerank"
+        )
+    # With the questions, keyword search reads a law's words with its questions' words, in an
+    # index of its own, so a modifier that swaps the law's own Arabic index would go unread.
+    swapped = sorted(modifiers & {"light", "snowball"})
+    if "questions" in modifiers and swapped:
+        raise ValueError(
+            f"{configuration!r} has a modifier nothing reads: +{swapped[0]} picks the law's own "
+            "Arabic keyword index, which a search with +questions does not use"
         )
 
 

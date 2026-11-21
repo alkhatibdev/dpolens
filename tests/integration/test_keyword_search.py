@@ -29,10 +29,39 @@ def keys(results: list[Candidate]) -> list[str]:
     return [candidate.key for candidate in results]
 
 
-def test_finds_the_article_by_its_own_words(loaded: Session) -> None:
+def test_finds_the_rule_a_heading_names_by_the_rule_s_own_words(loaded: Session) -> None:
+    """Article 17 holds no text of its own: "right to erasure" is its heading. Its first
+    paragraph gives the data subject the right to obtain erasure, and that is the answer."""
     results = keyword_search(loaded, "right to erasure", limit=10)
 
-    assert "gdpr:art-17" in keys(results)[:5]
+    assert "gdpr:art-17:para-1" in keys(results)[:5]
+
+
+def test_never_returns_a_heading_with_no_text_of_its_own(loaded: Session) -> None:
+    """A result is something to quote. A heading alone is read in browsing and breadcrumbs,
+    even when a question is its very words."""
+    heading = loaded.execute(
+        text(
+            "SELECT t.heading FROM node_texts t JOIN document_nodes n ON n.id = t.node_id "
+            "WHERE n.canonical_key = 'gdpr:art-17' AND t.lang = 'en'"
+        )
+    ).scalar_one()
+    headings_alone = set(
+        loaded.scalars(
+            text(
+                "SELECT n.canonical_key FROM node_texts t JOIN document_nodes n "
+                "ON n.id = t.node_id WHERE length(trim(t.body_text)) = 0"
+            )
+        )
+    )
+
+    alone = keyword_search(loaded, heading, limit=100)
+    asked = keyword_search(loaded, heading, limit=100, packs=["gdpr"], with_questions=True)
+
+    assert "gdpr:art-17" in headings_alone
+    assert alone and asked, "the heading's words are in the clauses under it too"
+    assert not headings_alone & set(keys(alone))
+    assert not headings_alone & set(keys(asked))
 
 
 def test_finds_a_definition_by_its_defined_term(loaded: Session) -> None:

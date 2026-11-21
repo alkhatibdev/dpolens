@@ -42,7 +42,8 @@ CONFIGS = (
     "rrf:10+normative",
     "rrf:60+normative",
     "convex:0.5+normative",
-    "convex:0.5+normative+questions",
+    "standardised:0.3+normative",
+    "standardised:0.3+normative+questions",
 )
 
 

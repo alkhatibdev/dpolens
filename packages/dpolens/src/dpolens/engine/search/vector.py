@@ -31,12 +31,14 @@ def vector_search(
     packs: Sequence[str] | None = None,
     as_of: date | None = None,
     vector: np.ndarray | None = None,
+    *,
+    policies: bool = True,
 ) -> list[Candidate]:
     """The clauses closest in meaning to the query, best first, each once.
 
-    `packs` keeps the search to those laws and the organisation's own policies.
-    `as_of` is the day the text is read on, today unless given. `vector` is the query
-    already encoded, when the caller needs it for something else too.
+    `packs` keeps the search to those laws, and to the organisation's own policies unless
+    `policies` is false. `as_of` is the day the text is read on, today unless given. `vector`
+    is the query already encoded, when the caller needs it for something else too.
     """
     model_id = session.execute(
         text("SELECT id FROM embedding_models WHERE name = :name"), {"name": embedder.model.name}
@@ -81,7 +83,7 @@ def vector_search(
             "as_of": as_of or date.today(),
             "limit": limit,
             "normative_only": normative_only,
-            **({"packs": list(packs)} if packs is not None else {}),
+            **({"packs": list(packs), "policies": policies} if packs is not None else {}),
         },
     ).all()
 

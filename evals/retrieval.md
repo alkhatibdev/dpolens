@@ -13,8 +13,10 @@ Keyword search is BM25, through the `pg_textsearch` extension. Postgres `ts_rank
 competitive ranker: it has no inverse document frequency, no term frequency saturation and
 no length normalisation, so it cannot tell a rare term from a common one. That matters more
 in law than in most corpora, because article numbers and defined terms are exactly what
-people type. The index covers a clause's heading and its text together, since Article 17
-holds no text of its own and "right to erasure" is its heading.
+people type. The index covers a clause's heading and its text together. A heading with no
+text of its own, such as Article 17's "Right to erasure", is never a result, since there is
+nothing under it to quote: the paragraphs under it are found by their own words, and in
+meaning search with the heading in front of them.
 
 Meaning search is a multilingual embedding model running on the CPU inside the container,
 through ONNX Runtime. No API key, no network call after the first start, nothing to
@@ -59,19 +61,43 @@ The string the model saw is stored next to the vector, which means "why did this
 be answered by reading rather than guessing. The recipe is versioned, and changing it is an
 explicit re-index rather than a quiet drift.
 
-**3. Fusion.**
+**3. Search questions.**
 
-Each retriever returns up to 100 candidates, and the two ranked lists are combined. Two
-rules are implemented and the evals choose between them: reciprocal rank fusion, which uses
-only positions, and convex combination, which normalises each list and blends them at equal
-weight. A fitted weight is deliberately not offered, because 30 held-out questions cannot
-support one honestly: it would fit noise and the published number would be dishonest.
+Questions people might ask are written beside each clause of a law, and checked against it.
+They are never shown, quoted or cited: [search-questions/README.md](../search-questions/README.md)
+says how they are made and kept in check. They give search the everyday words the law does not
+use. The law never writes "DPO" or "delete"; the questions beside its articles on the data
+protection officer and on erasure do.
 
-**4. Results.**
+They work in two places. Each clause's nearest question is a list of its own beside meaning
+search, and a clause takes the better of its own words' score and its nearest question's. A
+question resembles a question more than it resembles legal text, so questions score on a higher
+scale than any clause's words, and each list is standardised within the question first: a
+clause counts for how far it stands above the rest of its list, and the questions' scale wins
+nothing by itself. And keyword search reads a clause's questions after its own words, which is
+how an Arabic question finds GDPR, written in English, by keyword too.
+
+**4. Fusion.**
+
+Each retriever returns up to 100 candidates, and the keyword and meaning lists are combined.
+Three rules are implemented and the evals choose between them: reciprocal rank fusion, which
+uses only positions; convex combination, which rescales each list to 0 to 1 and blends them at
+a fixed weight; and standardised fusion, which standardises each list and adds them. Search
+uses convex combination at equal weight, the rule the published scores measure. A weight is
+fitted only where the practice questions can carry it: one number, chosen by cross-validation,
+on a curve that is flat around it.
+
+**5. Results.**
+
+Each law a search covers is ranked by itself, and so are the organisation's own policies,
+which have no search questions. The results then take turns, the source whose best match is
+closest first. In one list, a policy, or a law whose questions are not written yet, would sink
+below a law with them; ranked apart, each keeps its share of the results.
 
 Each result carries the clause, its breadcrumb, whether it is normative, the document
-version and the date that version came into force. A clause that obliges someone outranks
-one that only explains where the retrievers cannot separate them.
+version and the date that version came into force. Within a source, a clause that obliges
+someone outranks one that only explains where their scores cannot separate them. A heading
+with no text of its own is never a result.
 
 ## How it is measured
 
@@ -370,6 +396,8 @@ commit `046b514` embeds, so both columns can be measured again from this reposit
 
 ## What is not solved
 
-Some questions fail for reasons no ranking change will fix. "Do we need a DPO?" misses
-because the corpus never writes "DPO", only "data protection officer". That question stays
-in the set, and the score carries the cost, because it is exactly what a developer types.
+Some questions fail on the law's own words. "Do we need a DPO?" misses them because the
+corpus never writes "DPO", only "data protection officer". The search questions reach it, since
+"DPO" is in the questions beside Article 37, and the published score, measured on the law's own
+words, carries the cost. That question stays in the set, because it is exactly what a developer
+types.

@@ -1,6 +1,6 @@
-"""Search questions at the database: loaded beside their clauses, and used only to reorder the
-clauses that have them, never once those clauses' words change, never on another day, and never
-when an organisation has turned them off.
+"""Search questions at the database: loaded beside their clauses, a list of their own in their
+law's ranking, and words keyword search reads beside the clause's; never once those clauses'
+words change, never on another day, and never when an organisation has turned them off.
 """
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator, Mapping, Sequence
 from datetime import date, timedelta
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,7 @@ from dpolens.engine.logs.governance import (
 from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.packs.selection import select_laws
-from dpolens.engine.search import SearchResult, search
+from dpolens.engine.search import SearchResult, keyword_search, search
 from dpolens.engine.search.questions import (
     QuestionsError,
     current_fingerprints,
@@ -33,6 +34,7 @@ from dpolens.engine.search.questions import (
     load_questions,
     questions_on,
     switch_questions,
+    write_keyword_texts,
 )
 
 pytestmark = pytest.mark.integration
@@ -115,7 +117,20 @@ def entries(session: Session, action: str) -> list[GovernanceEntry]:
     )
 
 
-def test_a_question_moves_its_clause_up_among_the_clauses_that_have_them(
+@pytest.fixture
+def two_laws(
+    session: Session, testlaw_pack: Path, bilingual_pack: Path, embedder: Embedder
+) -> Session:
+    load_pack(session, testlaw_pack)
+    load_pack(session, bilingual_pack)
+    select_laws(session, ["testlaw", "bilingual"], actor=cli_actor())
+    session.commit()
+    build_index(session, embedder)
+    session.commit()
+    return session
+
+
+def test_a_close_question_moves_its_clause_up(
     indexed: Session, embedder: Embedder, tmp_path: Path
 ) -> None:
     loaded(indexed, embedder, written(tmp_path, indexed, CARDS))
@@ -127,27 +142,70 @@ def test_a_question_moves_its_clause_up_among_the_clauses_that_have_them(
     assert asked.index(EXCEPTION) < asked.index(WITHDRAWN)
 
 
-def test_a_clause_without_questions_keeps_its_place(
+def test_a_law_without_questions_keeps_its_turns_beside_one_with_them(
+    two_laws: Session, embedder: Embedder, tmp_path: Path
+) -> None:
+    """A question resembles a question more than legal text, so a law's questions score above
+    any clause's own words. In one list, a law without them would sink below the one with them.
+    Each law is ranked by itself, and the laws take turns."""
+    loaded(two_laws, embedder, written(tmp_path, two_laws, CARDS))
+
+    found = keys(search(two_laws, embedder, "Can a user withdraw consent?", questions=True))
+    laws = [key.split(":")[0] for key in found]
+
+    shared = 2 * min(laws.count("testlaw"), laws.count("bilingual"))
+    assert shared >= 4
+    assert all(one != other for one, other in pairwise(laws[:shared]))
+
+
+def test_keyword_search_reads_a_law_s_questions_after_its_words(
     indexed: Session, embedder: Embedder, tmp_path: Path
 ) -> None:
-    """A question measures closer to a question than a clause's words do, so a clause without
-    any, such as a policy's, would sink below every clause with them if they took its place."""
+    """The test law has no Arabic words, so an Arabic question finds nothing in them by keyword.
+    Its Arabic questions are words of their own beside the clause they were written for."""
     loaded(indexed, embedder, written(tmp_path, indexed, CARDS))
 
-    plain = keys(search(indexed, embedder, QUERY, questions=False))
-    asked = keys(search(indexed, embedder, QUERY, questions=True))
+    alone = keyword_search(indexed, QUERY, lang="ar", packs=["testlaw"])
+    asked = keyword_search(indexed, QUERY, lang="ar", packs=["testlaw"], with_questions=True)
 
-    def without_cards(found: list[str]) -> list[str | None]:
-        return [None if key in CARDS else key for key in found]
+    assert alone == []
+    assert [candidate.key for candidate in asked][:1] == [EXCEPTION]
+    ranked = {result.clause.key: result.ranks for result in search(indexed, embedder, QUERY)}
+    assert "keyword" in ranked[EXCEPTION]
+    assert "questions" in ranked[EXCEPTION]
 
-    assert without_cards(asked) == without_cards(plain)
-    assert set(asked) == set(plain)
+
+def test_writing_the_keyword_words_again_scores_every_clause_the_same(
+    indexed: Session, embedder: Embedder, tmp_path: Path
+) -> None:
+    """They are written again each time the questions or a law change. A BM25 index counts a
+    deleted row until it is rebuilt, so rows deleted and written again would drift."""
+    loaded(indexed, embedder, written(tmp_path, indexed, CARDS))
+    asked = "consent withdrawn erase the data"
+    before = keyword_search(indexed, asked, packs=["testlaw"], with_questions=True)
+
+    for _ in range(3):
+        write_keyword_texts(indexed)
+    after = keyword_search(indexed, asked, packs=["testlaw"], with_questions=True)
+
+    assert before
+    assert after == before
+
+
+def test_a_law_is_searchable_by_its_words_as_soon_as_it_is_loaded(
+    session: Session, testlaw_pack: Path
+) -> None:
+    load_pack(session, testlaw_pack)
+
+    found = keyword_search(session, "erase personal data", packs=["testlaw"], with_questions=True)
+
+    assert "testlaw:art-5" in [candidate.key for candidate in found]
 
 
 def test_questions_whose_clause_changed_are_not_used(
     indexed: Session, embedder: Embedder, tmp_path: Path
 ) -> None:
-    load_questions(indexed, written(tmp_path, indexed, CARDS, stale=[EXCEPTION]), actor=cli_actor())
+    load_questions(indexed, written(tmp_path, indexed, CARDS, stale=list(CARDS)), actor=cli_actor())
     embed_questions(indexed, embedder)
     indexed.commit()
 

@@ -1,18 +1,23 @@
 """Combining two ranked lists into one.
 
 Keyword and meaning search score on different scales, so their numbers cannot
-simply be added. Two rules are implemented here and the evals choose between
-them, because the published difference between them is about one point of
-recall, which is inside the noise of a fifty-question set.
+simply be added. Three rules are implemented here, and the evals choose between
+them.
 
-Reciprocal rank fusion ignores the scores and uses only positions. Convex
-combination normalises each list and blends them at a fixed, equal weight. A
-fitted weight is deliberately not offered: with thirty held-out questions it
-would fit noise and the published number would be dishonest.
+Convex combination rescales each list to 0 to 1 and blends them at a fixed weight.
+Standardised fusion standardises each list within the question instead, so that a
+clause counts for how far it stands above the rest of its list, where rescaling
+gives the best of a list a full score however weak it is. Reciprocal rank fusion
+ignores the scores and uses only positions.
+
+A weight is fitted only where the practice questions can carry it: one number,
+chosen by cross-validation, on a curve that is flat around it. evals/retrieval.md
+shows the measurements.
 """
 
 from __future__ import annotations
 
+import statistics
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
@@ -20,6 +25,8 @@ from dpolens.engine.search.keyword import Candidate
 
 DEFAULT_K = 10
 DEFAULT_ALPHA = 0.5
+DEFAULT_KEYWORD_WEIGHT = 0.3
+RULES = {"rrf": DEFAULT_K, "convex": DEFAULT_ALPHA, "standardised": DEFAULT_KEYWORD_WEIGHT}
 
 
 @dataclass(frozen=True)
@@ -48,12 +55,11 @@ class Fusion:
 
     @classmethod
     def parse(cls, value: str) -> Fusion:
-        """Read 'rrf:10' or 'convex:0.5', which is how the evals name a run."""
+        """Read 'standardised:0.3', 'convex:0.5' or 'rrf:10', which is how the evals name a run."""
         rule, _, parameter = value.partition(":")
-        if rule not in ("rrf", "convex"):
-            raise ValueError(f"unknown fusion rule {rule!r}: expected rrf or convex")
-        default = DEFAULT_K if rule == "rrf" else DEFAULT_ALPHA
-        return cls(rule=rule, parameter=float(parameter) if parameter else default)
+        if rule not in RULES:
+            raise ValueError(f"unknown fusion rule {rule!r}: expected standardised, convex or rrf")
+        return cls(rule=rule, parameter=float(parameter) if parameter else RULES[rule])
 
 
 DEFAULT_FUSION = Fusion(rule="convex", parameter=DEFAULT_ALPHA)
@@ -65,6 +71,8 @@ reciprocal rank fusion and ranks it higher."""
 def fuse(lists: Mapping[str, Sequence[Candidate]], fusion: Fusion = DEFAULT_FUSION) -> list[Fused]:
     if fusion.rule == "rrf":
         return reciprocal_rank(lists, k=int(fusion.parameter))
+    if fusion.rule == "standardised":
+        return standardised(lists, keyword_weight=fusion.parameter)
     return convex(lists, alpha=fusion.parameter)
 
 
@@ -105,6 +113,57 @@ def convex(lists: Mapping[str, Sequence[Candidate]], alpha: float = DEFAULT_ALPH
             langs.setdefault(candidate.key, candidate.lang)
 
     return _ordered(scores, ranks, langs)
+
+
+def standardised(
+    lists: Mapping[str, Sequence[Candidate]], keyword_weight: float = DEFAULT_KEYWORD_WEIGHT
+) -> list[Fused]:
+    """Standardise each list within the question, then add them, the first at `keyword_weight`.
+
+    A clause one list did not find takes that list's lowest score: the least it could have had
+    there, and no less, since a list of a hundred says nothing of what is below it.
+    """
+    if len(lists) != 2:
+        raise ValueError("standardised fusion is defined here for exactly two retrievers")
+
+    weights = [keyword_weight, 1 - keyword_weight]
+    standard: list[dict[str, float]] = []
+    ranks: dict[str, dict[str, int]] = {}
+    langs: dict[str, str] = {}
+    for retriever, candidates in lists.items():
+        values = _to_standard([candidate.score for candidate in candidates])
+        standard.append(
+            {candidate.key: value for candidate, value in zip(candidates, values, strict=True)}
+        )
+        for candidate in candidates:
+            ranks.setdefault(candidate.key, {})[retriever] = candidate.rank
+            langs.setdefault(candidate.key, candidate.lang)
+
+    floors = [min(values.values(), default=0.0) for values in standard]
+    scores = {
+        key: sum(
+            weight * values.get(key, floor)
+            for weight, values, floor in zip(weights, standard, floors, strict=True)
+        )
+        for key in ranks
+    }
+    return _ordered(scores, ranks, langs)
+
+
+def standardised_scores(candidates: Sequence[Candidate]) -> list[float]:
+    """How far each candidate's score stands above or below the rest of its list, in spreads."""
+    return _to_standard([candidate.score for candidate in candidates])
+
+
+def _to_standard(scores: Sequence[float]) -> list[float]:
+    if not scores:
+        return []
+    mean = statistics.fmean(scores)
+    spread = statistics.pstdev(scores)
+    if spread == 0:
+        # Every candidate scored the same, so none stands above another.
+        return [0.0 for _ in scores]
+    return [(score - mean) / spread for score in scores]
 
 
 def _to_unit_range(scores: Sequence[float]) -> list[float]:
