@@ -87,6 +87,11 @@ uses convex combination at equal weight, the rule the published scores measure. 
 fitted only where the practice questions can carry it: one number, chosen by cross-validation,
 on a curve that is flat around it.
 
+A question that repeats a clause's own words is asking for that clause, wherever the sum put
+it. When a clause among the ten best keyword candidates holds at least nine in ten of the
+question's content words, and the question has at least five, that clause comes first in its
+law's ranking. Its own words count, never its search questions'.
+
 **5. Results.**
 
 Each law a search covers is ranked by itself, and so are the organisation's own policies,

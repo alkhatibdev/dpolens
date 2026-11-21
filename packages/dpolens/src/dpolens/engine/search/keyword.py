@@ -28,30 +28,36 @@ class KeywordIndex:
     column: str
     terms: str
     """SQL that turns the question, bound as :query, into the index's words."""
+    config: str
+    """The text search configuration the index was built with, which splits and stems."""
 
 
 INDEXES = {
-    "en": KeywordIndex("node_texts_bm25_en", "search_text", ":query"),
+    "en": KeywordIndex("node_texts_bm25_en", "search_text", ":query", "english"),
     # Spellings folded and articles off, the same steps the text went through, then
     # Postgres's Arabic stemmer, which both forms of a word now reach alike.
     "ar": KeywordIndex(
-        "node_texts_bm25_ar_folded_snowball", "search_text_ar", "arabic_light(:query)"
+        "node_texts_bm25_ar_folded_snowball", "search_text_ar", "arabic_light(:query)", "arabic"
     ),
 }
 
 ALTERNATIVES = {
     # The folding alone, with nothing stemmed.
-    "light": {"ar": KeywordIndex("node_texts_bm25_ar", "search_text_ar", "arabic_light(:query)")},
+    "light": {
+        "ar": KeywordIndex("node_texts_bm25_ar", "search_text_ar", "arabic_light(:query)", "simple")
+    },
     # Postgres's Arabic stemmer, on the text as written.
-    "snowball": {"ar": KeywordIndex("node_texts_bm25_ar_snowball", "search_text", ":query")},
+    "snowball": {
+        "ar": KeywordIndex("node_texts_bm25_ar_snowball", "search_text", ":query", "arabic")
+    },
     # The default, by name, so that a comparison can name all three.
     "folded-snowball": {"ar": INDEXES["ar"]},
 }
 """The indexes an eval run can name for a language, to measure one against another."""
 
 WITH_QUESTIONS = {
-    "en": KeywordIndex("keyword_texts_bm25_en", "words", ":query"),
-    "ar": KeywordIndex("keyword_texts_bm25_ar", "words_ar", "arabic_light(:query)"),
+    "en": KeywordIndex("keyword_texts_bm25_en", "words", ":query", "english"),
+    "ar": KeywordIndex("keyword_texts_bm25_ar", "words_ar", "arabic_light(:query)", "arabic"),
 }
 """A law's clauses with their search questions' words after their own, in the same text search
 configurations as the law's own indexes. Only laws have questions, so policies are not in it."""
@@ -202,3 +208,67 @@ def keyword_search(
             Candidate(key=row.key, lang=row.lang, score=float(row.score), rank=len(candidates) + 1)
         )
     return candidates
+
+
+QUOTED_SHARE = 0.9
+"""A clause whose own words hold this share of a question's content words is quoted by it."""
+
+QUOTED_WORDS = 5
+"""Fewer content words than this, and a short question would quote any clause that holds them."""
+
+
+def quoted(
+    session: Session,
+    query: str,
+    lang: str,
+    keys: Sequence[str],
+    as_of: date | None = None,
+) -> str | None:
+    """The clause among `keys` that the question nearly quotes, if any.
+
+    A question in everyday words wants keyword search at a modest weight, and one that repeats a
+    clause's own words wants that clause. Content words are what the keyword index makes of the
+    question: common words dropped, the rest stemmed. A clause's own words count, never its
+    search questions'. Of several, the one holding the most comes first, then the earlier key.
+    """
+    index = INDEXES.get(lang)
+    if index is None or not keys:
+        return None
+    rows = session.execute(
+        text(
+            f"""
+            WITH asked AS (
+                SELECT tsvector_to_array(to_tsvector('{index.config}', {index.terms})) AS terms
+            )
+            SELECT n.canonical_key AS key,
+                   cardinality(asked.terms) AS asked,
+                   (SELECT count(*) FROM unnest(asked.terms) term
+                    WHERE term = ANY(tsvector_to_array(
+                        to_tsvector('{index.config}', t.{index.column})))) AS held
+            FROM asked, node_texts t
+            JOIN document_nodes n ON n.id = t.node_id
+            JOIN ({IN_FORCE}) in_force ON in_force.id = n.document_version_id
+            WHERE n.canonical_key = ANY(:keys)
+              AND t.lang = :lang
+              AND length(trim(t.body_text)) > 0
+              AND (t.applies_until IS NULL OR t.applies_until > :as_of)
+            """
+        ),
+        {"query": query, "keys": list(keys), "lang": lang, "as_of": as_of or date.today()},
+    ).all()
+    held: dict[str, int] = {}
+    for row in rows:
+        held[row.key] = max(held.get(row.key, 0), int(row.held))
+    asked = int(rows[0].asked) if rows else 0
+    return quote_of(asked, held, keys)
+
+
+def quote_of(asked: int, held: Mapping[str, int], keys: Sequence[str]) -> str | None:
+    """Which clause a question of `asked` content words quotes, from how many each holds."""
+    if asked < QUOTED_WORDS:
+        return None
+    order = {key: position for position, key in enumerate(keys)}
+    quoting = [key for key, count in held.items() if count >= QUOTED_SHARE * asked]
+    if not quoting:
+        return None
+    return min(quoting, key=lambda key: (-held[key], order.get(key, len(order))))

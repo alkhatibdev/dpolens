@@ -27,6 +27,7 @@ from dpolens.engine.logs.models import GovernanceEntry
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.packs.selection import select_laws
 from dpolens.engine.search import SearchResult, keyword_search, search
+from dpolens.engine.search.keyword import quoted
 from dpolens.engine.search.questions import (
     QuestionsError,
     current_fingerprints,
@@ -190,6 +191,25 @@ def test_writing_the_keyword_words_again_scores_every_clause_the_same(
 
     assert before
     assert after == before
+
+
+def test_a_question_repeating_a_clause_s_own_words_quotes_it(
+    indexed: Session, embedder: Embedder, tmp_path: Path
+) -> None:
+    """Its own words, never its questions': a question can repeat a search question's words
+    and still be asking in everyday words."""
+    near_quote = "the controller shall erase personal data without undue delay where grounds apply"
+    loaded(
+        indexed,
+        embedder,
+        written(tmp_path, indexed, {"testlaw:art-6:para-1": [near_quote], EXCEPTION: [QUERY]}),
+    )
+    candidates = ["testlaw:art-6:para-1", "testlaw:art-5"]
+
+    assert quoted(indexed, near_quote, "en", candidates) == "testlaw:art-5"
+    assert quoted(indexed, near_quote, "en", ["testlaw:art-6:para-1"]) is None
+    assert quoted(indexed, "erase personal data", "en", candidates) is None, "too few words"
+    assert keys(search(indexed, embedder, near_quote))[:1] == ["testlaw:art-5"]
 
 
 def test_a_law_is_searchable_by_its_words_as_soon_as_it_is_loaded(
