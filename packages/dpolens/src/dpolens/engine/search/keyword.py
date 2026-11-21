@@ -57,6 +57,18 @@ class UnsupportedLanguage(Exception):
     """No BM25 index exists for that language yet."""
 
 
+IN_FORCE = """
+    SELECT DISTINCT ON (document_id) id
+    FROM document_versions
+    WHERE status = 'published' AND effective_date <= :as_of
+    ORDER BY document_id, effective_date DESC, version_number DESC
+"""
+"""Each document's version in force on :as_of, by the rule reading a clause follows: the latest
+published version whose effective date has passed, and of two that took effect on one day, the
+later. A version it replaced is still published and still reads, and nothing searches it: its
+words could match a question and send it to a number that now names another rule."""
+
+
 def scoped(packs: Sequence[str] | None) -> tuple[str, str]:
     """The join and the condition that keep a search to some laws, or nothing at all.
 
@@ -120,10 +132,9 @@ def keyword_search(
             FROM node_texts t
             JOIN document_nodes n ON n.id = t.node_id
             JOIN document_versions v ON v.id = n.document_version_id
+            JOIN ({IN_FORCE}) in_force ON in_force.id = v.id
             {scope_join}
             WHERE t.lang = :lang
-              AND v.status = 'published'
-              AND v.effective_date <= :as_of
               -- Words that stopped applying are not an answer. Words that start later
               -- are, marked as such, so a duty can be prepared for.
               AND (t.applies_until IS NULL OR t.applies_until > :as_of)

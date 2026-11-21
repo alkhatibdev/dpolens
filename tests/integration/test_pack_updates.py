@@ -14,6 +14,7 @@ from pathlib import Path
 
 import click
 import pytest
+import yaml
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 from typer.testing import CliRunner, Result
@@ -28,6 +29,8 @@ from dpolens.engine.packs.archive import ArchiveError, sha256_of, write_archive
 from dpolens.engine.packs.install import install_archive
 from dpolens.engine.packs.load import OlderPack, load_pack
 from dpolens.engine.packs.releases import PackRelease
+from dpolens.engine.search import keyword_search
+from dpolens.engine.search.questions import current_fingerprints, load_questions, mark_current
 
 pytestmark = pytest.mark.integration
 
@@ -93,6 +96,61 @@ def test_a_correction_dated_the_same_day_is_the_version_in_force(
 
     assert clause.version_label == "2026.2"
     assert "for reasons of public interest" in clause.text
+
+
+def test_search_reads_only_the_version_in_force(
+    session: Session, testlaw_pack: Path, tmp_path: Path
+) -> None:
+    """The version a correction replaced is still published, so a citation of it reads. Search
+    reads only the version in force, or a clause would come back once for each version."""
+    load_pack(session, testlaw_pack)
+    data = pack_file(tmp_path).read_bytes()
+    install_archive(session, data, sha256_of(data), source="file", actor=cli_actor())
+    session.commit()
+
+    found = [candidate.key for candidate in keyword_search(session, "legal obligation", limit=20)]
+
+    assert found.count("testlaw:art-5:para-2") == 1
+    assert len(found) == len(set(found))
+
+
+def test_a_search_question_beside_words_a_correction_changed_stops_being_used(
+    session: Session, testlaw_pack: Path, tmp_path: Path
+) -> None:
+    """A question is used while its clause's words in force are the ones it was written for. The
+    words in force are the newer version's, though the version before still reads."""
+    load_pack(session, testlaw_pack)
+    keys = ["testlaw:art-5:para-1", "testlaw:art-5:para-2"]
+    prints = current_fingerprints(session, keys)
+    questions = tmp_path / "testlaw.yaml"
+    questions.write_text(
+        yaml.safe_dump(
+            {
+                "pack": "testlaw",
+                "written_by": ["a writer"],
+                "checked_by": ["a checker"],
+                "written_on": "2026-11-21",
+                "write_prompt": "0" * 16,
+                "check_prompt": "1" * 16,
+                "clauses": [
+                    {"key": key, "text": prints[key], "en": [f"what does {key} say?"]}
+                    for key in keys
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    load_questions(session, questions, actor=cli_actor())
+    data = pack_file(tmp_path).read_bytes()
+    install_archive(session, data, sha256_of(data), source="file", actor=cli_actor())
+
+    mark_current(session)
+
+    used = {
+        row.canonical_key: row.current
+        for row in session.execute(text("SELECT canonical_key, current FROM search_questions"))
+    }
+    assert used == {"testlaw:art-5:para-1": True, "testlaw:art-5:para-2": False}
 
 
 def test_the_load_is_logged_and_its_clauses_are_queued_for_embedding(

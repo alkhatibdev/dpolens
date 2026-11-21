@@ -47,6 +47,7 @@ from dpolens.engine.policies.store import (
     upload_policy,
     upload_version,
 )
+from dpolens.engine.search import keyword_search
 from dpolens.engine.search.engine import search
 from dpolens.engine.session import session_from
 from dpolens.settings import Settings
@@ -349,6 +350,25 @@ class TestSecondVersion:
         monkeypatch.setattr(jobs, "Embedder", refuse)
 
         assert jobs.index_version(version_id="any") == 0
+
+    def test_search_answers_from_the_version_in_force(
+        self, own: Engine, embedder: Embedder
+    ) -> None:
+        """Version 2 moved the rule on staff records from 4.2 to 4.3 and gave 4.2 to
+        contractors. Version 1 still reads, so a citation of it can be checked, and nothing
+        searches it: its words would send a question about staff records to 4.2."""
+        question = "how long do we keep staff records"
+        with session_from(own) as session:
+            listed = [candidate.key for candidate in keyword_search(session, "staff records")]
+            today = search(session, embedder, question)
+            before = search(session, embedder, question, as_of=SECOND - timedelta(days=1))
+
+        assert len(listed) == len(set(listed))
+        assert listed.index("retention:4.3") < listed.index("retention:4.2")
+        assert today[0].clause.key == "retention:4.3"
+        assert today[0].clause.text.startswith("Staff records")
+        assert before[0].clause.key == "retention:4.2"
+        assert before[0].clause.text.startswith("Staff records")
 
     def test_a_number_now_naming_another_rule_says_so(self, own: Engine) -> None:
         with session_from(own) as session:

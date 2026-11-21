@@ -29,7 +29,7 @@ from dpolens.engine.logs.governance import (
     record,
 )
 from dpolens.engine.search.fuse import Fused, Fusion, fuse
-from dpolens.engine.search.keyword import Candidate
+from dpolens.engine.search.keyword import IN_FORCE, Candidate
 
 BATCH = 64
 """How many questions are embedded at once: each is a sentence, so memory is not the limit."""
@@ -164,17 +164,17 @@ def current_fingerprints(
     texts: dict[str, dict[str, str]] = {}
     for row in session.execute(
         text(
-            """
+            f"""
             SELECT n.canonical_key AS key, t.lang, t.body_text
             FROM node_texts t
             JOIN document_nodes n ON n.id = t.node_id
-            JOIN document_versions v ON v.id = n.document_version_id AND v.status = 'published'
+            JOIN ({IN_FORCE}) in_force ON in_force.id = n.document_version_id
             WHERE n.canonical_key = ANY(:keys) AND NOT t.pending
-              AND (t.applies_from IS NULL OR t.applies_from <= :today)
-              AND (t.applies_until IS NULL OR t.applies_until > :today)
+              AND (t.applies_from IS NULL OR t.applies_from <= :as_of)
+              AND (t.applies_until IS NULL OR t.applies_until > :as_of)
             """
         ),
-        {"keys": list(keys), "today": today or date.today()},
+        {"keys": list(keys), "as_of": today or date.today()},
     ):
         if (row.body_text or "").strip():
             texts.setdefault(row.key, {})[row.lang] = row.body_text
