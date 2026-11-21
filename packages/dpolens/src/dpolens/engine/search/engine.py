@@ -27,7 +27,7 @@ from dpolens.engine.documents.read import (
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.packs.selection import Scope, scope_for
 from dpolens.engine.search.fuse import DEFAULT_FUSION, Fused, Fusion, fuse
-from dpolens.engine.search.keyword import KeywordIndex, keyword_search
+from dpolens.engine.search.keyword import KeywordIndex, keyword_search, quoted
 from dpolens.engine.search.language import language_of
 from dpolens.engine.search.questions import nearest_questions, questions_on, with_questions
 from dpolens.engine.search.vector import vector_search
@@ -191,6 +191,11 @@ def _ranked(
         else []
     )
     fused = fuse({"keyword": keyword, "meaning": with_questions(meaning, asked)}, fusion)
+    # Keyword search counts for less than meaning, which suits a question in everyday words. A
+    # question that repeats a clause's own words is asking for that clause, wherever the sum put it.
+    quote = quoted(session, query, lang, [candidate.key for candidate in keyword[:10]], as_of)
+    if quote is not None:
+        fused = sorted(fused, key=lambda item: item.key != quote)
     places = {
         "keyword": {candidate.key: candidate.rank for candidate in keyword},
         "meaning": {candidate.key: candidate.rank for candidate in meaning},
@@ -223,7 +228,8 @@ def _in_turns(
 
     Within a source, a clause that obliges someone outranks one that only explains where their
     scores cannot separate them. A recital reads more like a question than the article it
-    explains, so without this the explanation would win the slot.
+    explains, so without this the explanation would win the slot. Nothing else in a source's
+    order moves.
     """
     order = sorted(
         (source for source in sources if source.candidates),
@@ -243,14 +249,29 @@ def _in_turns(
                 continue
             taken[id(source)].append(answer)
             turns.append(id(source))
-    for answers in taken.values():
-        answers.sort(key=lambda pair: (-pair[0].score, not pair[1].clause.is_normative))
+    for held, answers in taken.items():
+        taken[held] = _obliging_first(answers)
     places = dict.fromkeys(taken, 0)
     resolved = []
     for turn in turns:
         resolved.append(taken[turn][places[turn]])
         places[turn] += 1
     return resolved
+
+
+def _obliging_first(
+    answers: Sequence[tuple[Fused, ClauseDetail]],
+) -> list[tuple[Fused, ClauseDetail]]:
+    """Within each run of equal scores, the clauses that oblige someone first."""
+    ordered: list[tuple[Fused, ClauseDetail]] = []
+    start = 0
+    while start < len(answers):
+        end = start + 1
+        while end < len(answers) and answers[end][0].score == answers[start][0].score:
+            end += 1
+        ordered += sorted(answers[start:end], key=lambda pair: not pair[1].clause.is_normative)
+        start = end
+    return ordered
 
 
 def _answers(
