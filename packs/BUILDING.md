@@ -209,9 +209,10 @@ An instance never reloads a version of a law it has, so after changing the pack,
 again from nothing: `docker compose down -v`, then the two commands above.
 
 Once the pack loads, its search questions can be written, with Claude Code signed in:
-`uv run python scripts/write_search_questions.py --pack lgpd`. They help search order what it
-found, and [search-questions/README.md](../search-questions/README.md) says how they are made
-and checked. A pack without them is searched by its own words alone.
+`uv run python scripts/write_search_questions.py --pack lgpd`. They help search find a clause
+asked about in other words, and [search-questions/README.md](../search-questions/README.md) says
+how they are made and checked. A pack without them is searched by its own words alone, and keeps
+its turn in the results beside packs that have them.
 
 ## 8. When the build refuses
 

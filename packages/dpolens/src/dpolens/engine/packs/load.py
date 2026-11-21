@@ -48,6 +48,7 @@ from dpolens.engine.packs.format import (
     read_translations,
 )
 from dpolens.engine.packs.models import Pack, PackName
+from dpolens.engine.search.questions import mark_current
 
 
 @dataclass(frozen=True)
@@ -119,6 +120,12 @@ def load_pack(session: Session, pack_dir: Path) -> LoadResult:
         version = _new_version(session, document, pack, reference)
         versions.append(version.id)
         clauses_loaded += _store(session, version, tree, parent=None, depth=0)
+
+    # Keyword search reads a law's words with its search questions, and a question is used
+    # only beside the words it was written for: both follow the words just loaded at once,
+    # so the law is searchable by its words before anything else runs.
+    session.flush()
+    mark_current(session)
 
     return LoadResult(
         pack_slug=pack.slug,

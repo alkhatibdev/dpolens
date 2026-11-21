@@ -106,6 +106,16 @@ def test_the_check_tells_the_two_roles_apart(migrated_pair: tuple[Engine, Engine
         check_governance_privileges(owner)
 
 
+def test_the_application_role_may_empty_what_keyword_search_reads_with_the_questions(
+    migrated_pair: tuple[Engine, Engine],
+) -> None:
+    """The table is written again with TRUNCATE, never DELETE: a BM25 index counts a deleted
+    row until it is rebuilt, so rows deleted and written again would score differently."""
+    _, application = migrated_pair
+    with application.begin() as connection:
+        connection.execute(text("TRUNCATE keyword_texts"))
+
+
 def test_a_table_added_later_is_reachable_by_the_application_role(
     migrated_pair: tuple[Engine, Engine],
 ) -> None:

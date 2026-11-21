@@ -91,8 +91,8 @@ class SearchQuestionsLaw(BaseModel):
 class SearchQuestionsSettings(BaseModel):
     on: bool = Field(
         description=(
-            "Whether searches use the search questions, which only reorder the clauses a "
-            "search found and are never returned. Changed with `dpolens search-questions on` "
+            "Whether searches use the search questions, which help a search find the clause "
+            "that answers and are never returned. Changed with `dpolens search-questions on` "
             "or `off`, which the governance log records"
         )
     )

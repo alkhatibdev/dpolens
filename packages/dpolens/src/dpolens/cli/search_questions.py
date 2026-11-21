@@ -19,7 +19,7 @@ from dpolens.settings import load_settings
 
 app = typer.Typer(
     name="search-questions",
-    help="The questions written beside each clause, which help search order what it found.",
+    help="The questions written beside each clause, which help search find the clause.",
     no_args_is_help=True,
 )
 

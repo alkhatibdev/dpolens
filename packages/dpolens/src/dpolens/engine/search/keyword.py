@@ -49,6 +49,13 @@ ALTERNATIVES = {
 }
 """The indexes an eval run can name for a language, to measure one against another."""
 
+WITH_QUESTIONS = {
+    "en": KeywordIndex("keyword_texts_bm25_en", "words", ":query"),
+    "ar": KeywordIndex("keyword_texts_bm25_ar", "words_ar", "arabic_light(:query)"),
+}
+"""A law's clauses with their search questions' words after their own, in the same text search
+configurations as the law's own indexes. Only laws have questions, so policies are not in it."""
+
 SEARCHABLE_LANGUAGES = tuple(INDEXES)
 """The languages a question can be asked in, since each needs its own index."""
 
@@ -72,14 +79,14 @@ words could match a question and send it to a number that now names another rule
 def scoped(packs: Sequence[str] | None) -> tuple[str, str]:
     """The join and the condition that keep a search to some laws, or nothing at all.
 
-    An organisation's own policy belongs to no pack and is in every scope. Both
-    parts are fixed text: the laws arrive as the :packs parameter.
+    An organisation's own policy belongs to no pack, and :policies says whether it is searched
+    beside them. Both parts are fixed text: the laws arrive as the :packs parameter.
     """
     if packs is None:
         return "", ""
     return (
         "JOIN documents d ON d.id = v.document_id LEFT JOIN packs p ON p.id = d.pack_id",
-        "AND (d.kind = 'org_policy' OR p.slug = ANY(:packs))",
+        "AND ((d.kind = 'org_policy' AND :policies) OR p.slug = ANY(:packs))",
     )
 
 
@@ -102,23 +109,43 @@ def keyword_search(
     indexes: Mapping[str, KeywordIndex] | None = None,
     packs: Sequence[str] | None = None,
     as_of: date | None = None,
+    *,
+    policies: bool = True,
+    with_questions: bool = False,
 ) -> list[Candidate]:
-    """The clauses whose text matches the query, best first.
+    """The clauses whose text matches the query, best first, each once.
 
     `indexes` replaces a language's index with another, which is how an eval run
-    compares them. `packs` keeps the search to those laws and the organisation's
-    own policies. `as_of` is the day the text is read on, today unless given.
+    compares them. `packs` keeps the search to those laws, and to the organisation's
+    own policies unless `policies` is false. `as_of` is the day the text is read on,
+    today unless given. `with_questions` reads a law's clauses with their search
+    questions' words after their own, which only laws have: the policies are then
+    not searched, and `indexes` does not apply.
     """
-    index = {**INDEXES, **(indexes or {})}.get(lang)
+    chosen = WITH_QUESTIONS if with_questions else {**INDEXES, **(indexes or {})}
+    index = chosen.get(lang)
     if index is None:
         raise UnsupportedLanguage(
             f"no BM25 index for {lang!r}: a language needs its own index, "
             f"since the text search configuration is fixed when the index is built"
         )
 
-    # The column and the terms come from the table above, never from a caller.
-    rank = f"t.{index.column} <@> to_bm25query({index.terms}, :index)"
+    # The column and the terms come from the tables above, never from a caller.
+    table = "k" if with_questions else "t"
+    rank = f"{table}.{index.column} <@> to_bm25query({index.terms}, :index)"
     scope_join, scope_condition = scoped(packs)
+    # A row of questions alone has no text of its own, and so no days of its own: its clause's
+    # version decides. A heading with no text of its own is a place in the law, read in browsing
+    # and breadcrumbs, and never an answer, whatever its words match: such a row is never
+    # written with the questions, and is passed over here.
+    source = (
+        "keyword_texts k JOIN document_nodes n ON n.id = k.node_id "
+        "LEFT JOIN node_texts t ON t.id = k.node_text_id"
+        if with_questions
+        else "node_texts t JOIN document_nodes n ON n.id = t.node_id"
+    )
+    language = "k.lang" if with_questions else "t.lang"
+    worded = "" if with_questions else "AND length(trim(t.body_text)) > 0"
 
     # The operator returns negative scores and sorts ascending, so the best
     # match is the most negative. Flipping the sign here keeps every retriever
@@ -127,18 +154,18 @@ def keyword_search(
         text(
             f"""
             SELECT n.canonical_key AS key,
-                   t.lang AS lang,
+                   {language} AS lang,
                    -({rank}) AS score
-            FROM node_texts t
-            JOIN document_nodes n ON n.id = t.node_id
+            FROM {source}
             JOIN document_versions v ON v.id = n.document_version_id
             JOIN ({IN_FORCE}) in_force ON in_force.id = v.id
             {scope_join}
-            WHERE t.lang = :lang
+            WHERE {language} = :lang
               -- Words that stopped applying are not an answer. Words that start later
               -- are, marked as such, so a duty can be prepared for.
               AND (t.applies_until IS NULL OR t.applies_until > :as_of)
               AND (NOT :normative_only OR n.is_normative)
+              {worded}
               {scope_condition}
               -- A clause that shares no term with the query scores zero, and
               -- the operator returns it anyway. An empty result is the honest
@@ -155,16 +182,23 @@ def keyword_search(
             "as_of": as_of or date.today(),
             "limit": limit,
             "normative_only": normative_only,
-            **({"packs": list(packs)} if packs is not None else {}),
+            **({"packs": list(packs), "policies": policies} if packs is not None else {}),
         },
     ).all()
 
     # The rows arrive in whichever order the plan gives. Postgres sorts them itself
     # until the table has statistics, then lets the BM25 index order them, and the
     # two orders can disagree, so the order is set here from each row's own score,
-    # with the key settling a tie.
+    # with the key settling a tie. A clause with texts that both match, such as one
+    # whose words change on a later day, counts once, at its better text.
     ordered = sorted(rows, key=lambda row: (-row.score, row.key))
-    return [
-        Candidate(key=row.key, lang=row.lang, score=float(row.score), rank=position)
-        for position, row in enumerate(ordered, start=1)
-    ]
+    candidates: list[Candidate] = []
+    seen: set[str] = set()
+    for row in ordered:
+        if row.key in seen:
+            continue
+        seen.add(row.key)
+        candidates.append(
+            Candidate(key=row.key, lang=row.lang, score=float(row.score), rank=len(candidates) + 1)
+        )
+    return candidates

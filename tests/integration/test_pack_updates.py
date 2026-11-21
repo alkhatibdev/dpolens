@@ -108,10 +108,20 @@ def test_search_reads_only_the_version_in_force(
     install_archive(session, data, sha256_of(data), source="file", actor=cli_actor())
     session.commit()
 
-    found = [candidate.key for candidate in keyword_search(session, "legal obligation", limit=20)]
+    for with_questions in (False, True):
+        found = [
+            candidate.key
+            for candidate in keyword_search(
+                session,
+                "legal obligation",
+                limit=20,
+                packs=["testlaw"],
+                with_questions=with_questions,
+            )
+        ]
 
-    assert found.count("testlaw:art-5:para-2") == 1
-    assert len(found) == len(set(found))
+        assert found.count("testlaw:art-5:para-2") == 1
+        assert len(found) == len(set(found))
 
 
 def test_a_search_question_beside_words_a_correction_changed_stops_being_used(

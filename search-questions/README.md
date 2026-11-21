@@ -18,9 +18,12 @@ DPOLens never shows, quotes or cites them: an answer is always the law's own wor
   it and the points under it, and keeps only the questions the clause answers. A person then
   reads 50 of a law's questions, drawn at random. More than 2 that would send a question to
   the wrong clause, and every question of that law is written again.
-- **Limited power.** A question can only move a clause up among the clauses search has already
-  found by the law's own words, into a place one of them held. It cannot bring in a clause
-  search did not find, or move a clause that has no questions, such as a policy's.
+- **Ranked apart.** A question can bring in a clause the law's own words did not reach: the
+  clauses' nearest questions are a list of their own in their law's ranking, and keyword search
+  reads a clause's questions after its words. Each list is standardised within the question
+  first, so a question's higher scale wins nothing by itself. Each law, and the organisation's
+  own policies, which have none, are ranked by themselves and take turns in the results, so a
+  question never competes with a policy, or with a law whose questions are not written yet.
 - **Proven, not assumed.** Search uses them because, on the practice questions, they found the
   right clause more often, by a rule set before anything was measured. A published score names
   whether it used them: `+questions` in its configuration.

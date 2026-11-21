@@ -1,9 +1,9 @@
 """Search questions: what people might ask, kept beside the clause they were written for.
 
 They are written per clause by a model and checked by another, and they are never shown,
-quoted or cited: a law's own words are the only answer. A question only helps search order
-the clauses it has already found, among the places those clauses hold, and an organisation can
-turn them off. search-questions/README.md says how they are made.
+quoted or cited: a law's own words are the only answer. A question helps search find its clause:
+it is a list of its own beside the clause's words, and its words are read by keyword search
+after them. An organisation can turn them off. search-questions/README.md says how they are made.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from dpolens.engine.logs.governance import (
     Actor,
     record,
 )
-from dpolens.engine.search.fuse import Fused, Fusion, fuse
+from dpolens.engine.search.fuse import standardised_scores
 from dpolens.engine.search.keyword import IN_FORCE, Candidate
 
 BATCH = 64
@@ -184,8 +184,9 @@ def current_fingerprints(
 def mark_current(session: Session, today: date | None = None) -> dict[str, int]:
     """Which questions sit beside the words they were written for, by law.
 
-    Run when questions are loaded and when the index is built, so a law loaded or updated
-    since is compared with the words it holds now.
+    Run when questions are loaded, when a law is loaded and when the index is built, so a law
+    loaded or updated since is compared with the words it holds now. What keyword search reads
+    with the questions is written again from the result.
     """
     keys = list(session.scalars(text("SELECT DISTINCT canonical_key FROM search_questions")))
     prints = current_fingerprints(session, keys, today)
@@ -197,6 +198,7 @@ def mark_current(session: Session, today: date | None = None) -> dict[str, int]:
             ),
             [{"key": key, "print": prints.get(key, "")} for key in keys],
         )
+    write_keyword_texts(session, today)
     return {
         row.slug: int(row.current)
         for row in session.execute(
@@ -209,6 +211,137 @@ def mark_current(session: Session, today: date | None = None) -> dict[str, int]:
             )
         )
     }
+
+
+ASKED = """
+    SELECT canonical_key, lang, string_agg(question, ' ' ORDER BY question) AS words
+    FROM search_questions
+    WHERE current
+    GROUP BY canonical_key, lang
+"""
+"""Each clause's current questions in one language, as one run of words."""
+
+
+def write_keyword_texts(session: Session, today: date | None = None) -> None:
+    """Write what keyword search reads for a law when searches use the questions.
+
+    Each worded text of a law, with its clause's current questions in that language after it
+    when it is the text in force today, and for a clause with questions in a language it has no
+    words in, a row of those questions alone. The table is emptied with TRUNCATE: a BM25 index
+    keeps counting a deleted row in its statistics, so rows deleted and written again would not
+    score as the same rows written once.
+    """
+    as_of = {"as_of": today or date.today()}
+    session.execute(text("TRUNCATE keyword_texts"))
+    session.execute(
+        text(
+            f"""
+            INSERT INTO keyword_texts (node_id, node_text_id, lang, words)
+            SELECT t.node_id, t.id, t.lang, t.search_text || coalesce(' ' || asked.words, '')
+            FROM node_texts t
+            JOIN document_nodes n ON n.id = t.node_id
+            JOIN document_versions v ON v.id = n.document_version_id AND v.status = 'published'
+            JOIN documents d ON d.id = v.document_id AND d.kind = 'law'
+            LEFT JOIN ({IN_FORCE}) in_force ON in_force.id = v.id
+            LEFT JOIN ({ASKED}) asked
+              ON asked.canonical_key = n.canonical_key AND asked.lang = t.lang
+             AND in_force.id IS NOT NULL AND NOT t.pending
+             AND (t.applies_from IS NULL OR t.applies_from <= :as_of)
+             AND (t.applies_until IS NULL OR t.applies_until > :as_of)
+            WHERE length(trim(t.body_text)) > 0
+            """
+        ),
+        as_of,
+    )
+    session.execute(
+        text(
+            f"""
+            INSERT INTO keyword_texts (node_id, node_text_id, lang, words)
+            SELECT n.id, NULL, asked.lang, asked.words
+            FROM ({ASKED}) asked
+            JOIN document_nodes n ON n.canonical_key = asked.canonical_key
+            JOIN ({IN_FORCE}) in_force ON in_force.id = n.document_version_id
+            WHERE NOT EXISTS (
+                SELECT 1 FROM node_texts t
+                WHERE t.node_id = n.id AND t.lang = asked.lang AND length(trim(t.body_text)) > 0
+            )
+            """
+        ),
+        as_of,
+    )
+
+
+def nearest_questions(
+    session: Session,
+    embedder: Embedder,
+    vector: np.ndarray,
+    pack: str,
+    limit: int = 100,
+    normative_only: bool = False,
+) -> list[Candidate]:
+    """One law's clauses whose current questions are closest to the query, each at its nearest.
+
+    Every question of the law is compared, as every clause is in meaning search: a law's
+    questions come to thousands, which takes milliseconds.
+    """
+    dimensions = embedder.model.dimensions
+    rows = session.execute(
+        text(
+            f"""
+            SELECT key, lang, score FROM (
+                SELECT DISTINCT ON (q.canonical_key)
+                       q.canonical_key AS key, q.lang,
+                       1 - (e.embedding::vector({dimensions}) <=> :vector) AS score
+                FROM search_question_embeddings e
+                JOIN search_questions q ON q.id = e.question_id
+                JOIN packs p ON p.id = q.pack_id
+                JOIN embedding_models m ON m.id = e.embedding_model_id AND m.name = :model
+                WHERE q.current AND p.slug = :pack
+                  AND (NOT :normative_only OR EXISTS (
+                      SELECT 1 FROM document_nodes n
+                      JOIN ({IN_FORCE}) in_force ON in_force.id = n.document_version_id
+                      WHERE n.canonical_key = q.canonical_key AND n.is_normative
+                  ))
+                ORDER BY q.canonical_key, e.embedding::vector({dimensions}) <=> :vector, q.lang
+            ) nearest
+            ORDER BY score DESC, key
+            LIMIT :limit
+            """
+        ),
+        {
+            "vector": str(vector.tolist()),
+            "model": embedder.model.name,
+            "pack": pack,
+            "normative_only": normative_only,
+            "limit": limit,
+            "as_of": date.today(),
+        },
+    ).all()
+    return [
+        Candidate(key=row.key, lang=row.lang, score=float(row.score), rank=position)
+        for position, row in enumerate(rows, start=1)
+    ]
+
+
+def with_questions(meaning: Sequence[Candidate], asked: Sequence[Candidate]) -> list[Candidate]:
+    """The meaning list, each clause at the better of its own words and its nearest question.
+
+    Each list is standardised first, so a clause counts for how far it stands above the rest of
+    its own list, and a question's higher scale wins nothing by itself. A clause only a question
+    found joins the list.
+    """
+    if not asked:
+        return list(meaning)
+    best: dict[str, tuple[float, str]] = {}
+    for found in (meaning, asked):
+        for candidate, score in zip(found, standardised_scores(found), strict=True):
+            if candidate.key not in best or score > best[candidate.key][0]:
+                best[candidate.key] = (score, candidate.lang)
+    ordered = sorted(best.items(), key=lambda pair: (-pair[1][0], pair[0]))
+    return [
+        Candidate(key=key, lang=lang, score=score, rank=rank)
+        for rank, (key, (score, lang)) in enumerate(ordered, start=1)
+    ]
 
 
 def embed_questions(session: Session, embedder: Embedder) -> int:
@@ -248,74 +381,6 @@ def embed_questions(session: Session, embedder: Embedder) -> int:
             ],
         )
     return len(rows)
-
-
-def question_scores(
-    session: Session, embedder: Embedder, vector: np.ndarray, keys: Sequence[str]
-) -> dict[str, float]:
-    """How close the query is to each clause's nearest question, for the clauses given."""
-    if not keys:
-        return {}
-    dimensions = embedder.model.dimensions
-    return {
-        row.key: float(row.score)
-        for row in session.execute(
-            text(
-                f"""
-                SELECT q.canonical_key AS key,
-                       max(1 - (e.embedding::vector({dimensions}) <=> :vector)) AS score
-                FROM search_question_embeddings e
-                JOIN search_questions q ON q.id = e.question_id
-                JOIN embedding_models m ON m.id = e.embedding_model_id AND m.name = :model
-                WHERE q.current AND q.canonical_key = ANY(:keys)
-                GROUP BY q.canonical_key
-                """
-            ),
-            {"vector": str(vector.tolist()), "model": embedder.model.name, "keys": list(keys)},
-        )
-    }
-
-
-def with_questions(
-    lists: Mapping[str, Sequence[Candidate]],
-    fused: Sequence[Fused],
-    scores: Mapping[str, float],
-    fusion: Fusion,
-) -> list[Fused]:
-    """The fused list reordered by the questions, among the clauses that have them.
-
-    In meaning search, a clause scores as the closer of its own words and its nearest
-    question, and the lists are fused again. Only the clauses with questions move, and only
-    into the places those clauses already held, each place keeping its score: a question
-    measures closer to a question than a clause's words do, so a clause without questions,
-    such as a policy's, would otherwise sink below every clause with them.
-    """
-    keyword, meaning = list(lists["keyword"]), list(lists["meaning"])
-    found = {candidate.key for candidate in keyword} | {candidate.key for candidate in meaning}
-    closest = {candidate.key: candidate.score for candidate in meaning}
-    langs = {candidate.key: candidate.lang for candidate in meaning}
-    for candidate in keyword:
-        langs.setdefault(candidate.key, candidate.lang)
-    for key in found & scores.keys():
-        closest[key] = max(closest.get(key, -1.0), scores[key])
-    ordered = sorted(closest.items(), key=lambda pair: (-pair[1], pair[0]))
-    lifted = [
-        Candidate(key=key, lang=langs[key], score=score, rank=rank)
-        for rank, (key, score) in enumerate(ordered, start=1)
-    ]
-    moved = iter(
-        item for item in fuse({"keyword": keyword, "meaning": lifted}, fusion) if item.key in scores
-    )
-    reordered = []
-    for place in fused:
-        if place.key in scores:
-            item = next(moved)
-            reordered.append(
-                Fused(key=item.key, lang=item.lang, score=place.score, ranks=item.ranks)
-            )
-        else:
-            reordered.append(place)
-    return reordered
 
 
 @dataclass(frozen=True)

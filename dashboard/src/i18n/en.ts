@@ -1244,7 +1244,7 @@ export const en = {
     nothingSent: "Nothing a person asks or reads here is sent to another service.",
     searchQuestions: "Search questions",
     searchQuestionsNote:
-      "Questions a model wrote beside each clause of a law, and another checked. They only reorder the clauses a search found, and are never shown. The command dpolens search-questions off turns them off, and the governance log records it.",
+      "Questions a model wrote beside each clause of a law, and another checked. They help a search find the clause that answers, and are never shown. The command dpolens search-questions off turns them off, and the governance log records it.",
     inSearches: "In searches",
     used: "Used",
     turnedOff: "Turned off",

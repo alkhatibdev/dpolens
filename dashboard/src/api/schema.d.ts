@@ -2647,7 +2647,7 @@ export interface components {
     SearchQuestionsSettings: {
       /**
        * On
-       * @description Whether searches use the search questions, which only reorder the clauses a search found and are never returned. Changed with `dpolens search-questions on` or `off`, which the governance log records
+       * @description Whether searches use the search questions, which help a search find the clause that answers and are never returned. Changed with `dpolens search-questions on` or `off`, which the governance log records
        */
       on: boolean;
       /** Laws */

@@ -195,13 +195,15 @@ A set named without its language, such as `tuning`, is every language it is aske
 `tuning.ar` is one of them. Each set is scored on its own, `--set` can be given more than
 once, and `--together` adds the sets scored as one. Left out, `--set` is `tuning`.
 
-`--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`), a single
-retriever (`keyword`, `meaning`), and a `+normative` suffix on any of them to exclude text
-that explains without obliging. `+questions`, on a fusion rule, uses the
-[search questions](../search-questions/README.md), which reorder what fusion found. Left out,
-it is `convex:0.5+normative+questions`, which is what search runs, and each published score
-names the configuration it measured. For Arabic questions, `+light`, `+snowball` or
-`+folded-snowball` picks one of the three Arabic keyword indexes; the last is the default.
+`--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`,
+`standardised:0.3`), a single retriever (`keyword`, `meaning`), and a `+normative` suffix on any
+of them to exclude text that explains without obliging. `+questions`, on a fusion rule, uses the
+[search questions](../search-questions/README.md): each clause's nearest question as a list of
+its own, and their words in keyword search. Left out, it is `convex:0.5+normative+questions`,
+which is what search runs, and each published score names the configuration it measured. For
+Arabic questions, `+light`, `+snowball` or `+folded-snowball` picks one of the three Arabic
+keyword indexes of the law's own words; the last is the default, and the one `+questions`
+reads with the questions' words, so the other two are refused beside it.
 `--baselines` adds the two single retrievers to the run, so a fusion rule can never be
 adopted while being worse than half the system.
 

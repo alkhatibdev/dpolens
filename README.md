@@ -64,7 +64,7 @@ Code, Codex, Cursor and GitHub Copilot in VS Code.
 - **Your own policies**, from Word or Markdown files, read into clauses without an AI model and
   published as versions that never change. [Your own policies](https://dpolens.com/docs/policies)
 - **Search by words and by meaning**, in English and Arabic, on the CPU, with no LLM and no API
-  key. Questions written beside each clause help it order what it found, and are never shown.
+  key. Questions written beside each clause help it find the clause, and are never shown.
   [Search questions](search-questions/README.md)
 - **A dashboard and two logs:** a governance log that is append-only and hash-chained, and every
   question asked, with personal data taken out. [The governance log](docs/governance-log.md)
