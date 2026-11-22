@@ -131,7 +131,11 @@ def build(settings: Settings, api: Api) -> MCPServer:
     async def search_policies(
         query: Annotated[
             str,
-            Field(description="The question, in words", min_length=1, max_length=MAX_QUERY),
+            Field(
+                description="One question, in words: what the code does, with which data",
+                min_length=1,
+                max_length=MAX_QUERY,
+            ),
         ],
         limit: Annotated[int, Field(description="How many clauses to return", ge=1, le=50)] = 10,
         lang: Annotated[

@@ -10,7 +10,7 @@ rest depends on.
 **Claude Code with the DPOLens plugin searched before writing code in 36 of 36 runs of tasks
 that touch personal data, and in none of the 45 runs of tasks that do not.** Asked questions
 about the rules, it searched in 9 of 9. Thirty held-out tasks, three runs each, Claude Code
-2.1.288 with `claude-sonnet-5-5`, measured 18 and 19 November 2026.
+2.1.288 with `claude-sonnet-5-5`, measured 22 November 2026.
 
 | Group | Tasks | Searched | Share | 95% interval |
 | --- | --- | --- | --- | --- |
@@ -53,6 +53,17 @@ last 7 days instead of 30"), in one of its three runs. So read none of 45 as rar
 One task was reworded between the two measurements, `id-check-on-wine` to
 `id-check-on-delivery`, so both setups were measured again on the tasks as they stand.
 
+The search box now asks for one question. Its description, which the AI assistant reads before
+it writes a search, says "One question, in words: what the code does, with which data". Search
+ranks clauses against the whole question, so a question that asks two things at once is a weaker
+match for the clause that answers either. Both setups were measured again with it, and the
+result above is that measurement. The searches changed: with the plugin, 14 of the 45 first
+searches in the runs of 18 and 19 November asked two things, such as "can we log client IP
+addresses and user agent in request logs, and how long can we keep them", and 8 of 45 did with
+the new description. Without the plugin, 12 of 47 became 7 of 46. A search counts as asking two
+things by a rule written before these runs: a second question or subject after a comma, a
+semicolon, a colon, or an "and" that starts a question.
+
 ## Without the plugin
 
 The plugin brings three things: the MCP server, two commands, and a skill whose description
@@ -62,14 +73,14 @@ added on its own, so that only the instructions the server sends when it connect
 | Group | With the plugin | MCP server on its own |
 | --- | --- | --- |
 | Coding tasks that touch personal data | 36 of 36 | 36 of 36 |
-| Coding tasks that do not | 0 of 45 | 2 of 45 |
+| Coding tasks that do not | 0 of 45 | 1 of 45 |
 | Questions about the rules | 9 of 9 | 9 of 9 |
 
 The server's instructions do the work: without the skill, every task that should search still
 did, before editing. This time the one difference runs the other way. Without the plugin,
-`product-viewed-event` searched in 2 of its 3 runs, asking whether page-view events "tied to a
-user or anonymous visitor identifier" can go to Segment. That is a fair question, since a visitor
-identifier can be personal data, and the label counts it against DPOLens all the same. In
+`product-viewed-event` searched in 1 of its 3 runs, asking about "sending product page view
+analytics events to Segment with a user or anonymous identifier". That is a fair question, since
+a visitor identifier can be personal data, and the label counts it against DPOLens all the same. In
 October, without the plugin, the task never searched, and the instructions the server sends are
 the same text as then.
 
@@ -103,16 +114,16 @@ that return clause text. It searched before editing if that came before its firs
 `Write`, `MultiEdit` or `NotebookEdit`. A run stops once its first search comes back, since the
 outcome is known by then. Otherwise it runs until the AI assistant finishes, 25 turns or ten
 minutes. Every run's searches are also counted in the instance's query log, and the two counts
-agreed for every run but two. Without the plugin, one run called `search_policies` with no
-question at all, before loading the tool's description, and the server refused the call, so it
-never reached the log. It counts as a search, because what is measured is whether the AI assistant
-decides to look the rules up, and the run stopped there. With the plugin, one run's log holds a
-second question that the run's record, cut at the first answer, never shows.
+agreed for every run but one. Without the plugin, one run's log holds a second question that the
+run's record never shows. That run had also started a subagent to read the code, and a
+subagent's calls are not in the record. A search the server refuses, such as one with no
+question at all, never reaches the log, and still counts as a search, because what is measured
+is whether the AI assistant decides to look the rules up.
 
-**Runs that could not be scored.** Without the plugin, two attempts at one run of
-`welcome-email-template` failed when the subscription's usage limit was reached, and the run was
-made again after the limit reset. A run that could not have reached DPOLens is not a run that
-chose not to, so both are reported as attempts not scored.
+**Runs that could not be scored.** None in these batches. A run that could not have reached
+DPOLens, because the plugin did not load, the server did not connect or the request to the model
+failed, is not a run that chose not to search, so it is made again and reported as an attempt
+not scored.
 
 **The interval.** Tasks are resampled with their three runs kept together, because three runs of
 one task are not three tasks.
