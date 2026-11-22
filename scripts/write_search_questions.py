@@ -376,7 +376,11 @@ def save(path: Path, record: dict[str, Any]) -> None:
 
 
 def assemble(pack: str, articles: list[dict[str, Any]], work: Path) -> Path:
-    """The law's file: each clause's fingerprint and the questions its check kept."""
+    """The law's file: each clause's fingerprint and the questions its check kept.
+
+    A clause whose check kept none is named all the same, with no questions, so the file says
+    it was written for and `dpolens search-questions status` does not list it as left out.
+    """
     writers, checkers, entries = set(), set(), []
     for article in articles:
         name = article["key"].replace(":", "_") + ".json"
@@ -397,8 +401,7 @@ def assemble(pack: str, articles: list[dict[str, Any]], work: Path) -> Path:
                 ]
                 for lang in ("en", "ar")
             }
-            if kept["en"] or kept["ar"]:
-                entries.append({"key": clause["key"], "text": fingerprint(clause["text"]), **kept})
+            entries.append({"key": clause["key"], "text": fingerprint(clause["text"]), **kept})
     header = (
         f"# Search questions for {articles[0]['law'][0]}, beside the clauses they were written\n"
         "# for. They help search order clauses it has already found, and are never shown,\n"

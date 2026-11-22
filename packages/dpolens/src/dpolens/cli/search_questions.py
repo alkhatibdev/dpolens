@@ -13,6 +13,7 @@ from dpolens.engine.search.questions import (
     loaded_files,
     questions_on,
     switch_questions,
+    without_questions,
 )
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
@@ -61,16 +62,44 @@ def off() -> None:
 
 
 @app.command()
-def status() -> None:
-    """Whether searches use the questions, and which laws have them."""
+def status(
+    check: Annotated[
+        bool,
+        typer.Option(
+            "--check",
+            help="Exit with 1 when a clause that states a rule has no questions written for its "
+            "words in force",
+        ),
+    ] = False,
+) -> None:
+    """Whether searches use the questions, which laws have them, and any clause left without."""
     with session_scope(load_settings()) as session:
         on = questions_on(session)
         files = loaded_files(session)
+        missing = without_questions(session)
     typer.echo(f"Searches {'use' if on else 'do not use'} the search questions.")
     for file in files:
         typer.echo(
             f"{file.pack:16} {file.current} of {file.questions} current, written by "
             f"{file.written_by} on {file.written_on}, checked by {file.checked_by}"
         )
+        left = missing.get(file.pack, [])
+        if not left:
+            typer.echo(
+                f"{'':16} every clause that states a rule has questions written for its words "
+                "in force"
+            )
+            continue
+        typer.echo(
+            f"{'':16} {len(left)} clause that states a rule has no questions written for its "
+            "words in force:"
+            if len(left) == 1
+            else f"{'':16} {len(left)} clauses that state a rule have no questions written for "
+            "their words in force:"
+        )
+        for key in left:
+            typer.echo(f"{'':18}{key}")
     if not files:
         typer.echo("No law has search questions loaded: dpolens search-questions load")
+    if check and any(missing.values()):
+        raise typer.Exit(code=1)

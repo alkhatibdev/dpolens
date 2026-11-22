@@ -31,6 +31,10 @@ DPOLens never shows, quotes or cites them: an answer is always the law's own wor
   fingerprint its questions carry, those questions are not used until they are written again.
   A search of another day goes without them, and an organisation can turn them off with
   `dpolens search-questions off`.
+- **Complete.** A law's file names every clause that states a rule, at the words its questions
+  were written for, even a clause whose check kept none of them. CI fails when a clause is
+  missing or its words have changed since. `dpolens search-questions status` lists any such
+  clause on an instance, such as one still holding an older version of the law.
 
 ## Writing them
 

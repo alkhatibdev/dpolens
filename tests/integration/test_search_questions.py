@@ -35,6 +35,7 @@ from dpolens.engine.search.questions import (
     load_questions,
     questions_on,
     switch_questions,
+    without_questions,
     write_keyword_texts,
 )
 
@@ -47,6 +48,16 @@ QUERY = "سحب أحد المستخدمين موافقته. هل يجب أن ن�
 WITHDRAWN = "testlaw:art-5:para-1"
 EXCEPTION = "testlaw:art-5:para-2"
 CARDS = {EXCEPTION: [QUERY], WITHDRAWN: ["هل يمكن للمستخدم أن يغير رأيه لاحقاً؟"]}
+RULES = [
+    "testlaw:art-5",
+    "testlaw:art-5:para-1",
+    "testlaw:art-5:para-1:pt-a",
+    "testlaw:art-5:para-1:pt-b",
+    "testlaw:art-5:para-2",
+    "testlaw:art-6:para-1",
+]
+"""The test law's clauses that state a rule in words: not Article 6's heading, which has none,
+and not the recital, which explains without obliging."""
 
 
 @pytest.fixture(scope="session")
@@ -318,4 +329,67 @@ def test_a_file_holding_another_laws_clauses_is_refused(indexed: Session, tmp_pa
     path = written(tmp_path, indexed, {"otherlaw:art-1": ["Anything?"]})
 
     with pytest.raises(QuestionsError, match="another law's clauses: otherlaw:art-1"):
+        load_questions(indexed, path, actor=cli_actor())
+
+
+def test_status_names_each_clause_that_states_a_rule_and_has_no_questions(
+    indexed: Session, tmp_path: Path
+) -> None:
+    load_questions(indexed, written(tmp_path, indexed, CARDS), actor=cli_actor())
+
+    assert without_questions(indexed) == {"testlaw": [key for key in RULES if key not in CARDS]}
+
+
+def test_a_clause_named_with_no_questions_was_written_for(indexed: Session, tmp_path: Path) -> None:
+    """Its check kept none of them, and the file says so rather than leaving it out."""
+    every = {key: CARDS.get(key, []) for key in RULES}
+
+    loaded = load_questions(indexed, written(tmp_path, indexed, every), actor=cli_actor())
+
+    assert loaded.questions == 2
+    assert without_questions(indexed) == {}
+
+
+def test_a_clause_whose_words_changed_since_is_named(indexed: Session, tmp_path: Path) -> None:
+    every = {key: CARDS.get(key, []) for key in RULES}
+
+    load_questions(indexed, written(tmp_path, indexed, every, stale=[EXCEPTION]), actor=cli_actor())
+
+    assert without_questions(indexed) == {"testlaw": [EXCEPTION]}
+
+
+def test_a_law_without_a_file_is_not_held_to_one(indexed: Session) -> None:
+    """Its clauses are found by their own words, ranked by themselves."""
+    assert without_questions(indexed) == {}
+
+
+def test_a_newer_file_names_its_own_clauses(indexed: Session, tmp_path: Path) -> None:
+    load_questions(
+        indexed, written(tmp_path, indexed, {key: [] for key in RULES}), actor=cli_actor()
+    )
+
+    load_questions(indexed, written(tmp_path, indexed, CARDS), actor=cli_actor())
+
+    assert without_questions(indexed) == {"testlaw": [key for key in RULES if key not in CARDS]}
+
+
+def test_a_file_naming_a_clause_twice_is_refused(indexed: Session, tmp_path: Path) -> None:
+    path = written(tmp_path, indexed, CARDS)
+    body = yaml.safe_load(path.read_text(encoding="utf-8"))
+    body["clauses"].append(body["clauses"][0])
+    path.write_text(yaml.safe_dump(body, allow_unicode=True), encoding="utf-8")
+
+    with pytest.raises(QuestionsError, match=f"names {EXCEPTION} twice"):
+        load_questions(indexed, path, actor=cli_actor())
+
+
+def test_a_file_with_a_clause_and_no_fingerprint_is_refused(
+    indexed: Session, tmp_path: Path
+) -> None:
+    path = written(tmp_path, indexed, CARDS)
+    body = yaml.safe_load(path.read_text(encoding="utf-8"))
+    del body["clauses"][0]["text"]
+    path.write_text(yaml.safe_dump(body, allow_unicode=True), encoding="utf-8")
+
+    with pytest.raises(QuestionsError, match="a clause without its key or its text"):
         load_questions(indexed, path, actor=cli_actor())
