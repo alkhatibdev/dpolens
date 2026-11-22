@@ -491,6 +491,54 @@ def test_search_questions_are_turned_off_and_on_again(instance: None, clean_tabl
     assert "Searches use the search questions." in on.output
 
 
+@pytest.mark.parametrize(
+    "file", sorted((REPO / "search-questions").glob("*.yaml")), ids=lambda file: file.stem
+)
+def test_every_clause_of_a_law_this_repository_ships_has_its_search_questions(
+    instance: None, clean_tables: None, file: Path
+) -> None:
+    """A clause the file misses, or names at words the law no longer has, is found only by its
+    own words, beside clauses also found by their questions."""
+    pack = runner.invoke(app, ["pack", "load", str(REPO / "packs" / file.stem)])
+    assert pack.exit_code == 0, pack.output
+    questions = runner.invoke(app, ["search-questions", "load", str(file)])
+    assert questions.exit_code == 0, questions.output
+
+    result = runner.invoke(app, ["search-questions", "status", "--check"])
+
+    assert result.exit_code == 0, result.output
+    assert "every clause that states a rule has questions written for its words in force" in said(
+        result
+    )
+
+
+def test_status_names_a_clause_left_without_questions_and_the_check_fails(
+    instance: None, clean_tables: None, testlaw_pack: Path, tmp_path: Path
+) -> None:
+    assert runner.invoke(app, ["pack", "load", str(testlaw_pack)]).exit_code == 0
+    file = tmp_path / "testlaw.yaml"
+    file.write_text(
+        "pack: testlaw\nwritten_by: [a writer]\nchecked_by: [a checker]\n"
+        "written_on: '2026-11-08'\nwrite_prompt: '0000000000000000'\n"
+        "check_prompt: '1111111111111111'\n"
+        "clauses:\n- key: testlaw:art-5\n  text: ffffffffffffffff\n"
+        "  en: ['Anything?']\n  ar: []\n",
+        encoding="utf-8",
+    )
+    assert runner.invoke(app, ["search-questions", "load", str(file)]).exit_code == 0
+
+    listed = runner.invoke(app, ["search-questions", "status"])
+    checked = runner.invoke(app, ["search-questions", "status", "--check"])
+
+    assert listed.exit_code == 0, listed.output
+    assert checked.exit_code == 1
+    assert "6 clauses that state a rule have no questions written for their words in force" in (
+        said(listed)
+    )
+    assert "testlaw:art-5:para-1:pt-a" in listed.output
+    assert "testlaw:art-6:para-1" in listed.output
+
+
 def test_questions_for_a_law_that_is_not_loaded_are_refused_in_one_line(
     instance: None, clean_tables: None, tmp_path: Path
 ) -> None:

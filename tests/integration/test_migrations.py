@@ -165,6 +165,67 @@ def test_0021_drops_the_approximate_index_an_earlier_version_built(
         engine.dispose()
 
 
+def test_0023_names_the_clauses_a_loaded_file_has_questions_for(
+    owner_url: str, app_role: str
+) -> None:
+    """A file loaded before it named no clause without questions: one row for each clause its
+    questions sit beside, at their fingerprint."""
+    config = alembic(owner_url, app_role)
+    engine = create_engine(owner_url)
+    try:
+        command.downgrade(config, "base")
+        command.upgrade(config, "0022")
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO packs (id, slug, version, effective_date, trust_tier, source_url,
+                                       license, authoritative_language)
+                    VALUES ('00000000-0000-0000-0000-000000000001', 'testlaw', '2026.1',
+                            '2026-01-01', 'community', 'https://example.invalid',
+                            'Public domain.', 'en');
+                    INSERT INTO search_question_files (pack_id, written_by, checked_by,
+                                                       written_on, write_prompt, check_prompt,
+                                                       digest)
+                    VALUES ('00000000-0000-0000-0000-000000000001', 'a writer', 'a checker',
+                            '2026-11-08', '0000000000000000', '1111111111111111', 'digest');
+                    INSERT INTO search_questions (id, pack_id, canonical_key, fingerprint, lang,
+                                                  question)
+                    VALUES ('00000000-0000-0000-0000-000000000002',
+                            '00000000-0000-0000-0000-000000000001', 'testlaw:art-5',
+                            'aaaaaaaaaaaaaaaa', 'en', 'Must we erase it?'),
+                           ('00000000-0000-0000-0000-000000000003',
+                            '00000000-0000-0000-0000-000000000001', 'testlaw:art-5',
+                            'aaaaaaaaaaaaaaaa', 'ar', 'هل يجب أن نحذفها؟'),
+                           ('00000000-0000-0000-0000-000000000004',
+                            '00000000-0000-0000-0000-000000000001', 'testlaw:art-6:para-1',
+                            'bbbbbbbbbbbbbbbb', 'en', 'When is processing lawful?');
+                    """
+                )
+            )
+
+        command.upgrade(config, "head")
+
+        with engine.connect() as connection:
+            named = sorted(
+                tuple(row)
+                for row in connection.execute(
+                    text("SELECT canonical_key, fingerprint FROM search_question_clauses")
+                )
+            )
+        assert named == [
+            ("testlaw:art-5", "aaaaaaaaaaaaaaaa"),
+            ("testlaw:art-6:para-1", "bbbbbbbbbbbbbbbb"),
+        ]
+    finally:
+        # A law with no names would stop the chain going back down past 0019.
+        with engine.begin() as connection:
+            connection.execute(
+                text("DELETE FROM packs WHERE id = '00000000-0000-0000-0000-000000000001'")
+            )
+        engine.dispose()
+
+
 def test_0019_names_what_was_stored_before(owner_url: str, app_role: str) -> None:
     """A law keeps its name and title, in English as they were written, until its pack loads
     again, and a policy keeps its title, in the language of its text."""

@@ -9,6 +9,7 @@ after them. An organisation can turn them off. search-questions/README.md says h
 from __future__ import annotations
 
 import hashlib
+import re
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -74,6 +75,13 @@ def load_questions(session: Session, path: Path, *, actor: Actor) -> Loaded:
     missing = [name for name in (*FIELDS, "clauses") if not data.get(name)]
     if missing:
         raise QuestionsError(f"{path} has no {', '.join(missing)}")
+    seen: set[str] = set()
+    for entry in data["clauses"]:
+        if not isinstance(entry, dict) or not entry.get("key") or not entry.get("text"):
+            raise QuestionsError(f"{path} has a clause without its key or its text")
+        if entry["key"] in seen:
+            raise QuestionsError(f"{path} names {entry['key']} twice")
+        seen.add(entry["key"])
     slug = str(data["pack"])
     pack_id = session.execute(
         text("SELECT id FROM packs WHERE slug = :slug"), {"slug": slug}
@@ -112,6 +120,18 @@ def load_questions(session: Session, path: Path, *, actor: Actor) -> Loaded:
             "check_prompt": str(data["check_prompt"]),
             "digest": digest,
         },
+    )
+    session.execute(
+        text(
+            """
+            INSERT INTO search_question_clauses (pack_id, canonical_key, fingerprint)
+            VALUES (:pack, :key, :fingerprint)
+            """
+        ),
+        [
+            {"pack": pack_id, "key": entry["key"], "fingerprint": entry["text"]}
+            for entry in data["clauses"]
+        ],
     )
     rows = [
         {
@@ -211,6 +231,45 @@ def mark_current(session: Session, today: date | None = None) -> dict[str, int]:
             )
         )
     }
+
+
+def without_questions(session: Session, today: date | None = None) -> dict[str, list[str]]:
+    """Each law with questions loaded, and its clauses that state a rule but have none written
+    for their words in force, in the law's order.
+
+    Such a clause is found only by its own words, among clauses also found by their questions.
+    A law's file names every clause it was written for, even one whose check kept no question,
+    so a clause missing from it, or named at other words, is one nobody has written for.
+    """
+    as_of = today or date.today()
+    rows = session.execute(
+        text(
+            f"""
+            SELECT p.slug, n.canonical_key AS key, written.fingerprint
+            FROM search_question_files f
+            JOIN packs p ON p.id = f.pack_id
+            JOIN documents d ON d.pack_id = p.id AND d.kind = 'law'
+            JOIN document_versions v ON v.document_id = d.id
+            JOIN ({IN_FORCE}) in_force ON in_force.id = v.id
+            JOIN document_nodes n ON n.document_version_id = v.id AND n.is_normative
+            LEFT JOIN search_question_clauses written
+              ON written.pack_id = p.id AND written.canonical_key = n.canonical_key
+            """
+        ),
+        {"as_of": as_of},
+    ).all()
+    prints = current_fingerprints(session, [row.key for row in rows], as_of)
+    missing: dict[str, list[str]] = {}
+    for row in rows:
+        words = prints.get(row.key)
+        if words is not None and row.fingerprint != words:
+            missing.setdefault(row.slug, []).append(row.key)
+    return {slug: sorted(keys, key=_in_order) for slug, keys in missing.items()}
+
+
+def _in_order(key: str) -> list[Any]:
+    """A clause's place in its law, by its key: Article 4 before Article 10."""
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", key)]
 
 
 ASKED = """
