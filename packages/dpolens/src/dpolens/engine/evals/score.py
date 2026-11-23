@@ -36,17 +36,21 @@ class Outcome:
     returned: tuple[str, ...]
     topic: str | None = None
     """The topic the question names, in a set where several entries ask one topic."""
+    shown: tuple[tuple[str, ...], ...] = ()
+    """In a run for whole rules, the clauses each result showed: the rule's own words and
+    those beneath them. A result answers when one of them does. Empty in a run for clauses,
+    where each result shows itself."""
 
     def hit_at(self, k: int) -> bool:
-        return any(
-            answers(candidate, key) for candidate in self.returned[:k] for key in self.expected
-        )
+        place = self.first_hit
+        return place is not None and place <= k
 
     @property
     def first_hit(self) -> int | None:
-        """The position of the first clause that answers, counting from one."""
-        for position, candidate in enumerate(self.returned, start=1):
-            if any(answers(candidate, key) for key in self.expected):
+        """The position of the first result that answers, counting from one."""
+        each = self.shown or tuple((candidate,) for candidate in self.returned)
+        for position, clauses in enumerate(each, start=1):
+            if any(answers(clause, key) for clause in clauses for key in self.expected):
                 return position
         return None
 

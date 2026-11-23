@@ -145,3 +145,33 @@ def test_the_verdict_reads_as_a_sentence() -> None:
 
     assert "REGRESSION" in str(verdict)
     assert "0.60" in str(verdict)
+
+
+def test_in_a_run_for_whole_rules_a_result_answers_by_what_it_shows() -> None:
+    """Article 17(1) shown with its points answers a question about 17(1)(b); the same key
+    returned alone, in a run for clauses, does not."""
+    rule = Outcome(
+        question_id="a",
+        expected=("law:art-17:para-1:pt-b",),
+        returned=("law:art-5", "law:art-17:para-1"),
+        shown=(
+            ("law:art-5",),
+            ("law:art-17:para-1", "law:art-17:para-1:pt-a", "law:art-17:para-1:pt-b"),
+        ),
+    )
+    clause = outcome("a", "law:art-17:para-1:pt-b", "law:art-5", "law:art-17:para-1")
+
+    assert rule.first_hit == 2
+    assert rule.hit_at(2) and not rule.hit_at(1)
+    assert clause.first_hit is None
+
+
+def test_a_rule_cut_short_answers_only_for_what_it_shows() -> None:
+    cut = Outcome(
+        question_id="a",
+        expected=("law:art-4:pt-7",),
+        returned=("law:art-4",),
+        shown=(("law:art-4", "law:art-4:pt-1", "law:art-4:pt-2"),),
+    )
+
+    assert cut.first_hit is None

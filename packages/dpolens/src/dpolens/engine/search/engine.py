@@ -10,7 +10,7 @@ where it sits, whether it obliges anyone, and which version it came from.
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Literal
 
@@ -19,10 +19,10 @@ from sqlalchemy.orm import Session
 
 from dpolens.engine.documents.read import (
     ClauseDetail,
-    ClauseNotFound,
     ClauseView,
-    get_clause,
+    get_clauses,
     get_subtree,
+    get_whole,
 )
 from dpolens.engine.embedding.encode import Embedder
 from dpolens.engine.packs.selection import Scope, scope_for
@@ -30,6 +30,7 @@ from dpolens.engine.search.fuse import DEFAULT_FUSION, Fused, Fusion, fuse
 from dpolens.engine.search.keyword import KeywordIndex, keyword_search, quoted
 from dpolens.engine.search.language import language_of
 from dpolens.engine.search.questions import nearest_questions, questions_on, with_questions
+from dpolens.engine.search.rules import ended, rule_of, shown
 from dpolens.engine.search.vector import vector_search
 
 CANDIDATE_DEPTH = 100
@@ -39,6 +40,11 @@ no retriever returned, and the reranker later sees only the top of this."""
 TIE_MARGIN = 5
 """How many extra candidates to resolve, so the normative rule can decide the
 last slot rather than being applied after it has been given away."""
+
+READ_AHEAD = 20
+"""How many candidates are read from the database at once. A search reads about fifteen
+clauses for each source, more for whole rules, and reading them together is a handful of
+queries where reading each alone is ten."""
 
 Expand = Literal["none", "siblings", "parent"]
 
@@ -53,6 +59,12 @@ class SearchResult:
     breadcrumb: tuple[ClauseView, ...]
     cross_references: tuple[tuple[str, str], ...]
     expanded: tuple[ClauseView, ...] = ()
+    beneath: tuple[ClauseView, ...] = ()
+    """In a search for whole rules, the clauses shown beneath the rule's own words, in reading
+    order, each with its own key to cite it by."""
+    whole: bool = True
+    """False when a rule too long to show whole comes back as its own words and the clauses
+    the search reached."""
 
 
 @dataclass(frozen=True)
@@ -78,6 +90,7 @@ def search(
     keyword_indexes: Mapping[str, KeywordIndex] | None = None,
     scope: Scope | None = None,
     questions: bool | None = None,
+    rules: bool = False,
 ) -> list[SearchResult]:
     """The clauses that answer a question, the best of each source in turn.
 
@@ -85,7 +98,9 @@ def search(
     `keyword_indexes` swaps a language's keyword index for another, for the evals.
     Without `scope`, the search covers the organisation's selected laws, and is
     refused until somebody has chosen them. Without `questions`, the search
-    questions are used unless the organisation has turned them off.
+    questions are used unless the organisation has turned them off. With `rules`,
+    each result is the whole rule its best match belongs to (see `rules.py`), and
+    `limit` counts rules.
     """
     lang = lang or language_of(query)
     scope = scope or scope_for(session)
@@ -124,18 +139,21 @@ def search(
     #
     # Each clause is read in the language asked for, whichever of its texts
     # matched, and in the language that prevails where it has no text in that one.
-    resolved = _in_turns(session, sources, limit + TIE_MARGIN, lang=lang, as_of=as_of)
-
+    resolved = _in_turns(session, sources, limit + TIE_MARGIN, lang=lang, as_of=as_of, rules=rules)
+    if rules:
+        return [_whole_rule(session, answer, expand, lang, as_of) for answer in resolved[:limit]]
     return [
         SearchResult(
-            clause=detail.clause,
-            score=candidate.score,
-            ranks=candidate.ranks,
-            breadcrumb=detail.breadcrumb,
-            cross_references=detail.cross_references,
-            expanded=_expanded(session, detail, expand, lang, as_of),
+            clause=answer.detail.clause,
+            score=answer.candidate.score,
+            ranks=answer.candidate.ranks,
+            breadcrumb=answer.detail.breadcrumb,
+            cross_references=answer.detail.cross_references,
+            expanded=_expanded(
+                session, answer.detail.clause, answer.detail.breadcrumb, expand, lang, as_of
+            ),
         )
-        for candidate, detail in resolved[:limit]
+        for answer in resolved[:limit]
     ]
 
 
@@ -216,6 +234,18 @@ def _ranked(
     )
 
 
+@dataclass
+class _Answer:
+    """A candidate that answers on the day asked about, and what comes back for it."""
+
+    candidate: Fused
+    detail: ClauseDetail
+    rule: str
+    """The key of what comes back: the clause itself, or the rule it belongs to."""
+    reached: list[str] = field(default_factory=list)
+    """The rule's clauses the search came to, its best first."""
+
+
 def _in_turns(
     session: Session,
     sources: Sequence[Ranked],
@@ -223,7 +253,8 @@ def _in_turns(
     *,
     lang: str,
     as_of: date | None,
-) -> list[tuple[Fused, ClauseDetail]]:
+    rules: bool = False,
+) -> list[_Answer]:
     """The sources' answers taking turns, the source whose best match is closest first.
 
     Within a source, a clause that obliges someone outranks one that only explains where their
@@ -235,8 +266,11 @@ def _in_turns(
         (source for source in sources if source.candidates),
         key=lambda source: (-source.strength, source.law is None, source.law or ""),
     )
-    queues = {id(source): _answers(session, source.candidates, lang, as_of) for source in order}
-    taken: dict[int, list[tuple[Fused, ClauseDetail]]] = {id(source): [] for source in order}
+    grouped = _by_rule if rules else _by_clause
+    queues = {
+        id(source): grouped(_answers(session, source.candidates, lang, as_of)) for source in order
+    }
+    taken: dict[int, list[_Answer]] = {id(source): [] for source in order}
     turns: list[int] = []
     waiting = list(order)
     while waiting and len(turns) < wanted:
@@ -249,6 +283,14 @@ def _in_turns(
                 continue
             taken[id(source)].append(answer)
             turns.append(id(source))
+    if rules:
+        # A long rule shows the clauses the search reached, so each source reads its list as
+        # far as it would searched alone: what a rule shows does not hang on what else was
+        # searched beside it, such as the organisation's policies.
+        for source in order:
+            for _ in range(wanted - len(taken[id(source)])):
+                if next(queues[id(source)], None) is None:
+                    break
     for held, answers in taken.items():
         taken[held] = _obliging_first(answers)
     places = dict.fromkeys(taken, 0)
@@ -259,44 +301,96 @@ def _in_turns(
     return resolved
 
 
-def _obliging_first(
-    answers: Sequence[tuple[Fused, ClauseDetail]],
-) -> list[tuple[Fused, ClauseDetail]]:
+def _obliging_first(answers: Sequence[_Answer]) -> list[_Answer]:
     """Within each run of equal scores, the clauses that oblige someone first."""
-    ordered: list[tuple[Fused, ClauseDetail]] = []
+    ordered: list[_Answer] = []
     start = 0
     while start < len(answers):
         end = start + 1
-        while end < len(answers) and answers[end][0].score == answers[start][0].score:
+        while end < len(answers) and answers[end].candidate.score == answers[start].candidate.score:
             end += 1
-        ordered += sorted(answers[start:end], key=lambda pair: not pair[1].clause.is_normative)
+        ordered += sorted(
+            answers[start:end], key=lambda answer: not answer.detail.clause.is_normative
+        )
         start = end
     return ordered
+
+
+def _by_clause(answers: Iterator[tuple[Fused, ClauseDetail]]) -> Iterator[_Answer]:
+    for candidate, detail in answers:
+        yield _Answer(candidate, detail, detail.clause.key, [detail.clause.key])
+
+
+def _by_rule(answers: Iterator[tuple[Fused, ClauseDetail]]) -> Iterator[_Answer]:
+    """A source's answers as rules, each where its best clause came.
+
+    A later clause of a rule already taken joins it as reached, so what the search came to is
+    known when the rule is shown. A clause with no words of its own, such as an article that is
+    only a title, is passed over: what sits beneath it is found by its own words.
+    """
+    held: dict[str, _Answer] = {}
+    for candidate, detail in answers:
+        if not detail.clause.text.strip():
+            continue
+        rule = rule_of(detail.clause, detail.breadcrumb).key
+        if rule in held:
+            held[rule].reached.append(detail.clause.key)
+            continue
+        held[rule] = _Answer(candidate, detail, rule, [detail.clause.key])
+        yield held[rule]
+
+
+def _whole_rule(
+    session: Session,
+    answer: _Answer,
+    expand: Expand,
+    lang: str,
+    as_of: date | None,
+) -> SearchResult:
+    """A rule as it comes back: its own words, what is shown beneath them, and every link
+    those words state."""
+    whole = get_whole(session, answer.rule, lang=lang, as_of=as_of)
+    beneath, complete = shown(whole.clause, whole.beneath, answer.reached, as_of or date.today())
+    links = dict.fromkeys(
+        link
+        for clause in [whole.clause, *beneath]
+        for link in whole.cross_references.get(clause.key, ())
+    )
+    return SearchResult(
+        clause=whole.clause,
+        score=answer.candidate.score,
+        ranks=answer.candidate.ranks,
+        breadcrumb=whole.breadcrumb,
+        cross_references=tuple(links),
+        expanded=_expanded(session, whole.clause, whole.breadcrumb, expand, lang, as_of),
+        beneath=beneath,
+        whole=complete,
+    )
 
 
 def _answers(
     session: Session, candidates: Sequence[Fused], lang: str, as_of: date | None
 ) -> Iterator[tuple[Fused, ClauseDetail]]:
-    """A source's candidates that are answers on the day asked about, read one at a time."""
-    for candidate in candidates:
-        try:
-            detail = get_clause(session, candidate.key, lang=lang, as_of=as_of)
-        except ClauseNotFound:
-            continue
-        # An archived policy no longer applies, and nor do words a law has ended. Both still
-        # read by key, so an old citation can be checked, but nothing searches them.
-        if detail.clause.archived or _ended(detail.clause, as_of or date.today()):
-            continue
-        yield candidate, detail
-
-
-def _ended(clause: ClauseView, as_of: date) -> bool:
-    return clause.in_force_until is not None and clause.in_force_until <= as_of
+    """A source's candidates that are answers on the day asked about, in order, read from the
+    database a few at a time."""
+    for start in range(0, len(candidates), READ_AHEAD):
+        chunk = candidates[start : start + READ_AHEAD]
+        read = get_clauses(session, [candidate.key for candidate in chunk], lang=lang, as_of=as_of)
+        for candidate in chunk:
+            detail = read.get(candidate.key)
+            if detail is None:
+                continue
+            # An archived policy no longer applies, and nor do words a law has ended. Both still
+            # read by key, so an old citation can be checked, but nothing searches them.
+            if detail.clause.archived or ended(detail.clause, as_of or date.today()):
+                continue
+            yield candidate, detail
 
 
 def _expanded(
     session: Session,
-    detail: ClauseDetail,
+    clause: ClauseView,
+    breadcrumb: tuple[ClauseView, ...],
     expand: Expand,
     lang: str,
     as_of: date | None,
@@ -309,7 +403,7 @@ def _expanded(
     if expand == "none":
         return ()
 
-    parent = detail.breadcrumb[-1] if detail.breadcrumb else None
+    parent = breadcrumb[-1] if breadcrumb else None
     if parent is None:
         return ()
     if expand == "parent":
@@ -317,7 +411,5 @@ def _expanded(
 
     family = get_subtree(session, parent.key, lang=lang, as_of=as_of)
     return tuple(
-        found
-        for found in family
-        if found.key != detail.clause.key and found.depth == detail.clause.depth
+        found for found in family if found.key != clause.key and found.depth == clause.depth
     )

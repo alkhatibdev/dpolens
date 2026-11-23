@@ -51,7 +51,11 @@ def stub(
     monkeypatch.setattr(
         engine, "nearest_questions", lambda _s, _e, _v, pack, **__: (asked or {}).get(pack, [])
     )
-    monkeypatch.setattr(engine, "get_clause", clause)
+    monkeypatch.setattr(
+        engine,
+        "get_clauses",
+        lambda session, wanted, **_: {key: clause(session, key) for key in wanted},
+    )
 
 
 def keys(

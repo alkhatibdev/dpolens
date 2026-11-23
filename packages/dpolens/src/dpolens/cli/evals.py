@@ -78,7 +78,7 @@ def run(
             "--config",
             help=(
                 "standardised:0.3, convex:0.5, rrf:10, keyword or meaning, optionally with "
-                "+normative, +questions, +light, +snowball or +folded-snowball"
+                "+normative, +questions, +rules, +light, +snowball or +folded-snowball"
             ),
         ),
     ] = "convex:0.5+normative+questions",
@@ -287,6 +287,11 @@ def _keep(pack: str, runs: list[Run], path: Path) -> None:
                         "topic": topic_of(outcome.question_id, outcome.topic),
                         "expected": list(outcome.expected),
                         "returned": list(outcome.returned),
+                        **(
+                            {"shown": [list(each) for each in outcome.shown]}
+                            if outcome.shown
+                            else {}
+                        ),
                         "place": outcome.first_hit,
                     }
                     for outcome in result.outcomes

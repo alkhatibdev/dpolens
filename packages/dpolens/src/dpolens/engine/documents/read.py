@@ -234,9 +234,23 @@ def _on(texts: Sequence[NodeText], as_of: date) -> NodeText:
 
 def _texts_for(session: Session, node: DocumentNode, lang: str | None, as_of: date) -> _Texts:
     """The text to show on `as_of`, in `lang` where the clause has it, the one that prevails
-    when the shown one is a translation, and any words an amendment brings later. One query,
-    since all may be needed."""
-    texts = session.scalars(select(NodeText).where(NodeText.node_id == node.id)).all()
+    when the shown one is a translation, and any words an amendment brings later."""
+    return _texts_of(session, [node], lang, as_of)[0]
+
+
+def _texts_of(
+    session: Session, nodes: Sequence[DocumentNode], lang: str | None, as_of: date
+) -> list[_Texts]:
+    """Each clause's texts as `_texts_for` chooses them, all read in one query: a breadcrumb or
+    a subtree is read once, not once for each clause in it."""
+    stored: dict[object, list[NodeText]] = {node.id: [] for node in nodes}
+    if nodes:
+        for text in session.scalars(select(NodeText).where(NodeText.node_id.in_(stored))):
+            stored[text.node_id].append(text)
+    return [_chosen(node, stored[node.id], lang, as_of) for node in nodes]
+
+
+def _chosen(node: DocumentNode, texts: Sequence[NodeText], lang: str | None, as_of: date) -> _Texts:
     if not texts:
         raise ClauseNotFound(f"{node.canonical_key} has no stored text")
 
@@ -300,13 +314,14 @@ def get_clause(
     found = _locate(session, key, moment)
     document, version, node = found.document, found.version, found.node
     policy = document.kind == "org_policy"
+    beneath = _children(session, node)
 
     return ClauseDetail(
         clause=_view(node, _texts_for(session, node, lang, moment), document, version, moment),
         breadcrumb=_breadcrumb(session, node, document, version, lang, moment),
         children=tuple(
-            _view(child, _texts_for(session, child, lang, moment), document, version, moment)
-            for child in _children(session, node)
+            _view(child, texts, document, version, moment)
+            for child, texts in zip(beneath, _texts_of(session, beneath, lang, moment), strict=True)
         ),
         cross_references=tuple(
             (reference.to_canonical_key, reference.raw_text)
@@ -319,6 +334,93 @@ def get_clause(
         now=_continuation(session, document, version, node) if policy else None,
         formerly=_formerly(session, document, version, node) if policy else None,
     )
+
+
+def get_clauses(
+    session: Session, keys: Sequence[str], lang: str | None = None, as_of: date | None = None
+) -> dict[str, ClauseDetail]:
+    """Several clauses, each as `get_clause` reads it without its children, in a handful of
+    queries rather than ten for each: what search reads of every candidate it looks at.
+
+    They come back in the order asked for, and a key with no clause in force on `as_of` is
+    left out. A policy's clause carries no `now` or `formerly`, which only an earlier version
+    needs.
+    """
+    moment = as_of or date.today()
+    documents = {
+        document.slug: document
+        for document in session.scalars(
+            select(Document).where(Document.slug.in_({key.split(":", 1)[0] for key in keys}))
+        )
+    }
+    versions = {
+        slug: version
+        for slug, document in documents.items()
+        if (version := _version_in_force(session, document.id, moment)) is not None
+    }
+
+    nodes: dict[str, DocumentNode] = {}
+    for slug, version in versions.items():
+        own = [key for key in keys if key.split(":", 1)[0] == slug]
+        for node in session.scalars(
+            select(DocumentNode).where(
+                DocumentNode.document_version_id == version.id,
+                DocumentNode.canonical_key.in_(own),
+            )
+        ):
+            nodes[node.canonical_key] = node
+
+    parents: dict[object, DocumentNode] = {}
+    wanted = {node.parent_node_id for node in nodes.values()} - {None}
+    while wanted:
+        found = list(session.scalars(select(DocumentNode).where(DocumentNode.id.in_(wanted))))
+        parents.update((node.id, node) for node in found)
+        wanted = {node.parent_node_id for node in found} - {None} - parents.keys()
+
+    stored: dict[object, list[NodeText]] = {
+        node.id: [] for node in [*nodes.values(), *parents.values()]
+    }
+    for text in session.scalars(select(NodeText).where(NodeText.node_id.in_(stored))):
+        stored[text.node_id].append(text)
+    links: dict[object, list[tuple[str, str]]] = {node.id: [] for node in nodes.values()}
+    for reference in session.scalars(
+        select(NodeReference)
+        .where(NodeReference.node_id.in_(links))
+        .order_by(NodeReference.to_canonical_key)
+    ):
+        links[reference.node_id].append((reference.to_canonical_key, reference.raw_text))
+
+    read: dict[str, ClauseDetail] = {}
+    for key in dict.fromkeys(keys):
+        if key not in nodes:
+            continue
+        node = nodes[key]
+        slug = key.split(":", 1)[0]
+        document, version = documents[slug], versions[slug]
+        chain: list[DocumentNode] = []
+        current = node
+        while current.parent_node_id is not None and current.parent_node_id in parents:
+            current = parents[current.parent_node_id]
+            chain.append(current)
+        try:
+            clause = _view(
+                node, _chosen(node, stored[node.id], lang, moment), document, version, moment
+            )
+            breadcrumb = tuple(
+                _view(
+                    above, _chosen(above, stored[above.id], lang, moment), document, version, moment
+                )
+                for above in reversed(chain)
+            )
+        except ClauseNotFound:
+            continue
+        read[key] = ClauseDetail(
+            clause=clause,
+            breadcrumb=breadcrumb,
+            children=(),
+            cross_references=tuple(links[node.id]),
+        )
+    return read
 
 
 def _published(session: Session, document: Document) -> list[DocumentVersion]:
@@ -420,16 +522,66 @@ def _formerly(
 def get_subtree(
     session: Session, key: str, lang: str | None = None, as_of: date | None = None
 ) -> list[ClauseView]:
-    """A clause and everything beneath it, in reading order.
+    """A clause and everything beneath it, in reading order."""
+    moment = as_of or date.today()
+    located = _locate(session, key, moment)
+    document, version, root = located.document, located.version, located.node
+    nodes = [root, *_descendants(session, root)]
+    return [
+        _view(node, texts, document, version, moment)
+        for node, texts in zip(nodes, _texts_of(session, nodes, lang, moment), strict=True)
+    ]
+
+
+@dataclass(frozen=True)
+class Whole:
+    """A clause with everything beneath it, and the links each of their texts states."""
+
+    clause: ClauseView
+    breadcrumb: tuple[ClauseView, ...]
+    beneath: tuple[ClauseView, ...]
+    """Everything beneath the clause, in reading order."""
+    cross_references: dict[str, tuple[tuple[str, str], ...]]
+    """The links each clause's own words state, by the clause's key."""
+
+
+def get_whole(
+    session: Session, key: str, lang: str | None = None, as_of: date | None = None
+) -> Whole:
+    """A clause, where it sits, everything beneath it, and the links all of them state."""
+    moment = as_of or date.today()
+    located = _locate(session, key, moment)
+    document, version, root = located.document, located.version, located.node
+    nodes = [root, *_descendants(session, root)]
+    views = [
+        _view(node, texts, document, version, moment)
+        for node, texts in zip(nodes, _texts_of(session, nodes, lang, moment), strict=True)
+    ]
+    keys = {node.id: node.canonical_key for node in nodes}
+    stated: dict[str, list[tuple[str, str]]] = {}
+    for reference in session.scalars(
+        select(NodeReference)
+        .where(NodeReference.node_id.in_(keys))
+        .order_by(NodeReference.to_canonical_key)
+    ):
+        stated.setdefault(keys[reference.node_id], []).append(
+            (reference.to_canonical_key, reference.raw_text)
+        )
+    return Whole(
+        clause=views[0],
+        breadcrumb=_breadcrumb(session, root, document, version, lang, moment),
+        beneath=tuple(views[1:]),
+        cross_references={key: tuple(links) for key, links in stated.items()},
+    )
+
+
+def _descendants(session: Session, root: DocumentNode) -> list[DocumentNode]:
+    """Everything beneath a clause, in reading order.
 
     Descendants come back in one query, found by their parent links rather than by their keys:
     a policy's 4.1 under 4 is keyed `slug:4.1`, not `slug:4:4.1`, because a number that
     continues its parent's stands alone.
     """
-    moment = as_of or date.today()
-    located = _locate(session, key, moment)
-    document, version, root = located.document, located.version, located.node
-
     beneath = (
         select(DocumentNode.id)
         .where(DocumentNode.parent_node_id == root.id)
@@ -438,26 +590,23 @@ def get_subtree(
     beneath = beneath.union_all(
         select(DocumentNode.id).where(DocumentNode.parent_node_id == beneath.c.id)
     )
-    descendants = session.scalars(
+    by_parent: dict[object, list[DocumentNode]] = {}
+    for node in session.scalars(
         select(DocumentNode)
         .where(DocumentNode.id.in_(select(beneath.c.id)))
         .order_by(DocumentNode.order_index)
-    )
-
-    by_parent: dict[object, list[DocumentNode]] = {}
-    for node in descendants:
+    ):
         by_parent.setdefault(node.parent_node_id, []).append(node)
 
-    found = [_view(root, _texts_for(session, root, lang, moment), document, version, moment)]
+    ordered: list[DocumentNode] = []
 
     def walk(parent: DocumentNode) -> None:
         for child in by_parent.get(parent.id, []):
-            texts = _texts_for(session, child, lang, moment)
-            found.append(_view(child, texts, document, version, moment))
+            ordered.append(child)
             walk(child)
 
     walk(root)
-    return found
+    return ordered
 
 
 def _children(session: Session, node: DocumentNode) -> list[DocumentNode]:
@@ -478,16 +627,20 @@ def _breadcrumb(
     lang: str | None,
     as_of: date,
 ) -> tuple[ClauseView, ...]:
-    ancestors: list[ClauseView] = []
+    ancestors: list[DocumentNode] = []
     current = node
     while current.parent_node_id is not None:
         parent = session.get(DocumentNode, current.parent_node_id)
         if parent is None:
             break
-        texts = _texts_for(session, parent, lang, as_of)
-        ancestors.append(_view(parent, texts, document, version, as_of))
+        ancestors.append(parent)
         current = parent
-    return tuple(reversed(ancestors))
+    return tuple(
+        _view(ancestor, texts, document, version, as_of)
+        for ancestor, texts in zip(
+            reversed(ancestors), _texts_of(session, ancestors[::-1], lang, as_of), strict=True
+        )
+    )
 
 
 @dataclass(frozen=True)

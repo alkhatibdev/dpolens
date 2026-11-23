@@ -33,6 +33,15 @@ def run(
         list[str] | None,
         typer.Option(help="Only this one of the selected laws, by slug, repeatable"),
     ] = None,
+    rules: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Return each match's whole rule: the words that introduce it and the clauses "
+                "beneath them"
+            )
+        ),
+    ] = False,
 ) -> None:
     """Search the selected laws and the organisation's policies."""
     with (
@@ -48,6 +57,7 @@ def run(
             fusion=Fusion.parse(fusion),
             normative_only=not include_explanatory,
             scope=scope_for(session, law),
+            rules=rules,
         )
 
         if not results:
@@ -64,6 +74,15 @@ def run(
                 fg=typer.colors.BRIGHT_BLACK,
             )
             print_clause(result.clause, indent=0, snippet=SNIPPET)
+            top = result.clause.depth
+            for clause in result.beneath:
+                print_clause(clause, indent=clause.depth - top, snippet=SNIPPET)
+            if not result.whole:
+                typer.secho(
+                    f"   Cut to the clauses the search reached: `dpolens clause show "
+                    f"{result.clause.key} --subtree` reads the rest.",
+                    fg=typer.colors.BRIGHT_BLACK,
+                )
             if explain:
                 found = ", ".join(f"{name} #{rank}" for name, rank in sorted(result.ranks.items()))
                 typer.secho(f"   score {result.score:.4f}  ({found})", fg=typer.colors.BRIGHT_BLACK)
