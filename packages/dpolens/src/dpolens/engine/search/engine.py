@@ -64,7 +64,7 @@ class SearchResult:
     order, each with its own key to cite it by."""
     whole: bool = True
     """False when a rule too long to show whole comes back as its own words and the clauses
-    the search reached."""
+    beneath them the search ranked highest."""
 
 
 @dataclass(frozen=True)
@@ -284,9 +284,9 @@ def _in_turns(
             taken[id(source)].append(answer)
             turns.append(id(source))
     if rules:
-        # A long rule shows the clauses the search reached, so each source reads its list as
-        # far as it would searched alone: what a rule shows does not hang on what else was
-        # searched beside it, such as the organisation's policies.
+        # A long rule shows the best of the clauses the search reached, so each source reads
+        # its list as far as it would searched alone: what a rule shows does not hang on what
+        # else was searched beside it, such as the organisation's policies.
         for source in order:
             for _ in range(wanted - len(taken[id(source)])):
                 if next(queues[id(source)], None) is None:

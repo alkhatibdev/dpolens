@@ -8,7 +8,7 @@ from datetime import date
 import pytest
 
 from dpolens.engine.documents.read import ClauseView
-from dpolens.engine.search.rules import WHOLE, rule_of, shown
+from dpolens.engine.search.rules import REACHED, WHOLE, rule_of, shown
 
 TODAY = date(2026, 11, 23)
 
@@ -71,7 +71,7 @@ def test_a_clause_with_nothing_above_it_is_its_own_rule() -> None:
 def test_a_short_rule_comes_back_whole() -> None:
     beneath = [GROUND, clause("law:art-17:para-1:pt-c", "the data subject objects;", 2)]
 
-    kept, whole = shown(OPENING, beneath, reached={GROUND.key}, as_of=TODAY)
+    kept, whole = shown(OPENING, beneath, reached=[GROUND.key], as_of=TODAY)
 
     assert [each.key for each in kept] == [each.key for each in beneath]
     assert whole
@@ -85,11 +85,41 @@ def test_a_long_rule_comes_back_as_its_words_and_what_the_search_reached() -> No
     ]
 
     kept, whole = shown(
-        opening, definitions, reached={"law:art-4:pt-2", "law:art-4:pt-5"}, as_of=TODAY
+        opening, definitions, reached=["law:art-4:pt-5", "law:art-4:pt-2"], as_of=TODAY
     )
 
     assert [each.key for each in kept] == ["law:art-4:pt-2", "law:art-4:pt-5"]
     assert not whole
+
+
+def test_a_long_rule_comes_with_only_the_clauses_the_search_ranked_highest() -> None:
+    """A question about one definition is not answered with most of the list."""
+    opening = clause("law:art-4", "For the purposes of this Regulation:", 0)
+    definitions = [
+        clause(f"law:art-4:pt-{number}", "t" * 200, 1) for number in range(1, WHOLE // 200 + 2)
+    ]
+    ranked = ["law:art-4:pt-9", "law:art-4:pt-3", "law:art-4:pt-5", "law:art-4:pt-1"]
+
+    kept, _ = shown(opening, definitions, reached=ranked, as_of=TODAY)
+
+    assert REACHED == 2
+    assert [each.key for each in kept] == ["law:art-4:pt-3", "law:art-4:pt-9"]
+
+
+def test_the_rule_s_own_words_take_no_place_among_the_clauses_shown() -> None:
+    opening = clause("law:art-4", "For the purposes of this Regulation:", 0)
+    definitions = [
+        clause(f"law:art-4:pt-{number}", "t" * 200, 1) for number in range(1, WHOLE // 200 + 2)
+    ]
+
+    kept, _ = shown(
+        opening,
+        definitions,
+        reached=["law:art-4", "law:art-4:pt-7", "law:art-4:pt-2"],
+        as_of=TODAY,
+    )
+
+    assert [each.key for each in kept] == ["law:art-4:pt-2", "law:art-4:pt-7"]
 
 
 def test_a_reached_clause_comes_with_everything_beneath_it() -> None:
@@ -103,7 +133,7 @@ def test_a_reached_clause_comes_with_everything_beneath_it() -> None:
         clause("law:art-9:para-2:pt-h", "preventive medicine;", 1),
     ]
 
-    kept, whole = shown(opening, beneath, reached={point.key}, as_of=TODAY)
+    kept, whole = shown(opening, beneath, reached=[point.key], as_of=TODAY)
 
     assert [each.key for each in kept] == [
         "law:art-9:para-2:pt-g",
@@ -117,7 +147,7 @@ def test_a_rule_whose_every_clause_was_reached_is_whole_however_long() -> None:
     opening = clause("law:art-4", "z" * WHOLE, 0)
     beneath = [clause("law:art-4:pt-1", "a term;", 1)]
 
-    kept, whole = shown(opening, beneath, reached={"law:art-4:pt-1"}, as_of=TODAY)
+    kept, whole = shown(opening, beneath, reached=["law:art-4:pt-1"], as_of=TODAY)
 
     assert [each.key for each in kept] == ["law:art-4:pt-1"]
     assert whole
@@ -126,7 +156,7 @@ def test_a_rule_whose_every_clause_was_reached_is_whole_however_long() -> None:
 def test_words_a_law_has_ended_are_left_out() -> None:
     ended = clause("law:art-17:para-1:pt-f", "a ground repealed last year;", 2, TODAY)
 
-    kept, whole = shown(OPENING, [GROUND, ended], reached={GROUND.key, ended.key}, as_of=TODAY)
+    kept, whole = shown(OPENING, [GROUND, ended], reached=[GROUND.key, ended.key], as_of=TODAY)
 
     assert [each.key for each in kept] == [GROUND.key]
     assert whole
@@ -232,7 +262,6 @@ def test_points_come_back_as_their_rule_in_the_order_their_best_came(
     assert [each.key for each in definitions.beneath] == [  # type: ignore[attr-defined]
         "law:art-4:pt-1",
         "law:art-4:pt-2",
-        "law:art-4:pt-8",
     ]
     assert not definitions.whole  # type: ignore[attr-defined]
 
@@ -241,8 +270,18 @@ def test_a_long_rule_shows_the_same_clauses_whatever_is_searched_beside_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Beside another law, the law fills fewer of the places, and would read less of its list:
-    the eighth term would be missed. Each source reads as far as it would alone."""
-    stand_in(monkeypatch, {"law": LAW_LIST, "other": [each.key for each in FOREIGN]})
+    the eighth term, its second best, would be missed. Each source reads as far as it would
+    alone."""
+    reach = [
+        "law:art-4:pt-1",
+        "law:art-10:para-1",
+        "law:art-11:para-1",
+        "law:art-12:para-1",
+        "law:art-13:para-1",
+        "law:art-4:pt-8",
+        "law:art-14:para-1",
+    ]
+    stand_in(monkeypatch, {"law": reach, "other": [each.key for each in FOREIGN]})
 
     alone = rules_found(("law",), limit=3)[0]
     beside = next(
@@ -251,6 +290,10 @@ def test_a_long_rule_shows_the_same_clauses_whatever_is_searched_beside_it(
         if result.clause.key == "law:art-4"  # type: ignore[attr-defined]
     )
 
+    assert [each.key for each in alone.beneath] == [  # type: ignore[attr-defined]
+        "law:art-4:pt-1",
+        "law:art-4:pt-8",
+    ]
     assert [each.key for each in beside.beneath] == [  # type: ignore[attr-defined]
         each.key
         for each in alone.beneath  # type: ignore[attr-defined]

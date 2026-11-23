@@ -105,12 +105,12 @@ A clause together with everything beneath it.
 _Avoid_: Branch, section, context
 
 **Whole rule**:
-What a search for whole rules returns for a match: the clause whose words the match belongs
-to, with what sits beneath it. It is found by going up from the match while the clause above
-has words of its own, so a point comes with the paragraph whose words introduce it, and the
-cases an article lists come with the article's opening words. One of 2,500 characters or fewer
-comes whole; a longer one, such as a list of definitions, comes as its own words and the
-clauses the search reached.
+What a search returns for a match: the clause whose words the match belongs to, with what sits
+beneath it. It is found by going up from the match while the clause above has words of its own,
+so a point comes with the paragraph whose words introduce it, and the cases an article lists come
+with the article's opening words. One of 2,500 characters or fewer comes whole; a longer one,
+such as a list of definitions, comes as its own words and the two clauses beneath them the search
+ranked highest.
 _Avoid_: Unit, passage, paragraph (as the general word)
 
 **Cross-reference**:

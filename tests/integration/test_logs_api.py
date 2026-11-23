@@ -53,9 +53,23 @@ LEAD = "lead-logs@example.com"
 PRIVACY_LEAD = "Privacy lead"
 
 
-def hit(key: str) -> Returned:
+# Article 5's words introduce its paragraphs, so a search answers with the whole article.
+ARTICLE_5_BENEATH = (
+    "testlaw:art-5:para-1",
+    "testlaw:art-5:para-1:pt-a",
+    "testlaw:art-5:para-1:pt-b",
+    "testlaw:art-5:para-2",
+)
+
+
+def hit(key: str, beneath: tuple[str, ...] = ()) -> Returned:
     return Returned(
-        key=key, lang="en", document_slug="testlaw", version_label="2026.1", trust_tier="community"
+        key=key,
+        lang="en",
+        document_slug="testlaw",
+        version_label="2026.1",
+        trust_tier="community",
+        beneath=beneath,
     )
 
 
@@ -96,7 +110,7 @@ def own(database_of_its_own: Callable[[str], tuple[str, str]]) -> Iterator[tuple
             "how long can we keep failed sign-ins",
             "ok",
             None,
-            [hit("testlaw:art-5:para-1"), hit("testlaw:art-6:para-1")],
+            [hit("testlaw:art-5", ARTICLE_5_BENEATH), hit("testlaw:art-6:para-1")],
         ),
         (
             OMAR,
@@ -229,6 +243,22 @@ class TestTheQuestionsLog:
         assert clause["document_title"]
         assert clause["version_label"] == "2026.1"
         assert len(clause["trail"]) == 2
+
+    def test_a_whole_rule_comes_with_the_keys_shown_beneath_it(
+        self, app_client: TestClient
+    ) -> None:
+        body = (
+            signed_in(app_client, DPO)
+            .get("/v1/queries", params={"q": "failed sign-ins"}, headers=SAME_ORIGIN)
+            .json()
+        )
+
+        rule, alone = body["questions"][0]["results"]
+        assert (rule["clause"]["key"], rule["beneath"]) == (
+            "testlaw:art-5",
+            list(ARTICLE_5_BENEATH),
+        )
+        assert (alone["clause"]["key"], alone["beneath"]) == ("testlaw:art-6:para-1", [])
 
     def test_a_question_says_when_it_goes_only_when_a_retention_is_set(
         self, app_client: TestClient, own: tuple[str, Engine]
@@ -463,9 +493,10 @@ class TestTheOverview:
         assert (
             sum(day["assistants"] + day["dashboard"] + day["other"] for day in body["by_day"]) == 3
         )
-        # Omar's first search cited it; Sara reading it in the dashboard did not.
+        # Omar's first search cited Article 5, as a whole rule; Sara reading 5(1) in the
+        # dashboard did not cite anything.
         top = body["most_cited"][0]
-        assert (top["clause"]["key"], top["count"]) == ("testlaw:art-5:para-1", 1)
+        assert (top["clause"]["key"], top["count"]) == ("testlaw:art-5", 1)
         assert body["sources"] == [
             {"pack_slug": "testlaw", "short_name": {"en": "TESTLAW"}, "count": 2}
         ]
@@ -483,6 +514,7 @@ class TestTheOverview:
         assert response.status_code == 400
 
     def test_a_clause_s_citations_day_by_day(self, app_client: TestClient) -> None:
+        """Omar's search cited 5(1) beneath Article 5, the rule that came first."""
         body = (
             signed_in(app_client, DPO)
             .get(

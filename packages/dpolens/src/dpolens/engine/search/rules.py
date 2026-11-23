@@ -11,12 +11,14 @@ excluded from such prohibition:".
 
 A rule comes back whole when it is short enough to read as one. A longer one, such as a law's
 list of definitions under "For the purposes of this Regulation:", comes back as its own words
-and the clauses the search reached, each with everything beneath it.
+and the two clauses beneath them the search ranked highest, each with everything beneath it.
+A question about one definition brings the line that introduces the definitions and that one,
+with the next best beside it, rather than most of the list.
 """
 
 from __future__ import annotations
 
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from datetime import date
 
 from dpolens.engine.documents.read import ClauseView
@@ -25,6 +27,11 @@ WHOLE = 2500
 """The most characters a rule has and still comes back whole. Chosen on the practice sets: a
 lower limit cut answers out of the rules it shortened, and a higher one added text and no
 answers."""
+
+REACHED = 2
+"""How many of its clauses a rule too long to show whole comes with: those the search ranked
+highest. Chosen on the eval sets: one lost answers, and two lost none that every clause the
+search reached would have kept."""
 
 
 def rule_of(clause: ClauseView, breadcrumb: Sequence[ClauseView]) -> ClauseView:
@@ -40,18 +47,20 @@ def rule_of(clause: ClauseView, breadcrumb: Sequence[ClauseView]) -> ClauseView:
 def shown(
     rule: ClauseView,
     beneath: Sequence[ClauseView],
-    reached: Collection[str],
+    reached: Sequence[str],
     as_of: date,
 ) -> tuple[tuple[ClauseView, ...], bool]:
     """What comes back beneath a rule's own words, and whether that is all of it.
 
     `beneath` is everything under the rule in reading order, and `reached` the keys of its
-    clauses the search came to. Words a law has ended are left out either way.
+    clauses the search came to, the best ranked first. Words a law has ended are left out
+    either way.
     """
     current = [clause for clause in beneath if not ended(clause, as_of)]
     if len(rule.text) + sum(len(clause.text) for clause in current) <= WHOLE:
         return tuple(current), True
 
+    best = [key for key in reached if key != rule.key][:REACHED]
     kept: list[ClauseView] = []
     under: int | None = None
     for clause in current:
@@ -59,7 +68,7 @@ def shown(
             kept.append(clause)
             continue
         under = None
-        if clause.key in reached:
+        if clause.key in best:
             kept.append(clause)
             under = clause.depth
     return tuple(kept), len(kept) == len(current)

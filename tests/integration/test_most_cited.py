@@ -8,6 +8,7 @@ days are the same whenever the tests run.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -136,3 +137,41 @@ def test_a_clause_s_days_are_counted_the_same_way(cited: Engine) -> None:
 
     assert activity.total == 3
     assert [count for _, count in activity.by_day][-2:] == [1, 2]
+
+
+def test_a_clause_shown_beneath_the_rule_that_came_first_is_cited(
+    database_of_its_own: Callable[[str], tuple[str, str]],
+) -> None:
+    """A search answered with Article 5 as a whole rule cites the clauses it showed beneath
+    the article's words, and only those. Most cited names the rule."""
+    _, owner_url = database_of_its_own("dpolens_cited_rules")
+    owner = create_engine(owner_url)
+    try:
+        with session_from(owner) as opened:
+            bootstrap(opened, actor=ACTOR)
+            load_pack(opened, PACKS / "testlaw")
+            lina = create_user(opened, email="lina@example.com", display_name="lina", actor=ACTOR)
+            opened.flush()
+            entry = record_query(
+                opened,
+                user_id=lina.id,
+                pat_id=None,
+                surface="mcp",
+                operation="search",
+                status="ok",
+                query="what must be erased",
+                results=[replace(first("testlaw:art-5"), beneath=(ARTICLE_5,))],
+                scope="selected",
+            )
+            opened.execute(
+                update(QueryLogEntry)
+                .where(QueryLogEntry.id == entry)
+                .values(created_at=NOON - timedelta(hours=1))
+            )
+
+        with session_from(owner) as opened:
+            assert clause_activity(opened, ARTICLE_5, WEEK).total == 1
+            assert clause_activity(opened, "testlaw:art-5:para-2", WEEK).total == 0
+        assert most_cited(owner, ["testlaw"]) == {"testlaw:art-5": 1}
+    finally:
+        owner.dispose()

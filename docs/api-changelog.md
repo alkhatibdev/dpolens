@@ -9,6 +9,16 @@ breaking change needs a new major version.
 
 ## 0.3.0
 
+- `POST /v1/search`: each result is a whole rule. `clause` is the clause whose own words
+  introduce the match, such as the paragraph a point belongs to, and the new `beneath` holds
+  the clauses under it, in reading order, each with its own key to cite it by. A rule of 2,500
+  characters or fewer comes whole; a longer one, such as a list of definitions, comes with the
+  two clauses beneath it the search ranked highest, and `whole` is false. `limit` counts rules, and
+  `cross_references` holds the links of everything a result shows. A client that reads only
+  `clause` gets each rule's own words, and not the points beneath them
+- `GET /v1/queries`: each result carries `beneath`, the keys of the clauses shown under its
+  rule. `GET /v1/clauses/{key}/activity` counts the searches whose first result showed the
+  clause beneath its rule
 - `POST /v1/search`: each law a search covers, and the organisation's own policies, are
   ranked apart and take turns in `results`, the one whose best match is closest first. So
   `results` is no longer in `score` order across them: a score compares results from the

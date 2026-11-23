@@ -46,6 +46,7 @@ from dpolens_mcp.results import (
     Found,
     Match,
     OutlineEntry,
+    beneath_of,
     formerly,
     where_now,
 )
@@ -137,7 +138,9 @@ def build(settings: Settings, api: Api) -> MCPServer:
                 max_length=MAX_QUERY,
             ),
         ],
-        limit: Annotated[int, Field(description="How many clauses to return", ge=1, le=50)] = 10,
+        limit: Annotated[
+            int, Field(description="How many results to return, each a whole rule", ge=1, le=50)
+        ] = 10,
         lang: Annotated[
             str | None,
             Field(
@@ -363,10 +366,13 @@ def _scope(laws: list[str], as_of: date | None, *, policies: bool) -> str:
 
 
 def _match(result: dict[str, Any], as_of: date | None) -> Match:
-    """One search result, flattened: a clause is easier to read than a clause in a box."""
+    """One search result, flattened: a clause is easier to read than a clause in a box. An
+    instance older than this server returns clauses alone, with nothing beneath them."""
     clause = Clause.of(result["clause"], result["breadcrumb"], as_of)
     return Match(
         **clause.model_dump(),
+        beneath=beneath_of(result),
+        whole=result.get("whole", True),
         score=result["score"],
         cross_references=[reference["key"] for reference in result["cross_references"]],
     )

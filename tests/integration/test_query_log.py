@@ -125,6 +125,38 @@ class TestWhatIsRecorded:
         assert results[0].canonical_key.startswith("testlaw:")
         assert results[0].document_version_id
 
+    def test_a_whole_rule_is_recorded_with_the_keys_shown_beneath_it(
+        self, api: TestClient, reader: str, opened: Session
+    ) -> None:
+        """Article 5's own words introduce its paragraphs, so the search answers with all of
+        it, and the log says which clauses were shown under it."""
+        response = api.post(
+            "/v1/search", json={"query": "erasure of personal data"}, headers=auth(reader)
+        )
+        rule = next(
+            result
+            for result in response.json()["results"]
+            if result["clause"]["key"] == "testlaw:art-5"
+        )
+
+        logged = opened.scalars(
+            select(QueryLogResult).where(
+                QueryLogResult.query_log_entry_id == latest(opened).id,
+                QueryLogResult.canonical_key == "testlaw:art-5",
+            )
+        ).one()
+        assert rule["whole"]
+        assert (
+            logged.beneath
+            == [clause["key"] for clause in rule["beneath"]]
+            == [
+                "testlaw:art-5:para-1",
+                "testlaw:art-5:para-1:pt-a",
+                "testlaw:art-5:para-1:pt-b",
+                "testlaw:art-5:para-2",
+            ]
+        )
+
     def test_a_question_nothing_answers_is_still_recorded(
         self, api: TestClient, reader: str, opened: Session
     ) -> None:

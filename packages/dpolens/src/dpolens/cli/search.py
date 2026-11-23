@@ -20,7 +20,7 @@ SNIPPET = 400
 
 def run(
     query: Annotated[str, typer.Argument(help="A question, in your own words")],
-    limit: Annotated[int, typer.Option(help="How many clauses to return")] = 5,
+    limit: Annotated[int, typer.Option(help="How many results to return")] = 5,
     expand: Annotated[str, typer.Option(help="none, siblings or parent")] = "none",
     fusion: Annotated[str, typer.Option(help="rrf:10, rrf:60 or convex:0.5")] = DEFAULT_FUSION.name,
     include_explanatory: Annotated[
@@ -38,10 +38,10 @@ def run(
         typer.Option(
             help=(
                 "Return each match's whole rule: the words that introduce it and the clauses "
-                "beneath them"
+                "beneath them. --no-rules returns the matched clauses alone"
             )
         ),
-    ] = False,
+    ] = True,
 ) -> None:
     """Search the selected laws and the organisation's policies."""
     with (
@@ -79,7 +79,7 @@ def run(
                 print_clause(clause, indent=clause.depth - top, snippet=SNIPPET)
             if not result.whole:
                 typer.secho(
-                    f"   Cut to the clauses the search reached: `dpolens clause show "
+                    f"   Cut to the clauses the search ranked highest: `dpolens clause show "
                     f"{result.clause.key} --subtree` reads the rest.",
                     fg=typer.colors.BRIGHT_BLACK,
                 )

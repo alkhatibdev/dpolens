@@ -108,10 +108,32 @@ class CrossReference(BaseModel):
 
 
 class Result(BaseModel):
-    clause: Clause
+    clause: Clause = Field(
+        description=(
+            "The rule the match belongs to: the clause whose own words introduce it, such as "
+            "a paragraph for one of its points, or the match itself"
+        )
+    )
+    beneath: list[Clause] = Field(
+        default_factory=list,
+        description=(
+            "The clauses beneath the rule's own words, in reading order, each with its own key "
+            "to cite it by"
+        ),
+    )
+    whole: bool = Field(
+        default=True,
+        description=(
+            "False for a rule too long to show whole, such as a list of definitions: it comes as "
+            "its own words and the two clauses beneath them the search ranked highest, and its "
+            "subtree reads the rest"
+        ),
+    )
     score: float
     breadcrumb: list[Clause] = Field(description="Where the clause sits, outermost first")
-    cross_references: list[CrossReference]
+    cross_references: list[CrossReference] = Field(
+        description="The links the rule's words, and the words shown beneath them, state"
+    )
     expanded: list[Clause] = Field(
         default_factory=list, description="Siblings or the parent, when the request asked"
     )
@@ -127,6 +149,8 @@ class Result(BaseModel):
     def of(cls, found: SearchResult, *, explain: bool) -> Result:
         return cls(
             clause=Clause.of(found.clause),
+            beneath=[Clause.of(view) for view in found.beneath],
+            whole=found.whole,
             score=found.score,
             breadcrumb=[Clause.of(view) for view in found.breadcrumb],
             cross_references=[

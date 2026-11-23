@@ -121,5 +121,8 @@ class QueryLogResult(Base):
     canonical_key: Mapped[str] = mapped_column(String(200))
     lang: Mapped[str] = mapped_column(String(20))
     trust_tier: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    beneath: Mapped[list[str]] = mapped_column(ARRAY(String(200)), default=list)
+    """For a whole rule, the keys of the clauses shown beneath its own words, in reading order:
+    all of them, or for a long rule the two the search ranked highest."""
 
     entry: Mapped[QueryLogEntry] = relationship(back_populates="results")

@@ -177,6 +177,27 @@ class TestAQuestionFromAnAssistant:
 
         assert structured(clause)["clause"]["key"] == key
 
+    async def test_a_rule_comes_whole_and_each_clause_beneath_reads_back_by_its_key(
+        self, connected: Client
+    ) -> None:
+        """Article 5's own words introduce its paragraphs, so it comes with all of them, and a
+        point an assistant relies on is read back by its own key."""
+        found = await connected.call_tool("search_policies", {"query": "erasure of personal data"})
+        rule = next(
+            result for result in structured(found)["results"] if result["key"] == "testlaw:art-5"
+        )
+
+        assert rule["whole"] is True
+        assert [clause["key"] for clause in rule["beneath"]] == [
+            "testlaw:art-5:para-1",
+            "testlaw:art-5:para-1:pt-a",
+            "testlaw:art-5:para-1:pt-b",
+            "testlaw:art-5:para-2",
+        ]
+        point = rule["beneath"][1]
+        read = await connected.call_tool("get_clause", {"key": point["key"]})
+        assert structured(read)["clause"]["text"] == point["text"]
+
     async def test_the_documents_it_can_cite_are_listed(self, connected: Client) -> None:
         result = await connected.call_tool("list_documents", {})
 
