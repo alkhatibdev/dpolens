@@ -158,7 +158,8 @@ Front matter carries the metadata:
 
 The body carries the text. Each heading opens a child clause:
 
-- The heading's visible part is the label the law itself uses: `1.`, `(a)`, `Article 17`.
+- The heading's visible part is the label the law itself uses: `1.`, `(a)`, `Article 17`. A
+  part the law prints no number for has none: `## {#def-personal-data}`.
 - The `{#segment}` anchor is the key segment, appended to the parent's key. The heading
   above produces `gdpr:art-17:para-1`, and the one below it `gdpr:art-17:para-1:pt-a`.
 - Heading depth is clause depth. A level 3 heading is a child of the level 2 heading
@@ -222,6 +223,7 @@ for use:
 | `para-` | paragraph |
 | `sub-` | subparagraph, for the second and later subparagraphs of a paragraph |
 | `pt-` | point |
+| `def-` | a definition the law gives no number, named by the term it defines |
 | `sec-` | section |
 | `rule-` | rule, as in India's Digital Personal Data Protection Rules |
 | `reg-` | regulation, as in Singapore's Personal Data Protection Regulations |
@@ -237,6 +239,13 @@ Article 55-A is `art-55-a`, Article 5 bis `art-5-bis`, section 26C `sec-26c`, se
 `sec-10-1`, section 1798.199.100 `sec-1798-199-100`, and «المادة الأولى» `art-1`. A law that
 brings a unit this list lacks adds one line to it, in the engine's `SEGMENT_TYPES`: the loader
 refuses a segment it does not know.
+
+A definition the law numbers keeps its number, as GDPR's points do: `art-4:pt-1`. One it does
+not number is keyed by the term it defines, as the law's English text prints it (or the
+builder's English, where the law has none), in lower case with spaces as hyphens: "Personal
+Data" in Article 1 of the UAE's law is `art-1:def-personal-data`, in the Arabic as in the
+English. A definition the law adds later takes a key of its own, and every other keeps the one
+it has.
 
 A key is permanent. If a provision is repealed, its key is retired: it keeps resolving in
 the versions that contained it and is never given to different text. Where a jurisdiction

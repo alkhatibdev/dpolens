@@ -56,13 +56,13 @@ questions:
   - id: controller-or-processor
     question: We host our clients' customer lists on our platform. Are we the controller or the processor?
     lang: en
-    expected_keys: [uae-pdpl:art-1]
+    expected_keys: [uae-pdpl:art-1:def-controller, uae-pdpl:art-1:def-processor]
     source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
     quote: >-
       Under Article 1 (Definitions) of the PDPL, a Data Controller is defined as an
       establishment or natural person who has Personal Data and who, given the nature
       of his/her activity, specifies the method, criteria and purpose of Processing
-    note: Article 1 defines both, among the law's other terms.
+    note: Article 1 defines both, the Controller and the Processor, each a clause of its own.
 
   - id: correction
     question: A user says the name and birth date on their profile are wrong and wants them fixed. Do we have to?

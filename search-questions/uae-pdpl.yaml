@@ -3,6 +3,7 @@
 # quoted or cited. A clause's `text` is the fingerprint of the words they were written
 # for: when those words change, its questions are not used until they are written
 # again. search-questions/README.md says how they are written and checked.
+# Written again on 2026-11-23: uae-pdpl:art-1.
 pack: uae-pdpl
 written_by:
 - claude-sonnet-5-5
@@ -13,20 +14,210 @@ write_prompt: 6204e9bfa5cda9b5
 check_prompt: 4d1cdb7bdfe91875
 clauses:
 - key: uae-pdpl:art-1
-  text: 949342a9feb6be4d
+  text: cc9bf4ca2aaf2df0
   en:
-  - Is a user's IP address, device ID or GPS location in my app counted as personal information, or only
-    things like name and ID number?
-  - We run a clinic booking app and store diagnoses and fingerprint logins. Which of this counts as the
-    extra-sensitive kind of data, and how is it defined?
-  - What's the difference between a controller and a processor if I'm a startup using a third-party cloud
-    vendor to handle my customers' data? And does anonymizing or pseudonymizing data change anything?
+  - What do the terms used in this data protection decree mean for my app?
+  - Are the definitions always fixed, or can the meaning of a term change depending on context?
+  - I'm reading the privacy rules for our startup and need to know where the key terms are explained
   ar:
-  - ما المقصود بالبيانات الشخصية في هذا القانون، وهل يدخل فيها عنوان الـIP أو الموقع الجغرافي أو المعرف
-    الإلكتروني للمستخدم؟
-  - ما هو تعريف الموافقة الصحيحة من صاحب البيانات، وهل يكفي مربع اختيار معبأ مسبقاً في التطبيق؟
-  - شو الفرق بين المتحكم والمعالج؟ أنا عندي شركة برمجيات وبنخزن بيانات عملاء شركة ثانية على سيرفراتنا،
-    وين موقعي بالضبط؟ وإيش يعني التنميط والمعالجة عبر الحدود لو استخدمنا سيرفر برا الإمارات؟
+  - ما معنى المصطلحات المستخدمة في هذا المرسوم بقانون لحماية البيانات؟
+  - هل المعاني المذكورة للمصطلحات ثابتة دائماً أم قد تتغير بحسب سياق النص؟
+  - وين ألاقي شرح المصطلحات اللي في قانون حماية البيانات عشان أفهم تطبيقنا؟
+- key: uae-pdpl:art-1:def-state
+  text: 66c8b11b6c0332fe
+  en:
+  - What does 'State' mean in the UAE data protection law?
+  - If the law says data leaves the State, which country does that refer to?
+  - Does the State in this law mean the whole UAE or just one emirate?
+  ar:
+  - ماذا يقصد بكلمة الدولة في قانون حماية البيانات الإماراتي؟
+  - عندما يتحدث القانون عن خارج الدولة فأي دولة يقصد؟
+  - يعني الدولة هنا الإمارات كلها ولا إمارة وحدة؟
+- key: uae-pdpl:art-1:def-office
+  text: 0c8726f9bc5ee61b
+  en:
+  - Who is the 'Office' mentioned in the UAE data protection law?
+  - What is the UAE Data Bureau and what law created it?
+  ar:
+  - من هو المكتب المقصود في قانون حماية البيانات الشخصية؟
+  - ما هي الجهة المسماة مكتب الإمارات للبيانات وبأي قانون أُنشئت؟
+  - مين هو المكتب اللي يذكره القانون وهل هو نفس مكتب الإمارات للبيانات؟
+- key: uae-pdpl:art-1:def-data
+  text: 798d8c8154c89031
+  en:
+  - What counts as 'data' under this law, for example photos, voice recordings or logs in our app?
+  - Does the law cover unstructured data like chat messages or sensor readings?
+  - Is 'information' treated the same as 'data' in this law?
+  ar:
+  - ما المقصود بالبيانات في هذا القانون وهل تشمل الصور والتسجيلات الصوتية؟
+  - هل تدخل البيانات غير المنظمة مثل رسائل الدردشة وقراءات الحساسات ضمن التعريف؟
+  - هل كلمة المعلومات تعني نفس البيانات في القانون؟
+- key: uae-pdpl:art-1:def-personal-data
+  text: 8d00d4feb0c5159b
+  en:
+  - Does an IP address or device ID in our analytics count as personal data?
+  - When is data about a user considered personal data even if we don't store their name?
+  - Do location, voice recordings and photos count as personal data for our app?
+  ar:
+  - ما هي البيانات الشخصية وفق القانون؟
+  - هل يعتبر عنوان IP أو معرف الجهاز في تحليلات تطبيقنا بيانات شخصية؟
+  - لو ما خزّنا اسم المستخدم بس عندنا موقعه وصورته، هل تعتبر بياناته شخصية؟
+- key: uae-pdpl:art-1:def-sensitive-personal-data
+  text: 292130aa9910f12e
+  en:
+  - Are health records in our clinic app treated as sensitive personal data?
+  - Does data about religion, ethnicity or criminal history make our user database sensitive?
+  - Is fingerprint or face data considered sensitive data?
+  ar:
+  - ما هي البيانات الشخصية الحساسة؟
+  - هل السجلات الصحية للمرضى في تطبيق عيادتنا تعتبر بيانات حساسة؟
+  - نخزن معتقدات المستخدمين وسوابقهم الجنائية، هل هذي تصنف حساسة؟
+- key: uae-pdpl:art-1:def-biometric-data
+  text: 939fef2f9a1067b1
+  en:
+  - Is a face scan we use for login considered biometric data?
+  - What makes data biometric under the law, for example fingerprints for staff attendance?
+  - Does a plain photo of a user count as biometric data or only when processed for identification?
+  ar:
+  - ما هي البيانات الحيوية البيومترية؟
+  - نستخدم بصمة الوجه لتسجيل دخول الموظفين، هل تعتبر بيانات بيومترية؟
+  - هل أي صورة للمستخدم تعتبر بيانات بيومترية ولا بس لما تُعالج للتعرف عليه؟
+- key: uae-pdpl:art-1:def-data-subject
+  text: c4963fdf5c15c65e
+  en:
+  - Who is the 'data subject' in our app, the user or the company?
+  - Can a company be a data subject or only a person?
+  ar:
+  - من هو صاحب البيانات في القانون؟
+  - هل يمكن أن تكون الشركة صاحبة بيانات أم الأشخاص الطبيعيون فقط؟
+  - مين يعتبر صاحب البيانات عندنا في المتجر الإلكتروني، العميل؟
+- key: uae-pdpl:art-1:def-establishment
+  text: b6fdc64076eb4be6
+  en:
+  - Is a government-owned company counted as an establishment?
+  - Does a sole proprietorship count as an establishment under this law?
+  ar:
+  - ما المقصود بالمنشأة في القانون؟
+  - هل تعتبر الشركة المملوكة للحكومة منشأة بحسب هذا التعريف؟
+  - شركتنا برا الإمارات وتشغل تطبيق، تعتبر منشأة حسب القانون؟
+- key: uae-pdpl:art-1:def-controller
+  text: 2f09aece70d50c38
+  en:
+  - Are we the controller if we decide why and how our app uses customer data?
+  - What makes a company a controller rather than just a service provider?
+  - If two companies jointly decide how user data is used, are both controllers?
+  ar:
+  - من هو المتحكم في البيانات الشخصية؟
+  - هل نعتبر متحكمين إذا نحن من نحدد سبب معالجة بيانات عملائنا وطريقتها؟
+  - لو شركتين قررتا مع بعض كيف تُستخدم بيانات المستخدمين، الاثنين متحكمين؟
+- key: uae-pdpl:art-1:def-processor
+  text: d831a003e4ee1517
+  en:
+  - We host customer data for other businesses on our cloud platform, are we a processor?
+  - What is the difference between a processor and a controller for a SaaS vendor?
+  - Is a payroll or email-sending vendor that follows our instructions a processor?
+  ar:
+  - من هو المعالج بحسب القانون؟
+  - نقدم خدمة سحابية ونعالج بيانات عملاء شركات أخرى بتعليماتهم، هل نعتبر معالجين؟
+  - شركة ترسل الإيميلات الدعائية عنا حسب تعليماتنا، تُعتبر معالج؟
+- key: uae-pdpl:art-1:def-data-protection-officer
+  text: a71d0ba5a64ba99f
+  en:
+  - What does a data protection officer do under this law?
+  - Can we hire an outside consultancy firm as our data protection officer?
+  - Who checks that our systems and procedures comply with the privacy rules?
+  ar:
+  - من هو مسؤول حماية البيانات وما مهامه؟
+  - هل يجوز أن تكون شركة استشارات خارجية هي مسؤول حماية البيانات لدينا؟
+  - مين المفروض يتأكد إن أنظمتنا وإجراءاتنا ملتزمة بقانون الخصوصية؟
+- key: uae-pdpl:art-1:def-processing
+  text: f4d006b7186aed7b
+  en:
+  - Does just storing user data in our database count as processing?
+  - What actions on customer data count as processing, like sharing, deleting or collecting?
+  - Is deleting or anonymizing data also considered processing?
+  ar:
+  - ما المقصود بالمعالجة في القانون؟
+  - هل مجرد تخزين بيانات المستخدمين في قاعدة بياناتنا يعتبر معالجة؟
+  - حذف البيانات أو مشاركتها مع طرف ثالث تُحسب معالجة؟
+- key: uae-pdpl:art-1:def-automated-processing
+  text: e75346d814a5162f
+  en:
+  - Is our app's automatic scoring system considered automated processing if a person sometimes reviews
+    it?
+  - What counts as automated processing, with or without human involvement?
+  - Does a bot that handles user data without anyone checking fall under automated processing?
+  ar:
+  - ما هي المعالجة المؤتمتة؟
+  - هل يعتبر نظامنا الآلي معالجة مؤتمتة حتى لو يراجعه موظف أحياناً؟
+  - عندنا بوت يعالج بيانات العملاء تلقائياً بدون أي تدخل بشري، هل هذي معالجة مؤتمتة؟
+- key: uae-pdpl:art-1:def-personal-data-security
+  text: 6adfdfeae8a9be60
+  en:
+  - 'What does personal data security cover: just encryption or also organizational measures?'
+  - What properties of data must security measures protect, like confidentiality and availability?
+  ar:
+  - ما المقصود بأمن البيانات الشخصية؟
+  - هل أمن البيانات يشمل التشفير فقط أم الإجراءات التنظيمية أيضاً؟
+  - شنو العناصر اللي لازم تحميها إجراءات أمن بيانات المستخدمين مثل السرية والتوافر؟
+- key: uae-pdpl:art-1:def-pseudonymisation
+  text: abbceb3c6bc4e313
+  en:
+  - If we replace user names with codes but keep the key separately, is that pseudonymisation?
+  - What conditions must be met for masked data to count as pseudonymised?
+  - Is hashing user IDs enough to be pseudonymisation, or must the extra info be stored separately?
+  ar:
+  - ما هي آلية إخفاء البيانات (الترميز المستعار)؟
+  - استبدلنا أسماء العملاء برموز وحفظنا جدول الربط في مكان منفصل وآمن، هل هذا يعتبر إخفاء للبيانات؟
+  - هل يكفي تشفير المعرفات حتى نعتبر البيانات مخفية أم لازم نحفظ المعلومات الإضافية بشكل مستقل؟
+- key: uae-pdpl:art-1:def-anonymization
+  text: 08985d83887a3b50
+  en:
+  - What counts as truly anonymized data for our analytics?
+  - If we can still re-identify users, is our dataset considered anonymized?
+  - How is anonymization different from just masking names?
+  ar:
+  - ما هي آلية إخفاء الهوية؟
+  - هل تعتبر بياناتنا مجهولة الهوية لو ممكن نرجع نتعرف على المستخدم بطريقة ما؟
+  - متى نقول إن البيانات صارت مجهولة تماماً في تقارير التحليلات؟
+- key: uae-pdpl:art-1:def-data-breach
+  text: 9e206e651538841d
+  en:
+  - Does a hacker copying our customer database count as a data breach?
+  - What qualifies as a data breach under the law, such as unauthorized access or leak?
+  ar:
+  - ما المقصود بخرق وانتهاك البيانات؟
+  - موظف دخل بدون إذن ونسخ بيانات العملاء، هل يُعتبر هذا خرقاً للبيانات؟
+- key: uae-pdpl:art-1:def-profiling
+  text: d422f44e0a482a0b
+  en:
+  - Is our recommendation engine that predicts user interests considered profiling?
+  - Does credit scoring in our fintech app count as profiling?
+  - What is profiling and how does it relate to automated processing?
+  ar:
+  - ما هو التنميط في القانون؟
+  - هل محرك التوصيات عندنا الذي يتوقع اهتمامات المستخدمين يعتبر تنميطاً؟
+  - نحلل سلوك العميل ومكانه عشان نتوقع وضعه المالي، هل هذا تنميط؟
+- key: uae-pdpl:art-1:def-cross-border-processing
+  text: af6a19397607d392
+  en:
+  - Does hosting our users' data on servers abroad count as cross-border processing?
+  - If our overseas support team can view UAE customer data, is that cross-border processing?
+  - What activities count as cross-border processing, such as sharing or retrieving data outside the UAE?
+  ar:
+  - ما المقصود بالمعالجة عبر الحدود؟
+  - نستضيف بيانات المستخدمين على سيرفرات خارج الإمارات، هل يُعتبر هذا معالجة عبر الحدود؟
+  - فريق الدعم عندنا برا الدولة يشوف بيانات العملاء، تُحسب معالجة عبر الحدود؟
+- key: uae-pdpl:art-1:def-consent
+  text: 76dbd4f043b58a94
+  en:
+  - Is a pre-ticked checkbox valid consent for processing user data?
+  - 'What makes consent valid: does the user need to take a clear action?'
+  - Can we rely on silence or continued use of the app as consent?
+  ar:
+  - ما هي الموافقة المعتبرة قانوناً لمعالجة البيانات الشخصية؟
+  - هل مربع الموافقة المحدد مسبقاً في تطبيقنا يعتبر موافقة صحيحة؟
+  - هل نقدر نعتبر سكوت المستخدم أو استمراره في استخدام التطبيق موافقة؟
 - key: uae-pdpl:art-2:para-1
   text: 03c6187f6e13c4db
   en:

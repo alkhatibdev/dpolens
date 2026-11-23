@@ -11,14 +11,15 @@ question with every one, so there is no approximate index to keep in step.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import Row, text
 from sqlalchemy.orm import Session
 
-from dpolens.engine.embedding.encode import Embedder
+from dpolens.engine.embedding.encode import MAX_SEQUENCE, Embedder
 from dpolens.engine.embedding.models import EmbeddingModel
 from dpolens.engine.embedding.recipe import RECIPE_VERSION, RecipeInput, build
 
@@ -93,30 +94,7 @@ def build_index(
     """
     model_id = register_model(session, embedder.model, activate=activate)
 
-    rows = session.execute(
-        text(
-            f"""
-            SELECT t.id AS text_id, t.body_text, t.heading, t.lang, t.applies_from,
-                   -- A law's short name in the clause's language, else in English. A policy
-                   -- has no short name, so its title, chosen the same way.
-                   coalesce(
-                       (SELECT pn.short_name FROM pack_names pn
-                        WHERE pn.pack_id = d.pack_id
-                        ORDER BY pn.lang = t.lang DESC, pn.lang = 'en' DESC, pn.lang
-                        LIMIT 1),
-                       (SELECT dt.title FROM document_titles dt
-                        WHERE dt.document_id = d.id
-                        ORDER BY dt.lang = t.lang DESC, dt.lang = 'en' DESC, dt.lang
-                        LIMIT 1)
-                   ) AS document_short_name,
-                   n.canonical_key, n.id AS node_id
-            {_PUBLISHED_TEXT}
-            {_NOT_EMBEDDED if skip_embedded else ""}
-            ORDER BY n.canonical_key
-            """
-        ),
-        {"model_id": model_id, "recipe": RECIPE_VERSION} if skip_embedded else {},
-    ).all()
+    rows = _texts(session, model_id if skip_embedded else None)
 
     already = (
         session.execute(
@@ -136,19 +114,7 @@ def build_index(
         text("SELECT count(*) FROM node_texts WHERE length(trim(body_text)) = 0")
     ).scalar_one()
 
-    strings = [
-        build(
-            RecipeInput(
-                document_short_name=row.document_short_name,
-                ancestor_headings=_ancestor_headings(
-                    session, row.node_id, row.lang, row.applies_from
-                ),
-                text=row.body_text,
-            ),
-            embedder.count_tokens,
-        )
-        for row in rows
-    ]
+    strings = [_string(session, row, embedder.count_tokens) for row in rows]
 
     embedded = 0
     for batch in batches([embedder.passage_tokens(string) for string in strings]):
@@ -188,6 +154,27 @@ def build_index(
     )
 
 
+@dataclass(frozen=True)
+class TooLong:
+    """A text longer than the model reads: it would be embedded without its end."""
+
+    key: str
+    lang: str
+    tokens: int
+
+
+def too_long(session: Session, embedder: Embedder) -> list[TooLong]:
+    """Each published text that, as `build_index` would embed it, the model cannot read to the
+    end."""
+    found = []
+    for row in _texts(session, None):
+        string = _string(session, row, embedder.count_tokens)
+        tokens = embedder.count_tokens(f"{embedder.model.passage_prefix}{string}")
+        if tokens > MAX_SEQUENCE:
+            found.append(TooLong(row.canonical_key, row.lang, tokens))
+    return found
+
+
 def unembedded(session: Session, model: EmbeddingModel) -> int:
     """How many clauses `build_index` with `skip_embedded` would embed, counted without the
     model, so that a caller with nothing to embed need not load it."""
@@ -223,6 +210,48 @@ def batches(tokens: Sequence[int]) -> list[list[int]]:
     if batch:
         found.append(batch)
     return found
+
+
+def _texts(session: Session, not_embedded_by: uuid.UUID | None) -> Sequence[Row[Any]]:
+    """The published texts with words, each with what the recipe needs, or only those a model
+    has not embedded under the current recipe."""
+    return session.execute(
+        text(
+            f"""
+            SELECT t.id AS text_id, t.body_text, t.heading, t.lang, t.applies_from,
+                   -- A law's short name in the clause's language, else in English. A policy
+                   -- has no short name, so its title, chosen the same way.
+                   coalesce(
+                       (SELECT pn.short_name FROM pack_names pn
+                        WHERE pn.pack_id = d.pack_id
+                        ORDER BY pn.lang = t.lang DESC, pn.lang = 'en' DESC, pn.lang
+                        LIMIT 1),
+                       (SELECT dt.title FROM document_titles dt
+                        WHERE dt.document_id = d.id
+                        ORDER BY dt.lang = t.lang DESC, dt.lang = 'en' DESC, dt.lang
+                        LIMIT 1)
+                   ) AS document_short_name,
+                   n.canonical_key, n.id AS node_id
+            {_PUBLISHED_TEXT}
+            {_NOT_EMBEDDED if not_embedded_by else ""}
+            ORDER BY n.canonical_key
+            """
+        ),
+        {"model_id": not_embedded_by, "recipe": RECIPE_VERSION} if not_embedded_by else {},
+    ).all()
+
+
+def _string(session: Session, row: Row[Any], count_tokens: Callable[[str], int]) -> str:
+    """A text as the model reads it: the law's short name and the headings above, then its
+    words."""
+    return build(
+        RecipeInput(
+            document_short_name=row.document_short_name,
+            ancestor_headings=_ancestor_headings(session, row.node_id, row.lang, row.applies_from),
+            text=row.body_text,
+        ),
+        count_tokens,
+    )
 
 
 def _ancestor_headings(

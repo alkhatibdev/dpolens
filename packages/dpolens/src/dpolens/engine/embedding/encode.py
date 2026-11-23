@@ -139,9 +139,15 @@ class Embedder:
         self.close()
 
     def count_tokens(self, text: str) -> int:
-        """Token count without truncation, for the recipe's cap."""
+        """Token count without truncation, for the recipe's cap and for a text longer than the
+        model reads."""
         with self._tokenizing:
-            return len(self._tokenizer.encode(text, add_special_tokens=True).ids)
+            # The tokenizer cuts a text to what the model reads, and this count needs all of it.
+            self._tokenizer.no_truncation()
+            try:
+                return len(self._tokenizer.encode(text, add_special_tokens=True).ids)
+            finally:
+                self._tokenizer.enable_truncation(max_length=MAX_SEQUENCE)
 
     def passage_tokens(self, text: str) -> int:
         """How many tokens the model reads for a passage: its prefix included, and no more

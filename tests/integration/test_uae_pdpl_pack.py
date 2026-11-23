@@ -85,3 +85,28 @@ def test_articles_keep_the_laws_order(loaded: Session) -> None:
     )
 
     assert order["uae-pdpl:art-9"] < order["uae-pdpl:art-10"]
+
+
+def test_each_definition_is_a_clause_keyed_by_the_term_it_defines(loaded: Session) -> None:
+    """Article 1 numbers none of its definitions, so each is keyed by its term as the official
+    English prints it, and the Arabic sits under the same keys, in the same order."""
+    rows = loaded.execute(
+        select(
+            DocumentNode.canonical_key, DocumentNode.node_type, NodeText.lang, NodeText.body_text
+        )
+        .join(NodeText, NodeText.node_id == DocumentNode.id)
+        .where(DocumentNode.canonical_key.like("uae-pdpl:art-1:%"))
+        .order_by(DocumentNode.order_index)
+    ).all()
+    english = [(row.canonical_key, row.body_text) for row in rows if row.lang == "en"]
+    arabic = [row.canonical_key for row in rows if row.lang == "ar"]
+
+    assert len(english) == 20
+    assert {row.node_type for row in rows} == {"definition"}
+    for key, words in english:
+        term = words.split(":", 1)[0]
+        assert key == "uae-pdpl:art-1:def-" + term.lower().replace(" ", "-")
+    assert arabic == [key for key, _ in english]
+    assert get_clause(loaded, "uae-pdpl:art-1:def-consent", lang="ar").clause.text.startswith(
+        "الموافقة:"
+    )
