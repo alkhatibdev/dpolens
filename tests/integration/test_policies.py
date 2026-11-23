@@ -213,6 +213,11 @@ class TestFirstVersion:
             assert results[0].clause.key == "retention:4.2"
             assert results[0].clause.document_title == "Retention policy"
 
+            # Its heading has no words of its own, so as a whole rule 4.2 still stands alone.
+            rules = search(session, embedder, "how long do we keep staff records", rules=True)
+            assert [result.clause.key for result in rules[:1]] == ["retention:4.2"]
+            assert rules[0].beneath == ()
+
     def test_the_original_file_is_kept_and_checked(self, own: Engine, originals: Directory) -> None:
         with session_from(own) as session:
             data, name, form = original(session, originals, "retention", 1)

@@ -180,3 +180,67 @@ def test_a_question_in_arabic_letters_is_searched_and_answered_in_arabic(
     assert results
     assert {result.clause.lang for result in results} == {"ar"}
     assert any("keyword" in result.ranks for result in results)
+
+
+def test_with_rules_each_result_is_the_rule_its_match_belongs_to(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Article 5 opens with words of its own that introduce its paragraphs, so a match anywhere
+    in it brings the whole article; Article 6 is only a title, so its paragraph stands alone."""
+    results = search(indexed, embedder, "erasure of personal data", limit=10, rules=True)
+    by_key = {result.clause.key: result for result in results}
+
+    assert len(by_key) == len(results)
+    assert set(by_key) <= {"testlaw:art-5", "testlaw:art-6:para-1", "testlaw-recitals:rec-12"}
+    article = by_key["testlaw:art-5"]
+    assert [clause.key for clause in article.beneath] == [
+        "testlaw:art-5:para-1",
+        "testlaw:art-5:para-1:pt-a",
+        "testlaw:art-5:para-1:pt-b",
+        "testlaw:art-5:para-2",
+    ]
+    assert article.whole
+    assert article.clause.text.startswith("The controller shall erase personal data")
+
+
+def test_a_rule_states_the_links_its_words_make(indexed: Session, embedder: Embedder) -> None:
+    results = search(indexed, embedder, "erasure of personal data", limit=10, rules=True)
+    article = next(result for result in results if result.clause.key == "testlaw:art-5")
+
+    assert ("testlaw:art-6:para-1", "Article 6(1)") in article.cross_references
+
+
+def test_with_rules_the_limit_counts_rules(indexed: Session, embedder: Embedder) -> None:
+    results = search(indexed, embedder, "the right to erasure", limit=1, rules=True)
+
+    assert len(results) == 1
+
+
+def test_an_article_that_is_only_a_title_is_never_a_rule(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Its heading can match, and what it holds is found by its own words."""
+    results = search(indexed, embedder, "Lawfulness of processing", limit=10, rules=True)
+
+    assert "testlaw:art-6" not in {result.clause.key for result in results}
+    assert all(result.clause.text for result in results)
+
+
+def test_a_rule_longer_than_a_whole_one_shows_what_the_search_reached(
+    indexed: Session, embedder: Embedder, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In a law this small, meaning search reaches every clause, so Article 5 still comes whole:
+    every clause the search came to joined its rule."""
+    monkeypatch.setattr("dpolens.engine.search.rules.WHOLE", 0)
+    results = search(indexed, embedder, "erasure of personal data", limit=10, rules=True)
+    article = next(result for result in results if result.clause.key == "testlaw:art-5")
+
+    assert len(article.beneath) == 4
+    assert article.whole
+
+
+def test_without_rules_a_point_comes_back_by_itself(indexed: Session, embedder: Embedder) -> None:
+    results = search(indexed, embedder, "erasure of personal data", limit=10)
+
+    assert any(result.clause.key.startswith("testlaw:art-5:") for result in results)
+    assert all(result.beneath == () and result.whole for result in results)

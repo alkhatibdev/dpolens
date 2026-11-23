@@ -18,6 +18,8 @@ from dpolens.engine.embedding.index import build_index
 from dpolens.engine.evals import EvalSetError, Question, read_questions, run_set
 from dpolens.engine.evals.score import answers
 from dpolens.engine.packs.load import load_pack
+from dpolens.engine.packs.selection import law_alone
+from dpolens.engine.search import search
 
 pytestmark = pytest.mark.integration
 
@@ -240,3 +242,94 @@ def test_a_law_loaded_alone_has_no_other_to_be_searched_beside(
 
     assert ran.exit_code == 1
     assert "gdpr is the only law loaded here" in ran.output
+
+
+def test_a_run_for_whole_rules_counts_each_result_by_what_it_shows(
+    indexed: Session, embedder: Embedder
+) -> None:
+    questions = read_questions(TUNING)[:10]
+    run = run_set(indexed, embedder, questions, "convex:0.5+normative+rules", pack="gdpr")
+
+    for outcome in run.outcomes:
+        assert len(outcome.shown) == len(outcome.returned)
+        assert len(set(outcome.returned)) == len(outcome.returned)
+        for key, shown in zip(outcome.returned, outcome.shown, strict=True):
+            assert shown[0] == key
+            assert all(clause.startswith(f"{key}:") for clause in shown[1:])
+
+
+def test_in_a_real_law_no_result_sits_under_words_of_its_own(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Had the clause above a result words of their own, the rule would have gone up to them."""
+    for asked in ("grounds for the right to erasure", "what counts as personal data"):
+        results = search(
+            indexed,
+            embedder,
+            asked,
+            limit=10,
+            normative_only=True,
+            scope=law_alone(indexed, "gdpr"),
+            rules=True,
+        )
+
+        assert results
+        for result in results:
+            assert not (result.breadcrumb and result.breadcrumb[-1].text.strip()), result.clause.key
+
+
+def test_a_definition_comes_back_under_the_line_that_introduces_the_definitions(
+    indexed: Session, embedder: Embedder
+) -> None:
+    """Article 4's 26 definitions are too long to come whole, so a search for one brings the
+    opening line and the definitions it reached, not all of them."""
+    results = search(
+        indexed,
+        embedder,
+        "definition of personal data",
+        limit=10,
+        normative_only=True,
+        scope=law_alone(indexed, "gdpr"),
+        rules=True,
+    )
+    definitions = next(result for result in results if result.clause.key == "gdpr:art-4")
+
+    assert definitions.clause.text.startswith("For the purposes of this Regulation")
+    assert not definitions.whole
+    assert "gdpr:art-4:pt-1" in {clause.key for clause in definitions.beneath}
+    assert len(definitions.beneath) < 26
+
+
+def test_a_run_for_whole_rules_writes_what_each_result_showed(
+    indexed: Session, migrated: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(REPO)
+    monkeypatch.setenv("DPOLENS_DATABASE_URL", migrated)
+    kept = tmp_path / "gdpr.json"
+
+    ran = CliRunner().invoke(
+        app,
+        [
+            "evals",
+            "run",
+            "--pack",
+            "gdpr",
+            "--set",
+            "held_out.en",
+            "--config",
+            "convex:0.5+normative+rules",
+            "--outcomes",
+            str(kept),
+        ],
+    )
+
+    assert ran.exit_code == 0, ran.output
+    asked = json.loads(kept.read_text(encoding="utf-8"))["sets"][0]["questions"]
+    for question in asked:
+        assert [each[0] for each in question["shown"]] == question["returned"]
+        answered = [
+            place
+            for place, shown in enumerate(question["shown"], start=1)
+            if any(answers(key, expected) for key in shown for expected in question["expected"])
+        ]
+        assert question["place"] == (answered[0] if answered else None)

@@ -19,12 +19,15 @@ def said(result: Result) -> str:
     return " ".join(click.unstyle(result.output).translate(BORDERS).split())
 
 
-def outcomes(path: Path, pack: str, places: dict[str, int | None]) -> Path:
+def outcomes(
+    path: Path, pack: str, places: dict[str, int | None], configuration: str = "convex:0.5"
+) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             {
                 "pack": pack,
+                "configuration": configuration,
                 "sets": [
                     {
                         "question_set": "tuning.en",
@@ -99,3 +102,25 @@ def test_a_file_that_is_not_an_outcomes_file_is_named(tmp_path: Path) -> None:
 
     assert result.exit_code == 2
     assert "results.json is not an outcomes file" in said(result)
+
+
+def test_a_run_for_whole_rules_is_not_judged_against_one_for_clauses(tmp_path: Path) -> None:
+    """A rule shown with its points answers where its clause alone did not, so the places of the
+    two runs mean different things: that change is restated, never counted as a gain."""
+    before = outcomes(tmp_path / "before.json", "law", all_at(3))
+    after = outcomes(tmp_path / "after.json", "law", all_at(1), "convex:0.5+normative+rules")
+
+    result = runner.invoke(app, ["evals", "compare", str(before), str(after)])
+
+    assert result.exit_code == 2
+    assert "one run returned whole rules (+rules) and the other clauses" in said(result)
+
+
+def test_two_runs_for_whole_rules_are_judged(tmp_path: Path) -> None:
+    before = outcomes(tmp_path / "before.json", "law", all_at(None), "convex:0.5+rules")
+    after = outcomes(tmp_path / "after.json", "law", all_at(1), "convex:0.5+rules")
+
+    result = runner.invoke(app, ["evals", "compare", str(before), str(after)])
+
+    assert result.exit_code == 0, result.output
+    assert "Kept." in said(result)

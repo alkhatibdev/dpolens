@@ -23,6 +23,7 @@ from dpolens.engine.evals import check_configuration
         "convex:0.5+normative+light",
         "keyword+normative+snowball",
         "convex:0.5+folded-snowball",
+        "standardised:0.3+normative+questions+rules",
     ],
 )
 def test_a_configuration_that_runs_as_written_is_accepted(configuration: str) -> None:
@@ -62,3 +63,15 @@ def test_reranking_needs_a_reranker_to_do_it() -> None:
 def test_an_unknown_fusion_rule_is_refused() -> None:
     with pytest.raises(ValueError, match="unknown fusion rule"):
         check_configuration("bm25+normative")
+
+
+@pytest.mark.parametrize("configuration", ["keyword+rules", "meaning+normative+rules"])
+def test_whole_rules_need_search_itself(configuration: str) -> None:
+    """A single retriever returns clauses, and rules are made from what search returns."""
+    with pytest.raises(ValueError, match=re.escape("+rules works with a fusion rule")):
+        check_configuration(configuration)
+
+
+def test_whole_rules_are_not_made_on_the_rerankers_path() -> None:
+    with pytest.raises(ValueError, match=re.escape("+rules works with a fusion rule")):
+        check_configuration("convex:0.5+rules+rerank25", reranker=object())  # type: ignore[arg-type]

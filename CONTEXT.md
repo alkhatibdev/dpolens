@@ -104,6 +104,15 @@ _Avoid_: Path, context, trail
 A clause together with everything beneath it.
 _Avoid_: Branch, section, context
 
+**Whole rule**:
+What a search for whole rules returns for a match: the clause whose words the match belongs
+to, with what sits beneath it. It is found by going up from the match while the clause above
+has words of its own, so a point comes with the paragraph whose words introduce it, and the
+cases an article lists come with the article's opening words. One of 2,500 characters or fewer
+comes whole; a longer one, such as a list of definitions, comes as its own words and the
+clauses the search reached.
+_Avoid_: Unit, passage, paragraph (as the general word)
+
 **Cross-reference**:
 A pointer from one clause to another, written in the text itself, such as "referred to in
 Article 6(1)(f)". It may point into another document.

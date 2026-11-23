@@ -126,6 +126,10 @@ describes a situation can touch several clauses:
 A hit is the expected key, or any clause inside it: a point of Article 13(1) is part of
 Article 13(1). A sibling paragraph is not, because Article 13(2) is a different rule.
 
+A run with `+rules` returns [whole rules](../CONTEXT.md), and counts each by the clauses it
+shows: Article 13(1) shown with its points is a hit for a question about 13(1)(c), and Article
+4 cut to the definitions the search reached is a hit only for those.
+
 `recall@5` is the reported number, with a bootstrap confidence interval, and CI fails on a
 regression beyond that interval. `recall@10` and MRR are reported and never gated.
 
@@ -176,8 +180,12 @@ A change to how several laws share the results is judged with the same runs made
 `--every-law`, kept in the same folders under another file name. A law alone and a law beside
 the others are two sets, and a topic asked in both is still one topic.
 
+A run with `+rules` and one without count a result differently, so `compare` refuses to judge
+one against the other: what a result is changes the score by definition, and such a change is
+measured under both definitions instead.
+
 `--outcomes` writes, for every question of the configuration being scored, the clauses returned
-and the place of the first that answers. `compare` takes two such files, or two folders with a
+and the place of the first that answers, and with `+rules` the clauses each result showed. `compare` takes two such files, or two folders with a
 file for each law, and prints each set before and after, then whether the change is kept.
 
 ## Running them
@@ -203,7 +211,8 @@ its own, and their words in keyword search. Left out, it is `convex:0.5+normativ
 which is what search runs, and each published score names the configuration it measured. For
 Arabic questions, `+light`, `+snowball` or `+folded-snowball` picks one of the three Arabic
 keyword indexes of the law's own words; the last is the default, and the one `+questions`
-reads with the questions' words, so the other two are refused beside it.
+reads with the questions' words, so the other two are refused beside it. `+rules`, on a fusion
+rule, returns whole rules.
 `--baselines` adds the two single retrievers to the run, so a fusion rule can never be
 adopted while being worse than half the system.
 

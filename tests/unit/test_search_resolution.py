@@ -14,7 +14,6 @@ from typing import Any
 
 import pytest
 
-from dpolens.engine.documents.read import ClauseNotFound
 from dpolens.engine.search import engine
 from dpolens.engine.search.fuse import Fused
 
@@ -43,15 +42,14 @@ def ranked(monkeypatch: pytest.MonkeyPatch) -> None:
         for index, key in enumerate(keys)
     ]
 
-    def get_clause(session: object, key: str, **_: object) -> Any:
-        if key == NOT_IN_FORCE:
-            raise ClauseNotFound(key)
-        return detail(key, archived=key in ARCHIVED)
+    def get_clauses(session: object, wanted: list[str], **_: object) -> dict[str, Any]:
+        """A key not in force on the day asked about is left out, as the reader leaves it."""
+        return {key: detail(key, archived=key in ARCHIVED) for key in wanted if key != NOT_IN_FORCE}
 
     monkeypatch.setattr(engine, "keyword_search", lambda *_, **__: [])
     monkeypatch.setattr(engine, "vector_search", lambda *_, **__: [])
     monkeypatch.setattr(engine, "fuse", lambda *_, **__: fused)
-    monkeypatch.setattr(engine, "get_clause", get_clause)
+    monkeypatch.setattr(engine, "get_clauses", get_clauses)
     monkeypatch.setattr(engine, "questions_on", lambda session: False)
 
 

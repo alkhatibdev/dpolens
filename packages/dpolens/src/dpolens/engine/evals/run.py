@@ -129,8 +129,9 @@ def run_set(
     retriever ("keyword", "meaning"), so baselines and fusion rules are reported
     in the same units. Modifiers follow it: "+normative" drops text that
     explains without obliging, "+light", "+snowball" or "+folded-snowball" picks
-    the Arabic keyword index, and "+rerank25" rescores the top 25 with the
-    cross-encoder passed as `reranker`.
+    the Arabic keyword index, "+rerank25" rescores the top 25 with the
+    cross-encoder passed as `reranker`, and "+rules" returns whole rules, each
+    counted by the clauses it shows.
 
     A run for a pack searches that pack's law alone, whatever else is loaded or
     selected, so its score means that law. Without a pack it searches what any
@@ -155,8 +156,13 @@ def run_set(
             Outcome(
                 question_id=question.id,
                 expected=question.expected_keys,
-                returned=tuple(returned),
+                returned=tuple(key for key, _ in returned),
                 topic=question.topic,
+                shown=(
+                    tuple(shown for _, shown in returned)
+                    if "rules" in _parse(configuration)[1]
+                    else ()
+                ),
             )
         )
 
@@ -240,7 +246,9 @@ def _retrieve(
     configuration: str,
     reranker: Reranker | None = None,
     scope: Scope | None = None,
-) -> list[str]:
+) -> list[tuple[str, tuple[str, ...]]]:
+    """Each result's key, and the keys of the clauses it shows: itself, or a rule's words and
+    the clauses beneath them."""
     base, modifiers = _parse(configuration)
     normative_only = "normative" in modifiers
     depth = _rerank_depth(modifiers)
@@ -272,8 +280,8 @@ def _retrieve(
             rescored = _reranked(
                 session, reranker, question, {base: found}, Fusion.parse("rrf:10"), depth
             )
-            return [candidate.key for candidate in rescored[:DEPTH]]
-        return [candidate.key for candidate in found[:DEPTH]]
+            return [(candidate.key, (candidate.key,)) for candidate in rescored[:DEPTH]]
+        return [(candidate.key, (candidate.key,)) for candidate in found[:DEPTH]]
 
     fusion = Fusion.parse(base)
     if depth and reranker is not None:
@@ -297,7 +305,7 @@ def _retrieve(
             ),
         }
         fused = _reranked(session, reranker, question, lists, fusion, depth)
-        return [candidate.key for candidate in fused[:DEPTH]]
+        return [(candidate.key, (candidate.key,)) for candidate in fused[:DEPTH]]
 
     results = search(
         session,
@@ -312,11 +320,15 @@ def _retrieve(
         # A run says whether it uses the search questions, so a published configuration
         # goes on measuring what it measured, whatever an organisation has switched.
         questions="questions" in modifiers,
+        rules="rules" in modifiers,
     )
-    return [result.clause.key for result in results]
+    return [
+        (result.clause.key, (result.clause.key, *(clause.key for clause in result.beneath)))
+        for result in results
+    ]
 
 
-MODIFIERS = frozenset({"normative", "questions", *ALTERNATIVES})
+MODIFIERS = frozenset({"normative", "questions", "rules", *ALTERNATIVES})
 """The modifiers a configuration can carry, besides +rerank and its depth."""
 
 RERANK = re.compile(r"rerank\d*")
@@ -369,6 +381,13 @@ def check_configuration(configuration: str, reranker: Reranker | None = None) ->
         raise ValueError(
             f"{configuration!r} has a modifier nothing reads: +{swapped[0]} picks the law's own "
             "Arabic keyword index, which a search with +questions does not use"
+        )
+    # Whole rules are made from what search returns, which a single retriever or the
+    # reranker's path does not go through.
+    if "rules" in modifiers and (base in ("keyword", "meaning") or _rerank_depth(modifiers)):
+        raise ValueError(
+            f"{configuration!r} has a modifier nothing reads: +rules works with a fusion rule, "
+            "without +rerank"
         )
 
 

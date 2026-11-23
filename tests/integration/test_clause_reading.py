@@ -10,7 +10,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dpolens.engine.documents.models import Document, DocumentVersion
-from dpolens.engine.documents.read import ClauseNotFound, get_clause, get_document, get_subtree
+from dpolens.engine.documents.read import (
+    ClauseNotFound,
+    get_clause,
+    get_clauses,
+    get_document,
+    get_subtree,
+    get_whole,
+)
 from dpolens.engine.packs.load import load_pack
 
 pytestmark = pytest.mark.integration
@@ -127,3 +134,57 @@ def test_an_outline_is_named_in_the_language_asked_for(
     assert (english.label, english.heading) == ("Article (1)", "Definitions")
     assert (prevailing.label, prevailing.heading) == ("المادة (1)", "التعاريف")
     assert get_document(session, "bilingual").summary.authoritative_language == "ar"
+
+
+READ_TOGETHER = [
+    "gdpr:art-17:para-1:pt-a",
+    "gdpr:art-17:para-3",
+    "gdpr:art-4:pt-1",
+    "gdpr-recitals:rec-65",
+    "gdpr:art-6:para-1:pt-f",
+]
+
+
+def test_clauses_read_together_read_as_each_does_alone(loaded: Session) -> None:
+    """Search reads its candidates together, so each has to come back as it would alone."""
+    together = get_clauses(loaded, READ_TOGETHER)
+
+    assert list(together) == READ_TOGETHER
+    for key in READ_TOGETHER:
+        alone = get_clause(loaded, key)
+        assert together[key].clause == alone.clause
+        assert together[key].breadcrumb == alone.breadcrumb
+        assert together[key].cross_references == alone.cross_references
+        assert together[key].children == ()
+
+
+def test_clauses_read_together_leave_out_what_is_not_in_force(loaded: Session) -> None:
+    assert list(get_clauses(loaded, ["gdpr:art-17", "gdpr:art-999", "lgpd:art-1"])) == [
+        "gdpr:art-17"
+    ]
+    assert get_clauses(loaded, ["gdpr:art-17"], as_of=date(2017, 1, 1)) == {}
+
+
+def test_clauses_read_together_in_each_language_of_a_law(
+    session: Session, bilingual_pack: Path
+) -> None:
+    load_pack(session, bilingual_pack)
+    session.commit()
+    keys = [key for key in (view.key for view in get_subtree(session, "bilingual:art-1"))]
+
+    for lang in ("en", "ar", None):
+        together = get_clauses(session, keys, lang=lang)
+        for key in keys:
+            assert together[key].clause == get_clause(session, key, lang=lang).clause
+
+
+def test_a_whole_clause_is_its_subtree_with_its_links(loaded: Session) -> None:
+    whole = get_whole(loaded, "gdpr:art-17:para-1")
+    subtree = get_subtree(loaded, "gdpr:art-17:para-1")
+
+    assert [whole.clause, *whole.beneath] == subtree
+    assert whole.breadcrumb == get_clause(loaded, "gdpr:art-17:para-1").breadcrumb
+    for clause in subtree:
+        assert whole.cross_references.get(clause.key, ()) == (
+            get_clause(loaded, clause.key).cross_references
+        )

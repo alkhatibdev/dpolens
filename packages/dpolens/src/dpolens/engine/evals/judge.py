@@ -39,6 +39,8 @@ class Placed:
     topic: str
     place: int | None
     """Counting from one, or None when no returned clause answers."""
+    rules: bool = False
+    """Whether the run returned whole rules, which counts a result by what it shows."""
 
     @property
     def score(self) -> float:
@@ -94,6 +96,7 @@ def topic_of(question_id: str, named: str | None = None) -> str:
 
 def placed_in(record: Mapping[str, Any]) -> list[Placed]:
     """Every question of an outcomes file, as `dpolens evals run --outcomes` writes it."""
+    rules = "rules" in str(record.get("configuration", "")).split("+")[1:]
     return [
         Placed(
             pack=str(record["pack"]),
@@ -101,6 +104,7 @@ def placed_in(record: Mapping[str, Any]) -> list[Placed]:
             question_id=str(question["id"]),
             topic=str(question["topic"]),
             place=question["place"],
+            rules=rules,
         )
         for asked in record["sets"]
         for question in asked["questions"]
@@ -135,6 +139,11 @@ def judge(before: Sequence[Placed], after: Sequence[Placed]) -> Judgement:
     alone, with the chance allowed shared across the sets so that looking at many does not
     find a loss in one by accident.
     """
+    if len({placed.rules for placed in [*before, *after]}) > 1:
+        raise Unpaired(
+            "one run returned whole rules (+rules) and the other clauses, so a place means "
+            "something else in each: a change of what a result is is restated, not judged"
+        )
     earlier = {(placed.pack, placed.question_set, placed.question_id): placed for placed in before}
     later = {(placed.pack, placed.question_set, placed.question_id): placed for placed in after}
     if len(earlier) != len(before) or len(later) != len(after):
