@@ -128,7 +128,7 @@ Article 13(1). A sibling paragraph is not, because Article 13(2) is a different 
 
 A run with `+rules` returns [whole rules](../CONTEXT.md), and counts each by the clauses it
 shows: Article 13(1) shown with its points is a hit for a question about 13(1)(c), and Article
-4 cut to the definitions the search reached is a hit only for those.
+4 cut to the two definitions the search ranked highest is a hit only for those.
 
 `recall@5` is the reported number, with a bootstrap confidence interval, and CI fails on a
 regression beyond that interval. `recall@10` and MRR are reported and never gated.

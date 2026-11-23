@@ -16,10 +16,16 @@ from alembic.config import Config
 from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.engine import make_url
 
+from dpolens.engine.auth.catalog import bootstrap
+from dpolens.engine.auth.users import create_user
+from dpolens.engine.logs.governance import Actor
+from dpolens.engine.logs.queries import Returned, record_query
+from dpolens.engine.packs.load import load_pack
 from dpolens.engine.session import (
     WritableGovernanceLog,
     check_governance_privileges,
     governance_log_is_append_only,
+    session_from,
 )
 
 pytestmark = pytest.mark.integration
@@ -223,6 +229,59 @@ def test_0023_names_the_clauses_a_loaded_file_has_questions_for(
             connection.execute(
                 text("DELETE FROM packs WHERE id = '00000000-0000-0000-0000-000000000001'")
             )
+        engine.dispose()
+
+
+def test_0024_a_result_logged_before_it_holds_nothing_beneath(
+    database_of_its_own: Callable[[str], tuple[str, str]], app_role: str
+) -> None:
+    """Before whole rules a result was one clause, so an upgraded log reads each result it holds
+    as that clause alone, and the index that counts what was shown beneath a rule is there."""
+    _, owner_url = database_of_its_own("dpolens_migrations_0024")
+    config = alembic(owner_url, app_role)
+    engine = create_engine(owner_url)
+    actor = Actor(via="cli", identity={"os_user": "tests", "host": "ci"})
+    try:
+        with session_from(engine) as opened:
+            bootstrap(opened, actor=actor)
+            load_pack(opened, REPO_ROOT / "tests" / "fixtures" / "packs" / "testlaw")
+            asker = create_user(opened, email="lina@example.com", display_name="lina", actor=actor)
+            opened.flush()
+            record_query(
+                opened,
+                user_id=asker.id,
+                pat_id=None,
+                surface="mcp",
+                operation="search",
+                status="ok",
+                query="what must be erased",
+                results=[
+                    Returned(
+                        key="testlaw:art-5:para-1",
+                        lang="en",
+                        document_slug="testlaw",
+                        version_label="2026.1",
+                        trust_tier="community",
+                    )
+                ],
+                scope="selected",
+            )
+        command.downgrade(config, "0023")
+        command.upgrade(config, "head")
+
+        with engine.connect() as connection:
+            held = connection.execute(
+                text("SELECT canonical_key, beneath FROM query_log_results")
+            ).all()
+            indexed = connection.execute(
+                text(
+                    "SELECT indexdef FROM pg_indexes "
+                    "WHERE indexname = 'ix_query_log_results_beneath'"
+                )
+            ).scalar_one()
+        assert [tuple(row) for row in held] == [("testlaw:art-5:para-1", [])]
+        assert "USING gin (beneath)" in indexed
+    finally:
         engine.dispose()
 
 

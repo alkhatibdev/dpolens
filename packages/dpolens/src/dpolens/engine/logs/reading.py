@@ -61,6 +61,8 @@ class ClauseName:
 class LoggedResult:
     rank: int
     name: ClauseName
+    beneath: tuple[str, ...] = ()
+    """For a whole rule, the keys shown beneath its own words."""
 
 
 @dataclass(frozen=True)
@@ -266,6 +268,7 @@ def _assemble(
             QueryLogResult.document_version_id,
             QueryLogResult.canonical_key,
             QueryLogResult.lang,
+            QueryLogResult.beneath,
         )
         .where(QueryLogResult.query_log_entry_id.in_([entry.id for entry in entries]))
         .order_by(QueryLogResult.query_log_entry_id, QueryLogResult.rank)
@@ -277,7 +280,9 @@ def _assemble(
     for row in results:
         name = names.get((row.document_version_id, row.canonical_key))
         if name is not None:
-            by_entry.setdefault(row.query_log_entry_id, []).append(LoggedResult(row.rank, name))
+            by_entry.setdefault(row.query_log_entry_id, []).append(
+                LoggedResult(row.rank, name, tuple(row.beneath))
+            )
 
     askers: dict[uuid.UUID, User] = {}
     if identities:
@@ -603,7 +608,9 @@ class Activity:
 
 
 def clause_activity(session: Session, key: str, window: Window) -> Activity:
-    """How often one clause was cited in the window, counted as Most cited counts."""
+    """How often one clause was cited in the window, counted as Most cited counts, with the
+    searches whose first result was a whole rule that showed it beneath its own words: a point
+    of Article 17(1) is cited when 17(1) comes first with it."""
     day = _local_day(window)
     counts: Mapping[date, int] = {
         local: int(count)
@@ -611,7 +618,10 @@ def clause_activity(session: Session, key: str, window: Window) -> Activity:
             select(day, _people_a_day(window))
             .select_from(QueryLogResult)
             .join(QueryLogEntry, QueryLogEntry.id == QueryLogResult.query_log_entry_id)
-            .where(QueryLogResult.canonical_key == key, _cited(window))
+            .where(
+                or_(QueryLogResult.canonical_key == key, QueryLogResult.beneath.contains([key])),
+                _cited(window),
+            )
             .group_by(day)
         ).all()
     }

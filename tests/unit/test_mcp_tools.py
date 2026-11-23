@@ -21,6 +21,7 @@ from dpolens_mcp.credential import Credential
 from dpolens_mcp.main import QUIET, quiet
 from dpolens_stub import (
     DEVELOPER,
+    PARAGRAPH,
     PAT_ID,
     SURFACE,
     USER_ID,
@@ -143,6 +144,66 @@ class TestWhatASearchHandsBack:
         assert found["trust_tier"] is None
         assert found["source_url"] is None
         assert found["citation"].startswith("Data Retention Policy,")
+
+    async def test_a_rule_comes_with_each_clause_beneath_it_quoted_and_keyed(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        """A point is cited by its own key, with the rule's document and version."""
+        point = {
+            **PARAGRAPH,
+            "key": "testlaw:art-5:para-1:pt-a",
+            "label": "(a)",
+            "text": "where the account was closed;",
+            "depth": 3,
+        }
+        stub.results = [{**stub.results[0], "beneath": [point], "whole": True}]
+
+        found = structured(await search(connected))["results"][0]
+
+        assert found["key"] == "testlaw:art-5:para-1"
+        assert found["beneath"] == [
+            {
+                "key": "testlaw:art-5:para-1:pt-a",
+                "text": "where the account was closed;",
+                "in_force": True,
+                "prevailing_text": None,
+                "coming": None,
+            }
+        ]
+        assert found["whole"] is True
+
+    async def test_a_rule_too_long_to_show_whole_says_so(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        stub.results = [{**stub.results[0], "beneath": [], "whole": False}]
+
+        assert structured(await search(connected))["results"][0]["whole"] is False
+
+    async def test_a_clause_beneath_in_translation_carries_the_text_that_prevails(
+        self, connected: Client, stub: Stub
+    ) -> None:
+        """Its words are read beside the ones that prevail in law, as the rule's are."""
+        point = {
+            **PARAGRAPH,
+            "key": "testlaw:art-5:para-1:pt-a",
+            "is_authoritative": False,
+            "authoritative_language": "ar",
+            "authoritative_text": "إذا أغلق الحساب",
+            "depth": 3,
+        }
+        stub.results = [{**stub.results[0], "beneath": [point], "whole": True}]
+
+        found = structured(await search(connected))["results"][0]
+
+        assert found["beneath"][0]["prevailing_text"] == "إذا أغلق الحساب"
+
+    async def test_an_instance_older_than_this_server_answers_with_clauses_alone(
+        self, connected: Client
+    ) -> None:
+        """One that sends no rules: each result is a clause with nothing beneath it."""
+        found = structured(await search(connected))["results"][0]
+
+        assert (found["beneath"], found["whole"]) == ([], True)
 
 
 class TestArgumentsThatCannotBeSent:

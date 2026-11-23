@@ -102,6 +102,13 @@ class ClauseName(BaseModel):
 class Returned(BaseModel):
     rank: int
     clause: ClauseName
+    beneath: list[str] = Field(
+        default_factory=list,
+        description=(
+            "For a whole rule, the keys of the clauses shown beneath its own words: all of "
+            "them, or for a long rule the two the search ranked highest"
+        ),
+    )
 
 
 class Asker(BaseModel):
@@ -149,7 +156,11 @@ class Question(BaseModel):
             redaction_count=logged.redaction_count,
             redaction_types=list(logged.redaction_types),
             results=[
-                Returned(rank=result.rank, clause=ClauseName.of(result.name))
+                Returned(
+                    rank=result.rank,
+                    clause=ClauseName.of(result.name),
+                    beneath=list(result.beneath),
+                )
                 for result in logged.results
             ],
             asker=Asker(

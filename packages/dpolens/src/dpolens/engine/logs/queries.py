@@ -47,15 +47,18 @@ class Returned:
     document_slug: str
     version_label: str | None
     trust_tier: str | None
+    beneath: tuple[str, ...] = ()
+    """For a whole rule, the keys of the clauses shown beneath its own words."""
 
     @classmethod
-    def of(cls, view: ClauseView) -> Returned:
+    def of(cls, view: ClauseView, beneath: Sequence[ClauseView] = ()) -> Returned:
         return cls(
             key=view.key,
             lang=view.lang,
             document_slug=view.document_slug,
             version_label=view.version_label,
             trust_tier=view.trust_tier,
+            beneath=tuple(clause.key for clause in beneath),
         )
 
 
@@ -111,6 +114,7 @@ def record_query(
                 canonical_key=returned.key,
                 lang=returned.lang,
                 trust_tier=returned.trust_tier,
+                beneath=list(returned.beneath),
             )
         )
     session.flush()

@@ -2488,7 +2488,19 @@ export interface components {
     };
     /** Result */
     Result: {
+      /** @description The rule the match belongs to: the clause whose own words introduce it, such as a paragraph for one of its points, or the match itself */
       clause: components["schemas"]["Clause"];
+      /**
+       * Beneath
+       * @description The clauses beneath the rule's own words, in reading order, each with its own key to cite it by
+       */
+      beneath?: components["schemas"]["Clause"][];
+      /**
+       * Whole
+       * @description False for a rule too long to show whole, such as a list of definitions: it comes as its own words and the two clauses beneath them the search ranked highest, and its subtree reads the rest
+       * @default true
+       */
+      whole: boolean;
       /** Score */
       score: number;
       /**
@@ -2496,7 +2508,10 @@ export interface components {
        * @description Where the clause sits, outermost first
        */
       breadcrumb: components["schemas"]["Clause"][];
-      /** Cross References */
+      /**
+       * Cross References
+       * @description The links the rule's words, and the words shown beneath them, state
+       */
       cross_references: components["schemas"]["CrossReference"][];
       /**
        * Expanded
@@ -2526,6 +2541,11 @@ export interface components {
       /** Rank */
       rank: number;
       clause: components["schemas"]["ClauseName"];
+      /**
+       * Beneath
+       * @description For a whole rule, the keys of the clauses shown beneath its own words: all of them, or for a long rule the two the search ranked highest
+       */
+      beneath?: string[];
     };
     /**
      * RoleChange
@@ -2662,6 +2682,7 @@ export interface components {
       query: string;
       /**
        * Limit
+       * @description How many results, each a whole rule, at most
        * @default 10
        */
       limit: number;

@@ -18,6 +18,14 @@ const result: SearchResult = {
   cross_references: [],
   expanded: [],
   ranks: null,
+  whole: true,
+};
+
+/** Article 13(1) as a whole rule: its own words, with its point (a) beneath. */
+const rule: SearchResult = {
+  ...result,
+  clause: article13.en[1]!,
+  beneath: [article13.en[2]!],
 };
 
 describe("search results", () => {
@@ -125,5 +133,36 @@ describe("search results", () => {
       await screen.findByText(/An administrator chooses them in Selected laws\.$/),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Choose them in Selected laws." })).toBeNull();
+  });
+
+  it("shows a whole rule with each clause beneath it, each with its own key", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: signedIn },
+      "GET /v1/documents": { body: { documents: [uae], total: 1, limit: 100, offset: 0 } },
+      "POST /v1/search": { body: { laws: ["uae-pdpl"], results: [rule] } },
+    });
+    renderAt("/search?q=what%20can%20a%20user%20ask%20for");
+
+    const card = (await screen.findByText("uae-pdpl:art-13:para-1")).closest("article")!;
+    expect(within(card).getByText(/to obtain the following information/)).toBeInTheDocument();
+    expect(within(card).getByText(/The types of its Personal Data/)).toBeInTheDocument();
+    expect(
+      within(card).getByRole("button", { name: /uae-pdpl:art-13:para-1:pt-a/ }),
+    ).toBeInTheDocument();
+    expect(within(card).queryByText(/only the two parts that best match/)).not.toBeInTheDocument();
+  });
+
+  it("says when a rule was too long to show whole", async () => {
+    serve({
+      "GET /v1/sessions/current": { body: signedIn },
+      "GET /v1/documents": { body: { documents: [uae], total: 1, limit: 100, offset: 0 } },
+      "POST /v1/search": {
+        body: { laws: ["uae-pdpl"], results: [{ ...rule, whole: false }] },
+      },
+    });
+    renderAt("/search?q=what%20can%20a%20user%20ask%20for");
+
+    const card = (await screen.findByText("uae-pdpl:art-13:para-1")).closest("article")!;
+    expect(within(card).getByText(/only the two parts that best match/)).toBeInTheDocument();
   });
 });

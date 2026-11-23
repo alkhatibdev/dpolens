@@ -137,12 +137,53 @@ class Clause(BaseModel):
         )
 
 
-class Match(Clause):
-    """A clause a search returned, with what else it points at."""
+class Beneath(BaseModel):
+    """A clause beneath a rule's own words. Cite it by its own key, with the rule's document
+    and version."""
 
+    key: str
+    text: str
+    in_force: bool
+    prevailing_text: str | None = None
+    coming: Coming | None = None
+
+    @classmethod
+    def of(cls, clause: dict[str, Any]) -> Beneath:
+        coming = clause.get("coming")
+        return cls(
+            key=clause["key"],
+            text=clause["text"],
+            in_force=clause.get("in_force", True),
+            prevailing_text=clause.get("authoritative_text") if _prevails(clause) else None,
+            coming=(
+                Coming(
+                    text=coming["text"],
+                    in_force_from=coming["in_force_from"],
+                    set_by=coming.get("dates_set_by"),
+                )
+                if coming
+                else None
+            ),
+        )
+
+
+class Match(Clause):
+    """A rule a search returned, with the clauses beneath it and what they point at."""
+
+    beneath: list[Beneath] = Field(
+        default_factory=list,
+        description="The clauses beneath the rule, in reading order",
+    )
+    whole: bool = Field(
+        default=True,
+        description=(
+            "False when only the two clauses the search ranked highest are beneath: get_clause "
+            "with whole_subtree reads the rest"
+        ),
+    )
     score: float = Field(description="Higher is a better match. Comparable within one search only")
     cross_references: list[str] = Field(
-        description="Keys this clause's own words point at, to read with get_clause"
+        description="Keys the words shown point at, to read with get_clause"
     )
 
 
@@ -260,6 +301,12 @@ def citation_for(clause: dict[str, Any], trail: list[str], as_of: date | None = 
         name = LANGUAGES.get(prevails, prevails)
         citation += f". A translation: where the texts differ, the {name} text prevails"
     return citation
+
+
+def beneath_of(result: dict[str, Any]) -> list[Beneath]:
+    """The clauses beneath a search result's rule. An instance older than this server sends
+    none."""
+    return [Beneath.of(clause) for clause in result.get("beneath", [])]
 
 
 def where_now(now: dict[str, Any]) -> str:

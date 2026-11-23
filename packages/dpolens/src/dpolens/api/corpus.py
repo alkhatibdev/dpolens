@@ -78,7 +78,9 @@ class SearchRequest(BaseModel):
     query: Storable = Field(
         min_length=1, max_length=MAX_QUERY, description="The question, in words"
     )
-    limit: int = Field(default=10, ge=1, le=50)
+    limit: int = Field(
+        default=10, ge=1, le=50, description="How many results, each a whole rule, at most"
+    )
     lang: str | None = Field(
         default=None,
         max_length=20,
@@ -186,8 +188,9 @@ def run_search(
             as_of=body.as_of,
             normative_only=not body.include_explanatory,
             scope=scope,
+            rules=True,
         )
-        asked.found([Returned.of(result.clause) for result in found])
+        asked.found([Returned.of(result.clause, result.beneath) for result in found])
 
     return Results(
         laws=list(scope.laws),

@@ -8,6 +8,7 @@ import { useDocuments, useSearch, type SearchOptions } from "@/api/queries";
 import { CopyCitationButton } from "@/components/CopyCitation";
 import { InForce } from "@/components/InForce";
 import { Notice } from "@/components/Notice";
+import { Reading } from "@/components/Reading";
 import { Chip, Failed, Loading, Panel } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,7 @@ function ResultCard({
 }) {
   const { t } = useTranslation();
   const { clause } = result;
+  const beneath = result.beneath ?? [];
   const prevails = prevailingLanguage(clause);
   const where = [clause.law_short_name ?? clause.document_title, ...result.breadcrumb.map(namesOf)]
     .filter(Boolean)
@@ -88,14 +90,20 @@ function ResultCard({
             <InForce clause={clause} />
           </div>
         </div>
-        <p
-          lang={clause.lang}
-          dir={isRightToLeft(clause.lang) ? "rtl" : "ltr"}
-          className="text-[15px] leading-relaxed sm:text-base"
-        >
-          {clause.label ? <span className="font-semibold">{clause.label} </span> : null}
-          {clause.text}
-        </p>
+        {beneath.length ? (
+          // A whole rule: its own words, then each clause beneath with a key of its own to cite.
+          <Reading clauses={[clause, ...beneath]} breadcrumb={result.breadcrumb} />
+        ) : (
+          <p
+            lang={clause.lang}
+            dir={isRightToLeft(clause.lang) ? "rtl" : "ltr"}
+            className="text-[15px] leading-relaxed sm:text-base"
+          >
+            {clause.label ? <span className="font-semibold">{clause.label} </span> : null}
+            {clause.text}
+          </p>
+        )}
+        {result.whole ? null : <p className="text-sm text-muted">{t("search.cut")}</p>}
         <div className="mt-1 flex flex-wrap gap-2.5">
           <Button asChild variant="dark" size="sm">
             <Link to={`/clauses/${encodeURIComponent(clause.key)}`} state={{ results, query }}>

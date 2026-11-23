@@ -226,17 +226,19 @@ def test_an_article_that_is_only_a_title_is_never_a_rule(
     assert all(result.clause.text for result in results)
 
 
-def test_a_rule_longer_than_a_whole_one_shows_what_the_search_reached(
+def test_a_rule_longer_than_a_whole_one_shows_the_two_clauses_ranked_highest(
     indexed: Session, embedder: Embedder, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """In a law this small, meaning search reaches every clause, so Article 5 still comes whole:
-    every clause the search came to joined its rule."""
+    """Every rule in this law is short, so the limit is set to nothing: Article 5 then comes
+    with the two of its clauses the search ranked highest, each with everything beneath it."""
     monkeypatch.setattr("dpolens.engine.search.rules.WHOLE", 0)
     results = search(indexed, embedder, "erasure of personal data", limit=10, rules=True)
     article = next(result for result in results if result.clause.key == "testlaw:art-5")
 
-    assert len(article.beneath) == 4
-    assert article.whole
+    shown = [clause.key for clause in article.beneath]
+    picked = [key for key in shown if not any(key.startswith(f"{other}:") for other in shown)]
+    assert 1 <= len(picked) <= 2
+    assert article.whole == (len(shown) == 4)
 
 
 def test_without_rules_a_point_comes_back_by_itself(indexed: Session, embedder: Embedder) -> None:

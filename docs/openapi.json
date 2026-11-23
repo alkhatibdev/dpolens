@@ -10582,7 +10582,22 @@
       "Result": {
         "properties": {
           "clause": {
-            "$ref": "#/components/schemas/Clause"
+            "$ref": "#/components/schemas/Clause",
+            "description": "The rule the match belongs to: the clause whose own words introduce it, such as a paragraph for one of its points, or the match itself"
+          },
+          "beneath": {
+            "items": {
+              "$ref": "#/components/schemas/Clause"
+            },
+            "type": "array",
+            "title": "Beneath",
+            "description": "The clauses beneath the rule's own words, in reading order, each with its own key to cite it by"
+          },
+          "whole": {
+            "type": "boolean",
+            "title": "Whole",
+            "description": "False for a rule too long to show whole, such as a list of definitions: it comes as its own words and the two clauses beneath them the search ranked highest, and its subtree reads the rest",
+            "default": true
           },
           "score": {
             "type": "number",
@@ -10601,7 +10616,8 @@
               "$ref": "#/components/schemas/CrossReference"
             },
             "type": "array",
-            "title": "Cross References"
+            "title": "Cross References",
+            "description": "The links the rule's words, and the words shown beneath them, state"
           },
           "expanded": {
             "items": {
@@ -10669,6 +10685,14 @@
           },
           "clause": {
             "$ref": "#/components/schemas/ClauseName"
+          },
+          "beneath": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Beneath",
+            "description": "For a whole rule, the keys of the clauses shown beneath its own words: all of them, or for a long rule the two the search ranked highest"
           }
         },
         "type": "object",
@@ -10955,6 +10979,7 @@
             "maximum": 50.0,
             "minimum": 1.0,
             "title": "Limit",
+            "description": "How many results, each a whole rule, at most",
             "default": 10
           },
           "lang": {
