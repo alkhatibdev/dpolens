@@ -35,6 +35,7 @@ from sqlalchemy import text
 REPO = Path(__file__).parents[1]
 sys.path.insert(0, str(REPO / "packages" / "dpolens" / "src"))
 
+from dpolens.engine.search.keyword import IN_FORCE  # noqa: E402
 from dpolens.engine.search.questions import fingerprint  # noqa: E402
 from dpolens.engine.session import session_scope  # noqa: E402
 from dpolens.settings import load_settings  # noqa: E402
@@ -108,7 +109,9 @@ def stamp() -> str:
 
 
 def read_articles(pack: str) -> list[dict[str, Any]]:
-    """Every article of the law with each clause's text in force today, normative text only."""
+    """Every article of the law in its version in force, with each clause's text in force
+    today, normative text only. An instance holding an earlier version of the law too reads each
+    clause once."""
     with session_scope(load_settings()) as session:
         names = session.execute(
             text(
@@ -122,12 +125,12 @@ def read_articles(pack: str) -> list[dict[str, Any]]:
         ).one()
         rows = session.execute(
             text(
-                """
+                f"""
                 SELECT n.id, n.parent_node_id AS parent, n.canonical_key AS key, n.label,
                        n.depth, n.order_index, t.lang, t.heading, t.body_text
                 FROM document_nodes n
                 JOIN document_versions v ON v.id = n.document_version_id
-                     AND v.status = 'published'
+                     AND v.id IN ({IN_FORCE})
                 JOIN documents d ON d.id = v.document_id
                 JOIN packs p ON p.id = d.pack_id AND p.slug = :pack
                 LEFT JOIN node_texts t ON t.node_id = n.id AND NOT t.pending
@@ -137,7 +140,7 @@ def read_articles(pack: str) -> list[dict[str, Any]]:
                 ORDER BY n.depth, n.order_index
                 """
             ),
-            {"pack": pack},
+            {"pack": pack, "as_of": datetime.now(UTC).date()},
         ).all()
 
     nodes: dict[str, dict[str, Any]] = {}
@@ -375,15 +378,32 @@ def save(path: Path, record: dict[str, Any]) -> None:
     partial.rename(path)
 
 
-def assemble(pack: str, articles: list[dict[str, Any]], work: Path) -> Path:
-    """The law's file: each clause's fingerprint and the questions its check kept.
+def saved_as(article: dict[str, Any]) -> str:
+    """The name an article's written and checked questions are saved under."""
+    key: str = article["key"]
+    return key.replace(":", "_") + ".json"
+
+
+def prompts() -> tuple[str, str]:
+    """The fingerprints of the two prompts, as the law's file names them."""
+    return (
+        sha256(WRITE_PROMPT.read_bytes()).hexdigest()[:16],
+        sha256(CHECK_PROMPT.read_bytes()).hexdigest()[:16],
+    )
+
+
+def entries_for(
+    articles: list[dict[str, Any]], work: Path
+) -> tuple[set[str], set[str], list[dict[str, Any]]]:
+    """Each clause's fingerprint and the questions its check kept, with the models that wrote
+    and checked them.
 
     A clause whose check kept none is named all the same, with no questions, so the file says
     it was written for and `dpolens search-questions status` does not list it as left out.
     """
     writers, checkers, entries = set(), set(), []
     for article in articles:
-        name = article["key"].replace(":", "_") + ".json"
+        name = saved_as(article)
         written = json.loads((work / "written" / name).read_text(encoding="utf-8"))
         checked = json.loads((work / "checked" / name).read_text(encoding="utf-8"))
         writers.add(written["model"])
@@ -402,6 +422,20 @@ def assemble(pack: str, articles: list[dict[str, Any]], work: Path) -> Path:
                 for lang in ("en", "ar")
             }
             entries.append({"key": clause["key"], "text": fingerprint(clause["text"]), **kept})
+    return writers, checkers, entries
+
+
+def dump(out: Path, header: str, body: dict[str, Any]) -> None:
+    out.write_text(
+        header + yaml.safe_dump(body, allow_unicode=True, sort_keys=False, width=100),
+        encoding="utf-8",
+    )
+
+
+def assemble(pack: str, articles: list[dict[str, Any]], work: Path) -> Path:
+    """The law's file: each clause's fingerprint and the questions its check kept."""
+    writers, checkers, entries = entries_for(articles, work)
+    write_prompt, check_prompt = prompts()
     header = (
         f"# Search questions for {articles[0]['law'][0]}, beside the clauses they were written\n"
         "# for. They help search order clauses it has already found, and are never shown,\n"
@@ -414,15 +448,52 @@ def assemble(pack: str, articles: list[dict[str, Any]], work: Path) -> Path:
         "written_by": sorted(writers),
         "checked_by": sorted(checkers),
         "written_on": datetime.now(UTC).date().isoformat(),
-        "write_prompt": sha256(WRITE_PROMPT.read_bytes()).hexdigest()[:16],
-        "check_prompt": sha256(CHECK_PROMPT.read_bytes()).hexdigest()[:16],
+        "write_prompt": write_prompt,
+        "check_prompt": check_prompt,
         "clauses": entries,
     }
     out = QUESTIONS / f"{pack}.yaml"
-    out.write_text(
-        header + yaml.safe_dump(body, allow_unicode=True, sort_keys=False, width=100),
-        encoding="utf-8",
+    dump(out, header, body)
+    return out
+
+
+def article_of(key: str) -> str:
+    """The article a clause belongs to: uae-pdpl:art-1 for uae-pdpl:art-1:def-consent."""
+    return ":".join(key.split(":")[:2])
+
+
+def rewrite(
+    pack: str, every: list[dict[str, Any]], articles: list[dict[str, Any]], work: Path
+) -> Path:
+    """The law's file with the named articles' questions written again, and every other
+    clause's as it was.
+
+    The file names one pair of models and one pair of prompts, so the articles are written by
+    those, or the whole law is written again. It keeps the day it was written, and a line at its
+    top says which articles were written again, and when.
+    """
+    out = QUESTIONS / f"{pack}.yaml"
+    before = out.read_text(encoding="utf-8")
+    body = yaml.safe_load(before)
+    writers, checkers, entries = entries_for(articles, work)
+    made = (sorted(writers), sorted(checkers), *prompts())
+    named = (body["written_by"], body["checked_by"], body["write_prompt"], body["check_prompt"])
+    if made != named:
+        raise SystemExit(
+            f"{out.relative_to(REPO)} names {named}, and these articles were made by {made}: "
+            "write the whole law again"
+        )
+    again = {article["key"] for article in articles}
+    order = {article["key"]: at for at, article in enumerate(every)}
+    kept = [entry for entry in body["clauses"] if article_of(entry["key"]) not in again]
+    # Sorted by the law's order of articles, which the file already follows: a stable sort
+    # leaves every other entry where it was and puts the new ones where the old ones stood.
+    body["clauses"] = sorted(
+        kept + entries, key=lambda entry: order.get(article_of(entry["key"]), len(order))
     )
+    header = "".join(f"{line}\n" for line in before.split("\n") if line.startswith("#"))
+    today = datetime.now(UTC).date().isoformat()
+    dump(out, f"{header}# Written again on {today}: {', '.join(sorted(again))}.\n", body)
     return out
 
 
@@ -438,6 +509,13 @@ def main() -> int:
     parser.add_argument(
         "--sample", type=int, default=0, help="also print this many random kept questions"
     )
+    parser.add_argument(
+        "--article",
+        action="append",
+        default=[],
+        help="write this article again, such as uae-pdpl:art-1, in place of its questions in "
+        "the law's file, every other clause's kept as it is; repeat it for more",
+    )
     args = parser.parse_args()
 
     work = args.work or QUESTIONS / ".work" / args.pack
@@ -448,7 +526,13 @@ def main() -> int:
         clauses.write_text(
             json.dumps(read_articles(args.pack), ensure_ascii=False), encoding="utf-8"
         )
-    articles = json.loads(clauses.read_text(encoding="utf-8"))
+    every = json.loads(clauses.read_text(encoding="utf-8"))
+    articles = every
+    if args.article:
+        unknown = sorted(set(args.article) - {article["key"] for article in every})
+        if unknown:
+            parser.error(f"{args.pack} has no article {', '.join(unknown)} with words in force")
+        articles = [article for article in every if article["key"] in args.article]
     write_prompt = WRITE_PROMPT.read_text(encoding="utf-8")
     check_prompt = CHECK_PROMPT.read_text(encoding="utf-8")
 
@@ -456,7 +540,7 @@ def main() -> int:
     for article in articles:
         if args.only and new >= args.only:
             break
-        name = article["key"].replace(":", "_") + ".json"
+        name = saved_as(article)
         written_path, checked_path = work / "written" / name, work / "checked" / name
         if checked_path.exists():
             continue
@@ -513,14 +597,19 @@ def main() -> int:
 
     if left:
         print(f"{stamp()} left for a rerun: {', '.join(left)}", flush=True)
-    if sum(1 for _ in (work / "checked").glob("*.json")) < len(articles):
+    if not all((work / "checked" / saved_as(article)).exists() for article in articles):
         return 0 if args.only else 2
-    out = assemble(args.pack, articles, work)
+    if args.article:
+        out = rewrite(args.pack, every, articles, work)
+    else:
+        out = assemble(args.pack, articles, work)
     print(f"{stamp()} wrote {out.relative_to(REPO)}", flush=True)
     if args.sample:
+        sampled = {article["key"] for article in articles}
         kept = [
             (entry["key"], lang, question)
             for entry in yaml.safe_load(out.read_text(encoding="utf-8"))["clauses"]
+            if article_of(entry["key"]) in sampled
             for lang in ("en", "ar")
             for question in entry[lang]
         ]

@@ -66,6 +66,23 @@ def test_keeps_the_label_the_law_uses() -> None:
     assert point.body_text == "where there is no other legal ground for the processing;"
 
 
+def test_a_definition_the_law_does_not_number_is_keyed_by_its_term(tmp_path: Path) -> None:
+    path = write(
+        tmp_path,
+        "---\nkey: testlaw:art-1\nlang: en\n---\n\nIn this Law:\n"
+        "\n## {#def-personal-data}\n\nPersonal Data: Any data related to a natural person.\n",
+    )
+
+    clause = read_clause_file(path)
+    definition = clause.children[0]
+
+    assert clause.body_text == "In this Law:"
+    assert definition.key == "testlaw:art-1:def-personal-data"
+    assert definition.clause_type == "definition"
+    assert definition.label is None
+    assert definition.body_text == "Personal Data: Any data related to a natural person."
+
+
 def test_recitals_are_not_normative() -> None:
     clause = read_clause_file(
         FIXTURE_PACK / "testlaw-recitals" / "rec-12.md", document_normative=False

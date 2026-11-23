@@ -39,6 +39,10 @@ The clause keys follow the Arabic numbering, and the English text sits under the
 The articles' own lettered points use the Arabic letters in order, أ, ب, ج, and so on, which
 the keys write as `pt-a`, `pt-b`, `pt-c`.
 
+Article (1) numbers none of its definitions, so each is a clause of its own, keyed by the term
+it defines as the official English translation prints it: Personal Data is
+`uae-pdpl:art-1:def-personal-data`. The Arabic sits under the same keys, in the same order.
+
 ## What has not been done
 
 The pack is `community`: it has passed validation, and nobody qualified in UAE law has read it

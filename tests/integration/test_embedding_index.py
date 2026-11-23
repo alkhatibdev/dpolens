@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -14,7 +15,7 @@ from sqlalchemy.orm import Session
 from tokenizers import Tokenizer
 
 from dpolens.engine.embedding import RECIPE_VERSION, Embedder, encode, get_model
-from dpolens.engine.embedding.index import build_index, unembedded
+from dpolens.engine.embedding.index import build_index, too_long, unembedded
 from dpolens.engine.packs.load import load_pack
 from dpolens.engine.search.vector import NoActiveModel, vector_search
 
@@ -162,6 +163,32 @@ def test_the_passage_prefix_is_applied_at_encoding(embedder: Embedder) -> None:
     missing, so this is asserted rather than assumed."""
     assert embedder.model.passage_prefix == "passage: "
     assert embedder.model.query_prefix == "query: "
+
+
+def test_a_count_goes_on_past_what_the_model_reads(embedder: Embedder) -> None:
+    """A text the model cannot read to its end is found by its count, so the count goes on
+    where the model stops, and the model still takes no more than it reads."""
+    words = "data " * 1000
+
+    assert embedder.count_tokens(words) > 1000
+    assert embedder.passage_tokens(words) == 512
+    assert embedder.encode_passages([words]).shape == (1, embedder.model.dimensions)
+
+
+def test_a_text_longer_than_the_model_reads_is_named(
+    session: Session, testlaw_pack: Path, embedder: Embedder, tmp_path: Path
+) -> None:
+    pack = tmp_path / "testlaw"
+    shutil.copytree(testlaw_pack, pack)
+    article = pack / "testlaw" / "art-5.md"
+    article.write_text(article.read_text(encoding="utf-8") + "data " * 600, encoding="utf-8")
+    load_pack(session, pack)
+    session.commit()
+
+    found = too_long(session, embedder)
+
+    assert [(long.key, long.lang) for long in found] == [("testlaw:art-5:para-2", "en")]
+    assert found[0].tokens > 600
 
 
 def test_vectors_are_unit_length_and_the_right_width(indexed: Session, embedder: Embedder) -> None:

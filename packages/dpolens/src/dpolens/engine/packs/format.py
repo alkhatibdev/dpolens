@@ -25,6 +25,7 @@ SEGMENT_TYPES = {
     "para": "paragraph",
     "sub": "subparagraph",
     "pt": "point",
+    "def": "definition",
     "sec": "section",
     "rule": "rule",
     "reg": "regulation",
@@ -221,7 +222,7 @@ def clause_type_for(segment: str) -> str:
     if clause_type is None:
         raise PackFormatError(
             f"unknown key segment '{segment}': expected one of "
-            f"{', '.join(sorted(SEGMENT_TYPES))} followed by a number or letter"
+            f"{', '.join(sorted(SEGMENT_TYPES))} followed by a number, a letter or, for def, a term"
         )
     return clause_type
 

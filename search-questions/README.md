@@ -49,5 +49,10 @@ question. It needs Claude Code, signed in. Each article is saved as it finishes,
 stops carries on where it left off, a plan's usage limit is waited out, and a clause an answer
 leaves out is asked for again on its own.
 
+When an article's words change, `--article uae-pdpl:art-1` writes that article again and puts its
+questions in place of the old ones, every other clause's left as they are. A law's file names one
+pair of models and one pair of prompts, so the article is written by the same ones, or the whole
+law is written again.
+
 An instance loads a law's file with `dpolens search-questions load search-questions/gdpr.yaml`,
 and `dpolens index build` embeds the questions. An instance started from the image does both.

@@ -131,6 +131,10 @@ the text cites something the document does not contain.
   checked when the pack loads as well as when it is built.
 - **Format.** Front matter is validated, keys must be unique, heading depth must not skip
   a level, and an unknown key segment is an error.
+- **Length.** Every clause, with the law's short name and the headings it is embedded under,
+  fits in the 512 tokens the search model reads. A longer one fails the test suite, which names
+  it, since the model would never read its end: divide it where the law divides it, as the UAE
+  law's definitions are.
 
 What they do not prove, and what review is for:
 
