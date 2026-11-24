@@ -25,6 +25,8 @@
   --color-brand-mid: #9bc6b5;
   --color-brand-deep: #4d9a7a;
   --color-brand-soft: #e3efea;
+  /* The logo's other green, its stem's: the left corners of a lens on a light ground. */
+  --color-stem: #4cc38a;
 
   /* The brand's dark ground, from the logo's kit, and what reads on it. */
   --color-deep: #0d3b2a;
