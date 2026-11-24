@@ -8,32 +8,33 @@ import { formatDate } from "@/lib/format";
 import { SIGN_IN_CLAUSES } from "@/lib/signInClauses";
 import { cn } from "@/lib/utils";
 
-// A viewfinder's four corners, each in its own green for a dark ground, closing
-// in from its own side as the page opens. A frame is the same either way round,
-// so the corners sit left and right whichever way the page reads.
+// A viewfinder's four corners in the logo's two greens for a dark ground, the
+// stem's on the left and the bowl's on the right, each closing in from its own
+// side as the page opens. A frame is the same either way round, so the corners
+// sit left and right whichever way the page reads.
 const CORNERS = [
   {
     at: "left-0 top-0",
     path: "M3 43V17A14 14 0 0 1 17 3H43",
-    colour: "#6fd3a4",
+    colour: "#7fddb0",
     from: "-22px -22px",
   },
   {
     at: "right-0 top-0",
     path: "M3 3H29A14 14 0 0 1 43 17V43",
-    colour: "#2e9e6b",
+    colour: "#3fae7a",
     from: "22px -22px",
   },
   {
     at: "right-0 bottom-0",
     path: "M43 3V29A14 14 0 0 1 29 43H3",
-    colour: "#c9f2dd",
+    colour: "#3fae7a",
     from: "22px 22px",
   },
   {
     at: "left-0 bottom-0",
     path: "M43 43H17A14 14 0 0 1 3 29V3",
-    colour: "#3fae7a",
+    colour: "#7fddb0",
     from: "-22px 22px",
   },
 ] as const;
