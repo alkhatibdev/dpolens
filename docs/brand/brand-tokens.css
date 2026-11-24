@@ -1,0 +1,13 @@
+:root {
+  /* The DPOLens logo's colours, for the logo only and not for the rest of an interface. */
+  --dpolens-logo-stem: #4CC38A;
+  --dpolens-logo-bowl: #12784E;
+  --dpolens-logo-text: #141414;
+  /* on dark backgrounds */
+  --dpolens-logo-stem-dark: #7FDDB0;
+  --dpolens-logo-bowl-dark: #3FAE7A;
+  --dpolens-logo-text-dark: #FFFFFF;
+  /* brand surfaces */
+  --dpolens-green: #12784E;
+  --dpolens-deep: #0D3B2A;
+}
