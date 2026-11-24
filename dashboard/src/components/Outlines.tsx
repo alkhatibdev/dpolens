@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 
 /**
- * The logo's rounded square, repeated: the pattern on the brand's green cards.
- * The corner keeps the mark's proportion, 0.44 of half the side.
+ * A rounded square, repeated: the pattern on the brand's green cards. The
+ * corner's radius is 0.44 of half the side.
  */
 function square(centre: number, half: number) {
   return {

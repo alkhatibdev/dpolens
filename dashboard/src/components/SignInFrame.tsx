@@ -8,9 +8,9 @@ import { formatDate } from "@/lib/format";
 import { SIGN_IN_CLAUSES } from "@/lib/signInClauses";
 import { cn } from "@/lib/utils";
 
-// The mark's four corners, in its colours for a dark ground, each closing in
-// from its own side as the page opens. A frame is the same either way round, so
-// the corners sit left and right whichever way the page reads.
+// A viewfinder's four corners, each in its own green for a dark ground, closing
+// in from its own side as the page opens. A frame is the same either way round,
+// so the corners sit left and right whichever way the page reads.
 const CORNERS = [
   {
     at: "left-0 top-0",
@@ -38,7 +38,7 @@ const CORNERS = [
   },
 ] as const;
 
-/** The logo's viewfinder around the one clause: a lens on the exact words. */
+/** A viewfinder around the one clause: a lens on the exact words. */
 function Lens({ children }: { children: ReactNode }) {
   return (
     <div className="relative p-[18px]">

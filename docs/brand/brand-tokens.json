@@ -1,0 +1,9 @@
+{
+  "logo": {
+    "light": { "stem": "#4CC38A", "bowl": "#12784E", "text": "#141414" },
+    "dark":  { "stem": "#7FDDB0", "bowl": "#3FAE7A", "text": "#FFFFFF", "background": "#0D3B2A" },
+    "mono":  { "black": "#141414", "white": "#FFFFFF" }
+  },
+  "font": { "wordmark": "Figtree ExtraBold (800), tracking -2%, outlined in the SVGs" },
+  "minSize": { "markPx": 16, "horizontalLogoHeightPx": 24 }
+}

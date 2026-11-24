@@ -16,7 +16,7 @@ export function Logo({
     <img
       src={onDark ? logoOnDark : logo}
       alt={t("app.name")}
-      width={146}
+      width={135}
       height={32}
       className={cn("block h-8 w-fit", className)}
       {...props}
