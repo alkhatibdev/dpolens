@@ -11,7 +11,8 @@ file here is drawn from filled outlines, so none of them needs a font.
 | `dpolens-logo-stacked.svg`, `dpolens-logo-stacked-on-dark.svg`, `dpolens-logo-stacked-black.svg`, `dpolens-logo-stacked-white.svg` | The mark above the name, for square spaces |
 | `dpolens-mark.svg`, `dpolens-mark-on-dark.svg`, `dpolens-mark-black.svg`, `dpolens-mark-white.svg`, `dpolens-mark-512.png` | The mark alone |
 | `dpolens-mark.inline.svg` | The mark for pasting into a page, coloured by `--dpolens-logo-stem` and `--dpolens-logo-bowl`, with the light colours when they are unset |
-| `dpolens-icon.svg`, `icon-192.png`, `icon-512.png` | The app icon: the mark on a white tile, inside the circle a phone may crop the icon to |
+| `icon-192.png`, `icon-512.png` | The icon where a page or a directory draws its own ground: app lists, connector and server directories. The mark on a clear ground |
+| `dpolens-icon.svg`, `icon-maskable-192.png`, `icon-maskable-512.png` | The icon a phone crops to its own shape: the mark on a white tile, inside the circle that survives the crop |
 | `apple-touch-icon.png` | A phone's home screen, 180 pixels square |
 | `favicon.svg`, `favicon.ico` | The browser tab. The SVG follows a light or dark browser, and the ICO is for older ones |
 | `social-preview.svg`, `social-preview.png` | The card a link to the repository shows, 1280 by 640 |
