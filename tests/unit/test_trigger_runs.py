@@ -220,6 +220,19 @@ def test_a_run_whose_server_failed_is_not_scored() -> None:
     assert seen.unusable("plugin") == "the MCP server was failed at the start"
 
 
+def test_a_run_whose_server_connected_without_its_tools_is_not_scored() -> None:
+    """A client can report the server connected while the list of its tools never arrived, as
+    when the server refused that request: the AI assistant then has nothing to call."""
+    started = {**init(), "tools": ["Bash", "Edit", "ToolSearch"]}
+
+    seen = watch(started, use("1", "ToolSearch"), use("2", "Edit"))
+
+    assert seen.unusable("plugin") == (
+        "the MCP server connected, but none of its tools reached the AI assistant"
+    )
+    assert watch({**init(), "tools": ["Bash", SEARCH]}, use("1", "Edit")).unusable("plugin") is None
+
+
 def test_a_run_without_the_plugin_is_not_scored() -> None:
     seen = watch(init(plugins=()), use("1", "Edit"))
 
