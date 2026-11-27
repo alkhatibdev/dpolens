@@ -418,6 +418,12 @@ class Observation:
             return f"the MCP server was {self.server_status or 'missing'} at the start"
         if self.called:
             return None
+        if (
+            self.server_status == "connected"
+            and self._registered
+            and not any(tool.startswith(self.prefix) for tool in self._registered)
+        ):
+            return "the MCP server connected, but none of its tools reached the AI assistant"
         if self.retrying:
             return f"the model requests kept failing ({', '.join(sorted(set(self.retries)))})"
         if self.result and self.result.get("is_error") and capped_by(self.result) is None:

@@ -70,7 +70,8 @@ Otherwise it goes until the AI assistant finishes, 25 turns or 10 minutes. With
 known: runs stay short on a slow model, and the batch cannot say what a run would have done after.
 
 A run that could not have called DPOLens is retried rather than scored: the plugin not loading,
-the MCP server not connecting, or the request to the model failing. Each run's calls are also
+the MCP server not connecting, its tools not reaching the AI assistant although it connected, or
+the request to the model failing. Each run's calls are also
 counted in the instance's query log, and the report names any run where the two counts differ.
 It also names a run whose deciding search came back as an error, which means the instance could
 not answer and keeps the batch from being published, and apart from it, a run whose search asked
