@@ -113,6 +113,10 @@ INSTANCE_IMAGES = {
 LAWS = ("gdpr",)
 """What the instance's searches cover, as in the published runs. An instance searches nothing
 until somebody chooses its laws, and refuses every search until then."""
+COMMUNITY_LAWS = ("gdpr", "uae-pdpl")
+"""What a community version's searches cover: the laws it names on connect."""
+COMMUNITY_COMPOSE = TRIGGER / "community.yaml"
+"""The settings a community version runs with, added to the instance by --community."""
 
 NETWORK = f"{PROJECT}_default"
 MCP_URL = "http://mcp:8765/mcp"
@@ -703,7 +707,14 @@ def token_from(printed: str) -> str:
 class Instance:
     """A throwaway DPOLens built from this checkout, reachable as `mcp` on its network."""
 
-    def __init__(self) -> None:
+    def __init__(self, community: bool = False) -> None:
+        self.community = community
+        self.laws = COMMUNITY_LAWS if community else LAWS
+        self.files: tuple[str, ...] = (
+            ("-f", "compose.yaml", "-f", str(COMMUNITY_COMPOSE.relative_to(REPO)))
+            if community
+            else ()
+        )
         self.env = {
             **os.environ,
             "DPOLENS_OWNER_PASSWORD": secrets.token_hex(24),
@@ -717,7 +728,7 @@ class Instance:
 
     def compose(self, *args: str, **kwargs: Any) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["docker", "compose", "-p", PROJECT, *args],
+            ["docker", "compose", "-p", PROJECT, *self.files, *args],
             cwd=REPO,
             env=self.env,
             text=True,
@@ -741,6 +752,15 @@ class Instance:
                 )
             self.compose("up", "-d", "--no-build", capture_output=True)
         self._wait_until_healthy(("api", "mcp"), timeout=900)
+        if not self.community:
+            self._make_token()
+        self.compose(
+            "exec", "-T", "api", "dpolens", "laws", "select", *self.laws, capture_output=True
+        )
+
+    def _make_token(self) -> None:
+        """A developer and a token, as a team member connects with. A community version
+        answers anyone without one."""
         self.compose(
             "exec",
             "-T",
@@ -772,7 +792,6 @@ class Instance:
             capture_output=True,
         )
         self.token = token_from(created.stdout)
-        self.compose("exec", "-T", "api", "dpolens", "laws", "select", *LAWS, capture_output=True)
 
     def _retry(self, *args: str) -> None:
         """A Compose command that a network blip can fail, tried a few times."""
@@ -896,6 +915,12 @@ def marketplace(batch: Path) -> Path:
     return target
 
 
+def bearer(token: str) -> dict[str, Any]:
+    """The header a server entry sends its token in. A community version takes none, so its
+    entry has none, as the line on dpolens.com/community writes it."""
+    return {"headers": {"Authorization": f"Bearer {token}"}} if token else {}
+
+
 def qwen_settings(
     model: str,
     base_url: str,
@@ -924,9 +949,7 @@ def qwen_settings(
         "security": {"auth": {"selectedType": "openai"}},
         "model": {"name": model, "catalogRefresh": False},
         "modelProviders": {"openai": [provider]},
-        "mcpServers": {
-            "dpolens": {"httpUrl": MCP_URL, "headers": {"Authorization": f"Bearer {token}"}}
-        },
+        "mcpServers": {"dpolens": {"httpUrl": MCP_URL, **bearer(token)}},
     }
 
 
@@ -940,7 +963,7 @@ def prepare_profile(
     elif args.setup == "plugin":
         values = {"url": MCP_URL, "token": token}
     else:
-        values = {"type": "http", "url": MCP_URL, "headers": {"Authorization": f"Bearer {token}"}}
+        values = {"type": "http", "url": MCP_URL, **bearer(token)}
     subprocess.run(["docker", "volume", "rm", "-f", volume], capture_output=True, check=False)
     docker(
         "run",
@@ -1139,12 +1162,19 @@ def refusal(args: argparse.Namespace) -> str | None:
         return "--base-url, --sampling and --context-window are for Qwen Code runs"
     if args.set == "held_out" and not args.model:
         return "a held-out batch is published, so its model is pinned: pass --model"
+    if args.community and args.setup == "plugin":
+        return (
+            "the plugin connects to an instance of your own, with a token: "
+            "a community batch uses --setup mcp-only"
+        )
     return None
 
 
 def run_batch(args: argparse.Namespace) -> int:
     client = CLIENTS[args.client]
-    args.setup = args.setup or ("plugin" if client is CLAUDE_CODE else "mcp-only")
+    args.setup = args.setup or (
+        "plugin" if client is CLAUDE_CODE and not args.community else "mcp-only"
+    )
     refused = refusal(args)
     if refused:
         print(refused)
@@ -1175,6 +1205,7 @@ def run_batch(args: argparse.Namespace) -> int:
         if client is CLAUDE_CODE
         else f"{client.name}-{re.sub(r'[^A-Za-z0-9._-]+', '-', args.model)}"
     )
+    named = f"community-{named}" if args.community else named
     batch_id = args.batch or f"{args.set}-{named}-{datetime.now(UTC):%Y%m%d-%H%M}"
     batch = RUNS / batch_id
     (batch / "transcripts").mkdir(parents=True, exist_ok=True)
@@ -1214,10 +1245,11 @@ def run_batch(args: argparse.Namespace) -> int:
     print(
         f"batch {batch_id}: {len(tasks)} tasks, {args.runs} runs each, "
         f"{client.label}, setup {args.setup}"
+        + (", as a community version" if args.community else "")
     )
 
     build_image(client)
-    instance = Instance()
+    instance = Instance(community=args.community)
     volume = f"{PROJECT}-profile-{client.name}-{args.setup}"
     failures = 0
     try:
@@ -1275,6 +1307,7 @@ def conditions(args: argparse.Namespace) -> dict[str, Any]:
         "sampling": args.sampling,
         "context_window": args.context_window,
         "stop_at_edit": args.stop_at_edit or None,
+        "community": args.community or None,
     }
 
 
@@ -1361,6 +1394,10 @@ def published(batch_ids: Sequence[str]) -> dict[str, Any]:
         if recorded(meta, "client") != CLAUDE_CODE.name:
             raise NotPublishable(
                 f"{batch_id} ran {meta['client']}; {RESULTS.name} is Claude Code's"
+            )
+        if meta.get("community"):
+            raise NotPublishable(
+                f"{batch_id} ran as a community version; the number is an instance of your own"
             )
         if meta.get("stop_at_edit"):
             raise NotPublishable(
@@ -1469,6 +1506,11 @@ def arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--stop-at-edit",
         action="store_true",
         help="end a run at its first edit, when whether it searched before editing is known",
+    )
+    parser.add_argument(
+        "--community",
+        action="store_true",
+        help="run the instance as a community version: no token, both laws, questions kept",
     )
     parser.add_argument("--tasks", help="only these task ids, separated by commas")
     parser.add_argument("--batch", help="a batch to resume, or the name for a new one")

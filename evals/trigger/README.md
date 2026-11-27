@@ -101,6 +101,13 @@ the number it produces is published with it. `--setup mcp-only` adds the MCP ser
 with no plugin, which shows how much the plugin's skill adds. `--max-runs` is a guard against
 starting a larger batch than you meant to: a full held-out batch is 90 runs.
 
+`--community` runs the instance as a community version, with the settings in
+`evals/trigger/community.yaml`: no token, both laws, questions kept 30 days, and the one
+address every run comes from allowed what everybody together may ask. DPOLens is added
+the way [the community page](https://dpolens.com/community) adds it, the MCP server alone, so a
+batch shows what an AI assistant does when DPOLens is a service somebody else runs. A community
+batch is never written into `evals/results/trigger.json`.
+
 Everything a batch produces is kept in `evals/trigger/runs/<batch>/`, also ignored: the outcome
 of every run, and the full stream of events from each one, which is where to look when a task
 did something unexpected. A batch stopped by a usage limit resumes with
@@ -116,9 +123,9 @@ reach them stops a batch before it starts. `--reuse-images` starts from the imag
 built instead, after checking that every file they copy from the repository is the same as in
 your checkout, and refuses otherwise. The instance's images are built as `trigger-test`, never
 as a release's number, so a batch leaves the images of every release on your machine as they
-were. The instance chooses GDPR as the law that applies when it starts, since an instance
-searches nothing until its laws are chosen. A search that comes back as an error is named in the
-report, and `--write` refuses a batch that has one.
+were. The instance chooses GDPR as the law that applies when it starts (both laws on a
+community version), since an instance searches nothing until its laws are chosen. A search that
+comes back as an error is named in the report, and `--write` refuses a batch that has one.
 
 When a rule turns out to have been applied wrongly to recorded runs, `--reread <batch>` applies
 the rule as it now stands to each run's saved stream of events. What was recorded first is kept

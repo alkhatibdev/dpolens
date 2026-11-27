@@ -32,6 +32,10 @@ Questions that work well:
 - do we need consent to log IP addresses for debugging
 - what has to happen when somebody asks for a copy of their data
 
+Ask in general terms: what the code does, with which kind of personal data. Leave out names,
+real people's details, secrets and anything internal to your project: the clause is found
+without them.
+
 DPOLens returns what the documents say. It does not decide whether something is lawful, and a
 question with real consequences belongs with the people responsible for it.
 
