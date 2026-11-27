@@ -103,7 +103,9 @@ def test_a_tag_for_another_version_is_refused(repo: Path) -> None:
         release.check("v9.9.9", repo)
 
 
-@pytest.mark.parametrize("tag", ["0.1.0", "v0.1", "v0.1.0-preview", "pack/gdpr/2026.1"])
+@pytest.mark.parametrize(
+    "tag", ["0.1.0", "v0.1", "v0.1.0-preview", "pack/gdpr/2026.1", "packs/gdpr/2026.2"]
+)
 def test_a_tag_of_another_shape_is_refused(repo: Path, tag: str) -> None:
     with pytest.raises(ReleaseError, match="is not a release tag"):
         release.check(tag, repo)
