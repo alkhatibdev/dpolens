@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     )
 
     per_address_per_minute: int = Field(
-        default=30,
+        default=60,
         ge=1,
         description="On a community version, calls one IP address may make a minute",
     )

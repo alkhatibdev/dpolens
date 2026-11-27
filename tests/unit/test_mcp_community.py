@@ -189,6 +189,27 @@ def test_an_allowance_fills_again_with_time() -> None:
     assert allowance.take("one", now=1.0) is None
 
 
+SESSION_CALLS = 6
+"""What one Claude Code session (2.1.288) spends on a community version to start, list the
+tools and search once: every request to the endpoint counts."""
+
+
+def test_one_address_may_start_ten_sessions_at_once() -> None:
+    """Somebody running several AI assistant sessions, or one with subagents, starts them
+    together. A session refused the list of tools shows the server connected with nothing to
+    call, and the AI assistant answers from memory without saying why."""
+    allowance = Allowance(Settings.model_fields["per_address_per_minute"].default)
+
+    assert all(allowance.take("192.0.2.1", now=0.0) is None for _ in range(10 * SESSION_CALLS))
+
+
+def test_no_address_alone_may_ask_more_than_a_shared_range() -> None:
+    defaults = {name: Settings.model_fields[name].default for name in Settings.model_fields}
+
+    assert defaults["per_address_per_minute"] <= defaults["per_range_per_minute"]
+    assert defaults["per_range_per_minute"] <= defaults["overall_per_minute"]
+
+
 async def test_without_the_account_file_the_server_does_not_start(tmp_path: Path) -> None:
     with pytest.raises(NoCommunityAccount, match="DPOLENS_COMMUNITY"):
         await wait_for(tmp_path / "missing", timeout=0)
