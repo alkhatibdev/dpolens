@@ -1,15 +1,16 @@
 name: Pack release
 
 # A law has releases of its own, because a law is amended on the legislature's
-# schedule and not on ours. A tag `pack/<slug>/<version>`, such as
-# `pack/gdpr/2026.2`, opens a draft release of that pack's archive and its
+# schedule and not on ours. A tag `packs/<slug>/<version>`, such as
+# `packs/gdpr/2026.2`, opens a draft release of that pack's archive and its
 # checksum for a person to read and publish, and `dpolens pack update gdpr`
 # downloads it from there. The tag has to be on main and name the version in the
-# pack's own pack.yaml.
+# pack's own pack.yaml. A tag `pack/<slug>/<version>` is refused: DPOLens 0.2.0
+# reads releases under it, and it would read this format's names wrongly.
 
 on:
   push:
-    tags: ["pack/**"]
+    tags: ["packs/**", "pack/**"]
 
 permissions:
   contents: read
@@ -25,6 +26,12 @@ jobs:
       id-token: write
       attestations: write
     steps:
+      - name: Refuse the tag DPOLens 0.2.0 reads
+        if: startsWith(github.ref_name, 'pack/')
+        run: |
+          echo "::error::$GITHUB_REF_NAME is the tag DPOLens 0.2.0 reads, and it would read this pack's names wrongly. Tag packs/<slug>/<version> instead."
+          exit 1
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -61,14 +68,20 @@ jobs:
           SLUG: ${{ steps.archive.outputs.slug }}
         run: |
           notes="$RUNNER_TEMP/notes.md"
-          uv run --frozen --package dpolens python - "packs/$SLUG/pack.yaml" "$GITHUB_REPOSITORY" > "$notes" <<'NOTES'
+          title="$RUNNER_TEMP/title.txt"
+          uv run --frozen --package dpolens python - "packs/$SLUG" "$GITHUB_REPOSITORY" "$title" > "$notes" <<'NOTES'
           import sys
-          import yaml
+          from pathlib import Path
 
-          pack = yaml.safe_load(open(sys.argv[1], encoding="utf-8"))
-          slug, version, repository = pack["slug"], pack["version"], sys.argv[2]
+          from dpolens.engine.packs.format import read_pack_metadata
+
+          # The engine's own reader, which knows the names a pack gives in each language.
+          pack = read_pack_metadata(Path(sys.argv[1]))
+          slug, version, repository = pack.slug, pack.version, sys.argv[2]
+          law = pack.name.get("en") or pack.name[pack.authoritative_language]
+          Path(sys.argv[3]).write_text(f"{law}, pack {version}", encoding="utf-8")
           name = f"dpolens-pack-{slug}-{version}.tar.gz"
-          print(f"**{pack['name']}**, pack version {version}, in force from {pack['effective_date']:%-d %B %Y}.")
+          print(f"**{law}**, pack version {version}, in force from {pack.effective_date:%-d %B %Y}.")
           print()
           print("To load it into an instance that has an earlier version of this pack:")
           print()
@@ -79,5 +92,4 @@ jobs:
           print()
           print(f"To check that the file was built here: `gh attestation verify {name} --repo {repository}`.")
           NOTES
-          title=$(uv run --frozen --package dpolens python -c "import sys, yaml; p = yaml.safe_load(open(sys.argv[1])); print(f\"{p['name']}, pack {p['version']}\")" "packs/$SLUG/pack.yaml")
-          gh release create "$TAG" dist/* --draft --verify-tag --title "$title" --notes-file "$notes" --repo "$GITHUB_REPOSITORY"
+          gh release create "$TAG" dist/* --draft --verify-tag --title "$(cat "$title")" --notes-file "$notes" --repo "$GITHUB_REPOSITORY"

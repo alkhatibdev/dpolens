@@ -235,8 +235,9 @@ starting it by hand from the Actions tab.
 ### A law pack
 
 1. A pull request changes the pack and gives it its next version in `pack.yaml`.
-2. Once that is merged, the commit on `main` is tagged `pack/<slug>/<version>`, for example
-   `pack/gdpr/2026.2`, and the tag pushed.
+2. Once that is merged, the commit on `main` is tagged `packs/<slug>/<version>`, for example
+   `packs/gdpr/2026.2`, and the tag pushed. Never `pack/<slug>/<version>`: that is the tag
+   DPOLens 0.2.0 reads, and it would read the pack's names wrongly. The workflow refuses it.
 3. The pack release workflow (`.github/workflows/pack-release.yml`) refuses a tag that is not
    on `main` or does not name the version in the pack's `pack.yaml`. It writes the archive and
    its checksum with `dpolens pack archive`, attests the archive, and opens a draft release

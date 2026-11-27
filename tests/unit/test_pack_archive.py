@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import io
 import re
+import shutil
 import tarfile
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner, Result
 
+from dpolens.cli.main import app
 from dpolens.engine.packs.archive import (
     ArchiveError,
     open_archive,
@@ -116,3 +119,25 @@ def test_a_checksum_reads_from_sha256sum_or_pasted_alone() -> None:
     assert read_checksum(digest.upper()) == digest
     with pytest.raises(ArchiveError, match=re.escape("64 hexadecimal characters")):
         read_checksum("not a checksum")
+
+
+def test_an_archive_is_written_only_for_the_tag_its_release_goes_under(tmp_path: Path) -> None:
+    """`pack/<slug>/<version>` is the tag DPOLens 0.2.0 reads, so no release goes under it."""
+    packs = tmp_path / "packs"
+    shutil.copytree(TESTLAW, packs / "testlaw")
+    shutil.copy(LICENCE, packs / "LICENSE")
+    out = tmp_path / "out"
+
+    def archive(tag: str) -> Result:
+        return CliRunner().invoke(
+            app, ["pack", "archive", str(packs / "testlaw"), "--out", str(out), "--tag", tag]
+        )
+
+    refused = archive("pack/testlaw/2026.1")
+    assert not (out / "dpolens-pack-testlaw-2026.1.tar.gz").exists()
+    written = archive("packs/testlaw/2026.1")
+
+    assert refused.exit_code != 0
+    assert "does not name testlaw 2026.1" in refused.output + str(refused.exception)
+    assert written.exit_code == 0, written.output
+    assert (out / "dpolens-pack-testlaw-2026.1.tar.gz").is_file()

@@ -35,7 +35,7 @@ from dpolens.engine.packs.load import (
     loaded_version,
     version_key,
 )
-from dpolens.engine.packs.releases import fetch, newest, pack_releases
+from dpolens.engine.packs.releases import fetch, newest, pack_releases, release_tag
 from dpolens.engine.packs.scaffold import NewPack, start_pack
 from dpolens.engine.packs.write import check_coverage, link_clauses, write_document
 from dpolens.engine.session import session_scope
@@ -198,12 +198,12 @@ def archive(
     ),
     tag: Annotated[
         str | None,
-        typer.Option(help="The release's tag, pack/<slug>/<version>, which has to match the pack"),
+        typer.Option(help="The release's tag, packs/<slug>/<version>, which has to match the pack"),
     ] = None,
 ) -> None:
     """Write a pack archive, the one file a release publishes, with its SHA-256 beside it."""
     metadata = read_pack_metadata(directory)
-    if tag is not None and tag != f"pack/{metadata.slug}/{metadata.version}":
+    if tag is not None and tag != release_tag(metadata.slug, metadata.version):
         raise PackFormatError(
             f"the tag {tag} does not name {metadata.slug} {metadata.version}, "
             f"which {directory / 'pack.yaml'} holds"

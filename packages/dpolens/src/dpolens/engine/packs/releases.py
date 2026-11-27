@@ -1,9 +1,14 @@
 """Newer versions of a law pack, from the releases of the repository that publishes them.
 
-A pack is released under a tag of its own, `pack/<slug>/<version>`, with two files:
+A pack is released under a tag of its own, `packs/<slug>/<version>`, with two files:
 its archive and the archive's checksum (see `archive`). They are read only when
 somebody asks for an update: nothing about the instance is sent, and an HTTPS
 proxy set in the environment is used.
+
+DPOLens 0.2.0 and earlier looked for `pack/<slug>/<version>`. They read a pack of this
+format without complaint but take the names it gives in each language as raw text, and
+never load a version again once they have it, so a pack of this format is never released
+under a tag they read. This engine does not read their packs either: they carry no format.
 """
 
 from __future__ import annotations
@@ -22,9 +27,14 @@ from dpolens.engine.packs.load import version_key
 API = "https://api.github.com"
 PAGE_SIZE = 100
 MOST_PAGES = 10
-TAG = re.compile(r"pack/(?P<slug>[a-z0-9-]+)/(?P<version>\d+(?:\.\d+)*)")
+TAG = re.compile(r"packs/(?P<slug>[a-z0-9-]+)/(?P<version>\d+(?:\.\d+)*)")
 
 Fetch = Callable[[str], bytes]
+
+
+def release_tag(slug: str, version: str) -> str:
+    """The tag a pack's release is published under."""
+    return f"packs/{slug}/{version}"
 
 
 class ReleaseError(Exception):
