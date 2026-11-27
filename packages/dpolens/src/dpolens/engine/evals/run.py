@@ -205,7 +205,9 @@ def run_together(runs: Sequence[Run]) -> Run:
 
     A question id names one topic in every set, so its outcomes are resampled
     together: nineteen topics asked twice are nineteen items, not thirty-eight,
-    and the interval is as wide as nineteen items make it.
+    and the interval is as wide as nineteen items make it. Where a set names its
+    topics, the topic is the item. A whole rule counts by the clauses it showed,
+    as it does in each set alone.
     """
     first = runs[0]
     if any(
@@ -223,6 +225,8 @@ def run_together(runs: Sequence[Run]) -> Run:
             question_id=f"{run.question_set}/{outcome.question_id}",
             expected=outcome.expected,
             returned=outcome.returned,
+            topic=outcome.topic,
+            shown=outcome.shown,
         )
         for run in runs
         for outcome in run.outcomes
@@ -233,7 +237,10 @@ def run_together(runs: Sequence[Run]) -> Run:
         configuration=first.configuration,
         model=first.model,
         recipe=first.recipe,
-        score=score(outcomes, group_of=lambda outcome: outcome.question_id.split("/", 1)[1]),
+        score=score(
+            outcomes,
+            group_of=lambda outcome: outcome.topic or outcome.question_id.split("/", 1)[1],
+        ),
         outcomes=outcomes,
         beside=first.beside,
     )
