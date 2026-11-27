@@ -26,6 +26,8 @@ import run_trigger_test  # noqa: E402
 from run_trigger_test import (  # noqa: E402
     BAKED_IN,
     CLIENTS,
+    COMMUNITY_COMPOSE,
+    COMMUNITY_LAWS,
     INSTANCE_IMAGES,
     INSTANCE_VERSION,
     LAWS,
@@ -41,6 +43,7 @@ from run_trigger_test import (  # noqa: E402
     Task,
     agrees,
     arguments,
+    bearer,
     differing,
     digests,
     outcome_of,
@@ -48,6 +51,7 @@ from run_trigger_test import (  # noqa: E402
     qwen_settings,
     read_outcomes,
     read_tasks,
+    refusal,
     reread,
     run_batch,
     run_once,
@@ -184,6 +188,75 @@ def test_the_instance_chooses_the_law_its_searches_cover(monkeypatch: pytest.Mon
     Instance().start()
 
     assert ("exec", "-T", "api", "dpolens", "laws", "select", *LAWS) in commands
+
+
+def test_a_community_instance_answers_without_a_token_and_covers_both_laws(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """As the community version does: nobody signs in, and it names both laws on connect."""
+    commands: list[tuple[str, ...]] = []
+
+    def compose(_: Instance, *args: str, **__: Any) -> subprocess.CompletedProcess[str]:
+        commands.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(Instance, "compose", compose)
+    monkeypatch.setattr(Instance, "_retry", lambda *_: None)
+    monkeypatch.setattr(Instance, "_wait_until_healthy", lambda *_, **__: None)
+
+    instance = Instance(community=True)
+    instance.start()
+
+    assert ("exec", "-T", "api", "dpolens", "laws", "select", *COMMUNITY_LAWS) in commands
+    assert not any("token" in command or "user" in command for command in commands)
+    assert instance.token == ""
+    assert instance.files == ("-f", "compose.yaml", "-f", "evals/trigger/community.yaml")
+
+
+def test_the_community_settings_are_the_ones_each_service_reads() -> None:
+    """Named the way each service reads them, or the instance would quietly stay an instance
+    of your own."""
+    from dpolens.settings import Settings as Engine
+    from dpolens_mcp.settings import Settings as Server
+
+    services = yaml.safe_load(COMMUNITY_COMPOSE.read_text(encoding="utf-8"))["services"]
+    engine = f"{Engine.model_config['env_prefix']}COMMUNITY"
+    server = f"{Server.model_config['env_prefix']}COMMUNITY"
+
+    assert services["setup"]["environment"][engine] == "true"
+    assert services["api"]["environment"][engine] == "true"
+    assert services["mcp"]["environment"][server] == "true"
+    for service in ("api", "worker", "mcp"):
+        assert services[service]["environment"]["DPOLENS_QUERY_LOG_RETENTION_DAYS"] == "30"
+
+
+def test_the_one_address_every_run_comes_from_may_ask_what_everybody_may() -> None:
+    """People reach the community version from their own addresses, and every run of a batch
+    from one. Held to one person's allowance, a batch of short runs can spend it, and a session
+    that starts then gets no tools to call."""
+    from dpolens_mcp.settings import Settings as Server
+
+    services = yaml.safe_load(COMMUNITY_COMPOSE.read_text(encoding="utf-8"))["services"]
+    everybody = Server.model_fields["overall_per_minute"].default
+
+    assert int(services["mcp"]["environment"]["DPOLENS_MCP_PER_ADDRESS_PER_MINUTE"]) == everybody
+    assert int(services["api"]["environment"]["DPOLENS_RATE_LIMIT_PER_MINUTE"]) >= everybody
+
+
+def test_a_server_entry_without_a_token_sends_no_header() -> None:
+    """The line on dpolens.com/community adds the server with its address alone."""
+    assert bearer("") == {}
+    assert bearer("dpol_x") == {"headers": {"Authorization": "Bearer dpol_x"}}
+    settings = qwen_settings("model", "http://host.docker.internal:8181/v1", "", None, None)
+    assert settings["mcpServers"]["dpolens"] == {"httpUrl": MCP_URL}
+
+
+def test_a_community_batch_runs_the_mcp_server_alone() -> None:
+    """The plugin is for an instance of your own: it asks for a token."""
+    refused = refusal(arguments(["--community", "--setup", "plugin"]))
+
+    assert refused is not None and "--setup mcp-only" in refused
+    assert refusal(arguments(["--community", "--setup", "mcp-only"])) is None
 
 
 def test_a_search_before_any_edit_is_a_call_before_editing() -> None:
@@ -544,6 +617,7 @@ def test_a_complete_pinned_held_out_batch_is_published(
         ({"failed": True}, "came back as an error in 15 runs"),
         ({"conditions": {"stop_at_edit": True}}, "cannot say what they did after"),
         ({"conditions": {"client": "qwen-code"}}, "is Claude Code's"),
+        ({"conditions": {"community": True}}, "ran as a community version"),
     ],
 )
 def test_a_batch_that_cannot_stand_behind_the_number_is_refused(

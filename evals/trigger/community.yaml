@@ -1,0 +1,20 @@
+# What --community adds to the instance: the settings a community version runs with. Every call
+# reaches the API on one token, and every run reaches the MCP server from one address, where
+# people reach the community version from their own, so both allow what everybody together may.
+services:
+  setup:
+    environment:
+      DPOLENS_COMMUNITY: "true"
+  api:
+    environment:
+      DPOLENS_COMMUNITY: "true"
+      DPOLENS_QUERY_LOG_RETENTION_DAYS: "30"
+      DPOLENS_RATE_LIMIT_PER_MINUTE: "600"
+  worker:
+    environment:
+      DPOLENS_QUERY_LOG_RETENTION_DAYS: "30"
+  mcp:
+    environment:
+      DPOLENS_MCP_COMMUNITY: "true"
+      DPOLENS_MCP_PER_ADDRESS_PER_MINUTE: "300"
+      DPOLENS_QUERY_LOG_RETENTION_DAYS: "30"

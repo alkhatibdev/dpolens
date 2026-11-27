@@ -144,6 +144,14 @@ COMMUNITY_HOLDS = (
     "word, with the key, document and version to cite it by."
 )
 
+GENERAL_TERMS = (
+    "Ask in general terms: what the code does, with which kind of personal data. Leave out "
+    "names, real people's details, secrets and anything internal to your project: the clause "
+    "is found without them."
+)
+"""A community version is somebody else's service, so a question sent to it should hold
+nothing a project keeps to itself."""
+
 RUN_IT_YOURSELF = (
     "An organisation that runs DPOLens itself searches its own policies beside the law, with a "
     "log of every question and every change: github.com/alkhatibdev/dpolens."
@@ -173,6 +181,8 @@ Questions that work well:
   {EXAMPLES[1]}
   {EXAMPLES[2]}
 
+{GENERAL_TERMS}
+
 Start with search_policies. Use get_clause when a result points at another clause, or when
 you need the whole of an article rather than the part that matched. list_documents and
 get_document say what this version can cite at all.
@@ -192,6 +202,8 @@ Search the privacy law this community version holds.
 Call this before writing or changing code that collects, stores, logs, shares or deletes
 personal data, and before answering a question about what the law requires. What comes back
 is the clause itself, word for word, with the key, document and version to cite it by.
+
+{GENERAL_TERMS}
 
 {_kept(days)}.
 """.strip()

@@ -23,6 +23,7 @@ from dpolens_mcp.instructions import (
     CITE,
     COMMUNITY_HOLDS,
     EXAMPLES,
+    GENERAL_TERMS,
     LOGGED,
     NO_MEMORY,
     NOT_LEGAL_ADVICE,
@@ -167,6 +168,8 @@ Questions that work well:
 - {EXAMPLES[0]}
 - {EXAMPLES[1]}
 - {EXAMPLES[2]}
+
+{wrapped(GENERAL_TERMS)}
 
 {NOT_LEGAL_ADVICE_TEXT}
 

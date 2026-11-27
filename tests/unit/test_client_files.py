@@ -17,7 +17,14 @@ from typing import Any
 import pytest
 import yaml
 
-from dpolens_mcp.instructions import SEARCH, SENTENCES, TRIGGER, community_search
+from dpolens_mcp.instructions import (
+    GENERAL_TERMS,
+    INSTRUCTIONS,
+    SEARCH,
+    SENTENCES,
+    TRIGGER,
+    community_search,
+)
 from dpolens_mcp.settings import Settings
 
 REPO = Path(__file__).resolve().parents[2]
@@ -266,6 +273,23 @@ class TestTheCursorPlugin:
         assert "community version" in rule
         assert "this organisation's privacy policies" not in rule
         assert "Search the organisation's own policies as well" not in rule
+
+    def test_its_rule_asks_for_questions_in_general_terms(self) -> None:
+        """The community version is somebody else's service; an instance of your own is not,
+        and its policies may need the project's own words to be found."""
+        community = " ".join((CURSOR_PLUGIN / "rules" / "dpolens.mdc").read_text().split())
+        own = [
+            INSTRUCTIONS,
+            SEARCH,
+            *(
+                path.read_text(encoding="utf-8")
+                for path in GUIDANCE
+                if CURSOR_PLUGIN not in path.parents
+            ),
+        ]
+
+        assert GENERAL_TERMS in community
+        assert not any(GENERAL_TERMS in " ".join(text.split()) for text in own)
 
     def test_its_rule_is_described_on_one_line(self) -> None:
         """cursor.directory reads the front matter a line at a time, so a description folded

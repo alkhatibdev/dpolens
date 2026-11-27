@@ -20,6 +20,7 @@ from starlette.applications import Starlette
 from dpolens_mcp.api import ON_BEHALF_OF_TOKEN, ON_BEHALF_OF_USER, Api
 from dpolens_mcp.community import Allowance, NoCommunityAccount, wait_for
 from dpolens_mcp.credential import Credential
+from dpolens_mcp.instructions import GENERAL_TERMS
 from dpolens_mcp.main import asgi
 from dpolens_mcp.settings import Settings
 from dpolens_stub import HOST, Stub, structured
@@ -135,6 +136,24 @@ async def test_the_server_says_it_on_connect(open_door: Starlette) -> None:
 
     assert instructions.startswith("This is the DPOLens community version.")
     assert "Questions asked here are kept 30 days, with nothing about who asked" in instructions
+
+
+async def test_the_assistant_is_asked_to_leave_out_what_a_project_keeps_to_itself(
+    open_door: Starlette,
+) -> None:
+    """Somebody else's service, so the question it gets should hold nothing private. Said on
+    connect and again in the search tool, which a client that drops the instructions still
+    shows."""
+    async with (
+        httpx2.AsyncClient(transport=httpx2.ASGITransport(open_door), base_url=HOST) as http,
+        Client(streamable_http_client(f"{HOST}/", http_client=http)) as client,
+    ):
+        instructions = " ".join((client.instructions or "").split())
+        listed = await client.list_tools()
+
+    search = next(tool for tool in listed.tools if tool.name == "search_policies")
+    assert GENERAL_TERMS in instructions
+    assert GENERAL_TERMS in " ".join((search.description or "").split())
 
 
 def mcp_post(http: httpx2.AsyncClient, address: str) -> object:
