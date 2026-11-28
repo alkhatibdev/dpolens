@@ -5,6 +5,139 @@ whether to upgrade. A release's notes start from the titles of the pull requests
 are edited by hand. Changes to the HTTP API are listed one by one in
 [docs/api-changelog.md](docs/api-changelog.md), and law packs have versions of their own.
 
+## 0.3.0
+
+The release for finding the rule that answers: questions written beside every clause of both
+laws help search find it, each result is a whole rule, each law is ranked by itself, and a law
+is named in each of its languages. On held-out questions written by somebody who had not seen
+what search returns, the clause the guidance points at is among the top five answers 90% of the
+time for GDPR and 87% for the UAE's law, where 0.2.0 does so 55% and 60% of the time. The
+interfaces (the HTTP API, the pack format, the database schema) can still change before 1.0,
+and only the newest release gets fixes.
+
+Before upgrading from 0.2.0:
+
+- **Take a backup, and keep it until 0.3.0 runs as it should.** 0.3.0 changes the database, so
+  the way back to 0.2.0 is the backup taken before upgrading.
+  [Upgrading](https://dpolens.com/docs/releases#upgrading) takes it first, as written, and
+  [Going back](https://dpolens.com/docs/releases#going-back) restores it.
+- **The first start takes minutes.** Setup updates the database, embeds every clause of the
+  laws again, since each clause is now embedded under its law's short name, and embeds the
+  laws' search questions, about 5,800 of them. The API starts once that is done: about 11
+  minutes with 2 processors and 6 with 4, where 0.2.0's first start took about 4 and 2. Later
+  starts take seconds.
+- **A search asks more of the database:** about six times the work it asked of 0.2.0, since each
+  law is ranked by itself with its search questions and whole rules are read. With 2 processors,
+  a search takes about 200 ms, where it took about 130. An instance that caps the database's
+  processor time may need a higher cap.
+- **Load the laws' new versions.** The image carries GDPR 2026.2 and the UAE PDPL 2026.3, and an
+  instance keeps the versions it has until somebody loads newer ones:
+
+  ```bash
+  docker compose exec api dpolens pack update gdpr
+  docker compose exec api dpolens pack update uae-pdpl
+  ```
+
+  Their words are searchable at once, and their meaning once the worker has embedded them: about
+  3 minutes with 2 processors, while it holds about 1.2 GB of memory. Until they are loaded, an
+  instance names each law in English alone, and holds the UAE law's definitions in one clause,
+  Article 1, which `dpolens search-questions status` lists as a clause without questions. An
+  instance with no way to the internet loads them from its image, as setup's log says:
+  `dpolens pack load /opt/dpolens/packs/gdpr`, and the same for `uae-pdpl`.
+- **Upgrade DPOLens before updating a law.** These versions are released under
+  `packs/<slug>/<version>`, a tag 0.2.0 does not read, so on 0.2.0 `dpolens pack update` finds
+  nothing newer than 2026.1.
+- **If `.env` sets `DPOLENS_VERSION`,** set it to 0.3.0 or take it out: otherwise the instance
+  keeps running the release it names.
+- **A client of the HTTP API may need changing.** A search answers with whole rules, and `limit`
+  counts rules. Results take turns by law, so they are not in `score` order across laws. A law's
+  and a document's names are maps from language to name in `GET /v1/documents`, `GET /v1/laws`
+  and `GET /v1/overview`.
+  [The API changelog](https://github.com/alkhatibdev/dpolens/blob/v0.3.0/docs/api-changelog.md)
+  lists every change. The MCP server's tools keep their names and arguments, so an AI assistant
+  needs nothing.
+
+What changed since 0.2.0:
+
+- **Search questions.** Questions written beside each clause of GDPR and the UAE law, and
+  checked against it, help search find the clause that answers. They are never shown, quoted or
+  cited. `dpolens search-questions off` turns them off, `status` lists any clause left without
+  them, and the Settings page says whether searches use them.
+  ([#96](https://github.com/alkhatibdev/dpolens/pull/96),
+  [#97](https://github.com/alkhatibdev/dpolens/pull/97),
+  [#110](https://github.com/alkhatibdev/dpolens/pull/110),
+  [#113](https://github.com/alkhatibdev/dpolens/pull/113))
+- **Whole rules.** A result is the rule a match belongs to: the words that introduce it, and the
+  clauses beneath them, each with its own key to cite it by. So GDPR Article 17(1)(b) comes with
+  the paragraph that says there is a right to erasure where one of the grounds applies. In the
+  API, the MCP server, the dashboard and `dpolens search`.
+  ([#114](https://github.com/alkhatibdev/dpolens/pull/114),
+  [#115](https://github.com/alkhatibdev/dpolens/pull/115))
+- **Each law ranked by itself.** Each law a search covers, and the organisation's own policies,
+  are ranked apart and take turns in the results, so a policy is not crowded out by a law with
+  search questions. Results are ranked by standardised fusion, and a question that nearly quotes
+  a clause gets that clause first.
+  ([#110](https://github.com/alkhatibdev/dpolens/pull/110),
+  [#111](https://github.com/alkhatibdev/dpolens/pull/111),
+  [#125](https://github.com/alkhatibdev/dpolens/pull/125))
+- **The same search, the same results.** Meaning search compares every vector, where an
+  approximate index could return other clauses as the database's statistics changed. Search
+  reads each document's version in force, and no longer matches the words of a version that was
+  replaced.
+  ([#99](https://github.com/alkhatibdev/dpolens/pull/99),
+  [#109](https://github.com/alkhatibdev/dpolens/pull/109))
+- **Setup gathers the database's statistics** once everything is loaded. The database gathers
+  them for a table only once enough of it has changed, which a small table, such as each
+  document's versions, may never reach, and a search planned without them takes longer.
+  ([#126](https://github.com/alkhatibdev/dpolens/pull/126))
+- **Laws named in their own languages, and the days each text applies.** Pack format 2 names a
+  law in every language it has a text in, so an Arabic clause of the UAE law carries the law's
+  Arabic title, and each clause is embedded under its law's short name, in its own language.
+  Every clause says when its text applies, and a search returns a provision that does not apply
+  yet, marked, so a duty can be prepared for.
+  ([#92](https://github.com/alkhatibdev/dpolens/pull/92),
+  [#93](https://github.com/alkhatibdev/dpolens/pull/93))
+- **The UAE law's definitions** are clauses of their own in UAE PDPL 2026.3, each keyed by the
+  term it defines, such as `uae-pdpl:art-1:def-personal-data`. Held in one clause, the twenty
+  were too long for the search model, which read about the first 40% of them.
+  ([#116](https://github.com/alkhatibdev/dpolens/pull/116))
+- **Law packs** are released under `packs/<slug>/<version>`, and `dpolens pack scaffold` starts
+  a new one. CI reads every pack in the repository as an instance reads it.
+  ([#75](https://github.com/alkhatibdev/dpolens/pull/75),
+  [#123](https://github.com/alkhatibdev/dpolens/pull/123))
+- **The MCP server** asks for one question per search, saying what the code does with which
+  data. On a community version, it asks for questions in general terms and allows each IP
+  address 60 calls a minute, where it allowed 30. The Claude Code skill's description says
+  personal data, not data, for what is sent to another service.
+  ([#107](https://github.com/alkhatibdev/dpolens/pull/107),
+  [#112](https://github.com/alkhatibdev/dpolens/pull/112),
+  [#121](https://github.com/alkhatibdev/dpolens/pull/121),
+  [#122](https://github.com/alkhatibdev/dpolens/pull/122))
+- **The dashboard** fetches each page the first time it is opened, and carries the new logo.
+  ([#102](https://github.com/alkhatibdev/dpolens/pull/102),
+  [#117](https://github.com/alkhatibdev/dpolens/pull/117),
+  [#118](https://github.com/alkhatibdev/dpolens/pull/118),
+  [#119](https://github.com/alkhatibdev/dpolens/pull/119))
+- **Search is scored on questions written blind**: questions a person wrote without seeing what
+  search returns, and the searches Claude Code wrote during 40 coding tasks. `dpolens evals run
+  --outcomes` keeps each question's outcome, and `dpolens evals compare` judges a change to
+  search by a rule written down before it is measured.
+  ([#98](https://github.com/alkhatibdev/dpolens/pull/98),
+  [#101](https://github.com/alkhatibdev/dpolens/pull/101),
+  [#125](https://github.com/alkhatibdev/dpolens/pull/125))
+
+On the same held-out questions, how often each release puts the clause the guidance points at
+among the top five answers, each law searched alone:
+
+| Questions | GDPR, 0.2.0 | GDPR, 0.3.0 | The UAE law, 0.2.0 | The UAE law, 0.3.0 |
+| --- | --- | --- | --- | --- |
+| Asked by a person | 55% | 90% | 60% | 87% |
+| Written by an AI assistant, on an instance of your own | 40% | 40% | 27% | 62% |
+| Written by an AI assistant, on the community version | 35% | 55% | 33% | 79% |
+
+[How it was measured](https://github.com/alkhatibdev/dpolens/blob/v0.3.0/evals/retrieval.md)
+gives each set, the figures with both laws selected, and what the figures do not say.
+
 ## 0.2.0
 
 The release for running an instance for real: backups taken while it answers, restores, a

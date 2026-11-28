@@ -3,7 +3,7 @@
 DPOLens grounds AI coding assistants in an organisation's own policies and the privacy laws
 that apply to it, with citations that can be verified against a versioned source.
 
-> **Project status: 0.2.** Until 1.0, a release can change the HTTP API, the pack format
+> **Project status: 0.3.** Until 1.0, a release can change the HTTP API, the pack format
 > and the database schema, and [CHANGELOG.md](CHANGELOG.md) says what each one changed. If
 > you build on DPOLens now, pin a release.
 
