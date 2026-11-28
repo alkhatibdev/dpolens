@@ -1,0 +1,43 @@
+# The UAE's data protection law: the assistant-style held-out set, asked in Arabic.
+#
+# Claude Code (claude-sonnet-5-5) typed these queries while working, once each, through the
+# coding tasks of ../trigger/queries.yaml, on an instance holding this law alone. A run stops
+# when its first search comes back, so each query was written before any result was read.
+# Nobody searched them before these labels were fixed.
+#
+# Each thing a query asks is a part, with an entry of its own under the same words; `topic`
+# names the task and the part. A query that only describes what the code does asks whether it
+# may be done. Every label rests on the words of a law firm's published guide that name the article, in `quote`; `note`
+# says why that rule is the one the part asks about. Where more than one clause answers a
+# part, each is listed and any one counts.
+
+questions:
+  - id: whatsapp-weekly-offers.marketing
+    topic: whatsapp-weekly-offers.marketing
+    question: >-
+      إرسال رسائل تسويقية أسبوعية إلى أرقام جوال العملاء عبر واتساب (جهة خارجية)
+    lang: ar
+    expected_keys: [uae-pdpl:art-17:para-1, uae-pdpl:art-4]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 17 of the PDPL allows data subjects to refuse or request the cessation of
+      processing of their personal data in cases involving direct marketing
+    note: >-
+      Sending marketing needs a basis, Article 4: consent, unless one of its cases applies.
+      Article 17(1) gives the right to stop processing for direct marketing, so it counts too.
+
+  - id: whatsapp-weekly-offers.outside-service
+    topic: whatsapp-weekly-offers.outside-service
+    question: >-
+      إرسال رسائل تسويقية أسبوعية إلى أرقام جوال العملاء عبر واتساب (جهة خارجية)
+    lang: ar
+    expected_keys: [uae-pdpl:art-8:para-1, uae-pdpl:art-7:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(1) states that the Data Processor shall carry out the processing in accordance
+      with the instructions of the Controller and the contracts and agreements concluded between
+      them.
+    note: >-
+      Handing data to a company that processes it for us is the use of a processor: Article 7(5)
+      on choosing one with sufficient guarantees, Article 8(1) on processing only under the
+      controller's instructions and their contract. Either counts.

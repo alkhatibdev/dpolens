@@ -1,221 +1,265 @@
-# UAE PDPL held-out set, asked in English.
+# The UAE's data protection law: questions people ask, written blind.
 #
-# The same questions as held_out.ar.yaml, which asks them in Arabic, under the same ids
-# and labels. The English text of the law is the official translation, so these
-# questions are answered from it, and the Arabic prevails where the two differ.
-# See held_out.ar.yaml for how the topics were chosen and where the labels come from.
+# A person wrote these in their own words, the way they would ask while building a product,
+# before reading any eval set or search result, and without looking anything up. Nobody searched
+# them before these labels were fixed. A question that asks two things answered by different
+# rules is an entry for each, under the same words.
+#
+# Every label rests on the words of a law firm's published guide in `quote`; `note` says why that clause answers.
+# Where the guide gives the rule without the article's number, the note says so. Where more
+# than one clause answers, each is listed and any one counts.
 
 questions:
-  - id: access-request
-    question: A user asked what personal data we hold about them and why we use it. Do we have to tell them, and can we charge for it?
-    lang: en
-    expected_keys: [uae-pdpl:art-13:para-1]
-    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
-    quote: >-
-      Right to obtain information ('data access') (Article 13) A Data Subject is
-      entitled to request access to and obtain the following information without
-      charge
-    note: The right to ask is paragraph 1, and it is free of charge.
 
-  - id: accuracy
-    question: Do we have to keep customers' addresses up to date, or can we just keep whatever they gave us at signup?
+  - id: q01
+    topic: q01
+    question: >-
+      Our startup is registered in DIFC. Does the federal UAE PDPL apply to our customer
+      database?
     lang: en
-    expected_keys: [uae-pdpl:art-5:para-4]
-    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    expected_keys: [uae-pdpl:art-2:para-2:pt-g]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
     quote: >-
-      Data Protection Controls (Article 5) ... Personal Data must be accurate and
-      correct and must be updated whenever necessary
-    note: Point 4 of the controls in Article 5.
-
-  - id: breach-report
-    question: Someone broke into our database and copied user records. Who do we have to report it to, and how quickly?
-    lang: en
-    expected_keys: [uae-pdpl:art-9:para-1]
-    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
-    quote: >-
-      Article 9 of the PDPL requires that the Controller shall, immediately upon
-      becoming aware of any infringement or breach of the Personal Data of the Data
-      Subject that would prejudice the privacy, confidentiality and security of such
-      data, report such infringement or breach and the results of the investigation to
-      the Office
+      Article 2 of the PDPL provides that the Decree Law governs personal data processing by
+      anyone within the State or by entities outside the State handling data of individuals
+      within the State. Exceptions include government data, certain government authorities and
+      organizations/entities with their own data protection laws (such as DIFC)
     note: >-
-      Paragraph 1 is the report to the Bureau, the UAE Data Office; paragraph 2 is
-      telling the people affected.
+      Companies in free zones that have their own data protection legislation, as the DIFC has,
+      are outside this law: point (g) of Article 2(2).
 
-  - id: breach-tell-users
-    question: After a breach, do we also have to tell the users whose data leaked?
+  - id: q02
+    topic: q02
+    question: >-
+      Does the UAE PDPL apply to a foreign company that processes personal data of people living
+      in the UAE?
     lang: en
-    expected_keys: [uae-pdpl:art-9:para-2]
-    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    expected_keys: [uae-pdpl:art-2:para-1:pt-c, uae-pdpl:art-2:para-1:pt-a]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
     quote: >-
-      Article 9 requires controllers to notify the Data Office of personal data
-      breaches ... Controllers also must notify affected data subjects when a breach
-      poses a risk to their privacy, informing them of the measures taken
-    note: Paragraph 2.
+      Article 2 of the PDPL provides that the Decree Law governs personal data processing by
+      anyone within the State or by entities outside the State handling data of individuals
+      within the State. Exceptions include government data, certain government authorities and
+      organizations/entities with their own data protection laws (such as DIFC)
+    note: >-
+      A controller or processor outside the State processing data of people in it is point (c)
+      of Article 2(1); point (a) covers every data subject residing in the State. Either counts.
 
-  - id: controller-or-processor
-    question: We host our clients' customer lists on our platform. Are we the controller or the processor?
+  - id: q05
+    topic: q05
+    question: >-
+      Can we process personal data without consent when it is necessary to perform a contract
+      with the user?
     lang: en
-    expected_keys: [uae-pdpl:art-1:def-controller, uae-pdpl:art-1:def-processor]
-    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    expected_keys: [uae-pdpl:art-4:para-9]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Under Article 1 (Definitions) of the PDPL, a Data Controller is defined as an
-      establishment or natural person who has Personal Data and who, given the nature
-      of his/her activity, specifies the method, criteria and purpose of Processing
-    note: Article 1 defines both, the Controller and the Processor, each a clause of its own.
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases ... if the Processing is
+      necessary to perform a contract to which the Data Subject is a party or to take, at the
+      request of the Data Subject, procedures for concluding, amending or terminating a contract
+    note: >-
+      Processing without consent because it is needed to perform a contract with the person is
+      Article 4(9).
 
-  - id: correction
-    question: A user says the name and birth date on their profile are wrong and wants them fixed. Do we have to?
+  - id: q08
+    topic: q08
+    question: >-
+      When collecting personal data from another company, what information must we provide to
+      the person and when?
+    lang: en
+    expected_keys: [uae-pdpl:art-13:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      per Article 13 of the PDPL, the Controller is required to, in all cases and prior to the
+      commencement of processing, provide Data Subjects with information regarding: the purposes
+      of the processing; the targeted sectors or establishments with whom the personal data will
+      be shared, both within and outside the UAE; and the protection measures for cross-border
+      processing.
+    note: >-
+      The law has no rule of its own for data obtained from another company. Article 13(2)
+      applies in all cases, before processing starts, so it answers both what is given and when.
+      One rule, so one entry.
+
+  - id: q09
+    topic: q09
+    question: >-
+      Must we tell users which categories of third parties receive their personal data?
+    lang: en
+    expected_keys: [uae-pdpl:art-13:para-2, uae-pdpl:art-13:para-1:pt-d]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      per Article 13 of the PDPL, the Controller is required to, in all cases and prior to the
+      commencement of processing, provide Data Subjects with information regarding: the purposes
+      of the processing; the targeted sectors or establishments with whom the personal data will
+      be shared, both within and outside the UAE; and the protection measures for cross-border
+      processing.
+    note: >-
+      The sectors or establishments the data is shared with are point (d) of Article 13(1),
+      which Article 13(2) requires to be given before processing starts. Either counts.
+
+  - id: q11
+    topic: q11
+    question: >-
+      Can a user request correction of inaccurate personal data held in their account?
     lang: en
     expected_keys: [uae-pdpl:art-15:para-1]
     source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Right to correction or erasure ('right to be forgotten') (Article 15) The Data
-      Subject has the right to request the correction or completion of his / her
-      inaccurate Personal Data held with the Controller
-    note: Correction is paragraph 1; erasure, paragraph 2, is in the tuning set.
+      (Article 15) The Data Subject has the right to request the correction or completion of his
+      / her inaccurate Personal Data held with the Controller, and has the right to request the
+      erasure of his / her Personal Data held with the Controller in any of the following cases
+    note: >-
+      Correcting inaccurate data is Article 15(1).
 
-  - id: dpo-required
-    question: We handle a large amount of health data. Do we have to appoint a data protection officer?
+  - id: q12
+    topic: q12
+    question: >-
+      What should we do when a user requests deletion of their personal data?
     lang: en
-    expected_keys: [uae-pdpl:art-10:para-1]
-    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
-    quote: >-
-      By virtue of Article 10 of the PDPL, the Controller and Processor must designate
-      a Data Protection Officer (DPO)
-    note: Paragraph 1 lists when one must be appointed.
-
-  - id: legal-bases
-    question: Do we need users' consent for everything we do with their data, or are there cases where we don't?
-    lang: en
-    expected_keys: [uae-pdpl:art-4]
+    expected_keys: [uae-pdpl:art-15:para-2, uae-pdpl:art-15:para-3]
     source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal
-      Data without the consent of the Data Subject, except in the following cases
-    note: Article 4 lists the cases that need no consent, and any of them answers.
+      (Article 15) The Data Subject has the right to request the correction or completion of his
+      / her inaccurate Personal Data held with the Controller, and has the right to request the
+      erasure of his / her Personal Data held with the Controller in any of the following cases
+    note: >-
+      Erasure on request is Article 15(2), in the cases it lists; Article 15(3) says when it is
+      refused. Either counts.
 
-  - id: minimisation
-    question: Can we ask for extra details at signup, like date of birth and gender, in case we need them later?
+  - id: q14
+    topic: q14
+    question: >-
+      Can users challenge a decision that significantly affects them if it is made entirely
+      through automated processing?
     lang: en
-    expected_keys: [uae-pdpl:art-5:para-3]
+    expected_keys: [uae-pdpl:art-18:para-1, uae-pdpl:art-18:para-4]
     source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Data Protection Controls (Article 5) ... Personal Data must be sufficient for
-      and limited to the purpose for which the Processing is made
-    note: Point 3 of the controls in Article 5.
+      The right not to be subject to automated decision making, including profiling (Article 18)
+      The Data Subject has the right to object to decisions issued with respect to Automated
+      Processing that have legal consequences or seriously affect the Data Subject, including
+      Profiling.
+    note: >-
+      Objecting to a decision made by automated processing is Article 18(1); Article 18(4) gives
+      a human review on request. Either counts.
 
-  - id: penalties
-    question: What happens if we break the data protection law? Are there fines?
+  - id: q17
+    topic: q17
+    question: >-
+      Can we retain transaction records after account closure to meet another UAE legal
+      retention requirement?
     lang: en
-    expected_keys: [uae-pdpl:art-26]
-    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
-    quote: >-
-      may impose administrative penalties stated in Article 26 of the PDPL
-    note: Article 26 leaves the violations and their penalties to a Cabinet decision.
-
-  - id: portability
-    question: A customer wants all their data in a file they can import into a competitor's app. Do we have to provide it?
-    lang: en
-    expected_keys: [uae-pdpl:art-14]
+    expected_keys: [uae-pdpl:art-4:para-10, uae-pdpl:art-15:para-3:pt-c]
     source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Right to request Personal Data transfer ('data portability') (Article 14) The
-      Data Subject has the right to obtain his / her Personal Data provided to the
-      Controller for Processing in a structured and machine-readable manner
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases ... if the Processing is
+      necessary to fulfill obligations imposed by other laws of the State on Controllers
     note: >-
-      Either paragraph answers: receiving the data, or having it sent to another
-      controller.
+      Keeping records another law requires is processing to fulfil obligations other laws place
+      on the controller, Article 4(10); a request to erase them is refused where it contradicts
+      other legislation, point (c) of Article 15(3). Either counts.
 
-  - id: processor-end-of-contract
-    question: Our contract with the vendor that processes our customer data ends next month. What do they have to do with the data?
+  - id: q19
+    topic: q19
+    question: >-
+      Does the UAE PDPL set a specific deadline for notifying the UAE Data Office about a
+      personal data breach?
     lang: en
-    expected_keys: [uae-pdpl:art-8:para-4]
-    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
-    quote: >-
-      Article 8(3) and (4) govern Data Retention ... the processor must erase or
-      return all personal data
-    note: >-
-      Paragraph 4: erase the data, or hand it to the controller, once the processing
-      period ends.
-
-  - id: processor-records
-    question: We process personal data on behalf of our clients. Do we also have to keep a record of that processing?
-    lang: en
-    expected_keys: [uae-pdpl:art-8:para-7]
-    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
-    quote: >-
-      Article 8(7) imposes on Processors a requirement very similar to the
-      controller's record-keeping. Data Processors must maintain a special record of
-      Personal Data which is processed on behalf of the Controller
-    note: >-
-      Paragraph 7 of the processor's obligations; the controller's own record is
-      Article 7(4).
-
-  - id: processor-security
-    question: We're a vendor processing data for our clients. Do we have to build data protection into the system from the design stage?
-    lang: en
-    expected_keys: [uae-pdpl:art-8:para-2]
-    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
-    quote: >-
-      Article 8(2) obliges processors to apply the appropriate technical and
-      organizational procedures and measures to protect Personal Data at the design
-      stage and throughout processing
-    note: Paragraph 2 of the processor's obligations.
-
-  - id: records-of-processing
-    question: Do we have to keep a written record of the personal data we process and why we process it?
-    lang: en
-    expected_keys: [uae-pdpl:art-7:para-4]
-    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
-    quote: >-
-      Article 7(4) mandates that the controller keep a "special record" of all
-      personal data activities
-    note: Paragraph 4 of the controller's obligations.
-
-  - id: restriction
-    question: A user says the data we hold about them is wrong. Can they make us stop using it while we check?
-    lang: en
-    expected_keys: [uae-pdpl:art-16:para-1]
+    expected_keys: [uae-pdpl:art-9:para-1]
     source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Right to restriction of Processing (Article 16) The Data Subject has the right
-      to oblige the Controller to restrict and stop Processing in any of the following
-      cases: if the Data Subject objects to the accuracy of his / her Personal Data
-    note: Paragraph 1 lists the cases, a dispute over accuracy first.
+      Article 9 of the PDPL requires that the Controller shall, immediately upon becoming aware
+      of any infringement or breach of the Personal Data of the Data Subject that would
+      prejudice the privacy, confidentiality and security of such data, report such infringement
+      or breach and the results of the investigation to the Office within such period and in
+      accordance with such procedures and conditions as set by the Executive Regulations. At the
+      date of writing this update, the Executive Regulations have not yet been published.
+    note: >-
+      Notifying the Office of a breach is Article 9(1), which leaves the period to the Executive
+      Regulations.
 
-  - id: scope-health-data
-    question: We're building an app for clinics. Does the PDPL cover patients' health data, or does another law?
+  - id: q22
+    topic: q22
+    question: >-
+      Do face templates used to identify a person count as sensitive biometric data under the
+      UAE PDPL?
     lang: en
-    expected_keys: [uae-pdpl:art-2:para-2:pt-e]
+    expected_keys: [uae-pdpl:art-1:def-biometric-data, uae-pdpl:art-1:def-sensitive-personal-data]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      "Biometric Data" is defined as Personal Data resulting from Processing, using a specific
+      technique, relating to the physical, physiological or behavioral characteristics of a Data
+      Subject, which allows or confirms the unique identification of the Data Subject, such as
+      facial images ... "Sensitive Personal Data" is defined as any data that directly or
+      indirectly reveals a natural person's family, racial origin, political or philosophical
+      opinions, religious beliefs, criminal records, biometric data
+    note: >-
+      A face template used to identify somebody is biometric data, and biometric data is
+      sensitive personal data, both by the definitions in Article 1. The guide gives them
+      without numbering the article. Either counts.
+
+  - id: q24
+    topic: q24
+    question: >-
+      What clauses must our agreement with a cloud hosting provider include under the UAE PDPL?
+    lang: en
+    expected_keys: [uae-pdpl:art-8:para-1]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(1) states that the Data Processor shall carry out the processing in accordance
+      with the instructions of the Controller and the contracts and agreements concluded between
+      them. This means a Data Processor cannot process data beyond the Controller's directive.
+      It also implies that the controller-processor contract must clearly specify the processing
+      details (scope, nature, category of data, etc.).
+    note: >-
+      What the agreement with a processor has to specify is Article 8(1): the scope, subject,
+      purpose and nature of the processing, the type of data and the category of people.
+
+  - id: q27
+    topic: q27
+    question: >-
+      Can we transfer personal data to a country recognized as providing adequate protection
+      under the UAE PDPL?
+    lang: en
+    expected_keys: [uae-pdpl:art-22]
     source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
     quote: >-
-      Article 2 of the PDPL provides that the Decree Law governs personal data
-      processing ... Exceptions include ... data covered by specific legislation like
-      health or banking data
+      Article 22 of the PDPL permits the transfer of personal data to countries with robust data
+      protection laws in place or where the specific country has acceded to bilateral or
+      multilateral agreements relating to the protection of personal data. ... Article 23 of the
+      PDPL allows personal data to be transferred to countries lacking
     note: >-
-      Point (e): health data that has its own legislation is outside the law.
+      Transfers to a country with adequate protection, or covered by an agreement the State has
+      joined, are Article 22.
 
-  - id: scope-outside-uae
-    question: Our company is based in Saudi Arabia, but a lot of our users live in the UAE. Does the UAE law apply to us?
+  - id: q28
+    topic: q28
+    question: >-
+      Do we need to maintain records of processing activities under the UAE PDPL?
     lang: en
-    expected_keys: [uae-pdpl:art-2:para-1:pt-c]
-    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    expected_keys: [uae-pdpl:art-7:para-4, uae-pdpl:art-8:para-7]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
     quote: >-
-      Article 2 of the PDPL provides that the Decree Law governs personal data
-      processing by anyone within the State or by entities outside the State handling
-      data of individuals within the State
+      Article 7(4) mandates that the controller keep a "special record" of all personal data
+      activities
     note: >-
-      Point (c) of paragraph 1: a controller or processor outside the State,
-      processing the data of people in it.
+      The controller's record is Article 7(4), the processor's Article 8(7). Either counts.
 
-  - id: stop-marketing
-    question: A user asked us to stop sending them promotional emails. Do we have to stop?
+  - id: q30
+    topic: q30
+    question: >-
+      Is a Data Protection Impact Assessment required before launching a feature involving
+      high-risk personal data processing?
     lang: en
-    expected_keys: [uae-pdpl:art-17:para-1]
-    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    expected_keys: [uae-pdpl:art-21:para-1, uae-pdpl:art-21:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
     quote: >-
-      Article 17 of the PDPL allows data subjects to refuse or request the cessation
-      of processing of their personal data in cases involving direct marketing
+      Article 21 also requires that DPIAs be conducted before Processing that will use any of
+      the modern technologies that would pose a high risk to the privacy and confidentiality of
+      the Personal Data of the Data Subject, if the Processing will be made on a large amount of
+      Sensitive Personal Data (Article 21).
     note: >-
-      Paragraph 1: direct marketing.
+      An impact assessment before processing that poses a high risk is Article 21(1); Article
+      21(2) names the cases where it is required. Either counts.

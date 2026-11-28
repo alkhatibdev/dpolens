@@ -342,8 +342,9 @@ _Avoid_: Benchmark, test suite (which means the unit and integration tests)
 
 **Eval question**:
 A question with the clause keys it should retrieve, used to score search. It belongs
-either to the **tuning set**, used while improving search, or to the **held-out set**,
-which produces the published score.
+either to a set used while improving search, the **tuning set** or the **assistant set** of
+queries AI assistants sent, or to a **held-out set**, which produces a published score and is
+scored before anyone working on search has seen it.
 _Avoid_: Test question, golden question
 
 ### Logs

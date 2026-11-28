@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from dpolens.cli.evals import languages_by_set
 from dpolens.engine.evals import EvalSetError, sets_named
 
 
@@ -27,3 +28,13 @@ def test_a_set_named_without_its_language_is_every_language_it_is_asked_in(sets:
 def test_a_name_no_set_has_is_refused(sets: Path) -> None:
     with pytest.raises(EvalSetError, match="holds no set named held-out"):
         sets_named(sets, "held-out")
+
+
+def test_each_set_s_languages_are_scored_together_apart_from_the_other_sets() -> None:
+    named = ["held_out.ar", "held_out.en", "held_out_assistant.en", "tuning.ar", "tuning.en"]
+
+    assert languages_by_set(named) == [["held_out.ar", "held_out.en"], ["tuning.ar", "tuning.en"]]
+
+
+def test_a_set_asked_in_one_language_has_nothing_to_score_together() -> None:
+    assert languages_by_set(["held_out_assistant.en", "held_out_community.en"]) == []

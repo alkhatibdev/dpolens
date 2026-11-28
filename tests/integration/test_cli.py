@@ -248,13 +248,37 @@ def test_a_run_beside_every_law_is_never_written(in_the_checkout: None) -> None:
     assert "--write is for a law searched alone" in said(result)
 
 
-def test_scoring_together_needs_two_sets(in_the_checkout: None) -> None:
+def test_every_held_out_set_is_written_and_nothing_else(in_the_checkout: None) -> None:
     result = runner.invoke(
-        app, ["evals", "run", "--pack", "gdpr", "--set", "held_out.en", "--together"]
+        app,
+        [
+            "evals",
+            "run",
+            "--pack",
+            "uae-pdpl",
+            "--set",
+            "held_out_assistant",
+            "--set",
+            "held_out_community",
+            "--set",
+            "tuning.ar",
+            "--write",
+        ],
     )
 
     assert result.exit_code == 2
-    assert "at least two sets" in said(result)
+    assert "--write is for held-out sets, not 'tuning.ar'." in said(result)
+
+
+def test_scoring_together_needs_a_set_asked_in_two_languages(in_the_checkout: None) -> None:
+    for named in (
+        ["--set", "held_out.en"],
+        ["--set", "held_out.en", "--set", "held_out_assistant.en"],
+    ):
+        result = runner.invoke(app, ["evals", "run", "--pack", "gdpr", *named, "--together"])
+
+        assert result.exit_code == 2
+        assert "name a set asked in at least two languages" in said(result)
 
 
 def test_a_set_the_pack_does_not_have_is_named_before_anything_runs(

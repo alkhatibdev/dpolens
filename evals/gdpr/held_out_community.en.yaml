@@ -1,0 +1,347 @@
+# GDPR: the assistant-style held-out set, as sent to the community version.
+#
+# Claude Code (claude-sonnet-5-5) typed these queries while working, once each, through the
+# coding tasks of ../trigger/queries.yaml, on an instance set up as the community version,
+# holding both laws, and added as the community page adds it; each query is labelled under the
+# law its task was written for. A run stops when its first search comes back, so each query
+# was written before any result was read. Nobody searched them before these labels were fixed.
+#
+# Each thing a query asks is a part, with an entry of its own under the same words; `topic`
+# names the task and the part. A query that only describes what the code does asks whether it
+# may be done. Every label rests on the words of an EDPB guideline that name the article, in `quote`; `note`
+# says why that rule is the one the part asks about. Where more than one clause answers a
+# part, each is listed and any one counts.
+
+questions:
+  - id: refer-a-friend.marketing
+    topic: refer-a-friend.marketing
+    question: >-
+      sending a marketing or promotional email to a person who has not signed up, using an email
+      address supplied by another customer
+    lang: en
+    expected_keys: [gdpr:art-6:para-1, gdpr:art-21:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Consent remains one of six lawful bases to process personal data, as listed in Article 6
+      of the GDPR.
+    note: >-
+      The person gave us nothing: emailing them an offer, from an address a customer typed,
+      needs a lawful basis, Article 6(1). Article 21(2), the right to object to direct
+      marketing, counts too.
+
+  - id: refer-a-friend.retention-2
+    topic: refer-a-friend.retention
+    question: >-
+      how long can we keep an email address of a non-customer collected through a referral
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1:pt-a, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      The controller shall limit the retention period to what is necessary for the purpose. If
+      personal data is no longer necessary for the purpose of the processing, then it shall by
+      default be deleted or anonymized. The length of the period of retention will therefore
+      depend on the purpose of the processing in question. This obligation is directly related
+      to the principle of storage limitation in Article 5(1)(e)
+    note: >-
+      How long data may be kept is storage limitation, point (e) of Article 5(1). Point (a) of
+      Article 17(1) says the same from the other side, erase what the purpose no longer needs,
+      and Article 25(2) makes it the default a system must have, so they count too.
+
+  - id: household-birthdays.marketing
+    topic: household-birthdays.marketing
+    question: >-
+      storing children's first name and date of birth provided by a parent to send an annual
+      birthday voucher
+    lang: en
+    expected_keys: [gdpr:art-6:para-1, gdpr:art-21:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Consent remains one of six lawful bases to process personal data, as listed in Article 6
+      of the GDPR.
+    note: >-
+      A birthday voucher by email is marketing. Keeping children's names and birthdays for it
+      needs a lawful basis, Article 6(1), whose point (f) weighs a child's interests by name.
+      Article 21(2), the right to object to direct marketing, counts too. Article 8 is about a
+      child's own consent to a service offered to the child, which this is not.
+
+  - id: driver-on-the-map.allowed
+    topic: driver-on-the-map.allowed
+    question: >-
+      showing a customer the live GPS location of a delivery driver, storing location points
+      while an order is out for delivery
+    lang: en
+    expected_keys: [gdpr:art-6:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines-art_6-1-b-adopted_after_public_consultation_en.pdf
+    quote: >-
+      Article 6(1) of the General Data Protection Regulation ... specifies that processing shall
+      be lawful only on the basis of one of six specified conditions set out in Article 6(1)(a)
+      to (f)
+    note: >-
+      Whether drivers' live location may be collected and shown to customers is the question of
+      a lawful basis, and Article 6(1) lists them.
+
+  - id: offers-by-segment.marketing
+    topic: offers-by-segment.marketing
+    question: >-
+      collecting gender and age group at signup to send targeted marketing offers to each
+      segment
+    lang: en
+    expected_keys: [gdpr:art-6:para-1, gdpr:art-21:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Consent remains one of six lawful bases to process personal data, as listed in Article 6
+      of the GDPR.
+    note: >-
+      Whether people may be sent marketing is the question of a lawful basis, Article 6(1):
+      consent, or for some marketing a legitimate interest. Article 21(2), the right to object
+      to direct marketing, is there because marketing can rest on a basis other than consent, so
+      it counts too.
+
+  - id: one-tap-card.allowed-card
+    topic: one-tap-card.allowed-card
+    question: >-
+      storing payment card brand, last four digits and expiry date of a customer, with the card
+      itself held by a payment processor
+    lang: en
+    expected_keys: [gdpr:art-6:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2021-05/recommendations022021_on_storage_of_credit_card_data_en_1.pdf
+    quote: >-
+      consent (Art. 6(1)(a) GPDR) appears to be the sole appropriate legal basis
+    note: >-
+      Whether a card may be kept for the next purchase is the question of a lawful basis,
+      Article 6(1). The EDPB's recommendation on storing card data to make later purchases
+      easier finds that consent, point (a), is the only one that fits.
+
+  - id: sent-email-copies.retention
+    topic: sent-email-copies.retention
+    question: >-
+      how long may we retain a copy of emails sent to customers, containing their name, address
+      and order details
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1:pt-a, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      The controller shall limit the retention period to what is necessary for the purpose. If
+      personal data is no longer necessary for the purpose of the processing, then it shall by
+      default be deleted or anonymized. The length of the period of retention will therefore
+      depend on the purpose of the processing in question. This obligation is directly related
+      to the principle of storage limitation in Article 5(1)(e)
+    note: >-
+      How long data may be kept is storage limitation, point (e) of Article 5(1). Point (a) of
+      Article 17(1) says the same from the other side, erase what the purpose no longer needs,
+      and Article 25(2) makes it the default a system must have, so they count too.
+
+  - id: doorstep-needs.special-category
+    topic: doorstep-needs.special-category
+    question: >-
+      storing free-text delivery notes that may reveal a customer's disability or health
+      condition, and showing them to delivery drivers
+    lang: en
+    expected_keys: [gdpr:art-9:para-1, gdpr:art-9:para-2]
+    source: https://www.edpb.europa.eu/system/files/2021-04/edpb_guidelines_082020_on_the_targeting_of_social_media_users_en.pdf
+    quote: >-
+      Processing of these data are in principle prohibited according to Article 9(1).
+    note: >-
+      Notes that reveal a disability or a health condition are a special category: Article 9(1)
+      forbids processing them unless one of the exemptions in Article 9(2) applies. Either
+      counts.
+
+  - id: chat-history-forever.retention
+    topic: chat-history-forever.retention
+    question: >-
+      how long can we keep customer support chat conversations linked to a customer account,
+      with no deletion
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1:pt-a, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      The controller shall limit the retention period to what is necessary for the purpose. If
+      personal data is no longer necessary for the purpose of the processing, then it shall by
+      default be deleted or anonymized. The length of the period of retention will therefore
+      depend on the purpose of the processing in question. This obligation is directly related
+      to the principle of storage limitation in Article 5(1)(e)
+    note: >-
+      How long data may be kept is storage limitation, point (e) of Article 5(1). Point (a) of
+      Article 17(1) says the same from the other side, erase what the purpose no longer needs,
+      and Article 25(2) makes it the default a system must have, so they count too.
+
+  - id: staff-access-audit.security-logging
+    topic: staff-access-audit.security-logging
+    question: >-
+      keeping an audit log of staff access to customer accounts and changes to customer orders,
+      recording who, which customer, action and time
+    lang: en
+    expected_keys: [gdpr:art-32:para-1, gdpr:art-6:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202209_personal_data_breach_notification_v2.0_en.pdf
+    quote: >-
+      Article 32 GDPR, "security of processing", explains that when implementing technical and
+      organisational measures to ensure a level of security appropriate to the risk
+    note: >-
+      A log of which staff member opened which customer's account is a security measure, Article
+      32(1), and needs a lawful basis, Article 6(1), for the customers and the staff in it.
+      Either counts.
+
+  - id: checkout-recordings.outside-service
+    topic: checkout-recordings.outside-service
+    question: >-
+      third-party session recording of website visitors on checkout pages capturing form inputs
+      and device identifiers
+    lang: en
+    expected_keys: [gdpr:art-28:para-1, gdpr:art-28:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      The obligation to use only processors "providing sufficient guarantees" contained in
+      Article 28(1) GDPR is a continuous obligation. ... the agreement in place complies with
+      Article 28(3) of the GDPR
+    note: >-
+      Handing personal data to a service that processes it for us is the use of a processor:
+      Article 28(1) on choosing one, Article 28(3) on the contract.
+
+  - id: search-suggestions.allowed
+    topic: search-suggestions.allowed
+    question: >-
+      storing a signed-in customer's search history to personalise suggestions, how long may it
+      be kept and on what basis
+    lang: en
+    expected_keys: [gdpr:art-6:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines-art_6-1-b-adopted_after_public_consultation_en.pdf
+    quote: >-
+      Article 6(1) of the General Data Protection Regulation ... specifies that processing shall
+      be lawful only on the basis of one of six specified conditions set out in Article 6(1)(a)
+      to (f)
+    note: >-
+      Whether it may be done at all is the question of a lawful basis, and Article 6(1) lists
+      them.
+
+  - id: search-suggestions.retention
+    topic: search-suggestions.retention
+    question: >-
+      storing a signed-in customer's search history to personalise suggestions, how long may it
+      be kept and on what basis
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1:pt-a, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      The controller shall limit the retention period to what is necessary for the purpose. If
+      personal data is no longer necessary for the purpose of the processing, then it shall by
+      default be deleted or anonymized. The length of the period of retention will therefore
+      depend on the purpose of the processing in question. This obligation is directly related
+      to the principle of storage limitation in Article 5(1)(e)
+    note: >-
+      How long data may be kept is storage limitation, point (e) of Article 5(1). Point (a) of
+      Article 17(1) says the same from the other side, erase what the purpose no longer needs,
+      and Article 25(2) makes it the default a system must have, so they count too.
+
+  - id: new-device-alert.security-logging
+    topic: new-device-alert.security-logging
+    question: >-
+      storing IP address and browser device information for each login to detect new devices and
+      notify the user by email
+    lang: en
+    expected_keys: [gdpr:art-32:para-1, gdpr:art-6:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202209_personal_data_breach_notification_v2.0_en.pdf
+    quote: >-
+      Article 32 GDPR, "security of processing", explains that when implementing technical and
+      organisational measures to ensure a level of security appropriate to the risk
+    note: >-
+      Recording the device and IP address of each sign-in to warn of a new device is a security
+      measure, Article 32(1), and needs a lawful basis, Article 6(1). Either counts.
+
+  - id: lookalike-audience.ad-targeting
+    topic: lookalike-audience.ad-targeting
+    question: >-
+      sharing customer email addresses with an advertising platform for targeted advertising
+      audiences
+    lang: en
+    expected_keys: [gdpr:art-6:para-1, gdpr:art-21:para-2]
+    source: https://www.edpb.europa.eu/system/files/2021-04/edpb_guidelines_082020_on_the_targeting_of_social_media_users_en.pdf
+    quote: >-
+      Generally speaking, there are two legal bases which could justify the processing that
+      supports the targeting of social media users: data subject's consent (Article 6(1)(a)
+      GDPR) or legitimate interests (Article 6(1)(f) GDPR).
+    note: >-
+      Uploading customers' email addresses for an advertising platform to target people needs a
+      lawful basis, Article 6(1): the EDPB names consent and legitimate interests for targeting
+      on social media. Article 21(2), the right to object to direct marketing, counts too.
+
+  - id: food-waste-study.research
+    topic: food-waste-study.research
+    question: >-
+      sharing customer order history with a university for research, using a pseudonymised
+      identifier and partial postal address
+    lang: en
+    expected_keys: [gdpr:art-89:para-1, gdpr:art-5:para-1:pt-b]
+    source: https://www.edpb.europa.eu/system/files/2025-01/edpb_guidelines_202501_pseudonymisation_en.pdf
+    quote: >-
+      pseudonymisation can also constitute an appropriate measure to be taken when processing
+      personal data for archiving purposes in the public interest, scientific or historical
+      research purposes or statistical purposes, in particular in order to ensure respect for
+      the principle of data minimisation, Art. 89(1) GDPR.
+    note: >-
+      Handing data to a university for a study is further processing for a research purpose:
+      point (b) of Article 5(1) says it is not incompatible with the first purpose under the
+      safeguards of Article 89(1), pseudonymisation among them. Either counts.
+
+  - id: support-bot-context.outside-service
+    topic: support-bot-context.outside-service
+    question: >-
+      sending a customer's postal address and order history to a third-party AI service
+      processor to answer support questions
+    lang: en
+    expected_keys: [gdpr:art-28:para-1, gdpr:art-28:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      The obligation to use only processors "providing sufficient guarantees" contained in
+      Article 28(1) GDPR is a continuous obligation. ... the agreement in place complies with
+      Article 28(3) of the GDPR
+    note: >-
+      Handing personal data to a service that processes it for us is the use of a processor:
+      Article 28(1) on choosing one, Article 28(3) on the contract.
+
+  - id: backups-after-deletion.backups
+    topic: backups-after-deletion.backups
+    question: >-
+      erasure of a user's account data, including copies held in backups, after the user deletes
+      their account
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      the principle of storage limitation in Article 5(1)(e) ... Controllers shall determine
+      what personal data and length of storage is necessary for back-ups and logs.
+    note: >-
+      How long erased data may stay in backups is storage limitation, point (e) of Article 5(1),
+      which the EDPB applies to back-ups by name, and the duty to erase without undue delay,
+      Article 17(1). Article 25(2) makes it the default a system must have. Any of them counts.
+
+  - id: deletion-grace-period.erasure-deadline
+    topic: deletion-grace-period.erasure-deadline
+    question: >-
+      how long can we keep a deleted user's account data before erasing it, and can a customer
+      undo deletion
+    lang: en
+    expected_keys: [gdpr:art-12:para-3, gdpr:art-17:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      Art. 12(3) GDPR requires that the controller provides information to the data subject
+      regarding action taken in respect of a request under Art. 15 without undue delay
+    note: >-
+      How long data may stay after somebody asks for it to be erased is Article 17(1), without
+      undue delay, with Article 12(3)'s month to act on a request. A period to change one's mind
+      has to fit inside them. Either counts.
+
+  - id: segment-on-deletion.erased-elsewhere
+    topic: segment-on-deletion.erased-elsewhere
+    question: >-
+      when a user deletes their account, must we also ask a third-party analytics processor to
+      erase their event data
+    lang: en
+    expected_keys: [gdpr:art-28:para-3, gdpr:art-19]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      The processor must assist the controller for the fulfilment of its obligation to respond
+      to requests for exercising the data subject's rights (Article 28(3) (e) GDPR).
+    note: >-
+      Erasing data a processor holds runs through the contract of Article 28(3), under which it
+      assists with people's requests and deletes on instruction. Article 19, telling each
+      recipient of an erasure, counts too.

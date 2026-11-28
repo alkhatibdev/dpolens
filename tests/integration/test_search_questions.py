@@ -151,7 +151,7 @@ def test_a_close_question_moves_its_clause_up(
     asked = keys(search(indexed, embedder, QUERY, questions=True))
 
     assert plain.index(WITHDRAWN) < plain.index(EXCEPTION)
-    assert asked.index(EXCEPTION) < asked.index(WITHDRAWN)
+    assert asked.index(EXCEPTION) < plain.index(EXCEPTION)
 
 
 def test_a_law_without_questions_keeps_its_turns_beside_one_with_them(

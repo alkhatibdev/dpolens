@@ -1,135 +1,23 @@
 {
   "pack": "gdpr",
-  "measured_at": "2026-11-06",
-  "commit": "046b514",
+  "measured_at": "2026-11-28",
+  "commit": "14eb4b9",
   "runs": [
     {
-      "question_set": "held_out.en",
-      "configuration": "convex:0.5+normative",
-      "model": "e5-small",
-      "context_recipe": "v3",
-      "questions": 30,
-      "recall_at_5": 0.7333,
-      "recall_at_10": 0.8,
-      "mrr": 0.5045,
-      "interval": [
-        0.5667,
-        0.9
-      ],
-      "misses": [
-        "fix-wrong-address",
-        "health-data",
-        "log-retention",
-        "breach-report-contents",
-        "breach-tell-users",
-        "signup-form-notice",
-        "human-review-of-automation",
-        "us-hosting"
-      ]
-    },
-    {
-      "question_set": "held_out.en",
-      "configuration": "keyword",
-      "model": "e5-small",
-      "context_recipe": "v3",
-      "questions": 30,
-      "recall_at_5": 0.3333,
-      "recall_at_10": 0.5333,
-      "mrr": 0.2657,
-      "interval": [
-        0.1667,
-        0.5
-      ],
-      "misses": [
-        "fix-wrong-address",
-        "pause-processing",
-        "health-data",
-        "log-retention",
-        "consent-not-forced",
-        "dpo-duties",
-        "breach-report-contents",
-        "breach-internal-record",
-        "breach-tell-users",
-        "send-data-to-competitor",
-        "small-company-records",
-        "plain-language",
-        "signup-form-notice",
-        "bought-a-list",
-        "human-review-of-automation",
-        "what-counts-as-personal-data",
-        "profiling-meaning",
-        "two-companies-sharing",
-        "us-hosting",
-        "legitimate-interests-test"
-      ]
-    },
-    {
-      "question_set": "held_out.en",
-      "configuration": "meaning",
-      "model": "e5-small",
-      "context_recipe": "v3",
-      "questions": 30,
-      "recall_at_5": 0.4333,
-      "recall_at_10": 0.6333,
-      "mrr": 0.3504,
-      "interval": [
-        0.2667,
-        0.6
-      ],
-      "misses": [
-        "fix-wrong-address",
-        "stop-marketing",
-        "pause-processing",
-        "health-data",
-        "log-retention",
-        "consent-not-forced",
-        "dpia-large-scale",
-        "dpo-duties",
-        "breach-internal-record",
-        "breach-tell-users",
-        "small-company-records",
-        "signup-form-notice",
-        "bought-a-list",
-        "human-review-of-automation",
-        "two-companies-sharing",
-        "us-hosting",
-        "legitimate-interests-test"
-      ]
-    },
-    {
       "question_set": "held_out.ar",
-      "configuration": "convex:0.5+normative",
+      "configuration": "standardised:0.3+normative+questions+rules",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 30,
-      "recall_at_5": 0.3333,
-      "recall_at_10": 0.3333,
-      "mrr": 0.2078,
+      "questions": 6,
+      "recall_at_5": 0.8333,
+      "recall_at_10": 0.8333,
+      "mrr": 0.5278,
       "interval": [
-        0.1667,
-        0.5
+        0.5,
+        1.0
       ],
       "misses": [
-        "fix-wrong-address",
-        "stop-marketing",
-        "health-data",
-        "log-retention",
-        "consent-not-forced",
-        "unsubscribe-easy",
-        "dpo-duties",
-        "breach-internal-record",
-        "breach-tell-users",
-        "encrypt-at-rest",
-        "send-data-to-competitor",
-        "access-deadline",
-        "plain-language",
-        "signup-form-notice",
-        "bought-a-list",
-        "human-review-of-automation",
-        "vendor-contract",
-        "two-companies-sharing",
-        "us-hosting",
-        "legitimate-interests-test"
+        "q05"
       ]
     },
     {
@@ -137,7 +25,7 @@
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 30,
+      "questions": 6,
       "recall_at_5": 0.0,
       "recall_at_10": 0.0,
       "mrr": 0.0,
@@ -146,36 +34,12 @@
         0.0
       ],
       "misses": [
-        "fix-wrong-address",
-        "stop-marketing",
-        "pause-processing",
-        "health-data",
-        "log-retention",
-        "consent-not-forced",
-        "unsubscribe-easy",
-        "teen-signup",
-        "dpia-large-scale",
-        "dpo-duties",
-        "publish-dpo-contact",
-        "breach-report-contents",
-        "breach-internal-record",
-        "breach-tell-users",
-        "encrypt-at-rest",
-        "send-data-to-competitor",
-        "small-company-records",
-        "access-deadline",
-        "charge-for-access",
-        "plain-language",
-        "signup-form-notice",
-        "bought-a-list",
-        "human-review-of-automation",
-        "what-counts-as-personal-data",
-        "pseudonymisation-meaning",
-        "profiling-meaning",
-        "vendor-contract",
-        "two-companies-sharing",
-        "us-hosting",
-        "legitimate-interests-test"
+        "q03",
+        "q05",
+        "q07",
+        "q14",
+        "q21",
+        "q30"
       ]
     },
     {
@@ -183,36 +47,354 @@
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 30,
-      "recall_at_5": 0.3,
-      "recall_at_10": 0.3333,
-      "mrr": 0.2039,
+      "questions": 6,
+      "recall_at_5": 0.6667,
+      "recall_at_10": 0.8333,
+      "mrr": 0.4167,
       "interval": [
-        0.1667,
-        0.4667
+        0.3333,
+        1.0
       ],
       "misses": [
-        "fix-wrong-address",
-        "stop-marketing",
-        "pause-processing",
-        "health-data",
-        "log-retention",
-        "consent-not-forced",
-        "unsubscribe-easy",
-        "dpo-duties",
-        "breach-internal-record",
-        "breach-tell-users",
-        "encrypt-at-rest",
-        "send-data-to-competitor",
-        "access-deadline",
-        "plain-language",
-        "signup-form-notice",
-        "bought-a-list",
-        "human-review-of-automation",
-        "vendor-contract",
-        "two-companies-sharing",
-        "us-hosting",
-        "legitimate-interests-test"
+        "q05",
+        "q21"
+      ]
+    },
+    {
+      "question_set": "held_out.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 25,
+      "recall_at_5": 0.92,
+      "recall_at_10": 0.92,
+      "mrr": 0.7313,
+      "interval": [
+        0.8,
+        1.0
+      ],
+      "misses": [
+        "q02",
+        "q15"
+      ]
+    },
+    {
+      "question_set": "held_out.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 25,
+      "recall_at_5": 0.48,
+      "recall_at_10": 0.56,
+      "mrr": 0.339,
+      "interval": [
+        0.28,
+        0.68
+      ],
+      "misses": [
+        "q01",
+        "q02",
+        "q06",
+        "q08.when",
+        "q11",
+        "q13",
+        "q15",
+        "q16",
+        "q17",
+        "q24",
+        "q26",
+        "q27",
+        "q29"
+      ]
+    },
+    {
+      "question_set": "held_out.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 25,
+      "recall_at_5": 0.44,
+      "recall_at_10": 0.56,
+      "mrr": 0.3248,
+      "interval": [
+        0.24,
+        0.64
+      ],
+      "misses": [
+        "q01",
+        "q02",
+        "q04",
+        "q06",
+        "q08.what",
+        "q08.when",
+        "q11",
+        "q13",
+        "q15",
+        "q17",
+        "q20",
+        "q24",
+        "q27",
+        "q29"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 20,
+      "recall_at_5": 0.4,
+      "recall_at_10": 0.55,
+      "mrr": 0.2655,
+      "interval": [
+        0.2,
+        0.6
+      ],
+      "misses": [
+        "refer-a-friend.marketing",
+        "household-birthdays.marketing",
+        "driver-on-the-map.allowed",
+        "one-tap-card.allowed-card",
+        "sent-email-copies.allowed",
+        "doorstep-needs.special-category",
+        "staff-access-audit.security-logging",
+        "checkout-recordings.outside-service",
+        "search-suggestions.allowed",
+        "new-device-alert.security-logging",
+        "lookalike-audience.ad-targeting",
+        "support-bot-context.outside-service"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 20,
+      "recall_at_5": 0.3,
+      "recall_at_10": 0.3,
+      "mrr": 0.1242,
+      "interval": [
+        0.1,
+        0.5
+      ],
+      "misses": [
+        "household-birthdays.marketing",
+        "household-birthdays.child-consent-2",
+        "household-birthdays.retention-2",
+        "driver-on-the-map.allowed",
+        "one-tap-card.allowed-card",
+        "sent-email-copies.allowed",
+        "staff-access-audit.security-logging",
+        "checkout-recordings.outside-service",
+        "search-suggestions.allowed",
+        "new-device-alert.security-logging",
+        "lookalike-audience.ad-targeting",
+        "support-bot-context.outside-service",
+        "backups-after-deletion.backups",
+        "deletion-grace-period.erasure-deadline"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 20,
+      "recall_at_5": 0.25,
+      "recall_at_10": 0.4,
+      "mrr": 0.153,
+      "interval": [
+        0.1,
+        0.45
+      ],
+      "misses": [
+        "refer-a-friend.marketing",
+        "household-birthdays.marketing",
+        "household-birthdays.retention-2",
+        "driver-on-the-map.allowed",
+        "offers-by-segment.marketing",
+        "one-tap-card.allowed-card",
+        "sent-email-copies.allowed",
+        "doorstep-needs.special-category",
+        "chat-history-forever.retention",
+        "staff-access-audit.security-logging",
+        "checkout-recordings.outside-service",
+        "search-suggestions.allowed",
+        "lookalike-audience.ad-targeting",
+        "food-waste-study.research",
+        "support-bot-context.outside-service"
+      ]
+    },
+    {
+      "question_set": "held_out_community.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 20,
+      "recall_at_5": 0.55,
+      "recall_at_10": 0.8,
+      "mrr": 0.3576,
+      "interval": [
+        0.35,
+        0.75
+      ],
+      "misses": [
+        "household-birthdays.marketing",
+        "driver-on-the-map.allowed",
+        "one-tap-card.allowed-card",
+        "staff-access-audit.security-logging",
+        "checkout-recordings.outside-service",
+        "search-suggestions.allowed",
+        "new-device-alert.security-logging",
+        "lookalike-audience.ad-targeting",
+        "backups-after-deletion.backups"
+      ]
+    },
+    {
+      "question_set": "held_out_community.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 20,
+      "recall_at_5": 0.25,
+      "recall_at_10": 0.4,
+      "mrr": 0.1121,
+      "interval": [
+        0.05,
+        0.45
+      ],
+      "misses": [
+        "refer-a-friend.retention-2",
+        "household-birthdays.marketing",
+        "driver-on-the-map.allowed",
+        "one-tap-card.allowed-card",
+        "sent-email-copies.retention",
+        "doorstep-needs.special-category",
+        "chat-history-forever.retention",
+        "staff-access-audit.security-logging",
+        "checkout-recordings.outside-service",
+        "search-suggestions.allowed",
+        "new-device-alert.security-logging",
+        "lookalike-audience.ad-targeting",
+        "food-waste-study.research",
+        "support-bot-context.outside-service",
+        "backups-after-deletion.backups"
+      ]
+    },
+    {
+      "question_set": "held_out_community.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 20,
+      "recall_at_5": 0.35,
+      "recall_at_10": 0.35,
+      "mrr": 0.2392,
+      "interval": [
+        0.15,
+        0.55
+      ],
+      "misses": [
+        "refer-a-friend.marketing",
+        "refer-a-friend.retention-2",
+        "household-birthdays.marketing",
+        "driver-on-the-map.allowed",
+        "offers-by-segment.marketing",
+        "one-tap-card.allowed-card",
+        "sent-email-copies.retention",
+        "chat-history-forever.retention",
+        "staff-access-audit.security-logging",
+        "checkout-recordings.outside-service",
+        "search-suggestions.allowed",
+        "new-device-alert.security-logging",
+        "lookalike-audience.ad-targeting"
+      ]
+    },
+    {
+      "question_set": "held_out.ar+held_out.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 31,
+      "recall_at_5": 0.9032,
+      "recall_at_10": 0.9032,
+      "mrr": 0.6919,
+      "interval": [
+        0.8065,
+        1.0
+      ],
+      "misses": [
+        "held_out.ar/q05",
+        "held_out.en/q02",
+        "held_out.en/q15"
+      ]
+    },
+    {
+      "question_set": "held_out.ar+held_out.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 31,
+      "recall_at_5": 0.3871,
+      "recall_at_10": 0.4516,
+      "mrr": 0.2734,
+      "interval": [
+        0.2258,
+        0.5484
+      ],
+      "misses": [
+        "held_out.ar/q03",
+        "held_out.ar/q05",
+        "held_out.ar/q07",
+        "held_out.ar/q14",
+        "held_out.ar/q21",
+        "held_out.ar/q30",
+        "held_out.en/q01",
+        "held_out.en/q02",
+        "held_out.en/q06",
+        "held_out.en/q08.when",
+        "held_out.en/q11",
+        "held_out.en/q13",
+        "held_out.en/q15",
+        "held_out.en/q16",
+        "held_out.en/q17",
+        "held_out.en/q24",
+        "held_out.en/q26",
+        "held_out.en/q27",
+        "held_out.en/q29"
+      ]
+    },
+    {
+      "question_set": "held_out.ar+held_out.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 31,
+      "recall_at_5": 0.4839,
+      "recall_at_10": 0.6129,
+      "mrr": 0.3425,
+      "interval": [
+        0.3226,
+        0.6452
+      ],
+      "misses": [
+        "held_out.ar/q05",
+        "held_out.ar/q21",
+        "held_out.en/q01",
+        "held_out.en/q02",
+        "held_out.en/q04",
+        "held_out.en/q06",
+        "held_out.en/q08.what",
+        "held_out.en/q08.when",
+        "held_out.en/q11",
+        "held_out.en/q13",
+        "held_out.en/q15",
+        "held_out.en/q17",
+        "held_out.en/q20",
+        "held_out.en/q24",
+        "held_out.en/q27",
+        "held_out.en/q29"
       ]
     }
   ]

@@ -1,224 +1,106 @@
-# GDPR held-out set, asked in Arabic.
+# GDPR: questions people ask, written blind (in Arabic).
 #
-# The same questions as held_out.en.yaml, under the same ids, labels, sources and
-# notes, written the way a developer asks in Arabic rather than translated word for
-# word: formally at odd positions, and at even ones the way people type in chat, in
-# the mix of dialects that developers in the region use.
-# GDPR has no Arabic text, so every hit here crosses languages: an Arabic question
-# finding an English clause.
+# A person wrote these in their own words, the way they would ask while building a product,
+# before reading any eval set or search result, and without looking anything up. Nobody searched
+# them before these labels were fixed. A question that asks two things answered by different
+# rules is an entry for each, under the same words.
 #
-# This set produces the published score for GDPR asked in Arabic and is never used
-# to tune retrieval. Nothing here should be read while improving search.
+# Every label rests on the words of the EDPB in `quote`; `note` says why that clause answers.
+# Where the guide gives the rule without the article's number, the note says so. Where more
+# than one clause answers, each is listed and any one counts.
 
 questions:
-  - id: fix-wrong-address
-    question: لدينا عنوان خاطئ لأحد العملاء، وهو يريد تصحيحه.
-    lang: ar
-    expected_keys: [gdpr:art-16]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-rectification/
 
-  - id: stop-marketing
-    question: يوزر يقول وقفوا ترسلون لي إيميلات تسويقية، من حقه يطلب هذا الشي؟
+  - id: q03
+    topic: q03
+    question: >-
+      لو شلنا الاسم وحطينا user ID بس لسه نقدر نعرف الشخص، هل البيانات دي تعتبر personal data؟
     lang: ar
-    expected_keys: [gdpr:art-21:para-2]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-object/
-
-  - id: pause-processing
-    question: يعترض شخص على صحة البيانات التي لدينا عنه. هل يجب أن نتوقف عن استخدامها في هذه الأثناء؟
-    lang: ar
-    expected_keys: [gdpr:art-18:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-restrict-processing/
-
-  - id: health-data
-    question: التطبيق تبعنا بيخزن معلومات صحية، هل في قواعد زيادة؟
-    lang: ar
-    expected_keys: [gdpr:art-9:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/
-
-  - id: log-retention
-    question: إلى متى يمكننا الاحتفاظ بسجلات السيرفر التي تحتوي على عناوين IP؟
-    lang: ar
-    expected_keys: [gdpr:art-5:para-1:pt-e]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
-
-  - id: consent-not-forced
-    question: هل ممكن نخلي الموافقة على التسويق شرط عشان المستخدم يقدر يسجل؟
-    lang: ar
-    expected_keys: [gdpr:art-7:para-4]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
-
-  - id: unsubscribe-easy
-    question: إلى أي حد يجب أن يكون سحب الموافقة سهلاً؟
-    lang: ar
-    expected_keys: [gdpr:art-7:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
-
-  - id: teen-signup
-    question: من أي عمر بيقدر الشخص يوافق لحاله على خدمة أونلاين؟
-    lang: ar
-    expected_keys: [gdpr:art-8:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/children-and-the-uk-gdpr/what-are-the-rules-about-an-iss-and-consent/
-
-  - id: dpia-large-scale
-    question: نبني نظاماً لتنميط المستخدمين على نطاق واسع. هل يلزمنا إجراء تقييم؟
-    lang: ar
-    expected_keys: [gdpr:art-35:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/
-
-  - id: dpo-duties
-    question: شو شغل مسؤول حماية البيانات بالضبط؟
-    lang: ar
-    expected_keys: [gdpr:art-39:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
-
-  - id: publish-dpo-contact
-    question: هل يجب أن ننشر من هو مسؤول حماية البيانات لدينا؟
-    lang: ar
-    expected_keys: [gdpr:art-37:para-7]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
-
-  - id: breach-report-contents
-    question: شنو لازم نكتب في تقرير الاختراق اللي حنرسله للجهة الرقابية؟
-    lang: ar
-    expected_keys: [gdpr:art-33:para-3]
-    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
-
-  - id: breach-internal-record
-    question: هل يجب أن نوثق حالات الاختراق التي قررنا عدم الإبلاغ عنها؟
-    lang: ar
-    expected_keys: [gdpr:art-33:para-5]
-    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
-
-  - id: breach-tell-users
-    question: متى لازم نبلغ اليوزرز المتضررين عن اختراق في نظامنا؟
-    lang: ar
-    expected_keys: [gdpr:art-34:para-1]
-    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+    expected_keys: [gdpr:art-4:pt-1, gdpr:art-4:pt-5]
+    source: https://www.edpb.europa.eu/system/files/2025-01/edpb_guidelines_202501_pseudonymisation_en.pdf
+    quote: >-
+      pseudonymised data, which could be attributed to a natural person by the use of additional
+      information, remains information related to an identifiable natural person, and thus is
+      personal data (Rec. 26 GDPR). ... Art. 4(5) GDPR defines pseudonymisation as a manner of
+      processing with prescribed effects
     note: >-
-      The guide separates notifying the regulator from notifying individuals,
-      and the duty to tell individuals where the risk is high is Article 34(1).
+      Data that can still be tied to a person through an ID is pseudonymised, Article 4(5), and
+      stays personal data, Article 4(1). Either counts.
 
-  - id: encrypt-at-rest
-    question: هل يجب أن نشفر جميع البيانات الشخصية المخزنة؟
-    lang: ar
-    expected_keys: [gdpr:art-32:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/
-
-  - id: send-data-to-competitor
-    question: يوزر عاوز نرسل الداتا تبعه مباشرة لمزود تاني.
-    lang: ar
-    expected_keys: [gdpr:art-20:para-2]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-data-portability/
-
-  - id: small-company-records
-    question: نحن شركة ناشئة من عشرة أشخاص. هل تنطبق علينا قواعد حفظ السجلات؟
-    lang: ar
-    expected_keys: [gdpr:art-30:para-5]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
-    note: >-
-      The exemption for organisations under 250 people, with its conditions, is
-      Article 30(5).
-
-  - id: access-deadline
-    question: كم يلزم من الوقت عشان نرد على طلب بيانات؟
-    lang: ar
-    expected_keys: [gdpr:art-12:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
-    note: The one month deadline for responding to a request is Article 12(3).
-
-  - id: charge-for-access
-    question: هل يمكننا أن نتقاضى رسوماً من شخص مقابل نسخة من بياناته؟
-    lang: ar
-    expected_keys: [gdpr:art-12:para-5]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
-    note: >-
-      Requests are free unless manifestly unfounded or excessive, which is
-      Article 12(5).
-
-  # Deliberately a developer's phrasing rather than the law's.
-  - id: plain-language
-    question: هل لازم تكون سياسة الخصوصية بتاعتنا مكتوبة بلغة بسيطة؟
-    lang: ar
-    expected_keys: [gdpr:art-12:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
-    note: >-
-      The requirement for concise, transparent, intelligible and easily
-      accessible information in clear and plain language is Article 12(1).
-
-  - id: signup-form-notice
-    question: ما الذي يجب أن نخبر به الشخص في نموذج التسجيل؟
-    lang: ar
-    expected_keys: [gdpr:art-13:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
-    note: >-
-      The information to give when data is collected from the person is
-      Article 13(1).
-
-  - id: bought-a-list
-    question: جاتنا قائمة كونتاكتات من شريك، لازم نخبر هالناس؟
-    lang: ar
-    expected_keys: [gdpr:art-14:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
-    note: >-
-      Data obtained from someone other than the person is Article 14, and the
-      information to provide is Article 14(1).
-
-  - id: human-review-of-automation
-    question: إذا رفض نموذج الذكاء الاصطناعي لدينا طلباً ما، فهل يحق للمستخدم أن يطالب بأن يراجعه إنسان؟
-    lang: ar
-    expected_keys: [gdpr:art-22:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
-    note: >-
-      The safeguards for solely automated decisions, including human
-      intervention, are Article 22(3).
-
-  - id: what-counts-as-personal-data
-    question: ال user id بعد ما نعمل ليه hash، هل ما يزال يعتبر بيانات شخصية؟
-    lang: ar
-    expected_keys: [gdpr:art-4:pt-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/personal-information-what-is-it/what-is-personal-data/
-    note: The definition of personal data is Article 4(1).
-
-  - id: pseudonymisation-meaning
-    question: ما المقصود فعلاً بالبيانات ذات الهوية المستعارة (pseudonymised) هنا؟
-    lang: ar
-    expected_keys: [gdpr:art-4:pt-5]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/personal-information-what-is-it/what-is-personal-data/
-    note: The definition of pseudonymisation is Article 4(5).
-
-  - id: profiling-meaning
-    question: هل إذا كنا بنعطي اليوزرز سكور، هذا يعتبر profiling؟
-    lang: ar
-    expected_keys: [gdpr:art-4:pt-4]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
-    note: The definition of profiling is Article 4(4).
-
-  - id: vendor-contract
-    question: ما الذي يجب أن يتضمنه العقد مع مزود خدمة يعالج بياناتنا؟
-    lang: ar
-    expected_keys: [gdpr:art-28:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors/controllers-and-processors/
-    note: The mandatory contract terms between controller and processor are Article 28(3).
-
-  - id: two-companies-sharing
-    question: عندنا شركتين بيقرروا سوا كيف يستخدموا الداتا، شو بنعتبر؟
-    lang: ar
-    expected_keys: [gdpr:art-26:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors/controllers-and-processors/
-    note: Joint controllers and their arrangement are Article 26(1).
-
-  - id: us-hosting
-    question: هل يمكننا استضافة قاعدة البيانات لدى مزود سحابي أمريكي؟
-    lang: ar
-    expected_keys: [gdpr:art-46:para-1, gdpr:art-45:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/
-    note: >-
-      Either an adequacy decision, Article 45(1), or appropriate safeguards,
-      Article 46(1), answers this.
-
-  - id: legitimate-interests-test
-    question: هل نقدر نعتمد على المصلحة المشروعة عشان نسوي analytics؟
+  - id: q05
+    topic: q05
+    question: >-
+      هل نقدر نعتمد على legitimate interests عشان نستخدم بيانات المستخدمين في fraud detection؟
     lang: ar
     expected_keys: [gdpr:art-6:para-1:pt-f]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/legitimate-interests/
-    note: Legitimate interests as a lawful basis is point (f) of Article 6(1).
+    source: https://www.edpb.europa.eu/system/files/2024-10/edpb_guidelines_202401_legitimateinterest_en.pdf
+    quote: >-
+      According to Recital 47 GDPR, data processing in the field of fraud prevention may find
+      its legal basis in Article 6(1)(f) GDPR.
+    note: >-
+      Legitimate interests is point (f) of Article 6(1), which the EDPB names as the basis fraud
+      prevention may rest on.
+
+  - id: q07
+    topic: q07
+    question: >-
+      شنو لازم نوضح في privacy notice قبل ما نجمع بيانات التسجيل؟
+    lang: ar
+    expected_keys: [gdpr:art-13:para-1, gdpr:art-13:para-2]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/51025
+    quote: >-
+      Articles 13 and 14 set out information which must be provided to the data subject at the
+      commencement phase of the processing cycle ... Article 13 applies to the scenario where
+      the data is collected from the data subject.
+    note: >-
+      What people are told when their data is collected from them is Article 13: paragraph 1
+      lists the information, paragraph 2 adds what fairness and transparency need. Either
+      counts.
+
+  - id: q14
+    topic: q14
+    question: >-
+      لو التطبيق رفض طلب أو اتخذ قرار مهم عن المستخدم بشكل automated بالكامل، شنو حقوقه؟
+    lang: ar
+    expected_keys: [gdpr:art-22:para-1, gdpr:art-22:para-3]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/49826
+    quote: >-
+      Article 22(1) establishes a general prohibition for decision-making based solely on
+      automated processing. ... safeguards, such as the right to obtain human intervention and
+      the right to challenge the decision (addressed in Article 22(3)).
+    note: >-
+      A decision made solely by automated means with a significant effect is Article 22(1);
+      where one of its exceptions applies, Article 22(3) gives the rights to human intervention,
+      to express a view and to contest it. Either counts.
+
+  - id: q21
+    topic: q21
+    question: >-
+      هل بيانات health اللي المستخدم بيدخلها في التطبيق محتاجة شروط أو موافقات إضافية بموجب
+      GDPR؟
+    lang: ar
+    expected_keys: [gdpr:art-9:para-1, gdpr:art-9:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Article 9(2) does not recognize "necessary for the performance of a contract" as an
+      exception to the general prohibition to process special categories of data. ... Should
+      none of the exceptions (b) to (j) apply, obtaining explicit consent in accordance with the
+      conditions for valid consent in the GDPR remains the only possible lawful exception to
+      process such data.
+    note: >-
+      Health data is a special category: Article 9(1) forbids processing it unless an exception
+      in Article 9(2) applies, explicit consent among them. Either counts.
+
+  - id: q30
+    topic: q30
+    question: >-
+      متى لازم نسوي Data Protection Impact Assessment قبل إطلاق feature جديدة؟
+    lang: ar
+    expected_keys: [gdpr:art-35:para-1, gdpr:art-35:para-3]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/47711
+    quote: >-
+      A DPIA is only required when the processing is " likely to result in a high risk to the
+      rights and freedoms of natural persons " (Article 35(1) ).
+    note: >-
+      An impact assessment is needed before processing likely to result in a high risk, Article
+      35(1); Article 35(3) lists cases where it is always needed. Either counts.

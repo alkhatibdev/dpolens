@@ -22,7 +22,9 @@ def run(
     query: Annotated[str, typer.Argument(help="A question, in your own words")],
     limit: Annotated[int, typer.Option(help="How many results to return")] = 5,
     expand: Annotated[str, typer.Option(help="none, siblings or parent")] = "none",
-    fusion: Annotated[str, typer.Option(help="rrf:10, rrf:60 or convex:0.5")] = DEFAULT_FUSION.name,
+    fusion: Annotated[
+        str, typer.Option(help="standardised:0.3, convex:0.5, rrf:10 or rrf:60")
+    ] = DEFAULT_FUSION.name,
     include_explanatory: Annotated[
         bool, typer.Option(help="Include text that explains without obliging, such as a recital")
     ] = False,
