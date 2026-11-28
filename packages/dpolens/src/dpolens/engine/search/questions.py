@@ -356,10 +356,12 @@ def nearest_questions(
                 JOIN packs p ON p.id = q.pack_id
                 JOIN embedding_models m ON m.id = e.embedding_model_id AND m.name = :model
                 WHERE q.current AND p.slug = :pack
-                  AND (NOT :normative_only OR EXISTS (
-                      SELECT 1 FROM document_nodes n
+                  -- One set of keys, read once. Asked of each question, the planner can work
+                  -- out every document's version in force again for each of thousands.
+                  AND (NOT :normative_only OR q.canonical_key IN (
+                      SELECT n.canonical_key FROM document_nodes n
                       JOIN ({IN_FORCE}) in_force ON in_force.id = n.document_version_id
-                      WHERE n.canonical_key = q.canonical_key AND n.is_normative
+                      WHERE n.is_normative
                   ))
                 ORDER BY q.canonical_key, e.embedding::vector({dimensions}) <=> :vector, q.lang
             ) nearest

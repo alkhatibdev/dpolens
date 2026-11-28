@@ -9,7 +9,7 @@ from sqlalchemy import URL, Connection, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from dpolens.settings import Settings
+from dpolens.settings import Settings, load_settings
 
 type DatabaseEngine = Engine
 type EngineSession = Session
@@ -169,6 +169,24 @@ def session_scope(settings: Settings) -> Iterator[Session]:
     try:
         with session_from(engine) as session:
             yield session
+    finally:
+        engine.dispose()
+
+
+def gather_statistics(settings: Settings | None = None) -> None:
+    """The query planner's statistics for every table, gathered as the role that owns them.
+
+    Autovacuum gathers a table's once enough of it has changed, which a small table, such as
+    the one holding each document's versions, may never reach, and a search planned without
+    them takes several times as long. Setup runs this once everything is loaded.
+    """
+    settings = settings or load_settings()
+    engine = create_engine(
+        str(settings.migration_database_url or settings.database_url), hide_parameters=True
+    )
+    try:
+        with engine.begin() as connection:
+            connection.execute(text("ANALYZE"))
     finally:
         engine.dispose()
 
