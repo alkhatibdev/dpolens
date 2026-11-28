@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -28,6 +29,7 @@ from dpolens.engine.evals import (
     sets_named,
     topic_of,
 )
+from dpolens.engine.search import DEFAULT_FUSION
 from dpolens.engine.session import session_scope
 from dpolens.settings import load_settings
 
@@ -37,8 +39,11 @@ app = typer.Typer(
 
 EVALS = Path("evals")
 PUBLISHED_SET = "held_out"
-"""The set whose numbers are written to the committed results file, in any language."""
+"""The held-out set, whose numbers are written to the committed results file, and beside it
+held_out_<style> for each other way of asking, such as held_out_assistant, in any language."""
 BASELINES = ("keyword", "meaning")
+PUBLISHED_CONFIGURATION = f"{DEFAULT_FUSION.name}+normative+questions+rules"
+"""What search runs, as the evals name it, and so what the published scores measure."""
 
 
 def _commit() -> str:
@@ -55,8 +60,24 @@ def _commit() -> str:
 
 
 def _published(question_set: str) -> bool:
-    """The held-out set, in any language it is asked in, such as held_out.ar."""
-    return question_set == PUBLISHED_SET or question_set.startswith(f"{PUBLISHED_SET}.")
+    """A held-out set, in any language it is asked in, such as held_out.ar or
+    held_out_assistant.en."""
+    named = _set_of(question_set)
+    return named == PUBLISHED_SET or named.startswith(f"{PUBLISHED_SET}_")
+
+
+def _set_of(question_set: str) -> str:
+    """The set a file belongs to, whatever its language: held_out for held_out.ar."""
+    return question_set.split(".", 1)[0]
+
+
+def languages_by_set(question_sets: Sequence[str]) -> list[list[str]]:
+    """Each set asked here in more than one language, as its languages, which `--together`
+    scores as one: held_out.ar and held_out.en are held_out."""
+    languages: dict[str, list[str]] = {}
+    for question_set in question_sets:
+        languages.setdefault(_set_of(question_set), []).append(question_set)
+    return [found for found in languages.values() if len(found) > 1]
 
 
 @app.command(cls=Asking)
@@ -67,8 +88,9 @@ def run(
         typer.Option(
             "--set",
             help=(
-                "A set's name, such as tuning, held_out or assistant, for every language it "
-                "is asked in, or one language of it, such as held_out.ar. Repeatable"
+                "A set's name, such as tuning, assistant, held_out or held_out_assistant, for "
+                "every language it is asked in, or one language of it, such as held_out.ar. "
+                "Repeatable"
             ),
         ),
     ] = None,
@@ -81,12 +103,17 @@ def run(
                 "+normative, +questions, +rules, +light, +snowball or +folded-snowball"
             ),
         ),
-    ] = "convex:0.5+normative+questions",
+    ] = PUBLISHED_CONFIGURATION,
     model: Annotated[str, typer.Option(help="Embedding model")] = DEFAULT_MODEL,
     baselines: Annotated[bool, typer.Option(help="Also score each retriever alone")] = False,
     together: Annotated[
         bool,
-        typer.Option(help="Also score the sets as one, a topic asked in each counted once"),
+        typer.Option(
+            help=(
+                "Also score each set's languages as one, such as held_out.ar and held_out.en, "
+                "a topic asked in each counted once"
+            )
+        ),
     ] = False,
     every_law: Annotated[
         bool,
@@ -110,7 +137,9 @@ def run(
     ] = None,
     as_json: Annotated[
         bool,
-        typer.Option("--json", help="Print one run as JSON: the sets together, or the first"),
+        typer.Option(
+            "--json", help="Print one run as JSON: the first set's languages together, or the first"
+        ),
     ] = False,
 ) -> None:
     """Score retrieval over one question set or several."""
@@ -125,8 +154,12 @@ def run(
             check_configuration(config)
         except ValueError as problem:
             raise typer.BadParameter(str(problem), param_hint="--config") from problem
-    if together and len(sets) < 2:
-        raise typer.BadParameter("name at least two sets to score together", param_hint="--set")
+    pooled = languages_by_set(sets)
+    if together and not pooled:
+        raise typer.BadParameter(
+            "name a set asked in at least two languages to score its languages together",
+            param_hint="--set",
+        )
     refused = [name for name in sets if not _published(name)]
     if write and refused:
         raise typer.BadParameter(
@@ -161,7 +194,14 @@ def run(
         ]
     combined = (
         [
-            run_together([result for result in runs if result.configuration == config])
+            run_together(
+                [
+                    result
+                    for result in runs
+                    if result.configuration == config and result.question_set in languages
+                ]
+            )
+            for languages in pooled
             for config in configurations
         ]
         if together

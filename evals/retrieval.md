@@ -82,10 +82,14 @@ how an Arabic question finds GDPR, written in English, by keyword too.
 Each retriever returns up to 100 candidates, and the keyword and meaning lists are combined.
 Three rules are implemented and the evals choose between them: reciprocal rank fusion, which
 uses only positions; convex combination, which rescales each list to 0 to 1 and blends them at
-a fixed weight; and standardised fusion, which standardises each list and adds them. Search
-uses convex combination at equal weight, the rule the published scores measure. A weight is
-fitted only where the practice questions can carry it: one number, chosen by cross-validation,
-on a curve that is flat around it.
+a fixed weight; and standardised fusion, which standardises each list within the question and
+adds them, keyword search at 0.3 of the weight and meaning search at 0.7. Rescaling gives the
+best of a list full marks however weak it is, where standardising counts a clause for how far it
+stands above the rest of its list. Search uses standardised fusion, the rule the published scores
+measure. It was chosen on the practice questions, as
+[Every configuration](#every-configuration-on-the-held-out-sets) explains. A weight is fitted only
+where the practice questions can carry it: one number, chosen by cross-validation, on a curve
+that is flat around it.
 
 A question that repeats a clause's own words is asking for that clause, wherever the sum put
 it. When a clause among the ten best keyword candidates holds at least nine in ten of the
@@ -99,108 +103,228 @@ which have no search questions. The results then take turns, the source whose be
 closest first. In one list, a policy, or a law whose questions are not written yet, would sink
 below a law with them; ranked apart, each keeps its share of the results.
 
-Each result carries the clause, its breadcrumb, whether it is normative, the document
-version and the date that version came into force. Within a source, a clause that obliges
-someone outranks one that only explains where their scores cannot separate them. A heading
-with no text of its own is never a result.
+Each result is a whole rule: the clause whose words introduce the match, such as the paragraph
+a point belongs to, and the clauses beneath it, each with its own key to cite it by. A rule of
+2,500 characters or fewer comes whole; a longer one, such as a list of definitions, comes with
+the two clauses beneath it the search ranked highest. A result carries its breadcrumb, whether
+it is normative, the document version and the date that version came into force. Within a
+source, a clause that obliges someone outranks one that only explains where their scores cannot
+separate them. A heading with no text of its own is never a result.
 
 ## How it is measured
 
-Two question sets per pack, kept apart: a tuning set used while improving retrieval, and a
-held-out set that produces the published score and nothing else. GDPR has a third, used as the
-tuning set is: [the queries an AI assistant sent](README.md#what-ai-assistants-send) while
-working on code.
+Each law has two kinds of question set, kept apart. The practice sets are used while improving
+retrieval: `tuning`, questions as a person types them, and for GDPR `assistant`, [the queries
+an AI assistant sent](README.md#what-ai-assistants-send) while working on code. The held-out
+sets produce the published scores and nothing else, and nobody working on search saw them before
+they were scored:
+
+- **`held_out`**: questions a person wrote in their own words, the way they would ask while
+  building a product, without reading any eval set or search result and without searching
+  anything: 30 about each law, 6 of GDPR's and 15 of the UAE law's in Arabic. A question that
+  asks two things answered by different rules is an entry for each, and one the law does not
+  answer is set aside, so GDPR has 31 entries, 25 in English and 6 in Arabic, and the UAE law
+  30, 15 in each language, after setting aside a guardian's consent for a child, on which it
+  has no rule.
+- **`held_out_assistant`**: the searches Claude Code wrote while working through
+  [40 coding tasks](trigger/queries.yaml) in Larder, the trigger test's sample shop, 20 for each
+  law and 15 of them written in Arabic. Each task ran once, with the plugin, against an instance
+  holding the task's law alone, and each run ended when its first search came back, so every
+  query was written before any result was read. A query often asks two things at once, and
+  each thing it asks is a part with an entry of its own: 46 parts from 39 queries.
+- **`held_out_community`**: the same 40 tasks, with DPOLens added as
+  [the community page](https://dpolens.com/community) adds it, the MCP server alone, on an
+  instance set up as the community version: 44 parts from 38 queries.
 
 A question's label, the clause that counts as correct, does not come from the search
-author. It comes from regulator guidance, and `scripts/check_eval_sources.py` reports where
+author. It comes from regulator guidance, or for the UAE law, which no regulator guidance
+numbers, from law firms' published guides, and `scripts/check_eval_sources.py` reports where
 each label stands:
 
 - **cited**: the guidance page names the article, which a machine confirms
 - **justified**: the guidance answers the question without printing the number, and the
   note records why that clause is the answer
 
-Phrasings are learned from real developer questions and rewritten, never copied, because
-Stack Overflow content is CC BY-SA 4.0 and would not fit the licence on this directory.
+Every held-out label was fixed, and the files' hashes recorded, before any of their questions
+was searched. A label found wrong after scoring is corrected beside its figure, never in its
+place.
+
+Phrasings in the tuning sets are learned from real developer questions and rewritten, never
+copied, because Stack Overflow content is CC BY-SA 4.0 and would not fit the licence on this
+directory.
 
 A hit is the expected clause or anything inside it: a point of Article 13(1) is part of
-Article 13(1). A sibling paragraph is not, because Article 13(2) is a different rule.
+Article 13(1). A sibling paragraph is not, because Article 13(2) is a different rule. Search
+answers with whole rules, and a whole rule counts by the clauses it shows: Article 13(1) shown
+with its points is a hit for a question about 13(1)(c).
 
 Recall@5 is reported with a bootstrap confidence interval, because a set this size moves by
-a few points on its own and a bare number invites more confidence than it has earned. CI
-fails a change that drops below the published interval. The pack, the questions and the
+a few points on its own and a bare number invites more confidence than it has earned. Where a
+set asks one thing in two entries, the interval resamples the things asked, not the entries.
+CI fails a change that drops below the published interval. The pack, the questions and the
 model are all fixed, so a drop has exactly one possible cause.
 
 ## The published scores
 
-Three scores, each on held-out questions that were never used to tune search, with
-multilingual-e5-small, context recipe v3, and convex combination at 0.5 with text that only
-explains excluded. Each was measured with both laws loaded and the run kept to its own law,
-which is what an organisation that has selected that law searches. Measured 6 November 2026.
+Measured 28 November 2026, with multilingual-e5-small, context recipe v3, and the configuration
+search runs: standardised fusion with keyword search at 0.3, text that only explains excluded,
+the search questions, and whole rules. Both laws were loaded and each run kept to its own law,
+which is what an organisation that has selected that law searches.
 
-| Score | Questions | recall@5 | 95% interval | MRR |
+### Questions people ask
+
+| Law | Questions | recall@5 | 95% interval | recall@10 | MRR |
+| --- | --- | --- | --- | --- | --- |
+| **GDPR** | 31: 25 in English, 6 in Arabic | **0.90** | 0.81 to 1.00 | 0.90 | 0.69 |
+| **The UAE law** | 30: 15 in Arabic, 15 in English | **0.87** | 0.73 to 0.97 | 0.97 | 0.77 |
+
+By language, GDPR finds 23 of its 25 English questions in the top five and 5 of its 6 Arabic
+ones, and the UAE law 13 of 15 in each language. Six questions say little on their own: GDPR
+asked in Arabic has an interval of 0.50 to 1.00. GDPR has no Arabic text, so an Arabic question
+about it has to cross languages to find its clause.
+
+### Queries an AI assistant writes
+
+| Law | Where it searched | Parts | recall@5 | 95% interval | recall@10 | Queries with every part in the top five |
+| --- | --- | --- | --- | --- | --- | --- |
+| **GDPR** | An instance of your own | 20 | **0.40** | 0.20 to 0.60 | 0.55 | 7 of 19 |
+| **The UAE law** | An instance of your own | 26 | **0.62** | 0.42 to 0.81 | 0.81 | 10 of 20 |
+| GDPR | The community version | 20 | 0.55 | 0.35 to 0.75 | 0.80 | 10 of 19 |
+| The UAE law | The community version | 24 | 0.79 | 0.62 to 0.92 | 0.79 | 14 of 19 |
+
+Both rows of a law come from the same 40 tasks, with the same AI assistant and model, Claude
+Code 2.1.288 with `claude-sonnet-5-5`, one run each. In both, 37 of the 40 tasks searched, all
+before editing anything: the other three asked for something Larder does not have, a storage
+bucket twice and a password reset flow, and the AI assistant stopped to ask for it. All 15 tasks
+written in Arabic searched, but Claude Code wrote only one of their searches in Arabic, with the
+plugin, and the rest in English. That is why the UAE law's Arabic assistant set holds two parts
+and GDPR has none.
+
+Task by task, the queries sent to the community version had every part answered in the top
+five more often: for 9 of GDPR's 18 tasks against 6, and 14 of the UAE law's 19 against 9. Its
+instructions ask for questions in general terms, what the code does with which kind of data,
+and none of its queries named a product or a company, where 6 of the 39 sent with the plugin
+did. The two runs differ in more than those words, since the community version holds both
+laws, so this is the community version as it runs, not the sentence alone.
+
+### With both laws selected
+
+An organisation that selects both laws searches them together, and the two share the ten
+results, so the figure to read is recall@10. Each law's questions, searched alone and beside the
+other law:
+
+| Set | GDPR, alone | GDPR, beside the UAE law | The UAE law, alone | The UAE law, beside GDPR |
 | --- | --- | --- | --- | --- |
-| **GDPR** | 30 in English | **0.73** | 0.57 to 0.90 | 0.50 |
-| **The UAE law** | 19 topics, each asked in Arabic and in English | **0.53** | 0.34 to 0.71 | 0.35 |
-| **GDPR asked in Arabic** | 30 in Arabic | **0.33** | 0.17 to 0.50 | 0.21 |
+| Questions people ask | 0.90 | 0.90 | 0.97 | 0.87 |
+| An AI assistant, an instance of your own | 0.55 | 0.40 | 0.81 | 0.62 |
+| An AI assistant, the community version | 0.80 | 0.55 | 0.79 | 0.79 |
 
-The UAE law's score counts each topic once. Its 19 topics are asked in Arabic, the language that
-prevails, and in the official English, and the interval resamples the topics rather than the 38
-questions, so it is as wide as nineteen items make it. Asked in Arabic alone it reaches 0.42
-(0.21 to 0.63), and in English alone 0.63 (0.42 to 0.84). GDPR has no Arabic text, so an Arabic
-question about it has to cross languages to find its clause, which only meaning search can do.
+### Whole rules and single clauses
 
-`evals/results/gdpr.json` and `evals/results/uae-pdpl.json` carry the same numbers in
+Search answers with whole rules: a match comes with the words that introduce its rule and the
+clauses beneath them. The same configuration scored on single clauses, recall@5:
+
+| Set | GDPR, clauses | GDPR, whole rules | The UAE law, clauses | The UAE law, whole rules |
+| --- | --- | --- | --- | --- |
+| Questions people ask | 0.87 | 0.90 | 0.83 | 0.87 |
+| An AI assistant, an instance of your own | 0.35 | 0.40 | 0.54 | 0.62 |
+| An AI assistant, the community version | 0.55 | 0.55 | 0.75 | 0.79 |
+
+### Every configuration, on the held-out sets
+
+Recall@5, with MRR in brackets, each law alone. Keyword only and meaning only are each retriever
+on its own, over single clauses, without the search questions. The fusion rules use everything
+search does.
+
+| Configuration | GDPR, people | The UAE law, people | GDPR, an AI assistant | The UAE law, an AI assistant |
+| --- | --- | --- | --- | --- |
+| Keyword only (BM25) | 0.39 (0.27) | 0.50 (0.31) | 0.30 (0.12) | 0.23 (0.18) |
+| Meaning only | 0.48 (0.34) | 0.67 (0.59) | 0.25 (0.15) | 0.31 (0.23) |
+| Convex combination, 0.5 | 0.90 (0.70) | 0.90 (0.76) | 0.35 (0.20) | 0.69 (0.42) |
+| **Standardised fusion, 0.3** | **0.90 (0.69)** | **0.87 (0.77)** | **0.40 (0.27)** | **0.62 (0.48)** |
+
+The AI assistant columns are the instance of your own. The fusion rule was chosen on the practice
+questions before these were scored, by the rule in [Judging a change](README.md#judging-a-change),
+which scores how high the right rule sits among the ten: standardised fusion placed it higher
+than convex combination by more than chance gives, with no set worse. On the held-out sets, the
+same rule says the same: over every set, each law alone and beside the other, standardised
+fusion places the right rule higher (a place score of 0.47 against 0.44, a gain chance gives
+3.5% of the time), with no set worse, and finds 201 answers in the top five where convex
+combination finds 203. The held-out sets confirm the choice; they did not make it.
+
+### Read the numbers strictly
+
+The first says that on 31 questions about GDPR, written by a person who had not seen what search
+returns, the clause the guidance points at was in the top five answers 90% of the time. It does
+not say that DPOLens answers 90% of privacy questions correctly. These are a person's questions,
+asked one at a time; the searches an AI assistant writes in the middle of a task find the right
+rule far less often.
+
+### DPOLens 0.2.0 on the same questions
+
+DPOLens 0.2.0, the release before, searched the same held-out questions once 0.3.0's scores on
+them were fixed, with its own code, packs and configuration: convex combination at 0.5 over
+single clauses, text that only explains excluded, and no search questions, which it did not
+have. Both releases' results were counted by the same code.
+
+Each law alone, recall@5:
+
+| Set | GDPR, 0.2.0 | GDPR, 0.3.0 | The UAE law, 0.2.0 | The UAE law, 0.3.0 |
+| --- | --- | --- | --- | --- |
+| Questions people ask | 0.55 | 0.90 | 0.60 | 0.87 |
+| An AI assistant, an instance of your own | 0.40 | 0.40 | 0.27 | 0.62 |
+| An AI assistant, the community version | 0.35 | 0.55 | 0.33 | 0.79 |
+
+Beside the other law, recall@10:
+
+| Set | GDPR, 0.2.0 | GDPR, 0.3.0 | The UAE law, 0.2.0 | The UAE law, 0.3.0 |
+| --- | --- | --- | --- | --- |
+| Questions people ask | 0.48 | 0.90 | 0.63 | 0.87 |
+| An AI assistant, an instance of your own | 0.50 | 0.40 | 0.23 | 0.62 |
+| An AI assistant, the community version | 0.40 | 0.55 | 0.29 | 0.79 |
+
+For GDPR's searches from an instance of your own, the two releases find as many in the top five,
+8 of 20 parts, though not the same ones, and 0.3.0 places the right rule higher (MRR 0.27 against
+0.18). Beside the UAE law, 0.3.0 finds fewer of them in the top ten: 8 against 10.
+
+Over all eighteen runs, each law alone and beside the other, and counting single clauses for
+both, 0.3.0 finds 191 answers in the top five where 0.2.0 finds 118: 42 topics it finds there
+that 0.2.0 missed, and 5 the other way. By the rule in
+[Judging a change](README.md#judging-a-change), the right rule sits higher among the ten (a place
+score of 0.45 against 0.28), a gain chance gives 0.01% of the time, with no set worse. It counts
+single clauses because that rule restates a change of what a result is rather than judging it.
+
+0.2.0 searched a fresh database, loaded in its own order from the Postgres image the scores above
+were measured on, and gave the same results when it searched again after Postgres had refreshed its
+statistics. It holds the UAE law's twenty definitions in one clause, Article 1, so where a label
+names a definition, in three of the questions people ask, Article 1 counts for 0.2.0. The AI
+assistant wrote its queries reading 0.3.0's description of the search tool, and with 0.2.0's it
+might have asked otherwise, so those rows compare the two searches on the same queries, not the
+two releases end to end. 0.2.0 answers with single clauses and 0.3.0 with whole rules, each
+counted by what it shows.
+
+Each law alone can be measured again from the tag: check out `v0.2.0`, copy the held-out files,
+`evals/<law>/held_out*.yaml`, into its `evals/` folder, change each `uae-pdpl:art-1:def-` label
+to `uae-pdpl:art-1`, load the packs and build the index as
+[Reproduce it yourself](#reproduce-it-yourself) does, leaving out the search questions, and run
+`dpolens evals run --pack <law> --config convex:0.5+normative`, naming each language of a set
+with `--set` and adding `--together` where there are two.
+
+### Earlier scores
+
+Until DPOLens 0.3.0 the published scores came from other held-out questions: 0.73 for GDPR, on
+30 in English, 0.53 for the UAE law, on 19 topics asked in both languages, and 0.33 for GDPR asked
+in Arabic, measured 6 November 2026 with convex combination over single clauses and without the
+search questions. GDPR's was first published on 26 September 2026, at 0.77. Changes to search
+have been judged on those questions since November 2026, so they are in the tuning sets now, and
+the scores above replace them. Those scores and the ones above cannot be compared: other
+questions, another configuration and another unit of result.
+[DPOLens 0.2.0 on the same questions](#dpolens-020-on-the-same-questions) is the comparison that
+can be made.
+
+`evals/results/gdpr.json` and `evals/results/uae-pdpl.json` carry the published scores in
 machine-readable form, with the commit that produced them, and CI compares every change against
 each of them.
-
-Read those numbers strictly. The first says that on thirty questions drawn from regulator
-guidance, the clause the guidance points at was in the top five answers 73% of the time. It does
-not say that DPOLens answers 73% of privacy questions correctly.
-
-GDPR's score was first published on 26 September 2026, at 0.77. Two of its questions were
-reworded on 14 October 2026: "a breach" became "a breach on our system", and "personal data at
-rest" became "all personal data at rest". The set was measured again, and the score and its seven
-misses stayed the same. The reworded breach question was still one of them.
-
-On 6 November 2026 the string embedded for each clause began to open with the law's short name in
-the language of its text, such as GDPR, where it had opened with the law's English title, such as
-General Data Protection Regulation. [Which name opens a clause](#which-name-opens-a-clause) says
-how that was chosen. Every published score was measured again, and none moved by more than one
-question. GDPR's fell to 0.73: "What information goes in a breach report to the regulator?" left
-the top five. The UAE law's fell to 0.53, because asked in English it lost the question on a user
-asking what personal data is held about them. Asked in Arabic, it found two questions it had
-missed and missed two it had found. GDPR asked in Arabic rose to 0.33, with one more question
-found. Each new score is inside the interval published before it.
-
-### Every configuration, on GDPR's held-out set
-
-| Configuration | recall@5 | 95% interval | recall@10 | MRR |
-| --- | --- | --- | --- | --- |
-| Keyword only (BM25) | 0.33 | 0.17 to 0.50 | 0.53 | 0.27 |
-| Meaning only | 0.43 | 0.27 to 0.60 | 0.63 | 0.35 |
-| Meaning, explaining text excluded | 0.57 | 0.40 to 0.73 | 0.73 | 0.46 |
-| Reciprocal rank fusion, k=10 | 0.73 | 0.57 to 0.90 | 0.83 | 0.46 |
-| **Convex combination, 0.5** | **0.73** | 0.57 to 0.90 | 0.80 | **0.50** |
-| Convex combination, e5-base | 0.77 | 0.60 to 0.90 | 0.83 | 0.56 |
-
-Both fusion rules exclude text that only explains, reach the same recall, and convex combination
-ranks the right clause higher, so it is the default. e5-base finds one question more and ranks the
-right clause higher still. It costs three times the first-start indexing, 108 seconds
-against 33 on GDPR alone, and a 1.1 GB download against 470 MB, so it is available as a setting
-rather than the default.
-
-### The UAE law, by configuration
-
-| Configuration | In Arabic (19) | In English (19) | Both (38) |
-| --- | --- | --- | --- |
-| Keyword only (BM25) | 0.32 | 0.42 | 0.37 |
-| Meaning only | 0.58 | 0.58 | 0.58 |
-| **Convex combination, 0.5** | **0.42** | **0.63** | **0.53** |
-
-In Arabic, meaning search alone finds more of these nineteen than the published configuration
-does, and in English the published configuration finds more. The configuration was chosen on
-GDPR's English practice questions and stays as it is: changing it on a held-out result would fit
-it to these questions.
 
 ### Why the default is not quantised
 
@@ -208,8 +332,9 @@ The int8 build of multilingual-e5-small is a quarter of the size, 118 MB against
 indexes GDPR in half the time on an Apple M series CPU. It is not the default because its score
 depends on the processor it runs on, and the published number has to be one you can reproduce.
 
-The published configuration, on GDPR's held-out set as it stood before two of its questions
-were reworded, with GDPR loaded alone, measured 4 October 2026:
+The configuration published then, on the thirty questions that were GDPR's held-out set (now in
+its tuning set), before two of them were reworded, with GDPR loaded alone, measured 4 October
+2026:
 
 | Model | CPU | recall@5 | 95% interval | MRR |
 | --- | --- | --- | --- | --- |
@@ -227,8 +352,9 @@ not available to measure. The command line still accepts it with `--model e5-sma
 ### Reranking made it worse
 
 The standard next step is to rescore the top candidates with a cross-encoder. It was
-measured rather than assumed, with `jina-reranker-v2-base-multilingual`, on GDPR's
-held-out set as it stood on 26 September 2026, with GDPR loaded alone:
+measured rather than assumed, with `jina-reranker-v2-base-multilingual`, on the thirty
+questions that were GDPR's held-out set on 26 September 2026 (now in its tuning set), with GDPR
+loaded alone:
 
 | Rerank window | e5-small | e5-base | s/query |
 | --- | --- | --- | --- |
@@ -265,18 +391,20 @@ export DPOLENS_DATABASE_URL=postgresql+psycopg://dpolens:dpolens@localhost:5432/
 uv run alembic upgrade head
 uv run dpolens pack load packs/gdpr
 uv run dpolens pack load packs/uae-pdpl
+uv run dpolens search-questions load search-questions/gdpr.yaml search-questions/uae-pdpl.yaml
 uv run dpolens index build
 
-uv run dpolens evals run --pack gdpr --set held_out \
-  --config "convex:0.5+normative" --baselines
-uv run dpolens evals run --pack uae-pdpl --set held_out --together \
-  --config "convex:0.5+normative" --baselines
+uv run dpolens evals run --pack gdpr --baselines --together \
+  --set held_out --set held_out_assistant --set held_out_community
+uv run dpolens evals run --pack uae-pdpl --baselines --together \
+  --set held_out --set held_out_assistant --set held_out_community
 ```
 
-The first `index build` downloads the model, roughly 470 MB, and takes under a minute on a
-laptop CPU after that. Each eval run takes a few seconds. You should see the numbers above;
-the bootstrap interval is seeded, so it is identical run to run, while timings depend on your
-machine.
+The first `index build` downloads the model, roughly 470 MB, then embeds every clause and every
+search question, which takes a few minutes on a laptop CPU. Each eval run takes under a minute.
+You should see the numbers above; the bootstrap interval is seeded, so it is identical run to
+run, while timings depend on your machine. `--every-law` scores each law beside the other, and
+`--config standardised:0.3+normative+questions` scores single clauses.
 
 To check the question labels rather than the scores:
 
@@ -287,10 +415,11 @@ uv run python scripts/check_eval_sources.py
 That fetches every source and reports which labels a regulator page names outright and
 which rest on a recorded justification.
 
-### On the tuning set, for comparison
+### On the tuning sets, for comparison
 
-Everything below was measured on the **tuning** set of 20 questions. It is not a published
-result and is not written to `evals/results`. It is here because the comparisons it settles
+Everything below was measured on the tuning sets as they stood on the date each section gives,
+when GDPR's held 20 questions. It is not a published result and is not written to
+`evals/results`. It is here because the comparisons it settles
 are worth showing, and because it demonstrates a trap worth knowing about.
 
 ### Which embedding model
@@ -337,7 +466,7 @@ conversational questions in these sets, meaning search does the work.
 
 **A warning about small question sets.** When fusion was first measured, on 26 September
 2026, it scored *below* meaning search alone on these 20 tuning questions (0.45 against
-0.60), and the opposite was true on the 30 held-out questions (0.77 against 0.60). Same
+0.60), and the opposite was true on the 30 held-out questions of the time (0.77 against 0.60). Same
 code, same corpus, different questions. Two sets of this size are not equally hard, so
 configurations can only be compared within a set, never across them. Had the tuning set
 alone been trusted, the conclusion would have been to drop fusion, which the held-out set
@@ -345,10 +474,10 @@ showed would have cost 17 points of recall.
 
 ### Which Arabic keyword index
 
-The three Arabic indexes, measured on the UAE law's tuning set in Arabic: 20 questions, ten
-topics each asked formally and the way people type in chat, with multilingual-e5-small,
-measured 13 October 2026. How to choose was settled before these numbers existed: the highest
-recall@5 under the published configuration wins, then the higher MRR, then the light
+The three Arabic indexes, measured on the UAE law's tuning set in Arabic as it stood then: 20
+questions, ten topics each asked formally and the way people type in chat, with
+multilingual-e5-small, measured 13 October 2026. How to choose was settled before these numbers
+existed: the highest recall@5 under the configuration published then wins, then the higher MRR, then the light
 normalisation, the most predictable of the three.
 
 | Arabic keyword index | recall@5, keyword only | recall@5, convex 0.5 | 95% interval | MRR |
@@ -357,7 +486,7 @@ normalisation, the most predictable of the three.
 | Snowball stemmer | 0.40 | 0.70 | 0.50 to 0.90 | 0.43 |
 | **Light normalisation, then the stemmer** | 0.40 | **0.70** | 0.50 to 0.90 | **0.45** |
 
-The interval and MRR are for convex combination, the published configuration, and every
+The interval and MRR are for convex combination, the configuration published then, and every
 column excludes text that only explains. The two stemmers tie on recall and the folded one
 ranks the right clause higher, so it is the default. Read the margin strictly: two questions in
 twenty separate it from the light normalisation, and the intervals overlap almost entirely, so
@@ -382,7 +511,7 @@ questions in all. Two openings were built: the law's full title in the language 
 such as "Regulation (EU) 2016/679 (General Data Protection Regulation)", and its short name in
 that language, such as GDPR. The rule was settled before either was measured: the higher
 recall@5 wins, and the short name on a tie, because it is how a question names a law. Measured 6
-November 2026, with multilingual-e5-small and the published configuration, both laws loaded.
+November 2026, with multilingual-e5-small and the configuration published then, both laws loaded.
 
 | Tuning set | Questions | Full title | Short name |
 | --- | --- | --- | --- |
@@ -401,8 +530,12 @@ commit `046b514` embeds, so both columns can be measured again from this reposit
 
 ## What is not solved
 
-Some questions fail on the law's own words. "Do we need a DPO?" misses them because the
-corpus never writes "DPO", only "data protection officer". The search questions reach it, since
-"DPO" is in the questions beside Article 37, and the published score, measured on the law's own
-words, carries the cost. That question stays in the set, because it is exactly what a developer
-types.
+The searches an AI assistant writes in the middle of a task are where search is weakest. They
+often describe the code rather than ask, and ask two things at once, such as whether something
+may be done and how long the data may be kept. For GDPR, the right rule is in the top five for
+40% of the things such a search asks, where it is there for 90% of a person's questions. On an
+instance of your own, that is no more than DPOLens 0.2.0 found.
+
+Some questions fail on the law's own words. "Do we need a DPO?" misses them, because the corpus
+never writes "DPO", only "data protection officer". The search questions are how such a question
+is found: "DPO" is in the questions beside Article 37.

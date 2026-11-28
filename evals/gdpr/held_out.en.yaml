@@ -1,222 +1,409 @@
-# GDPR held-out set.
+# GDPR: questions people ask, written blind.
 #
-# This set produces the published score and is never used to tune retrieval.
-# Nothing here should be read while improving search: that is the whole point of
-# keeping it separate.
+# A person wrote these in their own words, the way they would ask while building a product,
+# before reading any eval set or search result, and without looking anything up. Nobody searched
+# them before these labels were fixed. A question that asks two things answered by different
+# rules is an entry for each, under the same words.
 #
-# Each label is either cited (the source page names the article) or justified
-# (the note records why that clause answers the question). Run
-# scripts/check_eval_sources.py to see the split.
+# Every label rests on the words of the EDPB in `quote`; `note` says why that clause answers.
+# Where the guide gives the rule without the article's number, the note says so. Where more
+# than one clause answers, each is listed and any one counts.
 
 questions:
-  - id: fix-wrong-address
-    question: We have the wrong address for a customer and they want it corrected.
-    lang: en
-    expected_keys: [gdpr:art-16]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-rectification/
 
-  - id: stop-marketing
-    question: A user says stop emailing them marketing. Can they demand that?
+  - id: q01
+    topic: q01
+    question: >-
+      Our company is based in the UAE but offers an app directly to people in Germany. Does the
+      GDPR apply?
     lang: en
-    expected_keys: [gdpr:art-21:para-2]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-object/
-
-  - id: pause-processing
-    question: Someone disputes our data about them. Do we have to stop using it meanwhile?
-    lang: en
-    expected_keys: [gdpr:art-18:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-restrict-processing/
-
-  - id: health-data
-    question: Our app stores health information. Are there extra rules?
-    lang: en
-    expected_keys: [gdpr:art-9:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/special-category-data/what-is-special-category-data/
-
-  - id: log-retention
-    question: How long can we keep server logs containing IP addresses?
-    lang: en
-    expected_keys: [gdpr:art-5:para-1:pt-e]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/storage-limitation/
-
-  - id: consent-not-forced
-    question: Can we make accepting marketing a condition of signing up?
-    lang: en
-    expected_keys: [gdpr:art-7:para-4]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
-
-  - id: unsubscribe-easy
-    question: How easy does it have to be to withdraw consent?
-    lang: en
-    expected_keys: [gdpr:art-7:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/consent/what-is-valid-consent/
-
-  - id: teen-signup
-    question: What age can someone consent to an online service themselves?
-    lang: en
-    expected_keys: [gdpr:art-8:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/childrens-information/children-and-the-uk-gdpr/what-are-the-rules-about-an-iss-and-consent/
-
-  - id: dpia-large-scale
-    question: We are building large scale profiling. Is an assessment mandatory?
-    lang: en
-    expected_keys: [gdpr:art-35:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/when-do-we-need-to-do-a-dpia/
-
-  - id: dpo-duties
-    question: What is the data protection officer actually responsible for?
-    lang: en
-    expected_keys: [gdpr:art-39:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
-
-  - id: publish-dpo-contact
-    question: Do we have to publish who our data protection officer is?
-    lang: en
-    expected_keys: [gdpr:art-37:para-7]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/guide-to-accountability-and-governance/accountability-and-governance/data-protection-officers/
-
-  - id: breach-report-contents
-    question: What information goes in a breach report to the regulator?
-    lang: en
-    expected_keys: [gdpr:art-33:para-3]
-    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
-
-  - id: breach-internal-record
-    question: Do we have to log breaches we decided not to report?
-    lang: en
-    expected_keys: [gdpr:art-33:para-5]
-    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
-
-  - id: breach-tell-users
-    question: When do we have to tell the affected users about a breach on our system?
-    lang: en
-    expected_keys: [gdpr:art-34:para-1]
-    source: https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/personal-data-breaches-a-guide/
+    expected_keys: [gdpr:art-3:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_3_2018_territorial_scope_after_public_consultation_en_1.pdf
+    quote: >-
+      Another key element to be assessed in determining whether the Article 3(2)(a) targeting
+      criterion can be met is whether the offer of goods or services is directed at a person in
+      the Union
     note: >-
-      The guide separates notifying the regulator from notifying individuals,
-      and the duty to tell individuals where the risk is high is Article 34(1).
+      A company with no establishment in the Union is under the GDPR when it offers goods or
+      services to people in the Union: Article 3(2), point (a). An app offered directly to
+      people in Germany is that case.
 
-  - id: encrypt-at-rest
-    question: Do we have to encrypt all personal data at rest?
-    lang: en
-    expected_keys: [gdpr:art-32:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/security/a-guide-to-data-security/
-
-  - id: send-data-to-competitor
-    question: A user wants their data sent straight to another provider.
-    lang: en
-    expected_keys: [gdpr:art-20:para-2]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-data-portability/
-
-  - id: small-company-records
-    question: We are a ten person startup. Do the record keeping rules apply to us?
-    lang: en
-    expected_keys: [gdpr:art-30:para-5]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/documentation/
-    note: >-
-      The exemption for organisations under 250 people, with its conditions, is
-      Article 30(5).
-
-  - id: access-deadline
-    question: How long do we have to answer a data request?
-    lang: en
-    expected_keys: [gdpr:art-12:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
-    note: The one month deadline for responding to a request is Article 12(3).
-
-  - id: charge-for-access
-    question: Can we charge someone for a copy of their data?
-    lang: en
-    expected_keys: [gdpr:art-12:para-5]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-of-access/
-    note: >-
-      Requests are free unless manifestly unfounded or excessive, which is
-      Article 12(5).
-
-  # Deliberately a developer's phrasing rather than the law's.
-  - id: plain-language
-    question: Does our privacy policy have to be written in plain English?
-    lang: en
-    expected_keys: [gdpr:art-12:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
-    note: >-
-      The requirement for concise, transparent, intelligible and easily
-      accessible information in clear and plain language is Article 12(1).
-
-  - id: signup-form-notice
-    question: What do we have to tell someone on the signup form?
-    lang: en
-    expected_keys: [gdpr:art-13:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
-    note: >-
-      The information to give when data is collected from the person is
-      Article 13(1).
-
-  - id: bought-a-list
-    question: We got a contact list from a partner. Do we have to tell those people?
-    lang: en
-    expected_keys: [gdpr:art-14:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/individual-rights/right-to-be-informed/
-    note: >-
-      Data obtained from someone other than the person is Article 14, and the
-      information to provide is Article 14(1).
-
-  - id: human-review-of-automation
-    question: If our model rejects an application, can the user demand a human look?
-    lang: en
-    expected_keys: [gdpr:art-22:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
-    note: >-
-      The safeguards for solely automated decisions, including human
-      intervention, are Article 22(3).
-
-  - id: what-counts-as-personal-data
-    question: Is a hashed user id personal data?
+  - id: q02
+    topic: q02
+    question: >-
+      Does the GDPR cover information about a sole trader when we process it for a business
+      account?
     lang: en
     expected_keys: [gdpr:art-4:pt-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/personal-information-what-is-it/what-is-personal-data/
-    note: The definition of personal data is Article 4(1).
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      The scope of the right of access is determined by the scope of the concept of personal
+      data as defined in Art. 4(1) GDPR. Aside from basic personal data like name, address,
+      phone number etc. a broad variety of data may fall within this definition
+    note: >-
+      Whether the GDPR covers information is whether it is personal data, Article 4(1):
+      information relating to an identified or identifiable natural person. A sole trader is a
+      natural person, so information about them as a trader relates to them.
 
-  - id: pseudonymisation-meaning
-    question: What does pseudonymised actually mean here?
+  - id: q04
+    topic: q04
+    question: >-
+      Can we rely on contract necessity to process a user's delivery address when fulfilling an
+      order?
     lang: en
-    expected_keys: [gdpr:art-4:pt-5]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/personal-information-what-is-it/what-is-personal-data/
-    note: The definition of pseudonymisation is Article 4(5).
+    expected_keys: [gdpr:art-6:para-1:pt-b]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines-art_6-1-b-adopted_after_public_consultation_en.pdf
+    quote: >-
+      In order to fulfil the contract, the retailer must process the data subject's credit card
+      information and billing address for payment purposes and the data subject's home address
+      for delivery. Thus, Article 6(1)(b) is applicable as a legal basis for these processing
+      activities.
+    note: >-
+      Contract necessity is point (b) of Article 6(1), and the EDPB's own example is a home
+      address processed to deliver an order.
 
-  - id: profiling-meaning
-    question: Does scoring users count as profiling?
+  - id: q06
+    topic: q06
+    question: >-
+      Can we email existing customers about new paid features without asking for separate
+      marketing consent?
     lang: en
-    expected_keys: [gdpr:art-4:pt-4]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/individual-rights/automated-decision-making-and-profiling/
-    note: The definition of profiling is Article 4(4).
+    expected_keys: [gdpr:art-21:para-2, gdpr:art-6:para-1:pt-f]
+    source: https://www.edpb.europa.eu/system/files/2024-10/edpb_guidelines_202401_legitimateinterest_en.pdf
+    quote: >-
+      According to Recital 47 GDPR, the processing of personal data for direct marketing
+      purposes may be regarded as carried out for a legitimate interest. ... Where personal data
+      are processed for the purposes of direct marketing, the data subject has a specific right
+      to object to such processing under Article 21(2) GDPR.
+    note: >-
+      Emailing customers without consent means resting on another basis, which for direct
+      marketing is legitimate interests, point (f) of Article 6(1). Article 21(2), the right to
+      object to direct marketing, applies to it, so it counts too. The rule on marketing email
+      to existing customers is the ePrivacy Directive's, which this set does not hold.
 
-  - id: vendor-contract
-    question: What has to be in the contract with a vendor that processes our data?
+  - id: q08.what
+    topic: q08.what
+    question: >-
+      When collecting personal data from a third-party source, what information must we give the
+      person and when?
+    lang: en
+    expected_keys: [gdpr:art-14:para-1, gdpr:art-14:para-2]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/51025
+    quote: >-
+      Article 14 applies in the scenario where the data have not been obtained from the data
+      subject. This includes personal data which a data controller has obtained from sources
+      such as:
+    note: >-
+      Data obtained from somebody other than the person is Article 14: paragraphs 1 and 2 list
+      what they are told. Either counts.
+
+  - id: q08.when
+    topic: q08.when
+    question: >-
+      When collecting personal data from a third-party source, what information must we give the
+      person and when?
+    lang: en
+    expected_keys: [gdpr:art-14:para-3]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/51025
+    quote: >-
+      In the case of indirectly obtained personal data under Article 14, the timeframes within
+      which the required information must be provided to the data subject are set out in Article
+      14.3 (a) to (c) as follows:
+    note: >-
+      When they are told is Article 14(3): within a reasonable period and at the latest within a
+      month, or at first contact, or before the data is disclosed to another recipient.
+
+  - id: q09
+    topic: q09
+    question: >-
+      Do we have to tell users the exact retention period, or is explaining the criteria enough?
+    lang: en
+    expected_keys: [gdpr:art-13:para-2:pt-a, gdpr:art-14:para-2:pt-a]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/51025
+    quote: >-
+      The storage period (or if not possible, criteria used to determine that period) Article
+      13.2(a) Article 14.2(a) ... The storage period (or criteria to determine it) may be
+      dictated by factors such as statutory requirements or industry guidelines but should be
+      phrased in a way that allows the data subject to assess, on the basis of his or her own
+      situation, what the retention period
+    note: >-
+      The storage period, or where that is not possible the criteria used to set it, is point
+      (a) of Article 13(2), and of Article 14(2) for data obtained from others. Either counts.
+
+  - id: q10
+    topic: q10
+    question: >-
+      Can a user request a copy of all personal data we hold about them?
+    lang: en
+    expected_keys: [gdpr:art-15:para-1, gdpr:art-15:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      Access to personal data is the second component of the right of access under Art. 15(1)
+      and it constitutes the core of this right. ... The obligation of the controller to provide
+      a copy of the personal data undergoing processing Art. 15(3), first sentence
+    note: >-
+      The right of access is Article 15(1), and the copy of the data is Article 15(3). Either
+      counts.
+
+  - id: q11
+    topic: q11
+    question: >-
+      What should we do when a user asks us to correct information in their profile?
+    lang: en
+    expected_keys: [gdpr:art-16]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202201_data_subject_rights_access_v2_en.pdf
+    quote: >-
+      data subjects will only be able to consider whether to invoke their right to, for example,
+      rectification under Art. 16 GDPR once they know what personal data are being processed
+    note: >-
+      Correcting inaccurate data on request is the right to rectification, Article 16, without
+      undue delay.
+
+  - id: q12
+    topic: q12
+    question: >-
+      Can a user object to processing based on legitimate interests, and when can we continue
+      anyway?
+    lang: en
+    expected_keys: [gdpr:art-21:para-1]
+    source: https://www.edpb.europa.eu/system/files/2024-10/edpb_guidelines_202401_legitimateinterest_en.pdf
+    quote: >-
+      Contrary to the more general right to object that data subjects enjoy under Article 21(1)
+      GDPR ... controller shall no longer process the personal data unless there are overriding
+      compelling legitimate grounds which take precedence over the interests and rights and
+      freedoms of that person, which it is for the controller to demonstrate.
+    note: >-
+      Both things the question asks are Article 21(1): the right to object to processing on
+      legitimate interests, and the compelling legitimate grounds on which processing may go on.
+      One rule, so one entry.
+
+  - id: q13
+    topic: q13
+    question: >-
+      What happens when a user requests deletion but we still need some of their data for legal
+      reasons?
+    lang: en
+    expected_keys: [gdpr:art-17:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      strictly necessary for compliance with a legal obligation or for the establishment,
+      exercise or defence of legal claims, in accordance with Article 17(3)(b) and (e).
+    note: >-
+      Data kept after a request for erasure because the law still needs it is an exception in
+      Article 17(3): point (b) for a legal obligation, point (e) for legal claims.
+
+  - id: q15
+    topic: q15
+    question: >-
+      How do we decide how long to retain user data when there is no specific legal retention
+      period?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1:pt-a, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      The controller shall limit the retention period to what is necessary for the purpose. If
+      personal data is no longer necessary for the purpose of the processing, then it shall by
+      default be deleted or anonymized. The length of the period of retention will therefore
+      depend on the purpose of the processing in question. This obligation is directly related
+      to the principle of storage limitation in Article 5(1)(e)
+    note: >-
+      How long data may be kept is storage limitation, point (e) of Article 5(1). Point (a) of
+      Article 17(1) says the same from the other side, and Article 25(2) makes it the default a
+      system must have, so they count too.
+
+  - id: q16
+    topic: q16
+    question: >-
+      Does a deletion request also apply to personal data stored in backups?
+    lang: en
+    expected_keys: [gdpr:art-5:para-1:pt-e, gdpr:art-17:para-1, gdpr:art-25:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_201904_dataprotection_by_design_and_by_default_v2.0_en.pdf
+    quote: >-
+      the principle of storage limitation in Article 5(1)(e) ... Controllers shall determine
+      what personal data and length of storage is necessary for back-ups and logs.
+    note: >-
+      Whether erasure reaches backups is the duty to erase without undue delay, Article 17(1),
+      with storage limitation, point (e) of Article 5(1), which the EDPB applies to back-ups by
+      name. Article 25(2) makes it the default. Any of them counts.
+
+  - id: q17
+    topic: q17
+    question: >-
+      Can we keep invoices after account deletion to comply with tax retention requirements?
+    lang: en
+    expected_keys: [gdpr:art-17:para-3:pt-b, gdpr:art-6:para-1:pt-c]
+    source: https://www.edpb.europa.eu/sites/default/files/files/file1/edpb_guidelines_201905_rtbfsearchengines_afterpublicconsultation_en.pdf
+    quote: >-
+      for compliance with a legal obligation that requires processing by Union or Member State
+      law to which the controller is subject or for the performance of a task carried out in the
+      public interest or in the exercise of official authority vested in the controller (Article
+      17.3.b)
+    note: >-
+      Keeping invoices that tax law requires, after an account is erased, is the exception for a
+      legal obligation in point (b) of Article 17(3), and the basis it rests on is point (c) of
+      Article 6(1). Either counts.
+
+  - id: q18
+    topic: q18
+    question: >-
+      What security measures does the GDPR expect us to implement based on the risks of our
+      processing?
+    lang: en
+    expected_keys: [gdpr:art-32:para-1, gdpr:art-32:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202209_personal_data_breach_notification_v2.0_en.pdf
+    quote: >-
+      Article 32 GDPR, "security of processing", explains that when implementing technical and
+      organisational measures to ensure a level of security appropriate to the risk
+    note: >-
+      Security measures matched to the risk are Article 32: paragraph 1 sets them, paragraph 2
+      says which risks to weigh. Either counts.
+
+  - id: q19
+    topic: q19
+    question: >-
+      Do we have to report every personal data breach to the supervisory authority within 72
+      hours?
+    lang: en
+    expected_keys: [gdpr:art-33:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202209_personal_data_breach_notification_v2.0_en.pdf
+    quote: >-
+      Article 33(1) GDPR provides that: "In the case of a personal data breach, the controller
+      shall without undue delay and, where feasible, not later than 72 hours after having become
+      aware of it, notify the personal data breach to the supervisory authority competent
+    note: >-
+      Notifying the supervisory authority within 72 hours is Article 33(1), which excepts a
+      breach unlikely to result in a risk, so not every breach.
+
+  - id: q20
+    topic: q20
+    question: >-
+      When must we notify affected users about a personal data breach?
+    lang: en
+    expected_keys: [gdpr:art-34:para-1, gdpr:art-34:para-3]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-04/edpb_guidelines_202209_personal_data_breach_notification_v2.0_en.pdf
+    quote: >-
+      Article 34(1) GDPR states: "When the personal data breach is likely to result in a high
+      risk to the rights and freedoms of natural persons, the controller shall communicate the
+      personal data breach to the data subject without undue delay."
+    note: >-
+      Telling the people affected is Article 34(1), when the breach is likely to result in a
+      high risk; Article 34(3) says when it is not needed. Either counts.
+
+  - id: q22
+    topic: q22
+    question: >-
+      Do facial templates used to identify users count as special category biometric data?
+    lang: en
+    expected_keys: [gdpr:art-4:pt-14, gdpr:art-9:para-1]
+    source: https://www.edpb.europa.eu/sites/default/files/files/file1/edpb_guidelines_201903_video_devices_en_0.pdf
+    quote: >-
+      Since biometric data is the result of such measurements, the GDPR states in its Article
+      4.14 that it is ... In order for it to be considered as processing of special categories
+      of personal data (Article 9) it requires that biometric data is processed "for the purpose
+      of uniquely identifying a natural person".
+    note: >-
+      A facial template is biometric data, Article 4(14), and biometric data processed to
+      identify somebody uniquely is a special category under Article 9(1). Either counts.
+
+  - id: q23
+    topic: q23
+    question: >-
+      At what age can a child consent to an online service under the GDPR in the country where
+      we operate?
+    lang: en
+    expected_keys: [gdpr:art-8:para-1]
+    source: https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_en.pdf
+    quote: >-
+      Article 8(1) states that where consent applies, in relation to the offer of information
+      society services directly to a child, the processing of the personal data of a child shall
+      be lawful where the child is at least 16 years old.
+    note: >-
+      The age at which a child may consent to an online service is Article 8(1): 16, or a lower
+      age a Member State sets, not below 13.
+
+  - id: q24
+    topic: q24
+    question: >-
+      What must be included in a data processing agreement with our cloud hosting provider?
     lang: en
     expected_keys: [gdpr:art-28:para-3]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors/controllers-and-processors/
-    note: The mandatory contract terms between controller and processor are Article 28(3).
-
-  - id: two-companies-sharing
-    question: Two of our companies decide together how to use the data. What are we?
-    lang: en
-    expected_keys: [gdpr:art-26:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/controllers-and-processors/controllers-and-processors/
-    note: Joint controllers and their arrangement are Article 26(1).
-
-  - id: us-hosting
-    question: Can we host the database with a US cloud provider?
-    lang: en
-    expected_keys: [gdpr:art-46:para-1, gdpr:art-45:para-1]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/international-transfers/
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      In any event, all elements of Article 28(3) must be covered by the contract.
     note: >-
-      Either an adequacy decision, Article 45(1), or appropriate safeguards,
-      Article 46(1), answers this.
+      What a contract with a processor must contain is Article 28(3).
 
-  - id: legitimate-interests-test
-    question: Can we rely on legitimate interests for analytics?
+  - id: q25
+    topic: q25
+    question: >-
+      Can our processor appoint a subprocessor without our prior written authorization?
     lang: en
-    expected_keys: [gdpr:art-6:para-1:pt-f]
-    source: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/lawful-basis/legitimate-interests/
-    note: Legitimate interests as a lawful basis is point (f) of Article 6(1).
+    expected_keys: [gdpr:art-28:para-2]
+    source: https://www.edpb.europa.eu/system/files/documents/2023-10/EDPB_guidelines_202007_controllerprocessor_final_en.pdf
+    quote: >-
+      Article 28(2) GDPR stipulates that the processor shall not engage another processor
+      without prior specific or general written authorisation of the controller (including in
+      electronic form).
+    note: >-
+      A processor engaging another processor needs the controller's prior written authorisation,
+      specific or general: Article 28(2).
+
+  - id: q26
+    topic: q26
+    question: >-
+      Can we transfer personal data to a country that has an EU adequacy decision?
+    lang: en
+    expected_keys: [gdpr:art-45:para-1]
+    source: https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf
+    quote: >-
+      If the European Commission has already declared the country, region or sector to which you
+      are transferring the data as adequate, through one of its adequacy decisions under Article
+      45 GDPR or under the previous Directive 95/46 as long as the decision is still in force,
+      you will not need to take any further steps, other than monitoring that the adequacy
+      decision remains valid.
+    note: >-
+      A transfer to a country the Commission has found adequate needs no further authorisation:
+      Article 45(1).
+
+  - id: q27
+    topic: q27
+    question: >-
+      When using Standard Contractual Clauses to transfer data outside the EEA, do we need a
+      transfer impact assessment?
+    lang: en
+    expected_keys: [gdpr:art-46:para-1, gdpr:art-46:para-2]
+    source: https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf
+    quote: >-
+      Your assessment should be focused first and foremost on third country legislation that is
+      relevant to your transfer and the Article 46 GDPR transfer tool you are relying on.
+    note: >-
+      Standard contractual clauses are a safeguard under Article 46(2), and Article 46(1) allows
+      the transfer only where enforceable rights and effective remedies are available, which is
+      what the assessment checks. Either counts.
+
+  - id: q28
+    topic: q28
+    question: >-
+      Do we need to maintain a Record of Processing Activities if our company has fewer than 250
+      employees?
+    lang: en
+    expected_keys: [gdpr:art-30:para-5]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/51422
+    quote: >-
+      this Regulation includes a derogation for organisations with fewer than 250 employees with
+      regard to record-keeping'. Article 30(5) gives effect to Recital 13.
+    note: >-
+      The exception for organisations with fewer than 250 employees, and its limits, is Article
+      30(5).
+
+  - id: q29
+    topic: q29
+    question: >-
+      When is our company legally required to appoint a Data Protection Officer?
+    lang: en
+    expected_keys: [gdpr:art-37:para-1]
+    source: https://ec.europa.eu/newsroom/article29/redirection/document/44100
+    quote: >-
+      Article 37(1) of the GDPR requires the designation of a DPO in three specific cases:
+    note: >-
+      When a data protection officer must be designated is Article 37(1).

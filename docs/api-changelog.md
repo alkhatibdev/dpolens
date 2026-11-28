@@ -9,6 +9,11 @@ breaking change needs a new major version.
 
 ## 0.3.0
 
+- `POST /v1/search`: results are ranked by standardised fusion, where they were ranked by
+  convex combination. Each retriever's scores are standardised within the question and added,
+  keyword search at 0.3 of the weight, so the order of results changes, and nothing in a
+  response's shape does. The fusion rule is not a parameter, and
+  [retrieval.md](../evals/retrieval.md) publishes how it was chosen
 - `POST /v1/search`: each result is a whole rule. `clause` is the clause whose own words
   introduce the match, such as the paragraph a point belongs to, and the new `beneath` holds
   the clauses under it, in reading order, each with its own key to cite it by. A rule of 2,500

@@ -9,6 +9,7 @@ task that says "make this compliant" would trigger any assistant.
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
@@ -42,6 +43,15 @@ def test_no_task_is_in_both_sets() -> None:
 
     assert tuning.isdisjoint(held_out)
     assert prompts.isdisjoint(task.prompt for task in read_tasks(TRIGGER / "held_out.yaml"))
+
+
+def test_the_tasks_that_collect_queries_are_twenty_for_each_law_and_new() -> None:
+    queries = read_tasks(TRIGGER / "queries.yaml")
+    measured = [task for name in SETS for task in read_tasks(TRIGGER / f"{name}.yaml")]
+
+    assert Counter(task.law for task in queries) == {"gdpr": 20, "uae-pdpl": 20}
+    assert {task.id for task in queries}.isdisjoint(task.id for task in measured)
+    assert {task.prompt for task in queries}.isdisjoint(task.prompt for task in measured)
 
 
 def balanced(*extra: Task) -> list[Task]:
@@ -113,3 +123,49 @@ def test_an_unknown_field_is_refused(tmp_path: Path) -> None:
 
     with pytest.raises(TaskSetError, match="unknown fields"):
         read_tasks(path)
+
+
+def test_an_arabic_coding_task_that_names_the_subject_is_refused() -> None:
+    tasks = balanced()
+    tasks[0] = replace(tasks[0], prompt="خزن البيانات الشخصية للعميل في الجدول")
+
+    assert any("names the subject" in problem for problem in problems(tasks))
+
+
+def collecting(*extra: Task) -> list[Task]:
+    """A set that collects queries: coding tasks that should search, each naming its law."""
+    tasks = [
+        Task(
+            id=verb,
+            kind="coding",
+            should_search=True,
+            prompt=f"{verb} it",
+            reason="r",
+            verb=verb,
+            law="gdpr",
+        )
+        for verb in ("collect", "store", "log", "share", "delete")
+    ]
+    return [*tasks, *extra]
+
+
+def test_a_set_that_collects_queries_needs_no_tasks_that_should_not_search() -> None:
+    assert problems(collecting(), collecting=True) == []
+
+
+def test_a_task_that_collects_queries_names_its_law_and_should_search() -> None:
+    tasks = collecting()
+    tasks[0] = replace(tasks[0], law=None)
+    tasks[1] = replace(tasks[1], should_search=False)
+
+    found = problems(tasks, collecting=True)
+
+    assert any(problem.startswith("collect: a task that collects queries") for problem in found)
+    assert any(problem.startswith("store: a task that collects queries") for problem in found)
+
+
+def test_only_a_set_that_collects_queries_names_a_law() -> None:
+    tasks = balanced()
+    tasks[0] = replace(tasks[0], law="gdpr")
+
+    assert "collect: only a set that collects queries names a law" in problems(tasks)

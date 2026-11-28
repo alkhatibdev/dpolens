@@ -99,9 +99,9 @@ def test_the_command_keeps_such_a_run_as_a_set_of_its_own(
     compared = runner.invoke(app, ["evals", "compare", str(kept_in), str(kept_in)])
 
     assert (ran_alone.exit_code, ran.exit_code) == (0, 0), ran.output
-    assert "uae-pdpl tuning.en beside gdpr: 58 questions" in ran.output
+    assert "uae-pdpl tuning.en beside gdpr: 77 questions" in ran.output
     kept = json.loads(beside.read_text(encoding="utf-8"))
     assert [asked["question_set"] for asked in kept["sets"]] == ["tuning.en beside gdpr"]
     assert compared.exit_code == 0, compared.output
-    assert "uae-pdpl tuning.en: 58 questions" in compared.output
-    assert "uae-pdpl tuning.en beside gdpr: 58 questions" in compared.output
+    assert "uae-pdpl tuning.en: 77 questions" in compared.output
+    assert "uae-pdpl tuning.en beside gdpr: 77 questions" in compared.output

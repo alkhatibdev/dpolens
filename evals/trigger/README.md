@@ -11,6 +11,7 @@ with any model served through an OpenAI-compatible API, such as a small model on
 | --- | --- |
 | `tuning.yaml` | 20 tasks used while improving the guidance DPOLens gives an AI assistant |
 | `held_out.yaml` | 30 tasks that produce the published number and are never used to change anything |
+| `queries.yaml` | 40 tasks that collect the searches an AI assistant writes, for the retrieval evals |
 | `app/` | Larder, the small TypeScript shop every task runs against |
 | `container/` | The container one run happens in, one for each AI assistant |
 | `../../scripts/run_trigger_test.py` | The runner |
@@ -31,7 +32,7 @@ with any model served through an OpenAI-compatible API, such as a small model on
 
 | Field | Meaning |
 | --- | --- |
-| `id` | Unique across both sets |
+| `id` | Unique across the sets |
 | `kind` | `coding` for a change to the app, `question` for a question about the rules |
 | `should_search` | Whether a careful developer would look the rules up first. This is the author's judgment, not a regulator's |
 | `verb` | For a task that should search: what it does with data about a person, one of collect, store, log, share, delete or access |
@@ -39,13 +40,16 @@ with any model served through an OpenAI-compatible API, such as a small model on
 | `prompt` | What the developer types, phrased the way they would |
 | `reason` | Why the label is what it is, so a reader who disagrees can see what with |
 | `note` | A real thread a phrasing was learned from, when there is one. Phrasings are rewritten, never copied |
+| `law` | In `queries.yaml` only: the law the instance holds while the task runs |
 
 A set is half tasks that should search and half that should not. The ones that should search
 cover every verb, the ones that should not include near misses, and a few questions about the
 rules sit in their own group. A coding task never names the subject: no "personal data",
-"privacy", "GDPR", "policy", "consent", "law", "legal" or "compliant". A task that says "make
-this compliant" would trigger any AI assistant and the number would mean nothing.
-`tests/unit/test_trigger_tasks.py` checks all of this.
+"privacy", "GDPR", "policy", "consent", "law", "legal" or "compliant", and none of their
+Arabic equivalents. A task that says "make this compliant" would trigger any AI assistant and
+the number would mean nothing. `queries.yaml` keeps the last rule and not the others: every task
+in it is a coding task that should search, since it collects searches rather than measuring
+whether they happen. `tests/unit/test_trigger_tasks.py` checks all of this.
 
 ## What a run is
 
@@ -100,6 +104,13 @@ The first command runs each tuning task once. A held-out batch has to name its m
 the number it produces is published with it. `--setup mcp-only` adds the MCP server on its own
 with no plugin, which shows how much the plugin's skill adds. `--max-runs` is a guard against
 starting a larger batch than you meant to: a full held-out batch is 90 runs.
+
+`--set queries --model <id>` runs the tasks that collect queries. They measure nothing here:
+every one should search, each names the law its instance holds while it runs, and what matters
+is what the AI assistant searches for, which each run's stream of events keeps word for word.
+The searches they collected, labelled before anything was scored, are the retrieval evals'
+[assistant-style held-out sets](../README.md#held-out-sets). A batch of them is never written
+into `evals/results/trigger.json`.
 
 `--community` runs the instance as a community version, with the settings in
 `evals/trigger/community.yaml`: no token, both laws, questions kept 30 days, and the one

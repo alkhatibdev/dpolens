@@ -1,0 +1,404 @@
+# The UAE's data protection law: the assistant-style held-out set, as sent to the community version.
+#
+# Claude Code (claude-sonnet-5-5) typed these queries while working, once each, through the
+# coding tasks of ../trigger/queries.yaml, on an instance set up as the community version,
+# holding both laws, and added as the community page adds it; each query is labelled under the
+# law its task was written for. A run stops when its first search comes back, so each query
+# was written before any result was read. Nobody searched them before these labels were fixed.
+#
+# Each thing a query asks is a part, with an entry of its own under the same words; `topic`
+# names the task and the part. A query that only describes what the code does asks whether it
+# may be done. Every label rests on the words of a law firm's published guide that name the article, in `quote`; `note`
+# says why that rule is the one the part asks about. Where more than one clause answers a
+# part, each is listed and any one counts.
+
+questions:
+  - id: uae-pass-sign-in.allowed
+    topic: uae-pass-sign-in.allowed
+    question: >-
+      collecting and storing national identity number, full name, mobile number and nationality
+      from a government identity provider at sign-in
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether it may be done at all is Article 4: processing needs the person's consent unless
+      one of the cases it lists applies.
+
+  - id: selfie-match.allowed
+    topic: selfie-match.allowed
+    question: >-
+      collecting a photo of a person's face and an identity document photo, and processing them
+      with a third-party face-matching service to verify identity before an order
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether a face photo and an identity document may be collected is Article 4. A face is
+      biometric data, which the law counts as sensitive, but it sets no stricter basis for it:
+      an impact assessment (Article 21) and an officer (Article 10) depend on other conditions,
+      and neither decides whether it may be done.
+
+  - id: selfie-match.outside-service
+    topic: selfie-match.outside-service
+    question: >-
+      collecting a photo of a person's face and an identity document photo, and processing them
+      with a third-party face-matching service to verify identity before an order
+    lang: en
+    expected_keys: [uae-pdpl:art-8:para-1, uae-pdpl:art-7:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(1) states that the Data Processor shall carry out the processing in accordance
+      with the instructions of the Controller and the contracts and agreements concluded between
+      them.
+    note: >-
+      Handing data to a company that processes it for us is the use of a processor: Article 7(5)
+      on choosing one with sufficient guarantees, Article 8(1) on processing only under the
+      controller's instructions and their contract. Either counts.
+
+  - id: kids-under-parent.allowed
+    topic: kids-under-parent.allowed
+    question: >-
+      parent creates account for a child aged 12 or older, storing the child's name, age and
+      school
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      The law has no rule for children. Whether a child's name, age and school may be collected
+      is Article 4: consent, unless one of the cases it lists applies.
+
+  - id: map-pin-checkout.kept-for-reuse
+    topic: map-pin-checkout.kept-for-reuse
+    question: >-
+      storing a customer's precise GPS location coordinates for delivery and reusing them for
+      future orders
+    lang: en
+    expected_keys: [uae-pdpl:art-5:para-2, uae-pdpl:art-5:para-7, uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      General Data Protection Controls (Article 5) Under the PDPL, Personal Data must be
+      processed according to the following controls: ... Personal Data must be collected for a
+      specific and clear purpose, and may not be processed at any subsequent time in a manner
+      incompatible with that purpose. ... Personal Data may not be kept after fulfilling the
+      purpose of Processing thereof.
+    note: >-
+      Keeping a location for later orders needs a basis, Article 4. The later use has to fit the
+      purpose it was collected for, Article 5(2), and it may not be kept once that purpose is
+      exhausted, Article 5(7). Any of them counts.
+
+  - id: family-members.allowed
+    topic: family-members.allowed
+    question: >-
+      collecting and storing names, ages and family relationships of household members including
+      children, added by the account holder
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether details of a customer's household, children among them, may be kept is Article 4:
+      the consent of the people they are about, unless one of its cases applies. Family details
+      count as sensitive, for which the law sets no stricter basis.
+
+  - id: prescription-photos.health
+    topic: prescription-photos.health
+    question: >-
+      storing images of medical prescriptions (health data) uploaded by customers and showing
+      them to a pharmacist
+    lang: en
+    expected_keys: [uae-pdpl:art-4, uae-pdpl:art-2:para-2:pt-e]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether a prescription may be kept is Article 4, whose paragraphs 4 and 5 cover health
+      care. Article 2(2)(e) takes health data out of this law where other legislation regulates
+      it, which decides whether this law applies at all. Either counts.
+
+  - id: doorstep-photo.allowed
+    topic: doorstep-photo.allowed
+    question: >-
+      storing a photograph taken at a customer's doorstep as proof of delivery, which may show
+      the customer, their home or address
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether it may be done at all is Article 4: processing needs the person's consent unless
+      one of the cases it lists applies.
+
+  - id: iban-for-refunds.kept-for-reuse
+    topic: iban-for-refunds.kept-for-reuse
+    question: >-
+      storing a customer's bank account number and account holder name for refunds, saved for
+      reuse
+    lang: en
+    expected_keys: [uae-pdpl:art-5:para-2, uae-pdpl:art-5:para-7, uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      General Data Protection Controls (Article 5) Under the PDPL, Personal Data must be
+      processed according to the following controls: ... Personal Data must be collected for a
+      specific and clear purpose, and may not be processed at any subsequent time in a manner
+      incompatible with that purpose. ... Personal Data may not be kept after fulfilling the
+      purpose of Processing thereof.
+    note: >-
+      Keeping a bank account for later refunds needs a basis, Article 4. The later use has to
+      fit the purpose it was collected for, Article 5(2), and it may not be kept once that
+      purpose is exhausted, Article 5(7). Any of them counts.
+
+  - id: record-support-calls.allowed
+    topic: record-support-calls.allowed
+    question: >-
+      recording customer support phone calls and storing the recordings linked to the customer's
+      account
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether it may be done at all is Article 4: processing needs the person's consent unless
+      one of the cases it lists applies.
+
+  - id: picked-for-you.allowed
+    topic: picked-for-you.allowed
+    question: >-
+      tracking which products a logged-in customer views and for how long, to personalise
+      recommendations on the website
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether it may be done at all is Article 4: processing needs the person's consent unless
+      one of the cases it lists applies.
+
+  - id: shared-logins.allowed
+    topic: shared-logins.allowed
+    question: >-
+      recording device identifier and approximate location of users at each login to detect
+      account sharing
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether it may be done at all is Article 4: processing needs the person's consent unless
+      one of the cases it lists applies.
+
+  - id: driver-route-history.allowed
+    topic: driver-route-history.allowed
+    question: >-
+      continuously tracking employees' location every few seconds during working hours and
+      keeping the full history to evaluate their performance
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Whether employees' locations may be tracked is Article 4, whose paragraph 8 covers what
+      employment requires.
+
+  - id: driver-route-history.retention
+    topic: driver-route-history.retention
+    question: >-
+      continuously tracking employees' location every few seconds during working hours and
+      keeping the full history to evaluate their performance
+    lang: en
+    expected_keys: [uae-pdpl:art-5:para-7, uae-pdpl:art-7:para-3]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      General Data Protection Controls (Article 5) Under the PDPL, Personal Data must be
+      processed according to the following controls: ... Personal Data may not be kept after
+      fulfilling the purpose of Processing thereof. It may only be kept in the event that the
+      identity of the Data Subject is anonymized using the "Anonymization" feature
+    note: >-
+      How long data may be kept is Article 5(7): not after the purpose of processing is
+      exhausted, unless the person can no longer be identified. Article 7(3) makes the storage
+      period one of the settings a controller must limit by default, so it counts too.
+
+  - id: support-team-abroad.outside-service
+    topic: support-team-abroad.outside-service
+    question: >-
+      giving a third-party outsourced support provider in another country access to customer
+      profiles and order history
+    lang: en
+    expected_keys: [uae-pdpl:art-8:para-1, uae-pdpl:art-7:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(1) states that the Data Processor shall carry out the processing in accordance
+      with the instructions of the Controller and the contracts and agreements concluded between
+      them.
+    note: >-
+      Handing data to a company that processes it for us is the use of a processor: Article 7(5)
+      on choosing one with sufficient guarantees, Article 8(1) on processing only under the
+      controller's instructions and their contract. Either counts.
+
+  - id: support-team-abroad.abroad
+    topic: support-team-abroad.abroad
+    question: >-
+      giving a third-party outsourced support provider in another country access to customer
+      profiles and order history
+    lang: en
+    expected_keys: [uae-pdpl:art-22, uae-pdpl:art-23]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 22 of the PDPL permits the transfer of personal data to countries with robust data
+      protection laws in place or where the specific country has acceded to bilateral or
+      multilateral agreements relating to the protection of personal data. ... Article 23 of the
+      PDPL allows personal data to be transferred to countries lacking
+    note: >-
+      Data reaching people in another country is a transfer outside the State: Article 22 for
+      countries with data protection laws or agreements, Article 23 for the others. Either
+      counts.
+
+  - id: whatsapp-weekly-offers.marketing
+    topic: whatsapp-weekly-offers.marketing
+    question: >-
+      sending marketing messages to customers by phone number, consent and right to object to
+      direct marketing
+    lang: en
+    expected_keys: [uae-pdpl:art-17:para-1, uae-pdpl:art-4]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 17 of the PDPL allows data subjects to refuse or request the cessation of
+      processing of their personal data in cases involving direct marketing
+    note: >-
+      Whether marketing messages may be sent, and on whose consent, is Article 4: consent,
+      unless one of its cases applies. Article 17(1), the right to stop processing for direct
+      marketing, counts too.
+
+  - id: whatsapp-weekly-offers.stop-marketing
+    topic: whatsapp-weekly-offers.stop-marketing
+    question: >-
+      sending marketing messages to customers by phone number, consent and right to object to
+      direct marketing
+    lang: en
+    expected_keys: [uae-pdpl:art-17:para-1, uae-pdpl:art-6:para-2]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 17 of the PDPL allows data subjects to refuse or request the cessation of
+      processing of their personal data in cases involving direct marketing
+    note: >-
+      The right to object to direct marketing is Article 17(1); withdrawing the consent the
+      marketing rested on is Article 6(2). Either counts.
+
+  - id: bank-card-points.allowed
+    topic: bank-card-points.allowed
+    question: >-
+      sharing customer phone numbers and purchase amounts with a bank partner in a daily file
+      for a rewards programme
+    lang: en
+    expected_keys: [uae-pdpl:art-4]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      Legal Bases for Processing (Article 4) The PDPL prohibits Processing Personal Data without
+      the consent of the Data Subject, except in the following cases
+    note: >-
+      Handing customers' numbers and purchase amounts to a bank for its own programme is a
+      disclosure that needs a basis, Article 4: consent, unless one of its cases applies.
+
+  - id: agency-db-access.outside-service
+    topic: agency-db-access.outside-service
+    question: >-
+      sharing customer names, email addresses and delivery addresses with an external marketing
+      agency for campaigns
+    lang: en
+    expected_keys: [uae-pdpl:art-8:para-1, uae-pdpl:art-7:para-5]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(1) states that the Data Processor shall carry out the processing in accordance
+      with the instructions of the Controller and the contracts and agreements concluded between
+      them.
+    note: >-
+      Handing data to a company that processes it for us is the use of a processor: Article 7(5)
+      on choosing one with sufficient guarantees, Article 8(1) on processing only under the
+      controller's instructions and their contract. Either counts.
+
+  - id: erase-on-request.erasure-request
+    topic: erase-on-request.erasure-request
+    question: >-
+      what must happen when a data subject asks for erasure of their personal data, including
+      data shared with processors
+    lang: en
+    expected_keys: [uae-pdpl:art-15:para-2]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      (Article 15) The Data Subject has the right to request the correction or completion of his
+      / her inaccurate Personal Data held with the Controller, and has the right to request the
+      erasure of his / her Personal Data held with the Controller in any of the following cases
+    note: >-
+      A request to erase all of someone's data is the right of Article 15(2), in the cases it
+      lists. The law has no rule of its own for passing the request on to processors.
+
+  - id: selfie-cleanup.retention
+    topic: selfie-cleanup.retention
+    question: >-
+      how long can we keep identity document images and selfie photos after identity
+      verification is completed
+    lang: en
+    expected_keys: [uae-pdpl:art-5:para-7, uae-pdpl:art-7:para-3]
+    source: https://www.dlapiperdataprotection.com/countries/uae-general/law.html
+    quote: >-
+      General Data Protection Controls (Article 5) Under the PDPL, Personal Data must be
+      processed according to the following controls: ... Personal Data may not be kept after
+      fulfilling the purpose of Processing thereof. It may only be kept in the event that the
+      identity of the Data Subject is anonymized using the "Anonymization" feature
+    note: >-
+      How long data may be kept is Article 5(7): not after the purpose of processing is
+      exhausted, unless the person can no longer be identified. Article 7(3) makes the storage
+      period one of the settings a controller must limit by default, so it counts too.
+
+  - id: stop-whatsapp.stop-marketing
+    topic: stop-whatsapp.stop-marketing
+    question: >-
+      customer withdraws consent to marketing messages by replying STOP; remove phone number
+      from marketing list and tell a processor to delete it
+    lang: en
+    expected_keys: [uae-pdpl:art-17:para-1, uae-pdpl:art-6:para-2]
+    source: https://www.multilaw.com/Multilaw/Multilaw/Data_Protection_Laws_Guide/DataProtection_Guide_United_Arab_Emirates.aspx
+    quote: >-
+      Article 17 of the PDPL allows data subjects to refuse or request the cessation of
+      processing of their personal data in cases involving direct marketing
+    note: >-
+      Somebody who asks to stop receiving marketing is using the right of Article 17(1), and
+      withdrawing the consent the marketing rested on, Article 6(2). Either counts.
+
+  - id: stop-whatsapp.erased-at-processor
+    topic: stop-whatsapp.erased-at-processor
+    question: >-
+      customer withdraws consent to marketing messages by replying STOP; remove phone number
+      from marketing list and tell a processor to delete it
+    lang: en
+    expected_keys: [uae-pdpl:art-8:para-1, uae-pdpl:art-8:para-4]
+    source: https://abspartners.ae/uae-pdpl-duties-of-data-controllers-processors/
+    quote: >-
+      Article 8(3) and (4) govern Data Retention ... Upon expiry of the processing term or at
+      the Controller's direction, the processor must erase or return all personal data.
+    note: >-
+      An agency that holds the number for us is a processor: it acts on the controller's
+      instructions, Article 8(1), and erases what it holds when its processing ends, Article
+      8(4). Either counts.

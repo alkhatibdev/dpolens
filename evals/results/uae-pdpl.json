@@ -1,33 +1,24 @@
 {
   "pack": "uae-pdpl",
-  "measured_at": "2026-11-06",
-  "commit": "046b514",
+  "measured_at": "2026-11-28",
+  "commit": "14eb4b9",
   "runs": [
     {
       "question_set": "held_out.ar",
-      "configuration": "convex:0.5+normative",
+      "configuration": "standardised:0.3+normative+questions+rules",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 19,
-      "recall_at_5": 0.4211,
-      "recall_at_10": 0.5789,
-      "mrr": 0.3039,
+      "questions": 15,
+      "recall_at_5": 0.8667,
+      "recall_at_10": 1.0,
+      "mrr": 0.7593,
       "interval": [
-        0.2105,
-        0.6316
+        0.6667,
+        1.0
       ],
       "misses": [
-        "accuracy",
-        "breach-tell-users",
-        "controller-or-processor",
-        "correction",
-        "legal-bases",
-        "minimisation",
-        "penalties",
-        "processor-end-of-contract",
-        "restriction",
-        "scope-outside-uae",
-        "stop-marketing"
+        "q21.conditions",
+        "q25"
       ]
     },
     {
@@ -35,28 +26,25 @@
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 19,
-      "recall_at_5": 0.3158,
-      "recall_at_10": 0.3158,
-      "mrr": 0.2281,
+      "questions": 15,
+      "recall_at_5": 0.3333,
+      "recall_at_10": 0.4,
+      "mrr": 0.1706,
       "interval": [
-        0.1053,
-        0.5263
+        0.1333,
+        0.6
       ],
       "misses": [
-        "access-request",
-        "accuracy",
-        "breach-report",
-        "breach-tell-users",
-        "controller-or-processor",
-        "correction",
-        "minimisation",
-        "penalties",
-        "portability",
-        "processor-end-of-contract",
-        "restriction",
-        "scope-outside-uae",
-        "stop-marketing"
+        "q04",
+        "q06",
+        "q13",
+        "q15",
+        "q16",
+        "q20",
+        "q21.sensitive",
+        "q21.conditions",
+        "q25",
+        "q26"
       ]
     },
     {
@@ -64,46 +52,38 @@
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 19,
-      "recall_at_5": 0.5789,
-      "recall_at_10": 0.6316,
-      "mrr": 0.3061,
+      "questions": 15,
+      "recall_at_5": 0.6667,
+      "recall_at_10": 0.8667,
+      "mrr": 0.5972,
       "interval": [
-        0.3684,
-        0.7895
+        0.4,
+        0.8667
       ],
       "misses": [
-        "accuracy",
-        "breach-tell-users",
-        "controller-or-processor",
-        "minimisation",
-        "penalties",
-        "processor-security",
-        "restriction",
-        "scope-outside-uae"
+        "q06",
+        "q15",
+        "q16",
+        "q21.conditions",
+        "q25"
       ]
     },
     {
       "question_set": "held_out.en",
-      "configuration": "convex:0.5+normative",
+      "configuration": "standardised:0.3+normative+questions+rules",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 19,
-      "recall_at_5": 0.6316,
-      "recall_at_10": 0.7368,
-      "mrr": 0.3882,
+      "questions": 15,
+      "recall_at_5": 0.8667,
+      "recall_at_10": 0.9333,
+      "mrr": 0.7762,
       "interval": [
-        0.4211,
-        0.8421
+        0.6667,
+        1.0
       ],
       "misses": [
-        "access-request",
-        "accuracy",
-        "controller-or-processor",
-        "minimisation",
-        "penalties",
-        "processor-end-of-contract",
-        "scope-outside-uae"
+        "q08",
+        "q24"
       ]
     },
     {
@@ -111,26 +91,20 @@
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 19,
-      "recall_at_5": 0.4211,
-      "recall_at_10": 0.5263,
-      "mrr": 0.3484,
+      "questions": 15,
+      "recall_at_5": 0.6667,
+      "recall_at_10": 0.6667,
+      "mrr": 0.4578,
       "interval": [
-        0.2105,
-        0.6316
+        0.4,
+        0.8667
       ],
       "misses": [
-        "access-request",
-        "accuracy",
-        "breach-tell-users",
-        "controller-or-processor",
-        "correction",
-        "minimisation",
-        "penalties",
-        "portability",
-        "processor-end-of-contract",
-        "scope-outside-uae",
-        "stop-marketing"
+        "q01",
+        "q02",
+        "q08",
+        "q09",
+        "q17"
       ]
     },
     {
@@ -138,57 +112,270 @@
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 19,
-      "recall_at_5": 0.5789,
-      "recall_at_10": 0.7368,
-      "mrr": 0.4053,
+      "questions": 15,
+      "recall_at_5": 0.6667,
+      "recall_at_10": 0.7333,
+      "mrr": 0.58,
       "interval": [
-        0.3684,
-        0.7895
+        0.4,
+        0.8667
       ],
       "misses": [
-        "access-request",
-        "accuracy",
-        "controller-or-processor",
-        "minimisation",
-        "penalties",
-        "records-of-processing",
-        "restriction",
-        "scope-outside-uae"
+        "q02",
+        "q08",
+        "q09",
+        "q24",
+        "q28"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.ar",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 2,
+      "recall_at_5": 0.5,
+      "recall_at_10": 0.5,
+      "mrr": 0.1667,
+      "interval": [
+        0.0,
+        1.0
+      ],
+      "misses": [
+        "whatsapp-weekly-offers.outside-service"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.ar",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 2,
+      "recall_at_5": 0.5,
+      "recall_at_10": 0.5,
+      "mrr": 0.1667,
+      "interval": [
+        0.0,
+        1.0
+      ],
+      "misses": [
+        "whatsapp-weekly-offers.outside-service"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.ar",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 2,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.5,
+      "mrr": 0.0556,
+      "interval": [
+        0.0,
+        0.0
+      ],
+      "misses": [
+        "whatsapp-weekly-offers.marketing",
+        "whatsapp-weekly-offers.outside-service"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 24,
+      "recall_at_5": 0.625,
+      "recall_at_10": 0.8333,
+      "mrr": 0.508,
+      "interval": [
+        0.4167,
+        0.8333
+      ],
+      "misses": [
+        "uae-pass-sign-in.allowed",
+        "selfie-match.outside-service",
+        "family-members.allowed",
+        "doorstep-photo.allowed",
+        "iban-for-refunds.allowed",
+        "record-support-calls.outside-service",
+        "picked-for-you.allowed",
+        "driver-route-history.retention",
+        "bank-card-points.allowed"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 24,
+      "recall_at_5": 0.2083,
+      "recall_at_10": 0.3333,
+      "mrr": 0.1834,
+      "interval": [
+        0.0833,
+        0.375
+      ],
+      "misses": [
+        "uae-pass-sign-in.allowed",
+        "selfie-match.allowed",
+        "selfie-match.outside-service",
+        "kids-under-parent.allowed",
+        "map-pin-checkout.kept-for-reuse",
+        "family-members.allowed",
+        "doorstep-photo.allowed",
+        "iban-for-refunds.allowed",
+        "record-support-calls.allowed",
+        "record-support-calls.outside-service",
+        "picked-for-you.allowed",
+        "shared-logins.allowed",
+        "driver-route-history.retention",
+        "support-team-abroad.outside-service",
+        "bank-card-points.allowed",
+        "agency-db-access.outside-service",
+        "erase-on-request.erasure-request",
+        "stop-whatsapp.stop-marketing",
+        "stop-whatsapp.erased-at-processor"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 24,
+      "recall_at_5": 0.3333,
+      "recall_at_10": 0.4167,
+      "mrr": 0.2414,
+      "interval": [
+        0.1667,
+        0.5417
+      ],
+      "misses": [
+        "selfie-match.allowed",
+        "selfie-match.outside-service",
+        "kids-under-parent.allowed",
+        "map-pin-checkout.kept-for-reuse",
+        "family-members.allowed",
+        "doorstep-photo.allowed",
+        "iban-for-refunds.allowed",
+        "record-support-calls.allowed",
+        "record-support-calls.outside-service",
+        "picked-for-you.allowed",
+        "shared-logins.allowed",
+        "driver-route-history.allowed",
+        "driver-route-history.retention",
+        "support-team-abroad.outside-service",
+        "bank-card-points.allowed",
+        "agency-db-access.outside-service"
+      ]
+    },
+    {
+      "question_set": "held_out_community.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 24,
+      "recall_at_5": 0.7917,
+      "recall_at_10": 0.7917,
+      "mrr": 0.5431,
+      "interval": [
+        0.625,
+        0.9167
+      ],
+      "misses": [
+        "uae-pass-sign-in.allowed",
+        "kids-under-parent.allowed",
+        "picked-for-you.allowed",
+        "agency-db-access.outside-service",
+        "stop-whatsapp.erased-at-processor"
+      ]
+    },
+    {
+      "question_set": "held_out_community.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 24,
+      "recall_at_5": 0.2917,
+      "recall_at_10": 0.4167,
+      "mrr": 0.2593,
+      "interval": [
+        0.125,
+        0.4583
+      ],
+      "misses": [
+        "uae-pass-sign-in.allowed",
+        "selfie-match.allowed",
+        "selfie-match.outside-service",
+        "kids-under-parent.allowed",
+        "map-pin-checkout.kept-for-reuse",
+        "family-members.allowed",
+        "doorstep-photo.allowed",
+        "iban-for-refunds.kept-for-reuse",
+        "record-support-calls.allowed",
+        "picked-for-you.allowed",
+        "shared-logins.allowed",
+        "driver-route-history.retention",
+        "support-team-abroad.outside-service",
+        "support-team-abroad.abroad",
+        "bank-card-points.allowed",
+        "agency-db-access.outside-service",
+        "stop-whatsapp.erased-at-processor"
+      ]
+    },
+    {
+      "question_set": "held_out_community.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 24,
+      "recall_at_5": 0.3333,
+      "recall_at_10": 0.375,
+      "mrr": 0.2236,
+      "interval": [
+        0.1667,
+        0.5417
+      ],
+      "misses": [
+        "selfie-match.allowed",
+        "selfie-match.outside-service",
+        "kids-under-parent.allowed",
+        "map-pin-checkout.kept-for-reuse",
+        "family-members.allowed",
+        "doorstep-photo.allowed",
+        "iban-for-refunds.kept-for-reuse",
+        "record-support-calls.allowed",
+        "picked-for-you.allowed",
+        "shared-logins.allowed",
+        "driver-route-history.allowed",
+        "driver-route-history.retention",
+        "support-team-abroad.outside-service",
+        "bank-card-points.allowed",
+        "agency-db-access.outside-service",
+        "stop-whatsapp.erased-at-processor"
       ]
     },
     {
       "question_set": "held_out.ar+held_out.en",
-      "configuration": "convex:0.5+normative",
+      "configuration": "standardised:0.3+normative+questions+rules",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 38,
-      "recall_at_5": 0.5263,
-      "recall_at_10": 0.6579,
-      "mrr": 0.3461,
+      "questions": 30,
+      "recall_at_5": 0.8667,
+      "recall_at_10": 0.9667,
+      "mrr": 0.7677,
       "interval": [
-        0.3421,
-        0.7105
+        0.7333,
+        0.9667
       ],
       "misses": [
-        "held_out.ar/accuracy",
-        "held_out.ar/breach-tell-users",
-        "held_out.ar/controller-or-processor",
-        "held_out.ar/correction",
-        "held_out.ar/legal-bases",
-        "held_out.ar/minimisation",
-        "held_out.ar/penalties",
-        "held_out.ar/processor-end-of-contract",
-        "held_out.ar/restriction",
-        "held_out.ar/scope-outside-uae",
-        "held_out.ar/stop-marketing",
-        "held_out.en/access-request",
-        "held_out.en/accuracy",
-        "held_out.en/controller-or-processor",
-        "held_out.en/minimisation",
-        "held_out.en/penalties",
-        "held_out.en/processor-end-of-contract",
-        "held_out.en/scope-outside-uae"
+        "held_out.ar/q21.conditions",
+        "held_out.ar/q25",
+        "held_out.en/q08",
+        "held_out.en/q24"
       ]
     },
     {
@@ -196,39 +383,30 @@
       "configuration": "keyword",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 38,
-      "recall_at_5": 0.3684,
-      "recall_at_10": 0.4211,
-      "mrr": 0.2882,
+      "questions": 30,
+      "recall_at_5": 0.5,
+      "recall_at_10": 0.5333,
+      "mrr": 0.3142,
       "interval": [
-        0.1579,
-        0.5789
+        0.3,
+        0.6667
       ],
       "misses": [
-        "held_out.ar/access-request",
-        "held_out.ar/accuracy",
-        "held_out.ar/breach-report",
-        "held_out.ar/breach-tell-users",
-        "held_out.ar/controller-or-processor",
-        "held_out.ar/correction",
-        "held_out.ar/minimisation",
-        "held_out.ar/penalties",
-        "held_out.ar/portability",
-        "held_out.ar/processor-end-of-contract",
-        "held_out.ar/restriction",
-        "held_out.ar/scope-outside-uae",
-        "held_out.ar/stop-marketing",
-        "held_out.en/access-request",
-        "held_out.en/accuracy",
-        "held_out.en/breach-tell-users",
-        "held_out.en/controller-or-processor",
-        "held_out.en/correction",
-        "held_out.en/minimisation",
-        "held_out.en/penalties",
-        "held_out.en/portability",
-        "held_out.en/processor-end-of-contract",
-        "held_out.en/scope-outside-uae",
-        "held_out.en/stop-marketing"
+        "held_out.ar/q04",
+        "held_out.ar/q06",
+        "held_out.ar/q13",
+        "held_out.ar/q15",
+        "held_out.ar/q16",
+        "held_out.ar/q20",
+        "held_out.ar/q21.sensitive",
+        "held_out.ar/q21.conditions",
+        "held_out.ar/q25",
+        "held_out.ar/q26",
+        "held_out.en/q01",
+        "held_out.en/q02",
+        "held_out.en/q08",
+        "held_out.en/q09",
+        "held_out.en/q17"
       ]
     },
     {
@@ -236,31 +414,121 @@
       "configuration": "meaning",
       "model": "e5-small",
       "context_recipe": "v3",
-      "questions": 38,
-      "recall_at_5": 0.5789,
-      "recall_at_10": 0.6842,
-      "mrr": 0.3557,
+      "questions": 30,
+      "recall_at_5": 0.6667,
+      "recall_at_10": 0.8,
+      "mrr": 0.5886,
       "interval": [
-        0.3947,
-        0.7632
+        0.5,
+        0.8333
       ],
       "misses": [
-        "held_out.ar/accuracy",
-        "held_out.ar/breach-tell-users",
-        "held_out.ar/controller-or-processor",
-        "held_out.ar/minimisation",
-        "held_out.ar/penalties",
-        "held_out.ar/processor-security",
-        "held_out.ar/restriction",
-        "held_out.ar/scope-outside-uae",
-        "held_out.en/access-request",
-        "held_out.en/accuracy",
-        "held_out.en/controller-or-processor",
-        "held_out.en/minimisation",
-        "held_out.en/penalties",
-        "held_out.en/records-of-processing",
-        "held_out.en/restriction",
-        "held_out.en/scope-outside-uae"
+        "held_out.ar/q06",
+        "held_out.ar/q15",
+        "held_out.ar/q16",
+        "held_out.ar/q21.conditions",
+        "held_out.ar/q25",
+        "held_out.en/q02",
+        "held_out.en/q08",
+        "held_out.en/q09",
+        "held_out.en/q24",
+        "held_out.en/q28"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.ar+held_out_assistant.en",
+      "configuration": "standardised:0.3+normative+questions+rules",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 26,
+      "recall_at_5": 0.6154,
+      "recall_at_10": 0.8077,
+      "mrr": 0.4818,
+      "interval": [
+        0.4231,
+        0.8077
+      ],
+      "misses": [
+        "held_out_assistant.ar/whatsapp-weekly-offers.outside-service",
+        "held_out_assistant.en/uae-pass-sign-in.allowed",
+        "held_out_assistant.en/selfie-match.outside-service",
+        "held_out_assistant.en/family-members.allowed",
+        "held_out_assistant.en/doorstep-photo.allowed",
+        "held_out_assistant.en/iban-for-refunds.allowed",
+        "held_out_assistant.en/record-support-calls.outside-service",
+        "held_out_assistant.en/picked-for-you.allowed",
+        "held_out_assistant.en/driver-route-history.retention",
+        "held_out_assistant.en/bank-card-points.allowed"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.ar+held_out_assistant.en",
+      "configuration": "keyword",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 26,
+      "recall_at_5": 0.2308,
+      "recall_at_10": 0.3462,
+      "mrr": 0.1822,
+      "interval": [
+        0.0769,
+        0.3846
+      ],
+      "misses": [
+        "held_out_assistant.ar/whatsapp-weekly-offers.outside-service",
+        "held_out_assistant.en/uae-pass-sign-in.allowed",
+        "held_out_assistant.en/selfie-match.allowed",
+        "held_out_assistant.en/selfie-match.outside-service",
+        "held_out_assistant.en/kids-under-parent.allowed",
+        "held_out_assistant.en/map-pin-checkout.kept-for-reuse",
+        "held_out_assistant.en/family-members.allowed",
+        "held_out_assistant.en/doorstep-photo.allowed",
+        "held_out_assistant.en/iban-for-refunds.allowed",
+        "held_out_assistant.en/record-support-calls.allowed",
+        "held_out_assistant.en/record-support-calls.outside-service",
+        "held_out_assistant.en/picked-for-you.allowed",
+        "held_out_assistant.en/shared-logins.allowed",
+        "held_out_assistant.en/driver-route-history.retention",
+        "held_out_assistant.en/support-team-abroad.outside-service",
+        "held_out_assistant.en/bank-card-points.allowed",
+        "held_out_assistant.en/agency-db-access.outside-service",
+        "held_out_assistant.en/erase-on-request.erasure-request",
+        "held_out_assistant.en/stop-whatsapp.stop-marketing",
+        "held_out_assistant.en/stop-whatsapp.erased-at-processor"
+      ]
+    },
+    {
+      "question_set": "held_out_assistant.ar+held_out_assistant.en",
+      "configuration": "meaning",
+      "model": "e5-small",
+      "context_recipe": "v3",
+      "questions": 26,
+      "recall_at_5": 0.3077,
+      "recall_at_10": 0.4231,
+      "mrr": 0.2271,
+      "interval": [
+        0.1538,
+        0.5
+      ],
+      "misses": [
+        "held_out_assistant.ar/whatsapp-weekly-offers.marketing",
+        "held_out_assistant.ar/whatsapp-weekly-offers.outside-service",
+        "held_out_assistant.en/selfie-match.allowed",
+        "held_out_assistant.en/selfie-match.outside-service",
+        "held_out_assistant.en/kids-under-parent.allowed",
+        "held_out_assistant.en/map-pin-checkout.kept-for-reuse",
+        "held_out_assistant.en/family-members.allowed",
+        "held_out_assistant.en/doorstep-photo.allowed",
+        "held_out_assistant.en/iban-for-refunds.allowed",
+        "held_out_assistant.en/record-support-calls.allowed",
+        "held_out_assistant.en/record-support-calls.outside-service",
+        "held_out_assistant.en/picked-for-you.allowed",
+        "held_out_assistant.en/shared-logins.allowed",
+        "held_out_assistant.en/driver-route-history.allowed",
+        "held_out_assistant.en/driver-route-history.retention",
+        "held_out_assistant.en/support-team-abroad.outside-service",
+        "held_out_assistant.en/bank-card-points.allowed",
+        "held_out_assistant.en/agency-db-access.outside-service"
       ]
     }
   ]

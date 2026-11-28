@@ -7,18 +7,20 @@ packs themselves.
 ## Layout
 
 ```
-evals/<pack>/tuning.<lang>.yaml     used while improving retrieval
-evals/<pack>/assistant.<lang>.yaml  the same use, in the words AI assistants send
-evals/<pack>/held_out.<lang>.yaml   produces the published score, and nothing else
-evals/results/<pack>.json           the published held-out scores, committed
+evals/<pack>/tuning.<lang>.yaml              used while improving retrieval
+evals/<pack>/assistant.<lang>.yaml           the same use, in the words AI assistants send
+evals/<pack>/held_out.<lang>.yaml            produces the published score, and nothing else
+evals/<pack>/held_out_<style>.<lang>.yaml    the same, for another way of asking
+evals/results/<pack>.json                    the published held-out scores, committed
 ```
 
 Every set names the language it is asked in before `.yaml`, such as `tuning.ar.yaml`. A
 pack's sets are asked in the law's own language and in English, and can be asked in more:
-GDPR's in English and Arabic, the UAE PDPL's in Arabic and English. The same set in two
-languages keeps the same ids, labels and sources, so the two can be compared question by
-question, and each is written the way people ask in that language, not translated word for
-word.
+GDPR's in English and Arabic, the UAE PDPL's in Arabic and English. A tuning set asked in
+two languages keeps the same ids, labels and sources in each, so the two can be compared
+question by question, and each is written the way people ask in that language, not translated
+word for word. A held-out set can ask different questions in each language, since it is
+written the way people ask, not made to match.
 
 `evals/results` is committed, because CI compares every change against it and because it
 is the evidence behind any number in the README. It holds **held-out runs only**, in any
@@ -29,9 +31,9 @@ and CI checks each of them against its own interval.
 
 A pack needs at least 20 tuning and 30 held-out questions before any score of it is
 published. Fifty is not arbitrary: on thirty questions one question is more than three
-points of recall, and a smaller set produces a number too wide to defend. The same topics
-asked in two languages can be published as one score with `--together`, which counts each
-topic once in the interval, so nineteen topics asked twice are as wide as nineteen.
+points of recall, and a smaller set produces a number too wide to defend. A set's languages
+can be published as one score with `--together`, which counts a topic asked in both once in
+the interval, so nineteen topics asked twice are as wide as nineteen.
 
 ## A question
 
@@ -73,9 +75,10 @@ similar sites are the best guide to how people actually ask, and Stack Overflow 
 CC BY-SA 4.0, which does not fit the CC BY 4.0 that covers this directory. Read the thread,
 learn the vocabulary, write the question yourself, and put the thread URL in `note`.
 
-Keep the hard ones. "Do we need a DPO?" fails today because the corpus never writes "DPO",
-only "data protection officer". That is exactly the question a developer types, so it stays
-in the set and the number carries the cost.
+Keep the hard ones. "Do we need a DPO?" finds nothing in the law's own words, which never write
+"DPO", only "data protection officer": the search questions beside Article 37 are what find it.
+That is exactly the question a developer types, so it stays in the set, and whatever it costs
+shows in the number.
 
 ## What AI assistants send
 
@@ -87,7 +90,9 @@ kept, and two different clauses answer it.
 `assistant.<lang>.yaml` holds such queries as they were sent: the ones Claude Code typed
 while working through the coding tasks of the [trigger test](trigger/README.md). GDPR has
 one, in English: 64 queries that ask 98 things. It is used while improving retrieval and
-produces no published score.
+produces no published score. `held_out_assistant.<lang>.yaml` and
+`held_out_community.<lang>.yaml` hold queries made the same way for each law, which produce
+the published scores for this way of asking, as [Held-out sets](#held-out-sets) says.
 
 Each thing a query asks is a **part**, with an entry of its own under the same words:
 
@@ -120,6 +125,26 @@ describes a situation can touch several clauses:
 - Where two clauses state one rule, both are listed. Data is kept no longer than its purpose
   needs under Article 5(1)(e), and erased once the purpose no longer needs it under Article
   17(1)(a).
+
+## Held-out sets
+
+A held-out set is scored before anyone working on search has seen it, so a score on it says what
+people get, not what search was tuned to. Each law has three:
+
+- `held_out`: questions a person wrote in their own words, the way they would ask while
+  building a product, without reading any eval set or search result and without searching
+  anything. A question that asks two things answered by different rules is an entry for each.
+- `held_out_assistant`: the searches Claude Code sent while working through the
+  [tasks that collect queries](trigger/queries.yaml), each task run once against an instance
+  holding its law alone, and stopped when its first search came back, so every query was
+  written before any result was read.
+- `held_out_community`: the same tasks, with DPOLens added the way the community version is
+  added, as an MCP server on an instance set up as the community version.
+
+The labels follow the rules above, and every quote is checked against its source. They were
+fixed, and the files' hashes recorded, before any of the questions was searched in any
+configuration. A label found wrong after the sets are scored is corrected beside its figure,
+never in its place, and a new held-out set is written the same way, before it is scored.
 
 ## Scoring
 
@@ -195,20 +220,22 @@ uv run dpolens evals run --pack gdpr --set tuning
 uv run dpolens evals run --pack gdpr --set tuning.ar
 uv run dpolens evals run --pack gdpr --set assistant
 uv run dpolens evals run --pack gdpr --set tuning --every-law
-uv run dpolens evals run --pack gdpr --set held_out --baselines --write
-uv run dpolens evals run --pack uae-pdpl --set held_out --together --baselines --write
+uv run dpolens evals run --pack gdpr --set held_out --set held_out_assistant \
+  --set held_out_community --together --baselines --write
 ```
 
 A set named without its language, such as `tuning`, is every language it is asked in, and
 `tuning.ar` is one of them. Each set is scored on its own, `--set` can be given more than
-once, and `--together` adds the sets scored as one. Left out, `--set` is `tuning`.
+once, and `--together` adds each set's languages scored as one. Left out, `--set` is `tuning`.
+`--write` takes only held-out sets, and writes every one the run scores.
 
 `--config` picks what to score: a fusion rule (`rrf:10`, `rrf:60`, `convex:0.5`,
 `standardised:0.3`), a single retriever (`keyword`, `meaning`), and a `+normative` suffix on any
 of them to exclude text that explains without obliging. `+questions`, on a fusion rule, uses the
 [search questions](../search-questions/README.md): each clause's nearest question as a list of
-its own, and their words in keyword search. Left out, it is `convex:0.5+normative+questions`,
-which is what search runs, and each published score names the configuration it measured. For
+its own, and their words in keyword search. Left out, it is
+`standardised:0.3+normative+questions+rules`, which is what search runs, and each published
+score names the configuration it measured. For
 Arabic questions, `+light`, `+snowball` or `+folded-snowball` picks one of the three Arabic
 keyword indexes of the law's own words; the last is the default, and the one `+questions`
 reads with the questions' words, so the other two are refused beside it. `+rules`, on a fusion

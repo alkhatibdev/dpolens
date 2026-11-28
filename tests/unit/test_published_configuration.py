@@ -38,7 +38,16 @@ def test_search_runs_what_the_published_score_measured(path: Path) -> None:
     assert inspect.signature(search).parameters["fusion"].default.name == fusion
     assert inspect.signature(command_line.run).parameters["fusion"].default == fusion
 
+    assert modifiers == ["normative", "questions", "rules"]
+
     # +normative: text that only explains is left out until a search asks for it.
-    assert modifiers == ["normative"]
     assert SearchRequest.model_fields["include_explanatory"].default is False
     assert inspect.signature(command_line.run).parameters["include_explanatory"].default is False
+
+    # +questions: a search uses the search questions unless the organisation turns them off.
+    assert inspect.signature(search).parameters["questions"].default is None
+
+    # +rules: each result is a whole rule. The API offers no other way, the MCP server asks
+    # through the API, and the command line answers with rules unless told --no-rules.
+    assert "rules" not in SearchRequest.model_fields
+    assert inspect.signature(command_line.run).parameters["rules"].default is True

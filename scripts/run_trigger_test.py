@@ -134,7 +134,10 @@ SAMPLING: dict[str, Callable[[str], float | int]] = {
 }
 """The sampling values Qwen Code sends with every request when its settings name them."""
 
-SETS = ("tuning", "held_out")
+SETS = ("tuning", "held_out", "queries")
+COLLECTING = ("queries",)
+"""Sets run to collect what an AI assistant searches for, rather than to measure whether it
+searches: every task in one should search, and names the law its instance holds."""
 SETUPS = ("plugin", "mcp-only")
 PREFIXES = {"plugin": "mcp__plugin_dpolens_dpolens__", "mcp-only": "mcp__dpolens__"}
 SERVERS = {"plugin": "plugin:dpolens:dpolens", "mcp-only": "dpolens"}
@@ -150,10 +153,12 @@ KINDS = ("coding", "question")
 
 GIVEAWAYS = re.compile(
     r"personal data|privacy|gdpr|polic(?:y|ies)|consent|\blaws?\b|lawful|legal"
-    r"|compliant|compliance|regulat",
+    r"|compliant|compliance|regulat"
+    r"|خصوصي|بيانات شخصية|البيانات الشخصية|موافق|قانون|امتثال|سياس|لائح|حماية البيانات",
     re.IGNORECASE,
 )
-"""Words a coding task may not use: a task that names the subject tests nothing."""
+"""Words a coding task may not use, in English and in Arabic: a task that names the subject
+tests nothing."""
 
 MAX_TURNS = 25
 CLOCK_SECONDS = 600
@@ -189,6 +194,8 @@ class Task:
     verb: str | None = None
     near_miss: bool = False
     note: str | None = None
+    law: str | None = None
+    """In a set that collects queries, the law the instance holds while the task runs."""
 
     @property
     def group(self) -> str:
@@ -219,14 +226,15 @@ def read_tasks(path: Path) -> list[Task]:
         except TypeError as error:
             raise TaskSetError(f"{path.name}: {entry.get('id')}: {error}") from error
 
-    found = problems(tasks)
+    found = problems(tasks, collecting=path.stem in COLLECTING)
     if found:
         raise TaskSetError(f"{path.name}:\n  " + "\n  ".join(found))
     return tasks
 
 
-def problems(tasks: Sequence[Task]) -> list[str]:
-    """What is wrong with a set, as sentences. Empty when the set can be run."""
+def problems(tasks: Sequence[Task], collecting: bool = False) -> list[str]:
+    """What is wrong with a set, as sentences. Empty when the set can be run. A set that
+    collects queries holds only coding tasks that should search, each naming its law."""
     found = []
     seen: set[str] = set()
     for task in tasks:
@@ -248,6 +256,20 @@ def problems(tasks: Sequence[Task]) -> list[str]:
             found.append(f"{task.id}: a task that should not search has no verb")
         if task.near_miss and task.should_search:
             found.append(f"{task.id}: a near miss is a task that should not search")
+        if collecting and not (task.kind == "coding" and task.should_search and task.law):
+            found.append(
+                f"{task.id}: a task that collects queries is a coding task that should search, "
+                "and names its law"
+            )
+        if not collecting and task.law:
+            found.append(f"{task.id}: only a set that collects queries names a law")
+
+    covered = {task.verb for task in tasks if task.group == "should"}
+    missing = [verb for verb in VERBS if verb not in covered]
+    if missing:
+        found.append(f"no task that should search covers {', '.join(missing)}")
+    if collecting:
+        return found
 
     should = sum(task.should_search for task in tasks)
     if should * 2 != len(tasks):
@@ -255,11 +277,6 @@ def problems(tasks: Sequence[Task]) -> list[str]:
             f"{should} tasks should search and {len(tasks) - should} should not; "
             "a set is half and half"
         )
-
-    covered = {task.verb for task in tasks if task.group == "should"}
-    missing = [verb for verb in VERBS if verb not in covered]
-    if missing:
-        found.append(f"no task that should search covers {', '.join(missing)}")
     if not any(task.near_miss for task in tasks):
         found.append("no near misses among the tasks that should not search")
     if not any(task.kind == "question" for task in tasks):
@@ -754,9 +771,11 @@ class Instance:
         self._wait_until_healthy(("api", "mcp"), timeout=900)
         if not self.community:
             self._make_token()
-        self.compose(
-            "exec", "-T", "api", "dpolens", "laws", "select", *self.laws, capture_output=True
-        )
+        self.select(self.laws)
+
+    def select(self, laws: Sequence[str]) -> None:
+        """Make these exactly the laws a search covers."""
+        self.compose("exec", "-T", "api", "dpolens", "laws", "select", *laws, capture_output=True)
 
     def _make_token(self) -> None:
         """A developer and a token, as a team member connects with. A community version
@@ -1162,6 +1181,8 @@ def refusal(args: argparse.Namespace) -> str | None:
         return "--base-url, --sampling and --context-window are for Qwen Code runs"
     if args.set == "held_out" and not args.model:
         return "a held-out batch is published, so its model is pinned: pass --model"
+    if args.set in COLLECTING and not args.model:
+        return "the queries are published with the model that wrote them: pass --model"
     if args.community and args.setup == "plugin":
         return (
             "the plugin connects to an instance of your own, with a token: "
@@ -1258,6 +1279,8 @@ def run_batch(args: argparse.Namespace) -> int:
         prepare_profile(client, args, instance.token, volume, plugin_source)
 
         for task in tasks:
+            if task.law and not args.community:
+                instance.select((task.law,))
             for run in range(1, args.runs + 1):
                 while failures < FAILURES_BEFORE_STOPPING:
                     attempts = [o for o in outcomes if o.task == task.id and o.run == run]

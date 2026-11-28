@@ -73,9 +73,10 @@ Code, Codex, Cursor and GitHub Copilot in VS Code.
 
 ## Measured
 
-- **Search:** on held-out questions, the clause the guidance points at is among the top five
-  answers 73% of the time for GDPR, and 53% for the UAE's law.
-  [How it was measured](evals/retrieval.md)
+- **Search:** asked in a person's own words, by someone who had not seen its results, it puts
+  the clause the guidance points at among the top five answers 90% of the time for GDPR, and
+  87% for the UAE's law. For the searches an AI assistant writes in the middle of a coding task,
+  it is 40% and 62%. [How it was measured](evals/retrieval.md)
 - **Use:** Claude Code with the plugin searched before writing code in 36 of 36 runs of tasks
   that touch personal data, and in none of the 45 runs of tasks that do not.
   [How it was measured](evals/trigger-test.md)

@@ -1,0 +1,446 @@
+# Trigger test, the tasks that collect queries.
+#
+# Each task is a change to Larder that touches data about a person. It runs once, against an
+# instance holding the law the task names and nothing else, and every search the AI assistant
+# sends before its first answer comes back is kept word for word. Those searches are the
+# assistant-style held-out sets, labelled before anything was scored.
+#
+# The rules are the held-out set's: no task names the subject, in English or in Arabic, and
+# `note` links a public thread a task was learned from, when there is one. The Arabic tasks are
+# written as developers type Arabic, in more than one dialect, with English technical words.
+
+tasks:
+  # GDPR
+
+  - id: refer-a-friend
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Add refer-a-friend: a customer enters a friend's email address, and we email the friend a
+      £10 voucher saying who sent it.
+    reason: Collects a third person's email address from someone else, and contacts them with it.
+    note: https://github.com/jeffblankenburg/boxscore/issues/33
+
+  - id: household-birthdays
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Let customers add the children in their household, first name and birthday, so we can send
+      a voucher for a birthday cake each year.
+    reason: Collects children's names and dates of birth from a parent, and uses them for offers.
+
+  - id: driver-on-the-map
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Show customers where their driver is on a map while the order is out for delivery. The
+      driver app can send its GPS position every few seconds.
+    reason: Collects the drivers' live location and shows it to customers.
+    note: https://github.com/vgviscayno/delivery-app/issues/81
+
+  - id: offers-by-segment
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      بدنا نعرف زباينّا أكتر. ضيف على صفحة التسجيل حقلين: الجنس والفئة العمرية، عشان نبعت لكل
+      فئة العروض اللي بتناسبها.
+    reason: Collects gender and age band at sign-up, to choose which offers each person gets.
+
+  - id: one-tap-card
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      Let customers save their card at checkout so the next order is one tap. Stripe keeps the
+      card; we keep the brand, last four digits and expiry to show on the account page.
+    reason: Keeps payment card details tied to a customer.
+    note: https://github.com/menuza-io/menuza/issues/219
+
+  - id: sent-email-copies
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      Support keeps asking what we emailed a customer. Save a copy of every email we send them
+      (order confirmations, delivery updates, receipts) and show it in the admin.
+    reason: Keeps the content of every message sent to a customer, with their account.
+    note: https://github.com/FindMalek/ceraghit/issues/148
+
+  - id: doorstep-needs
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      Add delivery notes to saved addresses, with quick picks like "wheelchair user, please bring
+      it in" and "deaf, text don't call", and show them in the driver app.
+    reason: Keeps information about a customer's health and disability, and shows it to drivers.
+    note: https://github.com/cloudmanic/laundry/issues/14
+
+  - id: chat-history-forever
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      عايزين نحفظ كل محادثات الشات بتاعة الدعم في حساب العميل ومن غير ما نمسحها خالص، عشان أي حد
+      في الدعم يشوف كل اللي حصل قبل كده.
+    reason: Keeps every support conversation with a customer, with no end.
+
+  - id: staff-access-audit
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      Record every time someone on the support team opens a customer's account or changes an
+      order: who, which customer, what they did and when. Admins should be able to search it.
+    reason: Logs staff access to customer accounts, a record about the customers and the staff.
+    note: https://github.com/mwangiKibui/pesaroll/issues/24
+
+  - id: checkout-recordings
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      Add Microsoft Clarity to the checkout pages so we can watch session recordings and see
+      where people give up.
+    reason: Records what people do and type at checkout, through another company's service.
+    note: https://github.com/Jamula/Spellbook/issues/22
+
+  - id: search-suggestions
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      Keep each signed-in customer's product searches, so the search box can suggest what they
+      usually look for.
+    reason: Logs what each person searches for, to build a picture of their habits.
+    note: https://github.com/manoj-chavan-13/Discover/issues/7
+
+  - id: new-device-alert
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      نبي نرسل إيميل للعميل إذا دخل حسابه من جهاز جديد. خزّن لكل دخول بصمة الجهاز (المتصفح،
+      النظام، الـ IP) ووقت الدخول.
+    reason: Logs device details and IP addresses at every sign-in.
+    note: https://github.com/Muskankr/AI-Resume-Analyzer/issues/739
+
+  - id: lookalike-audience
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      Upload our customers' email addresses to Meta as a Custom Audience every night, so our ads
+      reach people like them.
+    reason: Shares customers' email addresses with an advertising platform.
+
+  - id: bucket-to-virginia
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      Move the S3 bucket with uploads and the nightly database backups to us-east-1. It's
+      cheaper.
+    reason: Moves copies of every customer's data to servers in another country.
+    note: https://github.com/so77id/nalanda/issues/367
+
+  - id: food-waste-study
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      A university is studying food waste and wants our orders. Export the last two years of
+      orders with the items, postcode and a hash in place of the customer ID.
+    reason: >-
+      Shares order histories under a hashed identifier, with postcodes, which can still lead back
+      to a person.
+
+  - id: support-bot-context
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      ضيف شات بوت للدعم بيستعمل OpenAI API، وابعتله آخر طلبات العميل وعنوانه كـ context عشان يقدر
+      يجاوب على أسئلة التوصيل.
+    reason: Sends customers' orders and addresses to an outside AI service.
+    note: https://github.com/lord-cyclone100/watchkraft/issues/19
+
+  - id: backups-after-deletion
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      Deleting an account removes it from the database, but our nightly backups keep it for a
+      year. Make deleted accounts disappear from the backups too.
+    reason: Decides what happens to a deleted person's data held in backups.
+
+  - id: deletion-grace-period
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      Make account deletion a soft delete: hide the account straight away, let the customer undo
+      it within 30 days, then wipe it for good.
+    reason: Decides how long a closed account's data stays before it is erased.
+
+  - id: reset-links-in-logs
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      The mailer logs every password reset link in full, token included, and production has been
+      doing it for a month. Stop it and clean up the old logs.
+    reason: >-
+      Email addresses and live reset tokens sat in logs for a month: removing them, and whether
+      anyone has to be told.
+    note: https://github.com/onfranciis/OID/issues/18
+
+  - id: segment-on-deletion
+    law: gdpr
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      لما العميل يحذف حسابه، ابعت كمان طلب حذف لـ Segment عشان يمسحوا كل الأحداث اللي عندهم عنه.
+    reason: Erases a person's data at a service it was sent to.
+    note: https://github.com/thunderbird/thunderbird-accounts/issues/1479
+
+  # The UAE's data protection law
+
+  - id: uae-pass-sign-in
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      Add Sign in with UAE PASS. On first sign-in, save the Emirates ID number, full name, mobile
+      number and nationality from the UAE PASS profile on the user.
+    reason: Collects national identity numbers and other identity details from an identity provider.
+    note: https://github.com/ala-contracthubs/platform/issues/5
+
+  - id: selfie-match
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      For a new customer's first cash-on-delivery order over AED 1,000, ask for a selfie and a
+      photo of their Emirates ID, and check with a face-matching API that it's the same person.
+    reason: Collects face images and identity cards, and matches faces through a vendor.
+    note: https://github.com/betheaakashhh/inpocketsV2/issues/3
+
+  - id: kids-under-parent
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      خلّ الأب أو الأم يقدرون يسوون حسابات لعيالهم (من 12 سنة وفوق) تحت حسابهم، فيها اسم الولد
+      وعمره ومدرسته، عشان يطلبون أغراض المدرسة بنفسهم.
+    reason: Collects children's names, ages and schools, and lets them order.
+    note: https://github.com/fgna/square/issues/113
+
+  - id: map-pin-checkout
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: collect
+    prompt: >-
+      بدل ما العميل يكتب عنوانه، خلّيه يحدد موقعه على الخريطة (GPS pin) وقت الدفع، واحفظ
+      الإحداثيات في حسابه للطلبات الجاية.
+    reason: Collects the exact location of a customer's home, and keeps it.
+    note: https://github.com/Hassanjkhan99/food-delivery/issues/41
+
+  - id: family-members
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      Add family accounts: the account holder adds their spouse and children with name, age and
+      relationship, and we suggest products for the whole family.
+    reason: Keeps data about a person's family members and how they are related.
+
+  - id: prescription-photos
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      We're adding pharmacies. Let customers attach a photo of their prescription to the order,
+      store it, and let the pharmacist open it before accepting the order.
+    reason: Keeps prescriptions, which say something about a person's health, and shows them to a partner.
+    note: https://github.com/abuhaibra294-hub/project/issues/15
+
+  - id: doorstep-photo
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      خلّي السائق يصوّر الطلب عند باب العميل كإثبات تسليم، واحفظ الصورة مع الطلب عشان لو صار في
+      خلاف.
+    reason: Keeps photos taken at people's homes, tied to their orders.
+    note: https://github.com/BlueLightSuites/material-delivery-app/issues/43
+
+  - id: iban-for-refunds
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: store
+    prompt: >-
+      الطلبات الكاش اللي تنرجع نحوّل فلوسها تحويل بنكي. ضيف في الحساب حقل للـ IBAN واسم صاحب
+      الحساب، واحفظهم عشان ما نسأل العميل كل مرة.
+    reason: Keeps customers' bank account details.
+
+  - id: record-support-calls
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      Record support calls through Twilio and attach each recording to the customer's account,
+      so we can go back to it when there's a complaint.
+    reason: Records people's voices and conversations, and keeps them with their account.
+    note: https://github.com/tingtingtong/IVR-Insurance-Project/issues/54
+
+  - id: picked-for-you
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      Track which products each customer looks at and for how long, and use it to fill a "Picked
+      for you" row on the home page.
+    reason: Logs each person's browsing to build a profile of them.
+    note: https://github.com/janavipandole/Cara/issues/7862
+
+  - id: shared-logins
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      في ناس بتشارك حساب واحد عشان العروض. سجّل مع كل تسجيل دخول الـ device ID والموقع التقريبي،
+      وعلّم أي حساب بيدخل من أكتر من 3 أجهزة.
+    reason: Logs device identifiers and locations at every sign-in, to watch how accounts are used.
+    note: https://github.com/Benidrissa/etutor-digital-ph/issues/911
+
+  - id: driver-route-history
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: log
+    prompt: >-
+      نريد تتبّع مواقع السائقين كل 10 ثوانٍ طوال الدوام، وحفظ السجل كاملاً لاستخدامه في تقييم
+      أدائهم الشهري.
+    reason: Logs employees' locations all day, and uses them to judge their work.
+    note: https://github.com/akashshindelogistics-lgtm/logistics-backend/issues/192
+
+  - id: support-team-abroad
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      We're handing customer support to an outsourcing company in Manila. Give their agents
+      logins to the admin so they can see customer profiles and order history.
+    reason: Gives people in another country access to customers' data.
+
+  - id: whatsapp-weekly-offers
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      نبي نرسل العروض الأسبوعية لكل عملائنا على الواتساب عن طريق WhatsApp Business API، على أرقام
+      الجوال اللي عندنا.
+    reason: Uses customers' phone numbers to send them marketing through a messaging platform.
+    note: https://github.com/tesserix/helivanta/issues/487
+
+  - id: bank-card-points
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      A bank wants to give its cardholders points when they shop with us. Send the bank a daily
+      file with the phone number and order total of every customer who paid with one of its
+      cards.
+    reason: Shares customers' phone numbers and spending with another company.
+
+  - id: agency-db-access
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: share
+    prompt: >-
+      وكالة التسويق بدها تشتغل على الحملات. اعمللهم user على الداتابيز بصلاحية قراءة على جداول
+      العملاء والطلبات.
+    reason: Gives an outside agency direct access to customers' data.
+
+  - id: erase-on-request
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      Support gets emails asking us to delete everything we have on someone. Add an admin action
+      that erases a customer everywhere: our database, Segment and Postmark's message history.
+    reason: Erases a person's data on request, at every service it went to.
+
+  - id: exposed-door-photos
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      The S3 bucket with proof-of-delivery photos was public for two weeks. Make it private,
+      delete photos older than 30 days, and give me the list of customers whose photos were in
+      it.
+    reason: >-
+      Photos taken at people's homes were exposed: what to delete, and who to tell.
+    note: https://github.com/Care360Apps/k3-backend/issues/22
+
+  - id: selfie-cleanup
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      احذف صور السيلفي وصور الهوية بعد 30 يوم من التحقق، وخلّي بس نتيجة التحقق (نجح أو فشل)
+      وتاريخه.
+    reason: Decides how long face images and identity cards are kept.
+
+  - id: stop-whatsapp
+    law: uae-pdpl
+    kind: coding
+    should_search: true
+    verb: delete
+    prompt: >-
+      إذا العميل رد على الواتساب بكلمة STOP، شيل رقمه من قائمة العروض، وبلّغ الوكالة تمسحه من
+      عندها بعد.
+    reason: Stops marketing to a person who asked, and erases their number at the agency too.

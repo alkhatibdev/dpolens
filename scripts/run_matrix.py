@@ -44,6 +44,7 @@ CONFIGS = (
     "convex:0.5+normative",
     "standardised:0.3+normative",
     "standardised:0.3+normative+questions",
+    "standardised:0.3+normative+questions+rules",
 )
 
 
