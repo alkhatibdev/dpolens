@@ -40,7 +40,8 @@ class Settings(BaseSettings):
     migration_database_url: PostgresDsn | None = Field(
         default=None,
         description=(
-            "Connection URL for the role that owns the tables, used by migrations only. "
+            "Connection URL for the role that owns the tables, used by migrations and by "
+            "setup to gather the query planner's statistics. "
             "Unset means migrations run as the application role, which cannot grant away "
             "its own write access to the governance log"
         ),

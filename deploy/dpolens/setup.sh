@@ -32,4 +32,8 @@ dpolens policy sample
 # embed a corpus it has already embedded.
 dpolens index build --skip-embedded
 
+# The query planner's statistics, now that everything is loaded. Autovacuum never gathers
+# them for a small table, and searches planned without them take several times as long.
+python -c "from dpolens.engine.session import gather_statistics; gather_statistics()"
+
 echo "Ready. The API can start."
